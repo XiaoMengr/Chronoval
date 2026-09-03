@@ -521,10 +521,7 @@ onUnmounted(() => {
 <template>
   <div
     ref="photoRef"
-    class="w-full transition-all duration-300 cursor-pointer select-none"
-    :style="{
-      transform: 'translateZ(0)',
-    }"
+    class="photo-card w-full transition-transform duration-300 cursor-pointer select-none"
     @click="handleClick"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
@@ -534,7 +531,7 @@ onUnmounted(() => {
     @touchcancel="handleTouchEnd"
     @contextmenu.prevent=""
   >
-    <div class="relative group overflow-hidden bg-neutral-900 transition-all duration-300">
+    <div class="relative group overflow-hidden bg-neutral-900 transition-transform duration-300">
       <!-- Container with fixed aspect ratio -->
       <div
         class="w-full relative"
@@ -640,7 +637,7 @@ onUnmounted(() => {
             <span
               v-for="tag in photo.tags"
               :key="tag"
-              class="rounded-full bg-white/20 px-2 py-0.5 text-xs text-white/90 opacity-0 backdrop-blur-0 transition-all duration-300 group-hover:opacity-100 group-hover:backdrop-blur-sm"
+              class="rounded-full bg-white/20 px-2 py-0.5 text-xs text-white/90 opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-hover:backdrop-blur-sm"
             >
               {{ tag }}
             </span>
@@ -654,7 +651,7 @@ onUnmounted(() => {
         >
           <div
             v-if="photo.exif?.FocalLengthIn35mmFormat"
-            class="flex items-center gap-1.5 rounded-md bg-white/10 px-2 py-1 backdrop-blur-md opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+            class="flex items-center gap-1.5 rounded-md bg-white/10 px-2 py-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-hover:backdrop-blur-sm"
           >
             <Icon
               name="streamline:image-accessories-lenses-photos-camera-shutter-picture-photography-pictures-photo-lens"
@@ -664,21 +661,21 @@ onUnmounted(() => {
           </div>
           <div
             v-if="photo.exif?.FNumber"
-            class="flex items-center gap-1.5 rounded-md bg-white/10 px-2 py-1 backdrop-blur-md opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+            class="flex items-center gap-1.5 rounded-md bg-white/10 px-2 py-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-hover:backdrop-blur-sm"
           >
             <Icon name="tabler:aperture" class="shrink-0 text-white/70" />
             <span class="text-white/90">f/{{ photo.exif.FNumber }}</span>
           </div>
           <div
             v-if="photo.exif?.ExposureTime"
-            class="flex items-center gap-1.5 rounded-md bg-white/10 px-2 py-1 backdrop-blur-md opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+            class="flex items-center gap-1.5 rounded-md bg-white/10 px-2 py-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-hover:backdrop-blur-sm"
           >
             <Icon name="material-symbols:shutter-speed" class="shrink-0 text-white/70" />
             <span class="text-white/90">{{ formatExposureTime(photo.exif.ExposureTime) }}</span>
           </div>
           <div
             v-if="photo.exif?.ISO"
-            class="flex items-center gap-1.5 rounded-md bg-white/10 px-2 py-1 backdrop-blur-md opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+            class="flex items-center gap-1.5 rounded-md bg-white/10 px-2 py-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-hover:backdrop-blur-sm"
           >
             <Icon name="carbon:iso-outline" class="shrink-0 text-white/70" />
             <span class="text-white/90">ISO {{ photo.exif.ISO }}</span>
@@ -689,4 +686,14 @@ onUnmounted(() => {
   </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+/* 性能：用 content-visibility 跳过屏幕外卡片的绘制（水墙图片高度由 aspectRatio 预留，
+   不会引起滚动跳动）；不再给每张卡强制 will-change/translateZ 常驻合成层，
+   否则几百张卡会生成几千个 GPU 图层，滚动时逐层合成导致卡顿。
+   悬浮 scale/淡入仅在悬停瞬间由 motion/WAAPI 触发，天然走合成器，无需常驻 will-change。 */
+.photo-card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 320px;
+  isolation: isolate;
+}
+</style>

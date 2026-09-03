@@ -4,6 +4,9 @@ useHead({
 })
 
 const { photos } = usePhotos()
+
+// 苹果首次激活式 "hello"：英文单词由行进光晕逐个"点亮"，作为加载画面
+const activationChars = ['h', 'e', 'l', 'l', 'o']
 </script>
 
 <template>
@@ -26,17 +29,22 @@ const { photos } = usePhotos()
         />
         <template #fallback>
           <div
-            class="fixed inset-0 flex flex-col items-center justify-center gap-4"
+            class="fixed inset-0 flex flex-col items-center justify-center"
           >
-            <Icon
-              name="tabler:photo"
-              class="size-10 text-(--glass-faint)"
-            />
-            <span class="loading-scan-wrapper">
-              <span class="text-base font-medium loading-scan-text">
-                {{ $t('ui.loading') }}
-              </span>
-            </span>
+            <!-- 苹果首次激活式 "hello"：冷色调基底 + 行进光晕逐个点亮字母 + 底部刻写进度 -->
+            <div class="activation-word" aria-label="hello">
+              <div class="activation-shine" aria-hidden="true" />
+              <span
+                v-for="(char, index) in activationChars"
+                :key="index"
+                class="activation-char"
+                :style="{ animationDelay: `${0.15 + index * 0.2}s` }"
+              >{{ char }}</span>
+            </div>
+
+            <div class="activation-progress" aria-hidden="true">
+              <i />
+            </div>
           </div>
         </template>
       </ClientOnly>
@@ -46,36 +54,117 @@ const { photos } = usePhotos()
 </template>
 
 <style scoped>
-.loading-scan-wrapper {
-  display: inline-block;
+/* ===== 苹果首次激活式 "hello"：优雅衬线 + 行进光晕逐个"点亮"字母 ===== */
+.activation-word {
   position: relative;
+  display: flex;
+  font-family: Georgia, 'Times New Roman', 'Noto Serif SC', 'Songti SC', serif;
+  font-style: italic;
+  font-weight: 600;
+  font-size: clamp(54px, 12vw, 92px);
+  line-height: 1;
+  letter-spacing: 0.01em;
+  color: var(--glass-muted);
+  -webkit-font-smoothing: antialiased;
 }
 
-.loading-scan-text {
+.activation-char {
   display: inline-block;
-  background: linear-gradient(
-    90deg,
-    var(--ui-text-highlighted) 0%,
-    var(--ui-text-highlighted) 30%,
-    var(--ui-text-muted) 50%,
-    var(--ui-text-highlighted) 70%,
-    var(--ui-text-highlighted) 100%
-  );
-  background-size: 200% 100%;
-  background-position: 200% 0;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  color: transparent;
-  animation: scan-x-text 1.2s linear infinite;
+  opacity: 0;
+  filter: blur(9px);
+  transform: translateY(0.2em) scale(0.76);
+  will-change: transform, filter;
+  animation: hello-draw 0.95s cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 
-@keyframes scan-x-text {
+/* 每一字母：从虚化中"落笔浮现"（画出字体） */
+@keyframes hello-draw {
   0% {
-    background-position: 200% 0;
+    opacity: 0;
+    filter: blur(9px);
+    transform: translateY(0.22em) scale(0.76);
+  }
+  45% {
+    opacity: 1;
   }
   100% {
-    background-position: -200% 0;
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* 行进光晕：一条柔光带自左向右扫过单词，把经过的字母逐个点亮（苹果激活"光带点亮"） */
+.activation-shine {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    transparent 38%,
+    color-mix(in srgb, var(--glass-text) 45%, transparent) 46%,
+    var(--glass-text) 50%,
+    color-mix(in srgb, var(--glass-text) 45%, transparent) 54%,
+    transparent 62%,
+    transparent 100%
+  );
+  background-size: 220% 100%;
+  background-repeat: no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: hello-shine 2.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes hello-shine {
+  0% {
+    background-position: 190% 0;
+  }
+  55%,
+  100% {
+    background-position: -18% 0;
+  }
+}
+
+/* 底部刻写进度：一条极细流光从左到右往复，象征"正在加载/书写" */
+.activation-progress {
+  margin-top: clamp(20px, 3.2vh, 30px);
+  width: clamp(120px, 22vw, 220px);
+  height: 2px;
+  border-radius: 999px;
+  background: var(--glass-border);
+  overflow: hidden;
+  opacity: 0;
+  animation: progress-in 0.6s ease-out 1s forwards;
+}
+
+.activation-progress > i {
+  display: block;
+  height: 100%;
+  width: 42%;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--glass-text),
+    transparent
+  );
+  animation: hello-progress 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes hello-progress {
+  0% {
+    transform: translateX(-130%);
+  }
+  100% {
+    transform: translateX(360%);
+  }
+}
+
+@keyframes progress-in {
+  to {
+    opacity: 1;
   }
 }
 </style>

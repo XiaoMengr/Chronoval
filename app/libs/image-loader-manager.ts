@@ -66,74 +66,78 @@ export class ImageLoaderManager {
   ): Promise<ImageLoaderResult> {
     const { onProgress, onError, onUpdateLoadingState } = callbacks
 
+    // 命中内存缓存则立即返回，跳过网络下载与人为延迟，
+    // 让相邻图片切换（渐进式预解码已预取）可以秒级起点解码。
+    const cached = normalImageCache.get(src)
+    if (cached) {
+      return { blobSrc: cached.blobSrc }
+    }
+
     onUpdateLoadingState?.({
       isVisible: true,
     })
 
     return new Promise((resolve, reject) => {
-      this.timer = setTimeout(async () => {
-        const xhr = new XMLHttpRequest()
-        xhr.open('GET', src)
-        xhr.responseType = 'blob'
+      const xhr = new XMLHttpRequest()
+      this.lastXHR = xhr
+      xhr.open('GET', src)
+      xhr.responseType = 'blob'
 
-        xhr.onload = async () => {
-          if (xhr.status === 200) {
-            try {
-              const blob = xhr.response as Blob
-              if (!(await this.isValidImageBlob(blob))) {
-                onError?.()
-                onUpdateLoadingState?.({
-                  isVisible: false,
-                })
-                return
-              }
-
-              const processResult = await this.processNormalImage(
-                blob,
-                src,
-                callbacks,
-              )
-              resolve(processResult)
-            } catch (err) {
+      xhr.onload = async () => {
+        if (xhr.status === 200) {
+          try {
+            const blob = xhr.response as Blob
+            if (!(await this.isValidImageBlob(blob))) {
               onError?.()
               onUpdateLoadingState?.({
                 isVisible: false,
               })
-              reject(err)
+              return
             }
-          } else {
+
+            const processResult = await this.processNormalImage(
+              blob,
+              src,
+              callbacks,
+            )
+            resolve(processResult)
+          } catch (err) {
             onError?.()
             onUpdateLoadingState?.({
               isVisible: false,
             })
-            reject(new Error(`Failed to load image: ${xhr.status}`))
+            reject(err)
           }
-        }
-
-        xhr.onprogress = (event) => {
-          if (event.lengthComputable) {
-            const progress = (event.loaded / event.total) * 100
-            onProgress?.(progress)
-            onUpdateLoadingState?.({
-              progress,
-              bytesLoaded: event.loaded,
-              bytesTotal: event.total,
-            })
-          }
-        }
-
-        xhr.onerror = () => {
+        } else {
           onError?.()
           onUpdateLoadingState?.({
             isVisible: false,
           })
-          reject(new Error(`Failed to load image`))
+          reject(new Error(`Failed to load image: ${xhr.status}`))
         }
+      }
 
-        xhr.send()
+      xhr.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const progress = (event.loaded / event.total) * 100
+          onProgress?.(progress)
+          onUpdateLoadingState?.({
+            progress,
+            bytesLoaded: event.loaded,
+            bytesTotal: event.total,
+          })
+        }
+      }
 
-        this.lastXHR = xhr
-      }, 300)
+      xhr.onerror = () => {
+        onError?.()
+        onUpdateLoadingState?.({
+          isVisible: false,
+        })
+        reject(new Error(`Failed to load image`))
+      }
+
+      xhr.send()
     })
   }
 
@@ -163,9 +167,43 @@ export class ImageLoaderManager {
     onUpdateLoadingState?.({
       isVisible: false,
     })
+    // 返回内存中的 Blob URL，让 WebGL 直接解码本地缓存，切换图片不再重复联网下载
     return {
-      blobSrc: originalUrl,
+      blobSrc: url,
     }
+  }
+
+  /**
+   * 渐进式预解码：把指定图片的全尺寸数据静默拉取进 Blob 缓存（不进加载 UI、
+   * 不触发进度回调）。当用户随后切换到这张图片时，会命中缓存并立即得到 Blob URL。
+   */
+  async prefetch(src: string): Promise<boolean> {
+    if (!src || normalImageCache.get(src)) return true
+
+    return new Promise((resolve) => {
+      const xhr = new XMLHttpRequest()
+      xhr.open('GET', src)
+      xhr.responseType = 'blob'
+      xhr.onload = async () => {
+        if (xhr.status === 200) {
+          const blob = xhr.response as Blob
+          if (await this.isValidImageBlob(blob)) {
+            const url = URL.createObjectURL(blob)
+            normalImageCache.set(src, {
+              blobSrc: url,
+              originalSize: blob.size,
+              format: blob.type,
+            })
+            resolve(true)
+            return
+          }
+        }
+        resolve(false)
+      }
+      xhr.onerror = () => resolve(false)
+      xhr.onabort = () => resolve(false)
+      xhr.send()
+    })
   }
 
   cleanup() {

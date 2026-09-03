@@ -11,8 +11,10 @@ self.onmessage = async (event) => {
 
   if (type === 'load') {
     const { payload } = event.data
+    const gen = payload && payload.gen
+    const requestSrc = payload && payload.src
+    let src = requestSrc
     try {
-      let src = payload.src
       try {
         const absolute = new URL(
           src,
@@ -38,6 +40,8 @@ self.onmessage = async (event) => {
             imageBitmap,
             width: imageBitmap.width,
             height: imageBitmap.height,
+            src,
+            gen,
           },
         },
         [imageBitmap],
@@ -45,7 +49,11 @@ self.onmessage = async (event) => {
     } catch (error) {
       self.postMessage({
         type: 'load-error',
-        payload: error instanceof Error ? error : 'Unknown error',
+        payload: {
+          error: error instanceof Error ? error : 'Unknown error',
+          src,
+          gen,
+        },
       })
     }
   }

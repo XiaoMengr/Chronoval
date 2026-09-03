@@ -76,7 +76,7 @@ const onError = () => {
     :style="style"
   >
     <ThumbHash
-      v-if="thumbhash"
+      v-if="thumbhash && !isLoaded"
       :thumbhash="thumbhash"
       :class="
         twMerge(
@@ -86,8 +86,9 @@ const onError = () => {
       "
     />
 
+    <!-- 占位氛围层仅在"加载完成前"渲染；加载完即卸载，避免每张卡片常驻 backdrop-filter 强制合成层 -->
     <div
-      v-if="thumbhash"
+      v-if="thumbhash && !isLoaded"
       :class="
         twMerge(
           'thumb-atmosphere absolute inset-0 pointer-events-none',
@@ -129,13 +130,13 @@ const onError = () => {
 
 <style scoped>
 /* 真缩略图：加载完成前保持 blur(8px) scale(1.05) 的模糊纹理态，
-   加载完成后约 500ms 平滑去模糊、回位、淡入到清晰。 */
+   加载完成后约 500ms 通过 opacity/transform 平滑过渡到清晰。
+   注意不要在此处用 will-change 常驻合成层——水墙上有几百张卡片，
+   常驻 will-change/filter/backdrop 会让浏览器为每张卡维护独立 GPU 图层，滚动时逐层合成导致卡顿。 */
 .thumb-img {
   transition:
-    filter 500ms ease,
     transform 500ms ease,
     opacity 500ms ease;
-  will-change: filter, transform, opacity;
 }
 
 .thumb-img--loading {
@@ -145,21 +146,19 @@ const onError = () => {
 }
 
 .thumb-img--loaded {
-  filter: blur(0);
+  filter: none;
   transform: scale(1);
   opacity: 1;
 }
 
-/* 模糊占位的轻微暗色透明高斯模糊氛围（偏暗中性色，无粉色） */
+/* 模糊占位的轻微暗色透明高斯模糊氛围（偏暗中性色，无粉色）。
+   占位层仅在加载前渲染、位于纯色卡片底之上，backdrop-filter 在此无观感意义且会强制合成层，故移除。 */
 .thumb-blur-placeholder {
-  -webkit-backdrop-filter: blur(2px);
-  backdrop-filter: blur(2px);
+  /* no backdrop-filter */
 }
 
 .thumb-atmosphere {
   background-color: rgba(8, 9, 12, 0.35);
-  -webkit-backdrop-filter: blur(4px);
-  backdrop-filter: blur(4px);
   transition: opacity 500ms ease;
 }
 

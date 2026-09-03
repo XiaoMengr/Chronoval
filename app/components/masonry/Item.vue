@@ -36,15 +36,13 @@ const animateDelay = computed(() => {
 const itemVariants = {
   hidden: {
     opacity: 0,
-    y: 30,
-    scale: 0.95,
-    filter: 'blur(6px)',
+    y: 24,
+    scale: 0.96,
   },
   visible: {
     opacity: 1,
     y: 0,
     scale: 1,
-    filter: 'blur(0px)',
     transition: {
       type: 'spring' as const,
       duration: 0.3,

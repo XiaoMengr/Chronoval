@@ -41,16 +41,12 @@ const avatarUrl = computed(
 const siteTitle = computed(() => (getSetting('app:title') as string) || '')
 const photoCount = computed(() => photos.value?.length ?? 0)
 
-// LinearBlur 渐变模糊遮罩（8 层 backdrop-filter，无色，仅做毛玻璃层次）
+// LinearBlur 渐变模糊遮罩：合并为 2 层 backdrop-filter（兼顾渐变观感与帧开销）。
+// 固定吸顶在滚动时会对下方经过的整段照片墙逐帧重采样模糊，层数越少开销越低，
+// 故在保留"顶部强模糊→底部自然淡出"的前提下收敛为 2 层并降低最大半径。
 const blurLayers = [
-  { blur: '48px', from: 0, to: 12.5 },
-  { blur: '24px', from: 12.5, to: 25 },
-  { blur: '12px', from: 25, to: 37.5 },
-  { blur: '8px', from: 37.5, to: 50 },
-  { blur: '5px', from: 50, to: 62.5 },
-  { blur: '3px', from: 62.5, to: 75 },
-  { blur: '2px', from: 75, to: 87.5 },
-  { blur: '1px', from: 87.5, to: 100 },
+  { blur: '24px', from: 0, to: 52 },
+  { blur: '8px', from: 52, to: 100 },
 ] as const
 </script>
 

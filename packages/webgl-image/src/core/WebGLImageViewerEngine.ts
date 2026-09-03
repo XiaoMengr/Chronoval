@@ -38,6 +38,11 @@ const TILE_DEBUG_BORDER_COLOR: [number, number, number, number] = [
   0.4, 0.7, 0.9, 0.25,
 ]
 
+// 渐进式高清：大图切换时先用单张降采样纹理"即时上屏"（远快于逐瓦片同步上传，
+// 不阻塞主线程），随后在空闲期增量构建高质量瓦片并无缝替换预览纹理。
+// 该值为预览纹理的最大边长（像素）。
+const PROGRESSIVE_PREVIEW_SIZE = 3072
+
 export class WebGLImageViewerEngine {
   private canvas: HTMLCanvasElement
   private gl: WebGLRenderingContext
@@ -117,6 +122,9 @@ export class WebGLImageViewerEngine {
   private isLoadingTexture = false
   private currentLoadingState: LoadingState = LoadingState.IDLE
   private lastRequestedSrc: string | null = null
+  // 载入代次：每次 loadImage 自增。用于丢弃过期 Worker 解码结果与后台瓦片构建，
+  // 防止快速切换时重复执行耗时的 GPU 上传或用过期图像污染画面。
+  private pendingGeneration = 0
 
   constructor(canvas: HTMLCanvasElement, config: Partial<EngineConfig> = {}) {
     this.canvas = canvas
@@ -239,6 +247,16 @@ export class WebGLImageViewerEngine {
   private async handleWorkerImageLoaded(payload: any) {
     const { imageBitmap } = payload
 
+    // 丢弃过期请求的解码结果，避免重复执行耗时的纹理/瓦片上传
+    if (payload?.src && payload.src !== this.lastRequestedSrc) {
+      try {
+        ;(imageBitmap as ImageBitmap | undefined)?.close?.()
+      } catch {
+        /* noop */
+      }
+      return
+    }
+
     try {
       const rendered = this.applyDecodedImage(imageBitmap)
       if (!rendered) {
@@ -255,6 +273,9 @@ export class WebGLImageViewerEngine {
   }
 
   private async handleWorkerImageLoadError(error: any) {
+    // 过期请求的加载错误不处理，交由最新的载入流程
+    if (error?.src && error.src !== this.lastRequestedSrc) return
+
     console.error('Image load error from worker:', error)
 
     try {
@@ -274,26 +295,51 @@ export class WebGLImageViewerEngine {
     }
 
     this.image = imageSource
+    const gen = this.pendingGeneration
+    const needsTiles = this.shouldUseTiles(imageSource)
 
-    const shouldUseTiles = this.shouldUseTiles(imageSource)
-    let usingTiles = false
+    if (needsTiles) {
+      // 渐进式高清：先用单张降采样纹理即时上屏，避免主线程同步构建大量瓦片造成切换卡顿。
+      const preview = this.createPreviewTexture(imageSource)
+      if (preview) {
+        this.cleanupTiles()
+        if (this.texture) {
+          this.gl.deleteTexture(this.texture)
+          this.texture = null
+        }
+        this.texture = preview
+        this.useTiles = false
+        this.emitLoadingStateChange(true, LoadingState.TILE_LOADING)
 
-    if (shouldUseTiles) {
+        // 用全图尺寸构建矩形，预览纹理会被拉伸铺满同一区域（宽高比一致），变换无需重算
+        this.updatePositionBuffer()
+        if (this.config.centerOnInit) {
+          this.centerImage()
+        }
+        this.render()
+
+        // 空闲期增量构建高质量瓦片，完成后无缝替换预览纹理
+        void this.applyHighQualityTilesAsync(imageSource, gen)
+        return true
+      }
+
+      // 预览纹理创建失败，退回同步瓦片
       this.emitLoadingStateChange(true, LoadingState.TILE_LOADING)
-      usingTiles = this.createTiles(imageSource)
-    }
-
-    if (!usingTiles) {
+      const ok = this.createTiles(imageSource)
+      this.useTiles = ok
+      if (!ok) {
+        const texture = this.createTexture(imageSource)
+        if (!texture) {
+          return false
+        }
+      }
+    } else {
       this.emitLoadingStateChange(true, LoadingState.TEXTURE_LOADING)
       const texture = this.createTexture(imageSource)
       if (!texture) {
         return false
       }
-    } else {
-      this.updatePositionBuffer()
     }
-
-    this.useTiles = usingTiles
 
     if (this.config.centerOnInit) {
       this.centerImage()
@@ -317,6 +363,214 @@ export class WebGLImageViewerEngine {
     this.render()
 
     return true
+  }
+
+  /**
+   * 渐进式高清：构建单张降采样预览纹理（单次上传，远快于逐瓦片同步上传）。
+   * 只用于"先上屏"，不会改写 this.image / this.positionBuffer。
+   */
+  private createPreviewTexture(
+    imageSource: HTMLCanvasElement | HTMLImageElement | ImageBitmap,
+  ): WebGLTexture | null {
+    const dims = this.getSourceDimensions(imageSource)
+    if (!dims) return null
+
+    const maxTex = getMaxTextureSize(this.gl)
+    const maxSide = Math.min(PROGRESSIVE_PREVIEW_SIZE, maxTex)
+    const scale = Math.min(1, maxSide / dims.width, maxSide / dims.height)
+
+    if (scale >= 1) {
+      return this.uploadTexture(imageSource)
+    }
+
+    const offscreen = document.createElement('canvas')
+    offscreen.width = Math.max(1, Math.floor(dims.width * scale))
+    offscreen.height = Math.max(1, Math.floor(dims.height * scale))
+    const ctx = offscreen.getContext('2d')
+    if (!ctx) return null
+
+    ctx.imageSmoothingEnabled = true
+    ctx.imageSmoothingQuality = 'high'
+    ctx.drawImage(
+      imageSource as CanvasImageSource,
+      0,
+      0,
+      offscreen.width,
+      offscreen.height,
+    )
+    return this.uploadTexture(offscreen)
+  }
+
+  /**
+   * 上传一张已就绪尺寸的纹理到 GPU，不触碰 this.image / 变换状态。
+   */
+  private uploadTexture(source: TexImageSource): WebGLTexture | null {
+    const { gl } = this
+    const tex = gl.createTexture()
+    if (!tex) return null
+
+    gl.bindTexture(gl.TEXTURE_2D, tex)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+
+    let ok = false
+    try {
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source)
+      ok = gl.getError() === gl.NO_ERROR
+    } catch {
+      ok = false
+    }
+
+    gl.bindTexture(gl.TEXTURE_2D, null)
+    if (!ok) {
+      gl.deleteTexture(tex)
+      return null
+    }
+    return tex
+  }
+
+  /**
+   * 在空闲期增量构建高质量瓦片，完成后无缝替换预览纹理。若期间发生新的载入，
+   * 丢弃本次结果以避免过期瓦片污染画面（预览纹理仍会保留上屏）。
+   */
+  private async applyHighQualityTilesAsync(
+    imageSource: HTMLCanvasElement | HTMLImageElement | ImageBitmap,
+    gen: number,
+  ): Promise<void> {
+    const tiles = await this.buildTilesChunked(imageSource)
+
+    if (gen !== this.pendingGeneration) {
+      if (tiles) this.disposeTiles(tiles)
+      return
+    }
+    if (!tiles || !tiles.length) {
+      // 瓦片构建失败，保留预览纹理上屏
+      this.emitLoadingStateChange(false, LoadingState.COMPLETE, 'medium')
+      return
+    }
+
+    if (this.texture) {
+      this.gl.deleteTexture(this.texture)
+      this.texture = null
+    }
+
+    this.tiles = tiles
+    this.useTiles = true
+    // 预览与瓦片矩形一致（同为全图尺寸），变换无需重算
+    this.updatePositionBuffer()
+    this.currentQuality = 'high'
+    this.render()
+    this.emitLoadingStateChange(false, LoadingState.COMPLETE, 'high')
+  }
+
+  /**
+   * 增量瓦片构建：每完成一行让出一帧，避免单帧长时间占用主线程。
+   * 成功返回瓦片数组，失败返回 null（调用方负责清理）。
+   */
+  private async buildTilesChunked(
+    imageSource: HTMLCanvasElement | HTMLImageElement | ImageBitmap,
+  ): Promise<Tile[] | null> {
+    const { gl } = this
+    const maxTextureSize = getMaxTextureSize(gl)
+    const baseTileSize = Math.max(
+      1,
+      Math.min(this.config.tileSize, maxTextureSize),
+    )
+    const width =
+      (imageSource as HTMLCanvasElement).width ??
+      (imageSource as HTMLImageElement).width ??
+      (imageSource as ImageBitmap).width
+    const height =
+      (imageSource as HTMLCanvasElement).height ??
+      (imageSource as HTMLImageElement).height ??
+      (imageSource as ImageBitmap).height
+
+    if (!width || !height) return null
+    if (width * height > RENDER_CONFIG.MAX_TILE_TOTAL_PIXELS) return null
+
+    const columns = Math.ceil(width / baseTileSize)
+    const rows = Math.ceil(height / baseTileSize)
+    const offscreen = document.createElement('canvas')
+    const ctx = offscreen.getContext('2d')
+    if (!ctx) return null
+
+    const tiles: Tile[] = []
+
+    try {
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < columns; col++) {
+          const startX = col * baseTileSize
+          const startY = row * baseTileSize
+          const tileWidth = Math.min(baseTileSize, width - startX)
+          const tileHeight = Math.min(baseTileSize, height - startY)
+          if (tileWidth <= 0 || tileHeight <= 0) continue
+
+          offscreen.width = tileWidth
+          offscreen.height = tileHeight
+          ctx.clearRect(0, 0, tileWidth, tileHeight)
+          ctx.drawImage(
+            imageSource as CanvasImageSource,
+            startX,
+            startY,
+            tileWidth,
+            tileHeight,
+            0,
+            0,
+            tileWidth,
+            tileHeight,
+          )
+
+          const texture = gl.createTexture()
+          if (!texture) throw new Error('createTexture failed')
+          gl.bindTexture(gl.TEXTURE_2D, texture)
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+          gl.texImage2D(
+            gl.TEXTURE_2D,
+            0,
+            gl.RGBA,
+            gl.RGBA,
+            gl.UNSIGNED_BYTE,
+            offscreen,
+          )
+
+          tiles.push({
+            x: startX,
+            y: startY,
+            width: tileWidth,
+            height: tileHeight,
+            texture,
+          })
+        }
+
+        // 每完成一行让出主线程（除最后一行），把大量上传拆进多帧，避免卡顿
+        if (row < rows - 1) {
+          await new Promise<void>((resolve) => {
+            requestAnimationFrame(() => resolve())
+          })
+        }
+      }
+    } catch {
+      this.disposeTiles(tiles)
+      gl.bindTexture(gl.TEXTURE_2D, null)
+      return null
+    }
+
+    gl.bindTexture(gl.TEXTURE_2D, null)
+    return tiles
+  }
+
+  private disposeTiles(tiles: Tile[]): void {
+    const { gl } = this
+    for (const tile of tiles) {
+      if (tile.texture) {
+        gl.deleteTexture(tile.texture)
+      }
+    }
   }
 
   private async decodeImageOnMainThread(src: string): Promise<HTMLImageElement> {
@@ -475,6 +729,7 @@ export class WebGLImageViewerEngine {
   public async loadImage(src: string): Promise<void> {
     console.log('Post load image:', src)
     this.lastRequestedSrc = src
+    const gen = ++this.pendingGeneration
     this.emitLoadingStateChange(true, LoadingState.IMAGE_LOADING)
 
     return new Promise((resolve, reject) => {
@@ -486,9 +741,12 @@ export class WebGLImageViewerEngine {
             src,
             self.location?.origin || 'http://localhost',
           )
+          const absoluteSrc = absolute.toString()
+          // 与 Worker 回传的 src 保持一致，供过期判定使用
+          this.lastRequestedSrc = absoluteSrc
           this.worker.postMessage({
             type: 'load',
-            payload: { src: absolute.toString() },
+            payload: { src: absoluteSrc, gen },
           })
         } catch (error) {
           console.warn('Worker postMessage failed, using main-thread fallback.', error)
@@ -1804,6 +2062,9 @@ export class WebGLImageViewerEngine {
   }
 
   public destroy(): void {
+    // 使仍在进行的后台瓦片构建失效，避免访问已清理的 WebGL 资源
+    this.pendingGeneration += 1
+
     // 清理动画
     if (this.animationId) {
       cancelAnimationFrame(this.animationId)

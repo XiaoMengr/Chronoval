@@ -14,6 +14,7 @@ import ReactionPicker from './ReactionPicker.vue'
 import ReactionConfetti from './ReactionConfetti.vue'
 import { REACTION_ICON_MAP } from './reaction-definitions'
 import type { LoadingIndicatorRef } from './LoadingIndicator.vue'
+import { ImageLoaderManager } from '~/libs/image-loader-manager'
 
 interface Props {
   photos: Photo[]
@@ -92,6 +93,22 @@ const { convertMovToMp4, getProcessingState } = useLivePhotoProcessor()
 // Computed
 const currentPhoto = computed(() => props.photos[props.currentIndex])
 const isMobile = useMediaQuery('(max-width: 768px)')
+
+// 渐进式预解码：当前图加载的同时，静默预取上一张/下一张的全尺寸图进 Blob 缓存，
+// 用户前后切换时直接命中缓存（Blob URL 已被 WebGL 消费，不再联网重新下载）
+const prefetchManager = new ImageLoaderManager()
+const prefetchNearby = () => {
+  const targets = [
+    props.photos[props.currentIndex - 1],
+    props.photos[props.currentIndex + 1],
+  ].filter((p): p is Photo => Boolean(p))
+  for (const photo of targets) {
+    if (photo.type === 'video') continue
+    if (photo.originalUrl) prefetchManager.prefetch(photo.originalUrl)
+  }
+}
+watch(() => props.currentIndex, prefetchNearby)
+onMounted(prefetchNearby)
 
 // LivePhoto processing state
 const livePhotoProcessingState = computed(() => {
