@@ -144,11 +144,15 @@ jobs:
         run: |
           set -e
           TAGS="${{ steps.meta.outputs.tags }}"
-          echo "== Try buildx cache mount =="
+          # 注册表为内网 HTTP，推送到 buildkit 需声明 insecure；否则报
+          # "http: server gave HTTP response to HTTPS client"。
+          SRV="${REG_H#*://}"; SRV="${SRV%%/*}"
           if docker buildx version >/dev/null 2>&1 && docker buildx create --use --driver docker-container --name gitea-builder >/dev/null 2>&1; then
-             DOCKER_BUILDKIT=1 docker buildx build --progress=plain --platform linux/amd64 --push -t "${TAGS}" . 2>&1 \
-              || { echo "buildx failed, fallback to docker build"; \
-                   DOCKER_BUILDKIT=1 docker build -t "${TAGS}" .; docker push "${TAGS}"; }
+             DOCKER_BUILDKIT=1 docker buildx build \
+               --progress=plain --platform linux/amd64 \
+               --output "type=image,push=true,registry.insecure=true,name=${TAGS}" . 2>&1 \
+              || { echo "buildx(registry.insecure) failed, fallback to docker build"; \
+                   DOCKER_BUILDKIT=1 docker build -t "${TAGS}" . 2>&1; docker push "${TAGS}"; }
           else
              echo "buildx unavailable, use classic docker build"
              DOCKER_BUILDKIT=1 docker build -t "${TAGS}" . 2>&1
