@@ -2,57 +2,70 @@
 
 > 自托管的个人摄影画廊 —— 基于 Nuxt 4 的轻量全栈单体应用，一个容器同时提供页面与 API。
 
-极简暗色 · 透明 · 高斯模糊（灵感 Afilmory），WebGL 高性能图片查看器（承自 ChronoFrame）。支持照片与视频目录直接挂载、EXIF 解析、地图浏览、Live Photo、分享、多语言。
+极简暗色 · 透明 · 高斯模糊（灵感 Afilmory），WebGL 高性能图片查看器（承自 ChronoFrame）。
+
+## 特性
+
+- 照片与视频「本地目录即存储」：直接放进映射目录即自动识别、生成缩略图，**无需后台上传**；原文件只读挂载，绝不加密或改写
+- 图片查看器：WebGL 高性能缩放平移、Exif 信息面板、底部缩略图画廊
+- 分享：生成分享链接 / 嵌入代码 / 原生 Web Share / 一键复制 / 下载原图与 OG 预览图
+- 多格式：JPEG / PNG / WebP / GIF / TIFF / HEIC / MOV / MP4，Live Photo 自动配对
+- 地图浏览：MapLibre / Mapbox 聚合拍摄位置，反向地理编码识别城市
+- 管理后台：相册 / 上传队列 / 实时日志 / 系统监控 / 日历热图
 
 ## 快速开始（Docker）
 
-推荐 Docker 部署，一条命令即可启动前后端：
+一条命令即可启动前后端：
 
 ```bash
-# 1. 复制并填写环境变量模板
+# 1. 复制并填写 .env（必填项见下）
 cp .env.example .env
 
-# 2. 编辑 .env，至少设置：
-#    - CFRAME_ADMIN_EMAIL、CFRAME_ADMIN_PASSWORD  管理员账号
-#    - NUXT_SESSION_PASSWORD（32 位随机串）会话密钥
-NUXT_SESSION_PASSWORD="$(openssl rand -hex 16)"
-
-# 3. 启动（首次自动构建镜像）
+# 2. 启动
 docker compose up -d --build
 
-# （可选）把照片 / 视频直接放进映射目录，应用自动识别，无需后台上传
-mkdir -p /data/photos /data/videos
-cp ~/photos/*.jpg /data/photos/
-cp ~/videos/*.mp4 /data/videos/
-
-# 4. 访问
-# 打开 http://localhost:3000
+# 3. 访问 http://localhost:3000
 ```
+
+### .env 必填项
+
+```bash
+# 管理员账号（首次启动自动创建）
+CFRAME_ADMIN_EMAIL=you@example.com
+CFRAME_ADMIN_PASSWORD=your-password
+
+# 会话密钥（32 位随机串，必填）
+NUXT_SESSION_PASSWORD="$(openssl rand -hex 16)"
+```
+
+### docker-compose.yml
+
+```yaml
+services:
+  chronoval:
+    image: chronoval:latest
+    container_name: chronoval
+    restart: unless-stopped
+    ports:
+      - '3000:3000'              # 宿主机端口:容器端口
+    env_file:
+      - .env                     # 管理员账号、会话密钥、站点信息等
+    volumes:
+      - ./data:/app/data                                   # 数据目录（SQLite + 上传照片/缩略图）
+      - /data/photos:/app/photos:ro   # ← 换成你的照片目录
+      - /data/videos:/app/videos:ro   # ← 换成你的视频目录（独立文件夹）
+```
+
+> 只读媒体库目录：照片 / 视频直接放入即自动识别（默认每 5 分钟扫描，也可后台手动触发），原文件只读挂载、绝不加密或改写，缩略图写入可写数据目录。视频用 ffmpeg 抽帧缩略图并支持直接播放。
 
 ### 应用数据目录（单目录映射）
 
-所有数据持久化在宿主机 **`./data`**，备份/迁移只需复制这一个目录：
+所有数据持久化在宿主机 `./data`，备份 / 迁移只需复制这一个目录：
 
 ```
 data/
 ├── app.sqlite3        # SQLite 数据库（元数据、相册、设置、账号）
 └── storage/           # 上传照片原图与缩略图（local 存储时）
-```
-
-### 只读媒体库目录（本地目录即存储，放入即识别）
-
-`docker-compose.yml` 默认把宿主机 `/data/photos`、`/data/videos` 只读挂载到容器内：
-
-- 照片/视频直接放入即自动识别，生成缩略图并展示，**无需后台上传**（默认每 5 分钟扫描一次，可在管理后台手动触发）
-- **原文件只读挂载，绝不加密、改写或搬移**；缩略图写入可写数据目录
-- 视频用 ffmpeg 抽帧缩略图，并支持查看器内直接播放
-- 想换宿主机目录，改 volumes 左侧即可：
-
-```yaml
-volumes:
-  - ./data:/app/data
-  - /data/photos:/app/photos:ro   # ← 换成你的照片目录
-  - /data/videos:/app/videos:ro   # ← 换成你的视频目录（独立文件夹）
 ```
 
 ## 文档导航
