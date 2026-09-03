@@ -1,0 +1,38 @@
+# Nuxt dev/build outputs
+.output
+.data
+.nuxt
+.nitro
+.cache
+dist
+node-compile-cache
+
+# Date
+data
+
+# Wrangler
+.wrangler
+
+# Node dependencies
+node_modules
+
+# Logs
+logs
+*.log
+
+# Misc
+.DS_Store
+.fleet
+.idea
+
+# Agent-internal directories
+.agents
+
+# Local env files
+.env
+.env.*
+!.env.example
+
+# VitePress outputs
+docs/.vitepress/dist
+docs/.vitepress/cache

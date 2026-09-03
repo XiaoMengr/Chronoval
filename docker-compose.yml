@@ -1,0 +1,43 @@
+name: chronoval
+
+# Chronoval —— 个人摄影画廊
+#
+# 说明：
+#   Chronoval 是一个基于 Nuxt 4 的全栈应用（前端 + 后端 API 由同一 Nitro 服务托管），
+#   因此 docker-compose 中只有一个应用服务即可同时提供页面与接口。
+#
+#   「单目录映射」：所有数据（SQLite 数据库、照片原图、缩略图、配置文件）都保存在
+#   宿主机上的 ./data 目录中，全部持久化到这一个目录，备份/迁移只需复制该目录即可。
+#
+# 快速开始：
+#   1) cp .env.example .env 并按需编辑（至少设置 NUXT_SESSION_PASSWORD）
+#   2) docker compose up -d --build
+#   3) 打开 http://localhost:3000
+
+services:
+  chronoval:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: chronoval:latest
+    container_name: chronoval
+    restart: unless-stopped
+    ports:
+      # 宿主机端口:容器端口，如需换端口改左侧即可
+      - '3000:3000'
+    environment:
+      # 站点基础与管理员账号由 .env 注入；若 # env_file 未启用则在这里配置
+      NODE_ENV: production
+      NITRO_HOST: 0.0.0.0
+      NITRO_PORT: 3000
+      DATABASE_URL: ./data/app.sqlite3
+      NUXT_STORAGE_PROVIDER: local
+      NUXT_PROVIDER_LOCAL_PATH: /app/data/storage
+    env_file:
+      # 从 .env 读取全部配置（管理员账号、会话密钥、站点信息等）
+      - .env
+    volumes:
+      # 单目录映射：数据库 + 照片 + 存储全部数据集中于此
+      - ./data:/app/data
+
+  # 如需启用数据库查看/迁移等辅助服务，在此追加，但默认无需额外依赖。

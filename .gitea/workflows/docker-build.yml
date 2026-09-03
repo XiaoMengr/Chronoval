@@ -1,0 +1,85 @@
+# Chronoval Docker 镜像构建工作流（Gitea Actions）
+#
+# 当代码推送到私有 Gitea 仓库后，本工作流会自动：
+#   1) 构建 Docker 前/后端统一镜像
+#   2) 推送到当前 Gitea 实例的内置 Container 注册表
+#
+# 前置要求：
+#   - Gitea 已启用 Actions（启用 Runner 且允许 Actions）
+#   - Gitea 实例已启用 Container/Package 注册表
+#   - Runner 上可执行 docker build（建议使用 act_runner + docker 模式）
+#
+# 触发：推送到 main / 触发 tag v* 时执行；也可手动触发。
+
+name: docker-build
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - 'v*'
+    paths-ignore:
+      - 'docs/**'
+      - 'README*.md'
+  workflow_dispatch:
+
+env:
+  IMAGE_NAME: chronoval
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Compute image tags and labels
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # 推送到当前 Gitea 实例的内置容器注册表：<server_url>/<owner>/<repo>
+          images: ${{ gitea.server_url }}/${{ gitea.repository }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=tag
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable={{is_default_branch}}
+          flavor: |
+            latest=auto
+
+      - name: Log in to Gitea Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ gitea.server_url }}
+          username: ${{ gitea.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # 可选：构建完成后打印使用说明（镜像 pull 命令提示）
+  echo-usage:
+    needs: docker
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Show pull usage
+        run: |
+          echo "镜像已推送：${{ gitea.server_url }}/${{ gitea.repository }}"
+          echo "使用：docker pull ${{ gitea.server_url }}/${{ gitea.repository }}:latest"
