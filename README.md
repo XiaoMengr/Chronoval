@@ -55,21 +55,56 @@ NUXT_SESSION_PASSWORD="$(openssl rand -hex 16)"
 # 3. 启动（首次会自动构建镜像）
 docker compose up -d --build
 
+# （可选）把照片 / 视频直接放进映射目录，应用自动识别，无需后台上传
+mkdir -p /data/photos /data/videos
+cp ~/photos/*.jpg /data/photos/
+cp ~/videos/*.mp4 /data/videos/
+
 # 4. 访问
 # 打开 http://localhost:3000
 ```
 
-### 数据目录（单目录映射）
+### 应用数据目录（单目录映射）
 
-所有数据均持久化在宿主机 **`./data`** 目录中，备份/迁移只需复制这一个目录：
+所有应用数据均持久化在宿主机 **`./data`** 目录中，备份/迁移只需复制这一个目录：
 
 ```
 data/
 ├── app.sqlite3        # SQLite 数据库（照片元数据、相册、设置、账号）
-└── storage/           # 本地存储的照片原图与缩略图（使用 local 存储时）
+└── storage/           # 本地存储的上传照片原图与缩略图（使用 local 存储时）
 ```
 
 > 默认本地存储路径在容器内为 `/app/data/storage`，与 `./data` 卷一一对应。
+
+### 只读媒体库目录（本地目录即存储，直接放入即识别）
+
+`docker-compose.yml` 默认把宿主机 **`/data/photos`**、**`/data/videos`** 只读挂载到容器内 `/app/photos`、`/app/videos`：
+
+```
+/data/photos/  →  /app/photos  (只读)   照片目录，放入即自动识别
+/data/videos/  →  /app/videos  (只读)   视频目录，放入即自动识别
+```
+
+- 把照片/视频直接丢进目录，应用启动或定时扫描（默认 5 分钟）即自动识别、生成缩略图并展示，**无需通过后台上传**。
+- **原文件只读挂载，绝不加密、绝不改写、绝不搬移**，始终留在你的目录里，缩略图写入可写数据目录——这就是"本地存储"式用法。
+- 视频用 ffmpeg 抽帧生成缩略图，并支持在查看器中直接播放。
+- 首次使用先创建目录：`mkdir -p /data/photos /data/videos`，然后把文件放进去即可。
+- 可自定义任意宿主机目录，把 volumes 左/改为你的绝对路径即可：
+
+```bash
+mkdir -p /data/photos /data/videos
+cp ~/photos/*.jpg /data/photos/   # 放进即识别
+cp ~/videos/*.mp4 /data/videos/
+```
+
+```yaml
+volumes:
+  - ./data:/app/data
+  - /data/photos:/app/photos:ro   # ← 换成你的照片目录
+  - /data/videos:/app/videos:ro   # ← 换成你的视频目录（独立文件夹）
+```
+
+> 若目录里有照片放路边不识别，或想立即生效，可在管理后台触发一次扫描；也支持把 `LIBRARY_SCAN_INTERVAL_MS` 调小（毫秒）。
 
 ## 配置
 
@@ -86,6 +121,9 @@ data/
 | `NUXT_STORAGE_PROVIDER` | 存储方案 `local`/`s3`/`openlist` | `local` |
 | `NUXT_PROVIDER_LOCAL_PATH` | 本地存储路径 | `./data/storage` |
 | `NUXT_PUBLIC_MAP_PROVIDER` | 地图 `maplibre`/`mapbox` | `maplibre` |
+| `LIBRARY_PHOTOS_PATH` | 只读照片目录（容器内） | `/app/photos` |
+| `LIBRARY_VIDEOS_PATH` | 只读视频目录（容器内） | `/app/videos` |
+| `LIBRARY_SCAN_INTERVAL_MS` | 媒体库自动扫描间隔（毫秒） | `300000` |
 
 ## 本地开发
 
@@ -133,10 +171,10 @@ chronoval/
 
 ## 通过 Gitea 自动构建 Docker 镜像
 
-仓库已内置 Gitea Actions 工作流（`.gitea/workflows/docker-build.yml`）。推送到私有 Gitea 的 `main` 分支或 `v*` 标签后，Runner 会自动构建并将其推送到该 Gitea 实例的内置容器注册表：
+仓库已内置 Gitea Actions 工作流（`.gitea/workflows/docker-build.yml`）。推送到私有 Gitea 的 `main` 分支或 `v*` 标签后，Runner 会自动构建并将其推送到该 Gitea 实例的内置容器注册表（走内网 `172.16.0.1:322`），同时把离线构建资源上传到仓库的版本下载：
 
 ```bash
-docker pull <your-gitea-host>/<owner>/chronoval:latest
+docker pull <gitea-host>:322/<owner>/chronoval:latest
 ```
 
 详情见 [docs/deployment.md](docs/deployment.md)。
@@ -146,7 +184,7 @@ docker pull <your-gitea-host>/<owner>/chronoval:latest
 - **如何创建管理员？** 首次启动时依据 `CFRAME_ADMIN_EMAIL` / `CFRAME_ADMIN_PASSWORD` 环境变量自动创建；也可在登录页注册首个用户（需与站点配置一致）。
 - **支持哪些格式的实况照片？** `.heic` 与 `.mov` 文件名一致（如 `IMG_1234.heic` / `IMG_1234.mov`）会自动配对为 Live Photo。
 - **如何指定地图服务？** 地图用于浏览拍摄位置。注册 MapLibre（MapTiler Token）或 Mapbox 获取访问令牌后配置到环境变量。
-- **照片存哪里？** 默认本地存储于 `./data/storage`（Docker 卷对应宿主机 `./data`）；也可切换为 S3 兼容或 OpenList 存储。
+- **照片存哪里？** 两种方式：在管理后台**上传**（默认本地存储于 `./data/storage`，也可切换 S3/OpenList）；或把照片/视频直接丢进映射的**只读媒体库目录**（`./photos`、`./videos`），应用自动识别、生成缩略图、原文件不改写。
 
 ## 许可证
 

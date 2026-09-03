@@ -6,13 +6,31 @@ name: chronoval
 #   Chronoval 是一个基于 Nuxt 4 的全栈应用（前端 + 后端 API 由同一 Nitro 服务托管），
 #   因此 docker-compose 中只有一个应用服务即可同时提供页面与接口。
 #
-#   「单目录映射」：所有数据（SQLite 数据库、照片原图、缩略图、配置文件）都保存在
-#   宿主机上的 ./data 目录中，全部持久化到这一个目录，备份/迁移只需复制该目录即可。
+#   ▍数据目录（单目录持久化）
+#   所有应用数据（SQLite 数据库、上传照片/缩略图、配置文件）集中在宿主机 ./data
+#   目录，自动映射到容器 /app/data。备份/迁移只需复制 ./data。
+#
+#   ▍只读媒体库目录（直接放入即识别，无需后台上传）
+#     - /data/photos  ->  /app/photos  (只读)  照片目录
+#     - /data/videos  ->  /app/videos  (只读)  视频目录
+#   把照片 / 视频直接放进这两个目录，应用启动 / 定时自动扫描识别并生成缩略图，
+#   原文件始终留在目录内（只读挂载，绝不做加密或改写）。
+#   目录里只要有文件就会自动识别为本地照片/视频，无需通过后台上传。
+#
+# ⚠️ 首次使用前，先在宿主机创建这两个目录：
+#     mkdir -p /data/photos /data/videos
+#   然后把你已有的照片丢进 /data/photos，视频丢进 /data/videos 即可。
 #
 # 快速开始：
-#   1) cp .env.example .env 并按需编辑（至少设置 NUXT_SESSION_PASSWORD）
-#   2) docker compose up -d --build
-#   3) 打开 http://localhost:3000
+#   1) mkdir -p /data/photos /data/videos
+#   2) cp .env.example .env 并按需编辑（至少设置 NUXT_SESSION_PASSWORD）
+#   3) 把照片放入 /data/photos，视频放入 /data/videos
+#   4) docker compose up -d --build
+#   5) 打开 http://localhost:3000
+#
+# 如需换成任意宿主机路径，改下方 volumes 左侧即可：
+#     - /data/photos:/app/photos:ro   # ← 换成你的照片目录
+#     - /data/videos:/app/videos:ro   # ← 换成你的视频目录（独立文件夹）
 
 services:
   chronoval:
@@ -26,18 +44,40 @@ services:
       # 宿主机端口:容器端口，如需换端口改左侧即可
       - '3000:3000'
     environment:
-      # 站点基础与管理员账号由 .env 注入；若 # env_file 未启用则在这里配置
       NODE_ENV: production
       NITRO_HOST: 0.0.0.0
       NITRO_PORT: 3000
       DATABASE_URL: ./data/app.sqlite3
+      # 存储提供商：本地文件系统
       NUXT_STORAGE_PROVIDER: local
       NUXT_PROVIDER_LOCAL_PATH: /app/data/storage
+      NUXT_PROVIDER_LOCAL_BASE_URL: /storage
+      NUXT_PROVIDER_LOCAL_PREFIX: photos/
+      # 只读媒体库目录（对应下方 volumes 挂载点）
+      LIBRARY_PHOTOS_PATH: /app/photos
+      LIBRARY_VIDEOS_PATH: /app/videos
+      LIBRARY_ENABLED: 'true'
+      # 自动扫描间隔（毫秒），默认 300 秒
+      LIBRARY_SCAN_INTERVAL_MS: '300000'
     env_file:
       # 从 .env 读取全部配置（管理员账号、会话密钥、站点信息等）
       - .env
     volumes:
-      # 单目录映射：数据库 + 照片 + 存储全部数据集中于此
+      # 单目录数据卷：数据库 + 上传照片/缩略图 + 配置全部集中于此
       - ./data:/app/data
-
-  # 如需启用数据库查看/迁移等辅助服务，在此追加，但默认无需额外依赖。
+      # 只读媒体库目录：照片 / 视频直接放入即被自动识别（默认挂宿主机 /data 下，
+      # 可替换成任意宿主机路径，左侧改成你的绝对路径即可）
+      - /data/photos:/app/photos:ro
+      - /data/videos:/app/videos:ro
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - -q
+        - -O
+        - /dev/null
+        - http://localhost:3000/
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s

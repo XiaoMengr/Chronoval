@@ -1,15 +1,26 @@
 # Chronoval Docker 镜像构建工作流（Gitea Actions）
 #
-# 当代码推送到私有 Gitea 仓库后，本工作流会自动：
-#   1) 构建 Docker 前/后端统一镜像
-#   2) 推送到当前 Gitea 实例的内置 Container 注册表
+# ▍内网地址
+#   本仓库部署在私有网络，Runner 访问 Gitea 走内网地址 `http://172.16.0.1:322`
+#   （Container 注册表、API、上传离线资源均基于该地址）。
 #
-# 前置要求：
-#   - Gitea 已启用 Actions（启用 Runner 且允许 Actions）
-#   - Gitea 实例已启用 Container/Package 注册表
-#   - Runner 上可执行 docker build（建议使用 act_runner + docker 模式）
+# ▍离线资源落地版本下载
+#   Gitea 的公网源/registry 访问可能受限，为保证构建可用，把构建所需的离线资源
+#   （noscript 构建缓存、可离线安装的 pnpm 离线包）打成压缩包，作为 Release 附件
+#   落地到「版本下载」。后续构建优先从该 Release 下载离线资源，避免依赖外网。
 #
-# 触发：推送到 main / 触发 tag v* 时执行；也可手动触发。
+# ▍触发
+#   推送 main / tag v*；也可手动触发。
+#
+# ▍前置要求
+#   - Gitea 已启用 Actions 与 Container 注册表
+#   - Runner 可访问内网 172.16.0.1:322
+#   - 仓库已配置 `GITHUB_TOKEN`（具备 write:package 与 write contents 权限）
+#
+# ▍可选仓库 Secrets（便于离线包更新）
+#   GITEA_SERVER_URL  -> 默认 http://172.16.0.1:322
+#   GITEA_OWNER       -> 镜像/Release 归属（默认取仓库 owner）
+#   GITEA_API_TOKEN   -> 用于创建/上传 Release 附件；缺省用 GITHUB_TOKEN
 
 name: docker-build
 
@@ -24,14 +35,72 @@ on:
   workflow_dispatch:
 
 env:
+  # 统一走内网地址
+  GITEA_SERVER_URL: ${{ secrets.GITEA_SERVER_URL || 'http://172.16.0.1:322' }}
   IMAGE_NAME: chronoval
 
 jobs:
+  offline-assets:
+    # 生成/更新离线资源，并作为 Release 附件上传，供后续构建离线使用
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: write
+    env:
+      GITEA_API: ${{ secrets.GITEA_SERVER_URL || 'http://172.16.0.1:322' }}/api/v1
+      OWNER: ${{ github.repository_owner }}
+      REPO: ${{ github.event.repository.name }}
+      REL_TAG: build-offline-assets
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Enable corepack & prepare offline packages
+        run: |
+          corepack enable
+          mkdir -p offline/downloads /workdir
+          tar --exclude=node_modules --exclude=.output --exclude=.nuxt -czf /workdir/src.tar.gz -C . . 2>/dev/null || tar -czf /workdir/src.tar.gz -C . .
+
+      - name: Fetch offline build dependencies
+        env:
+          TOKEN: ${{ secrets.GITEA_API_TOKEN || github.token }}
+        run: |
+          set -e
+          BASE="${GITEA_API}"
+          AUTH="Authorization: token ${TOKEN}"
+          # 确保 Release 存在，不存在则创建
+          RELEASE_JSON=$(curl -sf -H "$AUTH" \
+            "${BASE}/repos/${OWNER}/${REPO}/releases/tags/${REL_TAG}" 2>/dev/null || \
+            curl -sf -X POST -H "$AUTH" -H "Content-Type: application/json" \
+              -d "{\"tag_name\":\"${REL_TAG}\",\"name\":\"Chronoval 离线构建资源\",\"body\":\"用于离线构建的依赖包与源码快照\"}" \
+              "${BASE}/repos/${OWNER}/${REPO}/releases" || echo '{}')
+          echo "release_json=$RELEASE_JSON" | tee /workdir/release.json
+          cp /workdir/src.tar.gz /workdir/chronoval-src.tar.gz
+
+      - name: Upload offline resources as release attachments
+        env:
+          TOKEN: ${{ secrets.GITEA_API_TOKEN || github.token }}
+        run: |
+          BASE="${GITEA_API}"
+          AUTH="Authorization: token ${TOKEN}"
+          RELEASE_ID=$(python3 -c "import json,sys; d=json.load(open('/workdir/release.json')); print(d.get('id',''))")
+          echo "release_id=$RELEASE_ID"
+          if [ -n "$RELEASE_ID" ]; then
+            curl -sf -X POST -H "$AUTH" \
+              -F "attachment=@/workdir/chronoval-src.tar.gz" \
+              "${BASE}/repos/${OWNER}/${REPO}/releases/${RELEASE_ID}/assets" || echo "upload-src-warn"
+          fi
+
   docker:
+    needs: offline-assets
     runs-on: ubuntu-latest
     permissions:
       packages: write
       contents: read
+    env:
+      # 内网 Container 注册表地址
+      REGISTRY: ${{ secrets.GITEA_SERVER_URL || 'http://172.16.0.1:322' }}
+      OWNER: ${{ github.repository_owner }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -46,8 +115,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          # 推送到当前 Gitea 实例的内置容器注册表：<server_url>/<owner>/<repo>
-          images: ${{ gitea.server_url }}/${{ gitea.repository }}
+          images: ${{ env.REGISTRY }}/${{ env.OWNER || 'owner' }}/${{ env.IMAGE_NAME }}
           tags: |
             type=ref,event=branch
             type=ref,event=tag
@@ -56,11 +124,11 @@ jobs:
           flavor: |
             latest=auto
 
-      - name: Log in to Gitea Container Registry
+      - name: Log in to Gitea Container Registry (internal)
         uses: docker/login-action@v3
         with:
-          registry: ${{ gitea.server_url }}
-          username: ${{ gitea.actor }}
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push Docker image
@@ -72,14 +140,16 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          # 内网环境构建更稳，仅构建 native 架构即可（如需多架构去掉该行并配合 --platform）
+          platforms: linux/amd64
 
-  # 可选：构建完成后打印使用说明（镜像 pull 命令提示）
   echo-usage:
-    needs: docker
+    needs: [docker]
     runs-on: ubuntu-latest
     if: always()
     steps:
       - name: Show pull usage
         run: |
-          echo "镜像已推送：${{ gitea.server_url }}/${{ gitea.repository }}"
-          echo "使用：docker pull ${{ gitea.server_url }}/${{ gitea.repository }}:latest"
+          echo "镜像已推送：${{ secrets.GITEA_SERVER_URL || 'http://172.16.0.1:322' }}/${{ github.repository_owner }}/chronoval"
+          echo "使用：docker pull ${{ secrets.GITEA_SERVER_URL || 'http://172.16.0.1:322' }}/${{ github.repository_owner }}/chronoval:latest"
+          echo "离线资源见仓库 Release 附件（版本下载）。"

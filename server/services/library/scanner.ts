@@ -1,0 +1,330 @@
+import { promises as fs } from 'node:fs'
+import path from 'node:path'
+import crypto from 'crypto'
+import sharp from 'sharp'
+import { eq } from 'drizzle-orm'
+import type {
+  LibraryMount,
+  LibraryConfig,
+} from './config'
+import { getLibraryConfig, getLibraryMounts } from './config'
+import { probeVideo, extractVideoFrame } from './ffmpeg'
+import { generateThumbnailAndHash } from '../image/thumbnail'
+import { extractExifData, extractPhotoInfo } from '../image/exif'
+import { parseGPSCoordinates } from '../location/geocoding'
+import { compressUint8Array } from '~~/shared/utils/u8array'
+import { getStorageManager } from '~~/server/plugins/3.storage'
+import type { Photo } from '~~/server/utils/db'
+
+const log = () => logger.dynamic('library')
+
+const IMAGE_MIME = 'image/jpeg'
+
+const sanitizeRelPath = (p: string): string =>
+  p.replace(/\\/g, '/').replace(/^\/+/, '').replace(/\/+/g, '/')
+
+/**
+ * 根据挂载名 + 相对路径生成稳定且唯一的照片 ID
+ */
+export const buildLibraryPhotoId = (mount: string, relPath: string): string => {
+  const hash = crypto
+    .createHash('md5')
+    .update(`${mount}:${relPath}`)
+    .digest('hex')
+    .slice(0, 16)
+  const base = path
+    .basename(relPath, path.extname(relPath))
+    .replace(/\.[a-z0-9]+$/i, '')
+  const cleanedBase = (base || 'media').replace(/[^\w\-_.]/g, '_').slice(0, 24)
+  return `lib_${cleanedBase}_${hash}`
+}
+
+interface ScanResult {
+  indexed: number
+  updated: number
+  failed: number
+  errors: string[]
+}
+
+/**
+ * 本地媒体库扫描器
+ * - 只读映射目录（默认 /app/photos、/app/videos）
+ * - 自动识别目录内图片 / 视频，自动生成缩略图
+ * - 不改写原文件（原图始终引用映射目录，缩略图落在可写数据目录）
+ */
+export class LibraryScanner {
+  private cfg: LibraryConfig
+  private mounts: LibraryMount[]
+
+  constructor() {
+    this.cfg = getLibraryConfig()
+    this.mounts = getLibraryMounts()
+  }
+
+  getConfig() {
+    return this.cfg
+  }
+
+  /**
+   * 扫描单个挂载目录
+   */
+  async scanMount(mount: LibraryMount): Promise<ScanResult> {
+    const result: ScanResult = { indexed: 0, updated: 0, failed: 0, errors: [] }
+    const storageProvider = getStorageManager()?.getProvider()
+    if (!storageProvider) {
+      result.errors.push('Storage manager not initialized')
+      return result
+    }
+
+    let rootExists = false
+    try {
+      await fs.access(mount.root)
+      rootExists = true
+    } catch {
+      // 目录不存在（未映射），跳过
+    }
+    if (!rootExists) {
+      log().warn(`Library mount not available, skipped: ${mount.root}`)
+      return result
+    }
+
+    const files = await this.collectFiles(mount.root)
+    log().info(
+      `Scan "${mount.name}" at ${mount.root}: found ${files.length} media file(s)`,
+    )
+
+    for (const absFile of files) {
+      try {
+        const rel = sanitizeRelPath(path.relative(mount.root, absFile))
+        const stat = await fs.stat(absFile)
+        const photoId = buildLibraryPhotoId(mount.name, rel)
+
+        const db = useDB()
+        const existing = db
+          .select()
+          .from(tables.photos)
+          .where(eq(tables.photos.id, photoId))
+          .get()
+
+        // 已存在且未被更新，跳过
+        if (existing && existing.lastModified === stat.mtime.toISOString()) {
+          continue
+        }
+
+        const changed = existing !== undefined
+        const entry = await this.processFile(mount, rel, absFile, stat, storageProvider)
+        if (!entry) {
+          result.failed++
+          continue
+        }
+
+        if (changed) {
+          result.updated++
+          await db.update(tables.photos).set(entry).where(eq(tables.photos.id, photoId)).run()
+        } else {
+          result.indexed++
+          await db.insert(tables.photos).values({ id: photoId, ...entry }).run()
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err)
+        result.errors.push(`${path.basename(absFile)}: ${msg}`)
+        result.failed++
+      }
+    }
+
+    log().info(
+      `Scan "${mount.name}" done: indexed=${result.indexed} updated=${result.updated} failed=${result.failed}`,
+    )
+    return result
+  }
+
+  /**
+   * 扫描全部挂载目录
+   */
+  async scanAll(): Promise<Record<string, ScanResult>> {
+    const out: Record<string, ScanResult> = {}
+    for (const mount of this.mounts) {
+      out[mount.name] = await this.scanMount(mount)
+    }
+    return out
+  }
+
+  /**
+   * 递归收集目录内支持的媒体文件
+   */
+  private async collectFiles(dir: string): Promise<string[]> {
+    const results: string[] = []
+    const exts = new Set<string>()
+    for (const mount of this.mounts) {
+      for (const e of mount.extensions) exts.add(e)
+    }
+
+    const walk = async (current: string) => {
+      let entries
+      try {
+        entries = await fs.readdir(current, { withFileTypes: true })
+      } catch {
+        return
+      }
+      for (const entry of entries) {
+        if (entry.name.startsWith('.') || entry.name === '.thumbnails') continue
+        const abs = path.join(current, entry.name)
+        if (entry.isDirectory()) {
+          await walk(abs)
+        } else if (entry.isFile()) {
+          const ext = path.extname(entry.name).toLowerCase()
+          if (exts.has(ext)) results.push(abs)
+        }
+      }
+    }
+
+    await walk(dir)
+    return results
+  }
+
+  /**
+   * 处理单个媒体文件：提取元数据 + 生成缩略图，返回入库字段
+   */
+  private async processFile(
+    mount: LibraryMount,
+    rel: string,
+    absFile: string,
+    stat: Awaited<ReturnType<typeof fs.stat>>,
+    storageProvider: any,
+  ): Promise<Partial<Photo> | null> {
+    const photoId = buildLibraryPhotoId(mount.name, rel)
+    const relUrl = encodeURIComponent(rel).replace(/%2F/g, '/')
+    // 原文件只读引用：通过 /library/<mountName>/<relpath> 访问
+    const originalUrl = `/library/${mount.name}/${relUrl}`
+
+    // 缩略图 key：落到可写数据目录
+    const thumbKey = `${this.cfg.thumbnailDir}/${photoId}.webp`
+
+    if (mount.type === 'image') {
+      try {
+        let imageBuffer = await fs.readFile(absFile)
+        // HEIC/HEIF 需转 JPEG (对 exif/sharp 友好)
+        const ext = path.extname(absFile).toLowerCase()
+        if (['.heic', '.heif', '.hif'].includes(ext)) {
+          const { convertHeicToJpeg } = await import('../image/processor')
+          imageBuffer = await convertHeicToJpeg(imageBuffer)
+        }
+
+        const { width, height } = await sharp(imageBuffer, {
+          limitInputPixels: false,
+        })
+          .rotate()
+          .metadata()
+        const { thumbnailBuffer, thumbnailHash } =
+          await generateThumbnailAndHash(imageBuffer)
+
+        await storageProvider.create(thumbKey, thumbnailBuffer, IMAGE_MIME)
+
+        // EXIF
+        let exifData: Awaited<ReturnType<typeof extractExifData>> = null
+        try {
+          exifData = await extractExifData(imageBuffer, imageBuffer)
+        } catch {
+          /* ignore */
+        }
+        const photoInfo = extractPhotoInfo(rel, exifData)
+        const coords = exifData ? parseGPSCoordinates(exifData) : null
+
+        const thumbnailUrl = storageProvider.getPublicUrl(thumbKey)
+
+        return {
+          title: photoInfo.title,
+          description: photoInfo.description,
+          width: width || null,
+          height: height || null,
+          aspectRatio:
+            width && height && height > 0 ? width / height : null,
+          dateTaken: photoInfo.dateTaken,
+          storageKey: `${mount.name}/${rel}`,
+          thumbnailKey: thumbKey,
+          fileSize: stat.size,
+          lastModified: stat.mtime.toISOString(),
+          originalUrl,
+          thumbnailUrl,
+          thumbnailHash: thumbnailHash
+            ? compressUint8Array(thumbnailHash)
+            : null,
+          tags: photoInfo.tags,
+          exif: exifData,
+          latitude: coords?.latitude ?? null,
+          longitude: coords?.longitude ?? null,
+          type: 'image',
+          source: 'library',
+          libraryMount: mount.name,
+          libraryPath: rel,
+        }
+      } catch (err) {
+        log().warn(`Failed to process library image ${absFile}:`, err)
+        return null
+      }
+    }
+
+    // video
+    try {
+      const probe = await probeVideo(absFile)
+      const durationSec = probe?.duration || 0
+      let frame = await extractVideoFrame(absFile, durationSec)
+      let thumbnailBuffer: Buffer | null = null
+      let thumbnailHash: any = null
+      let width: number | null = probe?.width || null
+      let height: number | null = probe?.height || null
+
+      if (frame) {
+        try {
+          const { thumbnailBuffer: tb, thumbnailHash: th } =
+            await generateThumbnailAndHash(frame)
+          thumbnailBuffer = tb
+          thumbnailHash = th
+        } catch {
+          // fallback: use raw frame
+          thumbnailBuffer = frame
+        }
+      }
+
+      if (thumbnailBuffer) {
+        await storageProvider.create(thumbKey, thumbnailBuffer, IMAGE_MIME)
+      }
+
+      const db = useDB()
+      const dbWidth = width || null
+      const dbHeight = height || null
+
+      return {
+        title: path.basename(rel, path.extname(rel)),
+        description: '',
+        width: dbWidth,
+        height: dbHeight,
+        aspectRatio:
+          dbWidth && dbHeight && dbHeight > 0 ? dbWidth / dbHeight : 16 / 9,
+        dateTaken: stat.mtime.toISOString(),
+        storageKey: `${mount.name}/${rel}`,
+        thumbnailKey: thumbnailBuffer ? thumbKey : null,
+        fileSize: stat.size,
+        lastModified: stat.mtime.toISOString(),
+        originalUrl,
+        thumbnailUrl: thumbnailBuffer
+          ? storageProvider.getPublicUrl(thumbKey)
+          : null,
+        thumbnailHash: thumbnailHash ? compressUint8Array(thumbnailHash) : null,
+        tags: ['video'],
+        exif: null,
+        type: 'video',
+        source: 'library',
+        libraryMount: mount.name,
+        libraryPath: rel,
+      }
+    } catch (err) {
+      log().warn(`Failed to process library video ${absFile}:`, err)
+      return null
+    }
+  }
+}
+
+export const libraryScanner = new LibraryScanner()
+
+export type { LibraryConfig, LibraryMount }

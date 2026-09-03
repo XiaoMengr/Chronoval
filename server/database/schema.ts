@@ -67,6 +67,17 @@ export const photos = sqliteTable('photos', {
   isLivePhoto: integer('is_live_photo').default(0).notNull(),
   livePhotoVideoUrl: text('live_photo_video_url'),
   livePhotoVideoKey: text('live_photo_video_key'),
+  // 媒体类型：image 图片 / video 视频
+  type: text('type', { enum: ['image', 'video'] })
+    .default('image')
+    .notNull(),
+  // 来源：upload 后台上传 / library 本地目录映射
+  source: text('source', { enum: ['upload', 'library'] })
+    .default('upload')
+    .notNull(),
+  // 本地库文件：映射目录 + 目录内相对路径
+  libraryMount: text('library_mount'),
+  libraryPath: text('library_path'),
 })
 
 export const pipelineQueue = sqliteTable('pipeline_queue', {

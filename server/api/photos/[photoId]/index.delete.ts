@@ -27,7 +27,17 @@ export default eventHandler(async (event) => {
 
   logger.image.info(`Deleting photo ${photo.title || photo.id || photoId}`)
 
-  if (photo.storageKey) {
+  // 库目录来源：原文件位于只读映射目录，不写入存储也不允许删除原文件，仅删缩略图与记录
+  const isLibrarySource = photo.source === 'library'
+  if (photo.thumbnailKey && isLibrarySource) {
+    try {
+      await storageProvider.delete(photo.thumbnailKey)
+    } catch {
+      // ignore
+    }
+  }
+
+  if (!isLibrarySource && photo.storageKey) {
     logger.image.info(`Deleting photo files for ${photoId} from storage`)
     try {
       await storageProvider.delete(photo.storageKey)

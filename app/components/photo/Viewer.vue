@@ -708,8 +708,20 @@ const swiperModules = [Navigation, Keyboard, Virtual]
                     @touchcancel="handleLivePhotoTouchEnd"
                     @contextmenu.prevent=""
                   >
+                    <!-- 视频媒体（本地库视频） -->
+                    <video
+                      v-if="photo.type === 'video'"
+                      :src="photo.originalUrl!"
+                      class="h-full w-full object-contain transition-opacity duration-400"
+                      :poster="photo.thumbnailUrl || undefined"
+                      controls
+                      playsinline
+                      preload="metadata"
+                    ></video>
+
                     <!-- Main Image -->
                     <ProgressiveImage
+                      v-else
                       class="h-full w-full object-contain transition-opacity duration-400"
                       :class="{
                         'opacity-0':

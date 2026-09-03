@@ -114,6 +114,12 @@ export default defineNuxtConfig({
         cdnUrl: string
       },
     },
+    library: {
+      photosPath: process.env.LIBRARY_PHOTOS_PATH || '/app/photos',
+      videosPath: process.env.LIBRARY_VIDEOS_PATH || '/app/videos',
+      thumbnailDir: process.env.LIBRARY_THUMBNAIL_DIR || 'library/thumbnails',
+      enabled: process.env.LIBRARY_ENABLED !== 'false',
+    },
     upload: {
       mime: {
         whitelistEnabled: true,
