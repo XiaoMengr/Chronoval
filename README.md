@@ -18,7 +18,7 @@
 一条命令即可启动前后端：
 
 ```bash
-# 1. 复制并填写 .env（必填项见下）
+# 1. 复制并填写 .env（参考下方「.env 参考」）
 cp .env.example .env
 
 # 2. 启动
@@ -27,15 +27,33 @@ docker compose up -d --build
 # 3. 访问 http://localhost:3000
 ```
 
-### .env 必填项
+### .env 参考
 
 ```bash
+# ---- 必填 ----
 # 管理员账号（首次启动自动创建）
 CFRAME_ADMIN_EMAIL=you@example.com
 CFRAME_ADMIN_PASSWORD=your-password
 
-# 会话密钥（32 位随机串，必填）
+# 会话加密密钥（必填，32 位随机串）
 NUXT_SESSION_PASSWORD="$(openssl rand -hex 16)"
+# 分享 OG 图签名密钥（可选，用下方命令生成）
+# NUXT_OG_IMAGE_SECRET="$(npx nuxt-og-image generate-secret)"
+
+# ---- 站点信息（可选）----
+NUXT_PUBLIC_APP_TITLE=Chronoval        # 站点标题
+NUXT_PUBLIC_APP_SLOGAN=                # 站点标语
+NUXT_PUBLIC_APP_AUTHOR=                # 作者署名（首页页脚）
+NUXT_PUBLIC_APP_AVATAR_URL=            # 站点头像 URL
+NUXT_PUBLIC_COLOR_MODE_PREFERENCE=dark # 主题：light / dark / system
+
+# ---- 地图（可选，用于浏览拍摄位置）----
+NUXT_PUBLIC_MAP_PROVIDER=maplibre      # maplibre(免费) / mapbox
+NUXT_PUBLIC_MAP_MAPLIBRE_STYLE=        # MapLibre 样式 URL
+NUXT_PUBLIC_MAPBOX_ACCESS_TOKEN=       # Mapbox 前端令牌
+
+# ---- 存储（默认本地文件系统，无需改动）----
+NUXT_STORAGE_PROVIDER=local            # local / s3 / openlist
 ```
 
 ### docker-compose.yml
