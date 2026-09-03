@@ -7,21 +7,30 @@ const { photos } = usePhotos()
 </script>
 
 <template>
-  <div class="relative h-screen">
+  <div class="relative min-h-svh">
+    <!-- 自适应页面背景（浅色柔光 / 深色深邃），保留高斯模糊的展示底 -->
+    <div
+      class="page-backdrop pointer-events-none fixed inset-0 -z-10"
+      aria-hidden="true"
+    />
+
     <AppTopHeader />
-    <div class="h-svh px-1 pt-12">
-      <ClientOnly>
-        <MasonryRoot
+
+    <!-- 全宽画廊容器：横向无边距，照片从左右边缘贴边展示（edge-to-edge）;
+           pt-12 在顶栏与首行照片之间保留一定距离 -->
+     <div class="w-full pt-12 pb-16">
+       <ClientOnly>
+       <MasonryRoot
           :photos="photos"
           columns="auto"
         />
         <template #fallback>
           <div
-            class="fixed inset-0 flex flex-col gap-4 items-center justify-center"
+            class="fixed inset-0 flex flex-col items-center justify-center gap-4"
           >
             <Icon
               name="tabler:photo"
-              class="size-10 text-white/40"
+              class="size-10 text-(--glass-faint)"
             />
             <span class="loading-scan-wrapper">
               <span class="text-base font-medium loading-scan-text">

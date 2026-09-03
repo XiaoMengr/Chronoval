@@ -128,7 +128,16 @@
       "backtotop": {
         "tooltip": "回到顶部",
         "ariaLabel": "回到顶部"
+      },
+      "more": {
+        "label": "更多操作"
       }
+    },
+    "activeFiltersHero": {
+      "headline": "{count} 条结果",
+      "results": "张照片",
+      "search": "搜索：",
+      "clearAll": "清除全部筛选"
     },
     "stats": {
       "totalPhotosWithRange": "{range}, 共 @:plural.photo",

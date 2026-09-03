@@ -44,7 +44,7 @@ const mobileVariants = {
       <!-- Desktop Date Range Indicator -->
       <motion.div
         v-if="shouldShow && !isMobile"
-        class="fixed top-4 left-4 z-50 lg:top-6 lg:left-6 flex flex-col gap-1 bg-black/40 backdrop-blur-3xl rounded-xl border border-white/10 px-4 py-2 pb-4 shadow-2xl"
+        class="glass-surface fixed top-4 left-4 z-50 lg:top-6 lg:left-6 flex flex-col gap-1 rounded-xl px-4 py-2 pb-4 shadow-2xl"
         :initial="dateRangeVariants.initial"
         :animate="dateRangeVariants.animate"
         :exit="dateRangeVariants.initial"
@@ -55,12 +55,12 @@ const mobileVariants = {
         }"
       >
         <span
-          class="text-white text-4xl font-black leading-normal tracking-wide"
+          class="text-(--glass-text) text-4xl font-black leading-normal tracking-wide"
           >{{ dateRange }}</span
         >
         <span
           v-if="locations"
-          class="text-white/80 text-xl font-bold"
+          class="text-(--glass-muted) text-xl font-bold"
           >{{ locations }}</span
         >
       </motion.div>
@@ -79,12 +79,12 @@ const mobileVariants = {
         }"
       >
         <div
-          class="bg-black/60 backdrop-blur-3xl border-b border-white/10 px-4 py-2 shadow-2xl flex flex-col"
+          class="glass-strip flex flex-col px-4 py-2 shadow-2xl"
         >
-          <span class="text-white text-lg font-medium">{{ dateRange }}</span>
+          <span class="text-(--glass-text) text-lg font-medium">{{ dateRange }}</span>
           <span
             v-if="locations"
-            class="text-white/80 text-xs"
+            class="text-(--glass-muted) text-xs"
             >{{ locations }}</span
           >
         </div>

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-/** Afilmory 风格固定顶部导航栏：fixed top · 玻璃模糊背景 · LinearBlur 渐变遮罩 */
+/** Afilmory 风格固定顶部导航栏：fixed top · 玻璃模糊背景 · LinearBlur 渐变遮罩（浅/深双主题自适应） */
 const router = useRouter()
 const colorMode = useColorMode()
 
@@ -41,7 +41,7 @@ const avatarUrl = computed(
 const siteTitle = computed(() => (getSetting('app:title') as string) || '')
 const photoCount = computed(() => photos.value?.length ?? 0)
 
-// LinearBlur 渐变模糊遮罩（8 层 backdrop-filter）
+// LinearBlur 渐变模糊遮罩（8 层 backdrop-filter，无色，仅做毛玻璃层次）
 const blurLayers = [
   { blur: '48px', from: 0, to: 12.5 },
   { blur: '24px', from: 12.5, to: 25 },
@@ -56,62 +56,65 @@ const blurLayers = [
 
 <template>
   <header class="fixed top-0 right-0 left-0 z-[100]">
-    <!-- LinearBlur 渐变模糊遮罩：mask linear-gradient + backdrop-filter 8 层 -->
+    <!-- LinearBlur 渐变模糊遮罩（Afilmory 1:1：h-15，纯模糊 + 页面底色 tint，顶部向底部淡出） -->
     <div
-      class="pointer-events-none absolute inset-x-0 top-0 -z-10 h-16"
+      class="pointer-events-none absolute inset-x-0 top-0 z-[-1] h-15"
       aria-hidden="true"
     >
       <div class="absolute inset-0">
+        <!-- 玻璃底色 tint（跟随主题：浅色=浅色毛玻璃、深色=沉浸暗玻璃；对应 Afilmory
+             LinearBlur tint，顶部向底部淡出，不落地为白条/黑条） -->
+        <div
+          class="absolute inset-0 opacity-40"
+          :style="{
+            background: 'var(--glass-bg)',
+            mask: 'linear-gradient(to bottom, black 0%, transparent 100%)',
+            WebkitMask: 'linear-gradient(to bottom, black 0%, transparent 100%)',
+          }"
+        />
+
         <div
           v-for="(layer, index) in blurLayers"
           :key="index"
           class="absolute inset-0"
           :style="{
-            mask: `linear-gradient(to bottom, rgba(0,0,0,1) ${layer.from}%, rgba(0,0,0,1) ${layer.to}%, rgba(0,0,0,0) ${layer.to}%)`,
-            WebkitMask: `linear-gradient(to bottom, rgba(0,0,0,1) ${layer.from}%, rgba(0,0,0,1) ${layer.to}%, rgba(0,0,0,0) ${layer.to}%)`,
+            mask: `linear-gradient(to bottom, rgba(0,0,0,0.25) ${layer.from}%, rgba(0,0,0,0.25) ${layer.to}%, rgba(0,0,0,0) ${layer.to}%)`,
+            WebkitMask: `linear-gradient(to bottom, rgba(0,0,0,0.25) ${layer.from}%, rgba(0,0,0,0.25) ${layer.to}%, rgba(0,0,0,0) ${layer.to}%)`,
             backdropFilter: `blur(${layer.blur})`,
             WebkitBackdropFilter: `blur(${layer.blur})`,
           }"
         />
-        <!-- 顶部暗色辉光 -->
-        <div
-          class="absolute -top-full left-0 size-full"
-          :style="{ boxShadow: '0 0 60px rgba(0,0,0,0.6), 0 0 100px rgba(0,0,0,0.6)' }"
-        />
       </div>
     </div>
 
-    <!-- 玻璃顶栏 -->
-    <div
-      class="flex h-12 items-center justify-between gap-2 border-b border-white/10 bg-black/60 px-3 backdrop-blur-xl lg:gap-3 lg:px-4"
-    >
-      <!-- 左侧：头像 + 站点名 + 照片数量 -->
-      <div class="flex min-w-0 items-center gap-2">
+    <!-- 内容条：h-11，仅有 LinearBlur 模糊，无背景色块、无分割线（Afilmory 1:1） -->
+    <div class="flex h-11 items-center justify-between gap-2 px-3 lg:h-11 lg:gap-3 lg:px-4">
+      <!-- 左侧：头像 + 站点名 + 照片数量（跟随主题文字色，浅色下深色可读） -->
+      <div class="flex items-center gap-2">
         <img
           :src="avatarUrl"
-          class="size-7 shrink-0 rounded-lg object-cover lg:size-8"
+          class="size-7 rounded-lg object-cover lg:size-8"
           :alt="siteTitle"
         />
-        <div class="flex min-w-0 items-center gap-1.5">
-          <h1 class="truncate text-sm font-semibold text-white lg:text-base">
+        <div class="flex items-center gap-1.5">
+          <h1 class="truncate text-sm font-semibold text-(--glass-text) lg:text-base">
             {{ siteTitle }}
           </h1>
-          <span class="text-xs text-white/40 lg:text-sm">{{ photoCount }}</span>
+          <span class="text-xs text-(--glass-muted) lg:text-sm">{{ photoCount }}</span>
         </div>
       </div>
 
-      <!-- 右侧/中部：筛选、排序、地图、相册、主题、登录等操作按钮 -->
+      <!-- 右侧：操作按钮（保留现有图标，Afilmory 圆形幽灵按钮 + material 胶囊） -->
       <AuthState>
         <template #default="{ loggedIn, clear }">
           <div class="flex items-center gap-1.5 lg:gap-2">
-            <div
-              class="flex items-center gap-0.5 rounded-lg border border-white/10 bg-white/5 p-0.5"
-            >
+            <!-- 主操作胶囊（跟随主题） -->
+            <div class="bg-(--glass-chip) flex items-center gap-1 rounded-lg">
               <UTooltip :text="$t('ui.action.globe.tooltip')">
                 <UButton
                   variant="ghost"
                   color="neutral"
-                  class="cursor-pointer rounded-md bg-transparent text-white/70 hover:bg-white/10 hover:text-white"
+                  class="cursor-pointer rounded bg-transparent text-(--glass-muted) hover:bg-(--glass-hover) hover:text-(--glass-text)"
                   icon="tabler:map-pin-2"
                   size="sm"
                   to="/globe"
@@ -121,7 +124,7 @@ const blurLayers = [
                 <UButton
                   variant="ghost"
                   color="neutral"
-                  class="cursor-pointer rounded-md bg-transparent text-white/70 hover:bg-white/10 hover:text-white"
+                  class="cursor-pointer rounded bg-transparent text-(--glass-muted) hover:bg-(--glass-hover) hover:text-(--glass-text)"
                   icon="tabler:photo"
                   size="sm"
                   to="/albums"
@@ -138,7 +141,7 @@ const blurLayers = [
                     <UButton
                       variant="ghost"
                       :color="hasActiveFilters ? 'info' : 'neutral'"
-                      class="cursor-pointer rounded-md bg-transparent text-white/70 hover:bg-white/10 hover:text-white"
+                      class="cursor-pointer rounded bg-transparent text-(--glass-muted) hover:bg-(--glass-hover) hover:text-(--glass-text)"
                       icon="tabler:filter"
                       size="sm"
                     />
@@ -160,7 +163,7 @@ const blurLayers = [
                         ? 'neutral'
                         : 'info'
                     "
-                    class="cursor-pointer rounded-md bg-transparent text-white/70 hover:bg-white/10 hover:text-white"
+                    class="cursor-pointer rounded bg-transparent text-(--glass-muted) hover:bg-(--glass-hover) hover:text-(--glass-text)"
                     :icon="currentSortIcon"
                     size="sm"
                   />
@@ -172,7 +175,7 @@ const blurLayers = [
                     class="w-3xs"
                   >
                     <template #header>
-                      <h3 class="p-1 text-sm font-bold">
+                      <h3 class="p-1 text-sm font-bold text-(--glass-text)">
                         {{ $t('ui.action.sort.title') }}
                       </h3>
                     </template>
@@ -205,7 +208,7 @@ const blurLayers = [
                 <UButton
                   variant="ghost"
                   color="neutral"
-                  class="cursor-pointer rounded-md bg-transparent text-white/70 hover:bg-white/10 hover:text-white"
+                  class="cursor-pointer rounded bg-transparent text-(--glass-muted) hover:bg-(--glass-hover) hover:text-(--glass-text)"
                   :icon="isDark ? 'tabler:sun' : 'tabler:moon'"
                   size="sm"
                   @click="isDark = !isDark"
@@ -213,42 +216,44 @@ const blurLayers = [
               </UTooltip>
             </div>
 
-            <!-- 登录 / 云入口 / 后台 -->
-            <UTooltip
-              v-if="!loggedIn"
-              :text="$t('auth.form.signin.title')"
-            >
-              <UButton
-                size="sm"
-                color="neutral"
-                variant="ghost"
-                class="cursor-pointer rounded-lg bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
-                icon="tabler:cloud"
-                @click="handleOpenLogin"
-              />
-            </UTooltip>
-            <template v-else>
-              <UTooltip :text="$t('ui.action.dashboard.tooltip')">
+            <!-- 认证胶囊（跟随主题） -->
+            <div class="bg-(--glass-chip) flex items-center gap-1 rounded-lg">
+              <UTooltip
+                v-if="!loggedIn"
+                :text="$t('auth.form.signin.title')"
+              >
                 <UButton
                   size="sm"
-                  color="info"
-                  variant="soft"
-                  class="cursor-pointer rounded-lg bg-white/5 text-white/80 hover:bg-white/10 hover:text-white"
-                  icon="tabler:dashboard"
-                  to="/dashboard"
+                  color="neutral"
+                  variant="ghost"
+                  class="cursor-pointer rounded bg-transparent text-(--glass-muted) hover:bg-(--glass-hover) hover:text-(--glass-text)"
+                  icon="tabler:cloud"
+                  @click="handleOpenLogin"
                 />
               </UTooltip>
-              <UTooltip :text="$t('ui.action.logout.tooltip')">
-                <UButton
-                  size="sm"
-                  color="error"
-                  variant="soft"
-                  class="cursor-pointer rounded-lg bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
-                  icon="tabler:logout"
-                  @click="clear"
-                />
-              </UTooltip>
-            </template>
+              <template v-else>
+                <UTooltip :text="$t('ui.action.dashboard.tooltip')">
+                  <UButton
+                    size="sm"
+                    color="info"
+                    variant="soft"
+                    class="cursor-pointer rounded bg-transparent text-(--glass-muted) hover:bg-(--glass-hover) hover:text-(--glass-text)"
+                    icon="tabler:dashboard"
+                    to="/dashboard"
+                  />
+                </UTooltip>
+                <UTooltip :text="$t('ui.action.logout.tooltip')">
+                  <UButton
+                    size="sm"
+                    color="error"
+                    variant="soft"
+                    class="cursor-pointer rounded bg-transparent text-(--glass-muted) hover:bg-(--glass-hover) hover:text-(--glass-text)"
+                    icon="tabler:logout"
+                    @click="clear"
+                  />
+                </UTooltip>
+              </template>
+            </div>
           </div>
         </template>
       </AuthState>

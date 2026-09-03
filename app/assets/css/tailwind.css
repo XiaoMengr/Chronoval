@@ -45,6 +45,61 @@
   --ui-border-inverted: var(--color-white);
 }
 
+/* ---------------------------------------------------------------
+   Chronoval 双主题玻璃语义系统（保留高斯模糊，浅色也自适应）
+   用法：把写死的 bg-black/60 + text-white 换成这些变量/类
+   --------------------------------------------------------------- */
+:root {
+  --glass-bg: rgba(250, 250, 250, 0.35);
+  --glass-bg-strong: rgba(255, 255, 255, 0.82);
+  --glass-border: rgba(15, 23, 42, 0.09);
+  --glass-text: #0f172a;
+  --glass-muted: rgba(15, 23, 42, 0.58);
+  --glass-faint: rgba(15, 23, 42, 0.38);
+  --glass-hover: rgba(15, 23, 42, 0.06);
+  --glass-chip: rgba(15, 23, 42, 0.045);
+  --glass-accent: #b45309;
+  --page-bg-top: #f6f5f2;
+  --page-bg-bottom: #eaedf2;
+}
+.dark {
+  --glass-bg: rgba(0, 0, 0, 0.28);
+  --glass-bg-strong: rgba(10, 11, 15, 0.78);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-text: #ffffff;
+  --glass-muted: rgba(255, 255, 255, 0.62);
+  --glass-faint: rgba(255, 255, 255, 0.4);
+  --glass-hover: rgba(255, 255, 255, 0.09);
+  --glass-chip: rgba(255, 255, 255, 0.055);
+  --glass-accent: #fbbf24;
+  --page-bg-top: #0a0a0e;
+  --page-bg-bottom: #13151a;
+}
+
+/* 全宽玻璃横条：顶栏用（无下边框，与下方画廊融为一体） */
+.glass-strip {
+  background: var(--glass-bg);
+  color: var(--glass-text);
+  backdrop-filter: blur(28px) saturate(150%);
+  -webkit-backdrop-filter: blur(28px) saturate(150%);
+}
+
+/* 玻璃面板：浮层 / 芯片用 */
+.glass-surface {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--glass-text);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+}
+
+/* 页面自适应背景（浅色柔光 / 深色深邃），由 layouts/masonry 挂载 */
+.page-backdrop {
+  background:
+    radial-gradient(120% 80% at 50% -10%, var(--page-bg-top), transparent 60%),
+    linear-gradient(180deg, var(--page-bg-top) 0%, var(--page-bg-bottom) 100%);
+}
+
 @theme {
   --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
     'Helvetica Neue', Arial, 'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB',

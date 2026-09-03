@@ -88,14 +88,24 @@ export class LibraryScanner {
       return result
     }
 
+    // 防御：禁止把整个文件系统根目录当作媒体库扫描
+    if (path.parse(mount.root).root === mount.root) {
+      log().error(
+        `Refusing to scan filesystem root as library mount: ${mount.root}`,
+      )
+      return result
+    }
+
     const files = await this.collectFiles(mount.root)
     log().info(
       `Scan "${mount.name}" at ${mount.root}: found ${files.length} media file(s)`,
     )
 
+    const seen = new Set<string>()
     for (const absFile of files) {
       try {
         const rel = sanitizeRelPath(path.relative(mount.root, absFile))
+        seen.add(rel)
         const stat = await fs.stat(absFile)
         const photoId = buildLibraryPhotoId(mount.name, rel)
 
@@ -130,6 +140,29 @@ export class LibraryScanner {
         result.errors.push(`${path.basename(absFile)}: ${msg}`)
         result.failed++
       }
+    }
+
+    // 清理已失效的条目：文件已从挂载目录移除/变更挂载点后，删除旧 library 记录，避免残留垃圾
+    try {
+      const db = useDB()
+      const stale = db
+        .select({ id: tables.photos.id, libraryPath: tables.photos.libraryPath })
+        .from(tables.photos)
+        .where(eq(tables.photos.source, 'library'))
+        .where(eq(tables.photos.libraryMount, mount.name))
+        .all()
+        .filter((row) => row.libraryPath && !seen.has(row.libraryPath))
+      if (stale.length) {
+        for (const row of stale) {
+          await db
+            .delete(tables.photos)
+            .where(eq(tables.photos.id, row.id))
+            .run()
+        }
+        log().info(`Pruned ${stale.length} stale library entry(ies) from "${mount.name}"`)
+      }
+    } catch (pruneErr) {
+      log().warn(`Failed to prune stale library entries:`, pruneErr)
     }
 
     log().info(

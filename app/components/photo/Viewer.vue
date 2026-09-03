@@ -540,7 +540,7 @@ const swiperModules = [Navigation, Keyboard, Virtual]
 
 <template>
   <Teleport to="body">
-    <!-- 背景层 -->
+    <!-- 背景层：深色沉浸底（Afilmory 风格，非玻璃模糊） -->
     <AnimatePresence>
       <motion.div
         v-if="isOpen"
@@ -548,7 +548,7 @@ const swiperModules = [Navigation, Keyboard, Virtual]
         :animate="{ opacity: 1 }"
         :exit="{ opacity: 0 }"
         :transition="{ duration: 0.3 }"
-        class="fixed inset-0 bg-white/50 dark:bg-black/50 backdrop-blur-2xl z-50"
+        class="fixed inset-0 z-30 bg-[#0a0a0e]/[0.97]"
         @click="emit('close')"
       />
     </AnimatePresence>

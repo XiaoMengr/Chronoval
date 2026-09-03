@@ -4,9 +4,13 @@ import { motion, AnimatePresence } from 'motion-v'
 interface Props {
   isOpen: boolean
   photo: Photo
+  /** 原始图 blob URL，用于原生分享直接附带文件（可选） */
+  blobSrc?: string
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  blobSrc: '',
+})
 const emit = defineEmits<{
   close: []
 }>()
@@ -14,40 +18,33 @@ const emit = defineEmits<{
 const toast = useToast()
 const { gtag } = useGtag()
 
-/**
- * Origin of the running app (used to build the share URL and embed script).
- */
-const baseUrl = computed(() => {
-  if (typeof window !== 'undefined') {
-    return window.location.origin
-  }
-  return ''
-})
+// OG 预览图比例 1200:628（与原版一致）
+const OG_ASPECT = 1200 / 628
+
+const resolvedBaseUrl = computed(() =>
+  typeof window !== 'undefined' ? window.location.origin : '',
+)
 
 const shareUrl = computed(() => {
-  if (typeof window !== 'undefined') {
-    return `${window.location.origin}/${props.photo.id}`
-  }
-  return ''
+  const base = resolvedBaseUrl.value || ''
+  return `${base}/${props.photo.id}`
 })
+
+const shareTitle = computed(
+  () => props.photo.title || $t('ui.action.share.fallback.photoTitle'),
+)
 
 const shareText = computed(() => {
-  const title = props.photo.title || $t('ui.action.share.fallback.photoTitle')
-  const description = props.photo.description || ''
-  return `${$t('ui.action.share.text.prefix')} ${title}${description ? ' - ' + description : ''}`
+  const prefix = $t('ui.action.share.text.prefix')
+  const desc = props.photo.description ? ` - ${props.photo.description}` : ''
+  return `${prefix} ${shareTitle.value}${desc}`
 })
+const shareTextAndUrl = computed(() => `${shareText.value}\n${shareUrl.value}`)
 
-const shareTextAndUrl = computed(() => {
-  return `${shareText.value}\n${shareUrl.value}`
-})
+const canEmbed = computed(() => true)
 
-/**
- * Copy-paste embed snippet, following the Afilmory embed format:
- * Uses a script element with "async" and a "data-afilmory-photo" attribute
- * plus "data-aspect" and "data-width" attributes, pointing to /share/embed.js.
- */
 const embedCode = computed(() => {
-  const base = baseUrl.value || ''
+  const base = resolvedBaseUrl.value || ''
   const aspect =
     props.photo.width && props.photo.height
       ? `${props.photo.width}:${props.photo.height}`
@@ -55,352 +52,193 @@ const embedCode = computed(() => {
   return `<script async src="${base}/share/embed.js" data-afilmory-photo="${props.photo.id}" data-aspect="${aspect}" data-width="100%"><\/script>`
 })
 
-// OG Image URL and loading state
+const ogPreviewUrl = computed(
+  () => `${resolvedBaseUrl.value || ''}/_og/r/${props.photo.id}.png?v=1`,
+)
+
+/* ---------------- OG 预览加载态 ---------------- */
 const ogImageLoading = ref(true)
 const ogImageError = ref(false)
-const loadingTimer = ref<NodeJS.Timeout | null>(null)
-const ogImageUrl = computed(() => `/_og/r/${props.photo.id}.png`)
+let loadTimer: ReturnType<typeof setTimeout> | null = null
 
-// Reset loading state when photo changes or modal opens
-const resetLoadingState = () => {
+const resetOgState = () => {
   ogImageLoading.value = true
   ogImageError.value = false
-
-  // Clear existing timer
-  if (loadingTimer.value) {
-    clearTimeout(loadingTimer.value)
-  }
-
-  // Set a timeout to handle cases where onload/onerror never fires
-  loadingTimer.value = setTimeout(() => {
+  if (loadTimer) clearTimeout(loadTimer)
+  loadTimer = setTimeout(() => {
     if (ogImageLoading.value) {
       ogImageLoading.value = false
       ogImageError.value = true
     }
-  }, 10000) // 10 second timeout
+  }, 10000)
 }
 
-// Reset loading state when photo changes
-watch(() => props.photo.id, resetLoadingState)
+watch(() => props.photo.id, resetOgState)
+watch(() => props.isOpen, (v) => { if (v) resetOgState() })
 
-// Reset loading state when modal opens
-watch(
-  () => props.isOpen,
-  (newValue) => {
-    if (newValue) {
-      resetLoadingState()
-    }
-  },
-)
-
-// Handle image load events
-const handleOgImageLoad = () => {
-  if (loadingTimer.value) {
-    clearTimeout(loadingTimer.value)
-    loadingTimer.value = null
-  }
+const handleOgLoad = () => {
+  if (loadTimer) clearTimeout(loadTimer)
   ogImageLoading.value = false
   ogImageError.value = false
 }
-
-const handleOgImageError = () => {
-  if (loadingTimer.value) {
-    clearTimeout(loadingTimer.value)
-    loadingTimer.value = null
-  }
+const handleOgError = () => {
+  if (loadTimer) clearTimeout(loadTimer)
   ogImageLoading.value = false
   ogImageError.value = true
 }
+onUnmounted(() => { if (loadTimer) clearTimeout(loadTimer) })
 
-// Cleanup on unmount
-onUnmounted(() => {
-  if (loadingTimer.value) {
-    clearTimeout(loadingTimer.value)
-  }
-})
-
-// Social media share functions
-const shareToTwitter = () => {
-  // Track Twitter share event in Google Analytics
-  gtag('event', 'photo_share', {
-    photo_id: props.photo.id,
-    photo_title: props.photo.title || 'Untitled',
-    share_method: 'twitter',
-  })
-
-  const text = encodeURIComponent(shareText.value)
-  const url = encodeURIComponent(shareUrl.value)
-  window.open(
-    `https://twitter.com/intent/tweet?text=${text}&url=${url}`,
-    '_blank',
-  )
+/* ---------------- 下载工具 ---------------- */
+async function downloadFile(url: string, filename: string) {
+  const res = await fetch(url)
+  if (!res.ok) throw new Error('Unable to download file')
+  const blob = await res.blob()
+  const blobUrl = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = blobUrl
+  link.download = filename
+  document.body.append(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(blobUrl)
 }
 
-const shareToTelegram = () => {
-  // Track Telegram share event in Google Analytics
-  gtag('event', 'photo_share', {
-    photo_id: props.photo.id,
-    photo_title: props.photo.title || 'Untitled',
-    share_method: 'telegram',
-  })
+const isDownloadingOriginal = ref(false)
+const isDownloadingPreview = ref(false)
+const canUseNativeShare = !!(
+  typeof navigator !== 'undefined' && typeof navigator.share === 'function'
+)
 
-  window.open(
-    `https://t.me/share/url?url=${encodeURIComponent(shareUrl.value)}&text=${encodeURIComponent(shareText.value)}`,
-    '_blank',
-  )
-}
-
-const shareToWeibo = () => {
-  // Track Weibo share event in Google Analytics
-  gtag('event', 'photo_share', {
-    photo_id: props.photo.id,
-    photo_title: props.photo.title || 'Untitled',
-    share_method: 'weibo',
-  })
-
-  const text = encodeURIComponent(shareText.value)
-  const url = encodeURIComponent(shareUrl.value)
-  window.open(
-    `https://service.weibo.com/share/share.php?url=${url}&title=${text}`,
-    '_blank',
-  )
-}
-
-const shareToFacebook = () => {
-  // Track Facebook share event in Google Analytics
-  gtag('event', 'photo_share', {
-    photo_id: props.photo.id,
-    photo_title: props.photo.title || 'Untitled',
-    share_method: 'facebook',
-  })
-
-  const url = encodeURIComponent(shareUrl.value)
-  window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank')
-}
-
-const shareToWhatsApp = () => {
-  // Track WhatsApp share event in Google Analytics
-  gtag('event', 'photo_share', {
-    photo_id: props.photo.id,
-    photo_title: props.photo.title || 'Untitled',
-    share_method: 'whatsapp',
-  })
-
-  const text = encodeURIComponent(`${shareText.value}\n${shareUrl.value}`)
-  window.open(`https://wa.me/?text=${text}`, '_blank')
-}
-
-const shareToLinkedIn = () => {
-  // Track LinkedIn share event in Google Analytics
-  gtag('event', 'photo_share', {
-    photo_id: props.photo.id,
-    photo_title: props.photo.title || 'Untitled',
-    share_method: 'linkedin',
-  })
-
-  const url = encodeURIComponent(shareUrl.value)
-  const title = encodeURIComponent(shareText.value)
-  window.open(
-    `https://www.linkedin.com/sharing/share-offsite/?url=${url}&title=${title}`,
-    '_blank',
-  )
-}
-
-// Copy functions
-const copyLink = async () => {
+const handleDownloadOriginal = async () => {
   try {
-    await navigator.clipboard.writeText(shareTextAndUrl.value)
-    toast.add({
-      title: $t('ui.action.share.success.linkCopied'),
-      color: 'success',
-      icon: 'tabler:check',
-      duration: 3000,
-    })
-  } catch (error) {
-    toast.add({
-      title: $t('ui.action.share.error.linkCopyFailed'),
-      description: (error as Error)?.message || $t('common.unknownError'),
-      color: 'error',
-      icon: 'tabler:x',
-      duration: 3000,
-    })
+    isDownloadingOriginal.value = true
+    await downloadFile(props.photo.originalUrl!, `${props.photo.id}.jpg`)
+    writePhotoDownload('original')
+    toast.add({ title: $t('ui.action.share.success.originalImageDownloaded'), color: 'success', icon: 'tabler:check', duration: 3000 })
+  } catch {
+    toast.add({ title: $t('ui.action.share.error.originalImageDownloadFailed'), color: 'error', icon: 'tabler:x', duration: 3000 })
+  } finally {
+    isDownloadingOriginal.value = false
   }
 }
 
-// Copy the embed snippet to the clipboard
-const copyEmbed = async () => {
+const handleDownloadPreview = async () => {
   try {
-    await navigator.clipboard.writeText(embedCode.value)
-    toast.add({
-      title: $t('ui.action.share.embed.copied'),
-      color: 'success',
-      icon: 'tabler:check',
-      duration: 3000,
-    })
-  } catch (error) {
-    toast.add({
-      title: $t('ui.action.share.embed.copyFailed'),
-      description: (error as Error)?.message || $t('common.unknownError'),
-      color: 'error',
-      icon: 'tabler:x',
-      duration: 3000,
-    })
+    isDownloadingPreview.value = true
+    await downloadFile(ogPreviewUrl.value, `${props.photo.id}-og.png`)
+    toast.add({ title: $t('ui.action.share.success.ogImageDownloaded'), color: 'success', icon: 'tabler:check', duration: 3000 })
+  } catch {
+    toast.add({ title: $t('ui.action.share.error.ogImageDownloadFailed'), color: 'error', icon: 'tabler:x', duration: 3000 })
+  } finally {
+    isDownloadingPreview.value = false
   }
 }
 
-// Native share (for mobile devices). Falls back to copying the link
-// when navigator.share is not available.
-const nativeShare = async () => {
-  // Fall back to copying the link when the Web Share API is unavailable
-  if (typeof navigator === 'undefined' || !navigator.share) {
-    await copyLink()
-    return
-  }
+const writePhotoDownload = (type: string) => {
+  gtag('event', 'photo_download', {
+    photo_id: props.photo.id,
+    photo_title: props.photo.title || 'Untitled',
+    download_type: type,
+  })
+}
 
+/* ---------------- 复制（带 copied↔check 动画） ---------------- */
+const isCopying = ref(false)
+const isCopied = ref(false)
+let copyResetTimer: ReturnType<typeof setTimeout> | null = null
+
+const copyText = async (text: string, successKey: string) => {
   try {
-    // Track native share event in Google Analytics
-    gtag('event', 'photo_share', {
-      photo_id: props.photo.id,
-      photo_title: props.photo.title || 'Untitled',
-      share_method: 'native_share',
-    })
+    await navigator.clipboard.writeText(text)
+    isCopying.value = true
+    isCopied.value = true
+    if (copyResetTimer) clearTimeout(copyResetTimer)
+    copyResetTimer = setTimeout(() => { isCopied.value = false; isCopying.value = false }, 1000)
+    toast.add({ title: $t(successKey), color: 'success', icon: 'tabler:check', duration: 2000 })
+  } catch {
+    toast.add({ title: $t('ui.action.share.error.linkCopyFailed'), color: 'error', icon: 'tabler:x', duration: 3000 })
+  }
+}
 
+const handleCopyLink = () => copyText(shareUrl.value, 'ui.action.share.success.linkCopied')
+const handleCopyEmbed = () => copyText(embedCode.value, 'ui.action.share.embed.copied')
+
+/* ---------------- 原生分享（带文件，失败退回复制链接） ---------------- */
+const handleNativeShare = async () => {
+  if (!canUseNativeShare) return
+  try {
+    const files = await buildShareFiles(props.photo, props.blobSrc)
     await navigator.share({
-      title: shareText.value,
+      title: shareTitle.value,
+      text: shareText.value,
       url: shareUrl.value,
+      ...(files.length > 0 ? { files } as any : {}),
     })
-  } catch (error) {
-    console.error($t('ui.action.share.error.nativeShareFailed'), error)
+    emit('close')
+  } catch {
+    await handleCopyLink()
+    emit('close')
   }
 }
 
-// Download OG Image
-const downloadOgImage = async () => {
+async function buildShareFiles(photo: Photo, blobSrc?: string): Promise<File[]> {
+  const imageUrl = blobSrc || photo.originalUrl
   try {
-    const response = await fetch(ogImageUrl.value)
-    const blob = await response.blob()
-    const url = window.URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `${props.photo.title || 'photo'}-og.png`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    window.URL.revokeObjectURL(url)
-
-    toast.add({
-      title: $t('ui.action.share.success.ogImageDownloaded'),
-      color: 'success',
-      icon: 'tabler:download',
-      duration: 3000,
-    })
-  } catch (error) {
-    toast.add({
-      title: $t('ui.action.share.error.ogImageDownloadFailed'),
-      description: (error as Error)?.message || $t('common.unknownError'),
-      color: 'error',
-      icon: 'tabler:x',
-      duration: 3000,
-    })
+    const res = await fetch(imageUrl)
+    const blob = await res.blob()
+    return [new File([blob], `${photo.title || photo.id}.jpg`, { type: blob.type || 'image/jpeg' })]
+  } catch {
+    return []
   }
 }
 
-const downloadOriginalImage = async () => {
-  try {
-    const response = await fetch(props.photo.originalUrl!)
-    const blob = await response.blob()
-    const url = window.URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    const extension = props.photo.originalUrl!.split('.').pop() || 'jpg'
-    link.download = `${props.photo.title || 'photo'}.${extension}`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    window.URL.revokeObjectURL(url)
-
-    // Track download event in Google Analytics
-    gtag('event', 'photo_download', {
-      photo_id: props.photo.id,
-      photo_title: props.photo.title || 'Untitled',
-      download_type: 'original',
-    })
-
-    toast.add({
-      title: $t('ui.action.share.success.originalImageDownloaded'),
-      color: 'success',
-      icon: 'tabler:download',
-      duration: 3000,
-    })
-  } catch (error) {
-    toast.add({
-      title: $t('ui.action.share.error.originalImageDownloadFailed'),
-      description: (error as Error)?.message || $t('common.unknownError'),
-      color: 'error',
-      icon: 'tabler:x',
-      duration: 3000,
-    })
-  }
+/* ---------------- 社交分享 ---------------- */
+const handleSocialShare = (urlTemplate: string) => {
+  gtag('event', 'photo_share', { photo_id: props.photo.id, share_method: 'social' })
+  const encodedUrl = encodeURIComponent(shareUrl.value)
+  const encodedTitle = encodeURIComponent(shareTitle.value)
+  const encodedText = encodeURIComponent(shareTextAndUrl.value)
+  const finalUrl = urlTemplate
+    .replace('{url}', encodedUrl)
+    .replace('{title}', encodedTitle)
+    .replace('{text}', encodedText)
+  window.open(finalUrl, '_blank', 'width=600,height=600')
+  emit('close')
 }
 
-// Check if native share is available
-const canNativeShare = computed(() => {
-  return typeof window !== 'undefined' && navigator.share
-})
+interface SocialOption {
+  id: string
+  label: string
+  icon: string
+  url: string
+}
 
-// Social media platforms data
-const socialPlatforms = computed(() => [
+const socialOptions = computed<SocialOption[]>(() => [
   {
-    name: $t('ui.action.share.platforms.twitter'),
+    id: 'twitter',
+    label: 'Twitter',
     icon: 'tabler:brand-twitter',
-    color: 'text-blue-500',
-    action: shareToTwitter,
+    url: 'https://twitter.com/intent/tweet?text={text}&url={url}',
   },
   {
-    name: $t('ui.action.share.platforms.telegram'),
+    id: 'telegram',
+    label: 'Telegram',
     icon: 'tabler:brand-telegram',
-    color: 'text-blue-400',
-    action: shareToTelegram,
+    url: 'https://t.me/share/url?url={url}&text={text}',
   },
   {
-    name: $t('ui.action.share.platforms.weibo'),
+    id: 'weibo',
+    label: $t('ui.action.share.platforms.weibo'),
     icon: 'tabler:brand-weibo',
-    color: 'text-red-500',
-    action: shareToWeibo,
-  },
-  {
-    name: $t('ui.action.share.platforms.facebook'),
-    icon: 'tabler:brand-facebook',
-    color: 'text-blue-600',
-    action: shareToFacebook,
-  },
-  {
-    name: $t('ui.action.share.platforms.whatsapp'),
-    icon: 'tabler:brand-whatsapp',
-    color: 'text-green-500',
-    action: shareToWhatsApp,
-  },
-  {
-    name: $t('ui.action.share.platforms.linkedin'),
-    icon: 'tabler:brand-linkedin',
-    color: 'text-blue-700',
-    action: shareToLinkedIn,
+    url: 'https://service.weibo.com/share/share.php?url={url}&title={text}',
   },
 ])
 
-// Close modal when clicking outside
-const handleBackdropClick = (event: MouseEvent) => {
-  if (event.target === event.currentTarget) {
-    emit('close')
-  }
-}
+/* 操作按钮行：逐项渲染，不再使用网格 */
 
-// Keyboard shortcuts
-defineShortcuts({
-  escape: () => {
-    emit('close')
-  },
-})
+// Esc 关闭
+defineShortcuts({ escape: () => emit('close') })
+onUnmounted(() => { if (copyResetTimer) clearTimeout(copyResetTimer) })
 </script>
 
 <template>
@@ -411,192 +249,175 @@ defineShortcuts({
         :initial="{ opacity: 0 }"
         :animate="{ opacity: 1 }"
         :exit="{ opacity: 0 }"
-        :transition="{ duration: 0.2 }"
-        class="fixed inset-0 z-60 flex items-center justify-center bg-black/40 px-4 backdrop-blur-sm"
-        @click="handleBackdropClick"
+        :transition="{ duration: 0.18, ease: 'easeOut' }"
+        class="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm"
+        @click="emit('close')"
       >
         <motion.div
-          :initial="{ opacity: 0, scale: 0.95, y: 20 }"
-          :animate="{ opacity: 1, scale: 1, y: 0 }"
-          :exit="{ opacity: 0, scale: 0.95, y: 20 }"
-          :transition="{
-            type: 'spring',
-            duration: 0.3,
-            bounce: 0.1,
-          }"
-          class="relative w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-black/70 shadow-2xl backdrop-blur-2xl"
+          :initial="{ opacity: 0, scale: 1.04, filter: 'blur(8px)' }"
+          :animate="{ opacity: 1, scale: 1, filter: 'blur(0px)' }"
+          :exit="{ opacity: 0, scale: 0.98, filter: 'blur(6px)' }"
+          :transition="{ type: 'spring', duration: 0.32, bounce: 0.12 }"
+          class="glass-surface fixed left-1/2 top-1/2 z-[70] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-xl px-4 pt-4 pb-4 shadow-2xl"
           @click.stop
         >
-          <!-- Header -->
-          <div class="flex items-center justify-between border-b border-white/10 bg-white/5 p-4">
-            <div class="flex items-center gap-2">
-              <Icon
-                name="tabler:share-3"
-                class="size-5 text-white/70"
-              />
-              <h3 class="text-lg font-semibold text-white/90">
-                {{ $t('ui.action.share.title') }}
-              </h3>
+          <!-- 顶部琥珀发丝高光线 + 氛围辉光（与统计条/头部玻璃一致） -->
+          <div
+            class="pointer-events-none absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-(--glass-accent) to-transparent"
+          />
+          <div
+            class="pointer-events-none absolute -top-12 left-1/2 h-16 w-1/2 -translate-x-1/2 rounded-full bg-(--glass-accent) opacity-15 blur-3xl"
+          />
+
+          <!-- 头部：琥珀标记 + 标题 + 位置 + 关闭 -->
+          <div class="mb-4 flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <div class="flex items-center gap-1.5">
+                <span class="size-1.5 shrink-0 rounded-full bg-(--glass-accent)" />
+                <p class="text-[11px] font-semibold uppercase tracking-widest text-(--glass-muted)">
+                  {{ $t('ui.action.share.title') }}
+                </p>
+              </div>
+              <h2 class="mt-1.5 truncate text-base font-semibold text-(--glass-text)">
+                {{ shareTitle }}
+              </h2>
+              <p
+                v-if="photo.locationName || photo.city"
+                class="mt-0.5 truncate text-xs text-(--glass-faint)"
+              >
+                {{ photo.locationName || photo.city }}
+              </p>
             </div>
-            <UButton
-              size="sm"
-              variant="ghost"
-              color="neutral"
-              class="text-white/70"
-              icon="tabler:x"
+            <button
+              type="button"
+              class="-mr-1 flex size-8 shrink-0 items-center justify-center rounded-full border border-(--glass-border) bg-(--glass-chip) text-(--glass-muted) transition-all duration-200 hover:bg-(--glass-hover) hover:text-(--glass-text)"
+              :aria-label="$t('ui.action.share.title')"
               @click="emit('close')"
-            />
+            >
+              <Icon name="tabler:x" class="size-4" />
+            </button>
           </div>
 
-          <!-- Content -->
-          <div
-            v-if="photo"
-            class="max-h-[70vh] space-y-4 overflow-y-auto p-4"
-          >
-            <!-- Native Share (Mobile) & Download Original -->
+          <!-- 分享链接 -->
+          <div class="mb-4">
             <div
-              v-if="canNativeShare"
-              class="flex flex-col gap-2"
+              class="flex items-center gap-2 rounded-xl border border-(--glass-border) bg-(--glass-chip) py-1.5 pr-1.5 pl-3"
             >
+              <span class="flex-1 truncate text-xs text-(--glass-muted)">{{ shareUrl }}</span>
               <button
                 type="button"
-                class="glassmorphic-btn flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-2 py-2.5 text-sm font-medium text-white/80 transition-all hover:border-white/20 hover:bg-white/8 hover:text-white"
-                @click="nativeShare"
+                class="shrink-0 rounded-lg bg-(--glass-accent)/15 p-1.5 text-(--glass-accent) transition-all duration-300 hover:bg-(--glass-accent)/25"
+                :title="$t('ui.action.share.actions.shareUrl')"
+                :disabled="isCopying || isCopied"
+                @click="handleCopyLink"
               >
-                <Icon name="tabler:share-2" class="size-4" />
-                {{ $t('ui.action.share.actions.nativeShare') }}
+                <div class="relative size-4">
+                  <Icon
+                    name="tabler:copy"
+                    class="absolute inset-0 size-4 transition-all duration-300"
+                    :class="isCopied ? 'scale-0 opacity-0' : 'scale-100 opacity-100'"
+                  />
+                  <Icon
+                    name="tabler:check"
+                    class="absolute inset-0 size-4 transition-all duration-300"
+                    :class="isCopied ? 'scale-100 opacity-100' : 'scale-0 opacity-0'"
+                  />
+                </div>
               </button>
+            </div>
+          </div>
+
+          <!-- OG 预览 -->
+          <div class="mb-4">
+            <p class="mb-2 text-[11px] font-medium tracking-wide text-(--glass-muted)">
+              {{ $t('ui.action.share.ogImage.title') }}
+            </p>
+            <div
+              class="relative overflow-hidden rounded-xl border border-(--glass-border) bg-black/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+            >
+              <div :style="{ aspectRatio: String(OG_ASPECT), width: '100%' }">
+                <template v-if="ogImageLoading">
+                  <div class="absolute inset-0 flex items-center justify-center bg-(--glass-chip)">
+                    <div
+                      class="size-8 animate-spin rounded-full border-2 border-(--glass-border) border-t-(--glass-accent)"
+                    />
+                  </div>
+                </template>
+                <img
+                  :src="ogPreviewUrl"
+                  :alt="shareTitle"
+                  class="size-full object-cover transition-opacity duration-300"
+                  :class="ogImageLoading ? 'opacity-0' : 'opacity-100'"
+                  loading="lazy"
+                  @load="handleOgLoad"
+                  @error="handleOgError"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- 分享与工具 -->
+          <div class="space-y-3 border-t border-(--glass-border) pt-3.5">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="mr-1 text-[11px] font-medium tracking-wide text-(--glass-faint)">
+                {{ $t('ui.action.share.tabs.social') }}
+              </span>
+
+              <!-- 原生分享（可用时） -->
               <button
+                v-if="canUseNativeShare"
                 type="button"
-                class="glassmorphic-btn flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-2 py-2.5 text-sm font-medium text-white/80 transition-all hover:border-white/20 hover:bg-white/8 hover:text-white"
-                @click="downloadOriginalImage"
+                class="flex size-9 cursor-pointer items-center justify-center rounded-full border border-(--glass-border) bg-(--glass-chip) text-(--glass-muted) transition-all duration-200 hover:border-(--glass-accent)/40 hover:bg-(--glass-hover) hover:text-(--glass-text)"
+                :title="$t('ui.action.share.actions.nativeShare')"
+                @click="handleNativeShare"
               >
-                <Icon name="tabler:download" class="size-4" />
-                {{ $t('ui.action.share.actions.downloadOriginalImage') }}
+                <Icon name="tabler:share-2" class="size-4.5" />
+              </button>
+
+              <!-- 社交平台 -->
+              <button
+                v-for="option in socialOptions"
+                :key="option.id"
+                type="button"
+                class="flex size-9 cursor-pointer items-center justify-center rounded-full border border-(--glass-border) bg-(--glass-chip) text-(--glass-muted) transition-all duration-200 hover:border-(--glass-accent)/40 hover:bg-(--glass-hover) hover:text-(--glass-text)"
+                :title="option.label"
+                @click="handleSocialShare(option.url)"
+              >
+                <Icon :name="option.icon" class="size-4.5" />
               </button>
             </div>
 
-            <!-- Share URL -->
-            <section class="rounded-xl border border-white/10 bg-white/5 p-3">
-              <label class="mb-1 block text-xs font-medium text-white/40">
-                {{ $t('ui.action.share.actions.shareUrl') }}
-              </label>
-              <div class="flex items-center gap-2">
-                <input
-                  :value="shareUrl"
-                  readonly
-                  class="flex-1 resize-none truncate bg-transparent text-sm text-white/90"
-                />
-                <button
-                  type="button"
-                  class="glassmorphic-btn shrink-0 cursor-pointer rounded-lg border border-white/10 bg-white/5 p-2 text-white/80 transition-all hover:border-white/20 hover:bg-white/8 hover:text-white"
-                  :title="$t('ui.action.share.actions.copyLink')"
-                  @click="copyLink"
-                >
-                  <Icon name="tabler:copy" class="size-4" />
-                </button>
-              </div>
-            </section>
-
-            <!-- Embed Code -->
-            <section class="rounded-xl border border-white/10 bg-white/5 p-3">
-              <div class="mb-1 flex items-center justify-between">
-                <label class="block text-xs font-medium text-white/40">
-                  {{ $t('ui.action.share.embed.title') }}
-                </label>
-                <button
-                  type="button"
-                  class="glassmorphic-btn flex shrink-0 cursor-pointer items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-white/80 transition-all hover:border-white/20 hover:bg-white/8 hover:text-white"
-                  @click="copyEmbed"
-                >
-                  <Icon name="tabler:code" class="size-3.5" />
-                  {{ $t('ui.action.share.embed.copy') }}
-                </button>
-              </div>
-              <p class="mb-2 text-xs text-white/40">
-                {{ $t('ui.action.share.embed.description') }}
-              </p>
-              <pre class="overflow-x-auto rounded-md bg-black/40 p-2 text-xs leading-relaxed text-white/70"><code>{{ embedCode }}</code></pre>
-            </section>
-
-            <!-- OG Image Preview -->
-            <section class="rounded-xl border border-white/10 bg-white/5 p-3">
-              <div class="mb-2 flex items-center justify-between">
-                <label class="block text-xs font-medium text-white/40">
-                  {{ $t('ui.action.share.ogImage.title') }}
-                </label>
-                <button
-                  type="button"
-                  class="glassmorphic-btn flex shrink-0 cursor-pointer items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-white/80 transition-all hover:border-white/20 hover:bg-white/8 hover:text-white"
-                  @click="downloadOgImage"
-                >
-                  <Icon name="tabler:download" class="size-3.5" />
-                  {{ $t('ui.action.share.actions.downloadOgImage') }}
-                </button>
-              </div>
-              <div class="relative overflow-hidden rounded-md bg-white/5">
-                <!-- Loading indicator -->
-                <div
-                  v-if="ogImageLoading"
-                  class="flex aspect-2/1 items-center justify-center bg-white/5"
-                >
-                  <div class="flex flex-col items-center gap-2">
-                    <Icon
-                      name="tabler:loader-2"
-                      class="size-6 animate-spin text-white/50"
-                    />
-                    <span class="text-xs text-white/40">
-                      {{ $t('ui.action.share.ogImage.loading') }}
-                    </span>
-                  </div>
-                </div>
-
-                <!-- Error state -->
-                <div
-                  v-else-if="ogImageError"
-                  class="flex aspect-2/1 items-center justify-center bg-white/5"
-                >
-                  <div class="flex flex-col items-center gap-2">
-                    <Icon
-                      name="tabler:photo-off"
-                      class="size-6 text-white/40"
-                    />
-                    <span class="text-xs text-white/40">
-                      {{ $t('ui.action.share.ogImage.loadError') }}
-                    </span>
-                  </div>
-                </div>
-
-                <!-- OG Image -->
-                <img
-                  v-show="!ogImageLoading && !ogImageError"
-                  :key="`og-image-${props.photo.id}-${Date.now()}`"
-                  :src="ogImageUrl"
-                  :alt="$t('ui.action.share.ogImage.alt')"
-                  class="aspect-2/1 w-full rounded object-cover"
-                  loading="eager"
-                  @load="handleOgImageLoad"
-                  @error="handleOgImageError"
-                />
-              </div>
-            </section>
-
-            <!-- Social Platforms Grid -->
-            <div class="grid grid-cols-3 gap-2">
+            <!-- 下载 / 嵌入 -->
+            <div class="flex flex-wrap items-center gap-2">
               <button
-                v-for="platform in socialPlatforms"
-                :key="platform.name"
+                v-if="canEmbed"
                 type="button"
-                class="glassmorphic-btn group flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-2 py-2.5 text-white/80 transition-all hover:border-white/20 hover:bg-white/8 hover:text-white"
-                @click="platform.action"
+                class="flex cursor-pointer items-center gap-1.5 rounded-full border border-(--glass-border) bg-(--glass-chip) px-3.5 py-1.5 text-xs font-medium text-(--glass-muted) transition-all duration-200 hover:bg-(--glass-hover) hover:text-(--glass-text)"
+                :title="$t('ui.action.share.embed.description')"
+                @click="handleCopyEmbed"
               >
-                <Icon
-                  :name="platform.icon"
-                  class="size-5 transition-colors group-hover:text-white"
-                />
-                <span class="text-xs font-medium">
-                  {{ platform.name }}
-                </span>
+                <Icon name="tabler:code" class="size-3.5" />
+                Embed
+              </button>
+              <button
+                type="button"
+                class="flex cursor-pointer items-center gap-1.5 rounded-full border border-(--glass-border) bg-(--glass-chip) px-3.5 py-1.5 text-xs font-medium text-(--glass-muted) transition-all duration-200 hover:bg-(--glass-hover) hover:text-(--glass-text) disabled:cursor-not-allowed disabled:opacity-50"
+                :title="$t('ui.action.share.actions.downloadOriginalImage')"
+                :disabled="isDownloadingOriginal"
+                @click="handleDownloadOriginal"
+              >
+                <Icon name="tabler:download" class="size-3.5" />
+                {{ isDownloadingOriginal ? '…' : 'Original' }}
+              </button>
+              <button
+                type="button"
+                class="flex cursor-pointer items-center gap-1.5 rounded-full border border-(--glass-border) bg-(--glass-chip) px-3.5 py-1.5 text-xs font-medium text-(--glass-muted) transition-all duration-200 hover:bg-(--glass-hover) hover:text-(--glass-text) disabled:cursor-not-allowed disabled:opacity-50"
+                :title="$t('ui.action.share.actions.downloadOgImage')"
+                :disabled="isDownloadingPreview"
+                @click="handleDownloadPreview"
+              >
+                <Icon name="tabler:photo" class="size-3.5" />
+                {{ isDownloadingPreview ? '…' : 'Preview' }}
               </button>
             </div>
           </div>
@@ -606,4 +427,6 @@ defineShortcuts({
   </Teleport>
 </template>
 
-<style scoped></style>
+<style scoped>
+/* .glassmorphic-btn 未定义，按钮样式已内联为双主题玻璃 */
+</style>

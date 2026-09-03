@@ -26,7 +26,19 @@ export default defineNuxtConfig({
 
   css: ['~/assets/css/tailwind.css'],
 
+  // 允许通过 dev.1xc.top 访问（frp 穿透 + caddy 反代的 Host）
+  server: {
+    allowedHosts: ['dev.1xc.top', '.1xc.top'],
+  },
+
   components: [{ path: '~/components/ui', pathPrefix: false }, '~/components'],
+
+  ogImage: {
+    defaults: {
+      width: 1200,
+      height: 628,
+    },
+  },
 
   runtimeConfig: {
     public: {
@@ -144,6 +156,10 @@ export default defineNuxtConfig({
   },
 
   vite: {
+    server: {
+      host: true,
+      allowedHosts: ['dev.1xc.top', '.1xc.top', 'localhost'],
+    },
     optimizeDeps: {
       include: [
         'zod',
@@ -236,7 +252,7 @@ export default defineNuxtConfig({
   },
 
   colorMode: {
-    // preference: process.env.NUXT_PUBLIC_COLOR_MODE_PREFERENCE || 'dark',
+    preference: process.env.NUXT_PUBLIC_COLOR_MODE_PREFERENCE || 'dark',
     storageKey: 'cframe-color-mode',
   },
 

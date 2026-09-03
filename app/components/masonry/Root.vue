@@ -34,25 +34,34 @@ const { batchProcessLivePhotos } = useLivePhotoProcessor()
 
 const processedBatch = ref(new Set<string>())
 
+// 密排自适应瀑布流（1:1 对齐 Afilmory MasonryView 的列宽与列数策略）：
+//   - 目标列宽：移动 150 / 桌面 250
+//   - 列数由容器宽度按目标列宽自动派生（vue-masonry-wall 内做最短列填充）
+//   - 列通过 flex-grow:1 撑满容器，随宽度自适应增减列数，避免右侧空缺
+//   - 桌面端最多 8 列（与 Afilmory maxColumns=8 一致），超出时按宽度均摊列宽
+const TARGET_COL_WIDTH = 250
+const TARGET_COL_WIDTH_MOBILE = 150
+const MAX_COLUMNS = 8
+
 const columnWidth = computed(() => {
-  if (props.columns === 'auto') {
-    return isMobile.value ? 280 : 280
+  if (props.columns !== 'auto') {
+    return 280
   }
-  return 280
+  return isMobile.value ? TARGET_COL_WIDTH_MOBILE : TARGET_COL_WIDTH
 })
 
 const maxColumns = computed(() => {
   if (props.columns !== 'auto') {
     return props.columns
   }
-  return isMobile.value ? 2 : 8
+  return MAX_COLUMNS
 })
 
 const minColumns = computed(() => {
   if (props.columns !== 'auto') {
     return props.columns
   }
-  return 2
+  return 1
 })
 
 // Prepare items for masonry-wall
@@ -64,44 +73,6 @@ const masonryItems = computed(() => {
       originalIndex: index,
     })) ?? []
   )
-})
-
-const photoStats = computed(() => {
-  const totalPhotos = displayPhotos.value?.length || 0
-  const photosWithDates =
-    displayPhotos.value?.filter((p) => p.dateTaken).length || 0
-  const photosWithTitles =
-    displayPhotos.value?.filter((p) => p.title).length || 0
-  const photosWithExif = displayPhotos.value?.filter((p) => p.exif).length || 0
-
-  // Get date range of all photos
-  const allDates = displayPhotos.value
-    ?.map((p) => p?.dateTaken)
-    .filter((date): date is string => Boolean(date))
-    .map((date) => dayjs(date).format('ll'))
-    .sort((a, b) => (dayjs(a).isBefore(dayjs(b)) ? 1 : -1))
-
-  const dateRange =
-    allDates.length > 0
-      ? {
-          start: allDates[0],
-          end: allDates[allDates.length - 1],
-        }
-      : null
-
-  return {
-    total: totalPhotos,
-    withDates: photosWithDates,
-    withTitles: photosWithTitles,
-    withExif: photosWithExif,
-    dateRange,
-  }
-})
-
-const dateRangeText = computed(() => {
-  const range = photoStats.value?.dateRange
-  if (!range || !range.start || !range.end) return ''
-  return `${range.start} - ${range.end}`
 })
 
 const handleVisibilityChange = ({
@@ -286,47 +257,16 @@ watch(currentPhotoIndex, (newIndex) => {
 
 <template>
   <div class="relative w-full">
-    <DateRangeIndicator
-      :date-range="dateRange"
-      :locations="visibleCities"
-      :is-visible="!!dateRange && showFloatingActions"
-      :is-mobile="isMobile"
-    />
+    <!-- 活跃筛选器全宽展示区（Afilmory 风格） -->
+    <MasonryActiveFiltersHero v-if="hasActiveFilters" />
 
-    <!-- Back to Top Button -->
-    <motion.div
-      v-if="showFloatingActions"
-      class="fixed bottom-6 right-6 z-50"
-      :initial="{ opacity: 0, scale: 0.8 }"
-      :animate="{ opacity: 1, scale: 1 }"
-      :exit="{ opacity: 0, scale: 0.8 }"
-      :transition="{ duration: 0.2 }"
-    >
-      <UTooltip :text="$t('ui.action.backtotop.tooltip')">
-        <UButton
-          variant="soft"
-          color="neutral"
-          class="cursor-pointer bg-white/80 dark:bg-neutral-900/80 backdrop-blur-sm flex justify-center items-center rounded-full shadow-lg hover:bg-white dark:hover:bg-neutral-800 transition-all duration-300 border border-neutral-200/50 dark:border-neutral-700/50"
-          icon="tabler:arrow-up"
-          size="lg"
-          :aria-label="$t('ui.action.backtotop.ariaLabel')"
-          @click="scrollToTop"
-        />
-      </UTooltip>
-    </motion.div>
+    <!-- Afilmory 式浮动操作按钮 -->
+    <MasonryFloatingActionButton :show-floating="showFloatingActions" />
 
     <div
-      class="lg:px-0 lg:pb-0"
-      :class="isMobile ? 'px-1 pb-1' : 'p-1'"
+      :class="isMobile ? 'pb-1' : ''"
     >
-      <div class="relative">
-        <!-- 简洁照片统计模块 -->
-        <MasonryItemHeader
-          class="mb-2"
-          :stats="photoStats"
-          :date-range-text
-        />
-
+      <div ref="containerRef" class="relative">
         <!-- Masonry Wall -->
         <MasonryWall
           :items="masonryItems"
@@ -358,3 +298,7 @@ watch(currentPhotoIndex, (newIndex) => {
     </div>
   </div>
 </template>
+
+<style scoped>
+/* 列随容器宽度自适应撑满（vue-masonry-wall 默认 flex-grow:1，Afilmory 观感） */
+</style>

@@ -36,7 +36,8 @@ export interface LibraryMount {
 const toAbs = (p: string, fallback: string): string => {
   const v = (p || '').trim()
   if (!v) return fallback
-  return v
+  // 只转成绝对路径，绝不附加额外参数；避免把挂载根解析成整个文件系统 / 
+  return path.resolve(v)
 }
 
 export const DEFAULT_LIBRARY_PHOTOS = '/app/photos'
@@ -46,15 +47,13 @@ export const getLibraryConfig = (): LibraryConfig => {
   const config = useRuntimeConfig() as any
   const runtime = config?.library || {}
   return {
-    photosPath: path.resolve(
-      toAbs(runtime.photosPath || process.env.LIBRARY_PHOTOS_PATH!, '') ||
-        DEFAULT_LIBRARY_PHOTOS,
-      '/',
+    photosPath: toAbs(
+      runtime.photosPath || process.env.LIBRARY_PHOTOS_PATH!,
+      DEFAULT_LIBRARY_PHOTOS,
     ),
-    videosPath: path.resolve(
-      toAbs(runtime.videosPath || process.env.LIBRARY_VIDEOS_PATH!, '') ||
-        DEFAULT_LIBRARY_VIDEOS,
-      '/',
+    videosPath: toAbs(
+      runtime.videosPath || process.env.LIBRARY_VIDEOS_PATH!,
+      DEFAULT_LIBRARY_VIDEOS,
     ),
     thumbnailDir: toAbs(
       runtime.thumbnailDir || process.env.LIBRARY_THUMBNAIL_DIR!,

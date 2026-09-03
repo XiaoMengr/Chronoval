@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { formatCameraInfo } from '~/utils/camera'
 import { motion, useDomRef } from 'motion-v'
 
 interface Props {
@@ -54,6 +53,48 @@ const aspectRatio = computed(() => {
 
   // Fallback: Default aspect ratio
   return 1.2
+})
+
+// Afilmory 式悬浮详情：格式 · 尺寸 · 大小
+const format = computed(() => {
+  const url = props.photo.originalUrl || ''
+  const match = url.match(/\.([a-zA-Z0-9]{2,4})(?:\?|$)/)
+  return match ? match[1].toUpperCase() : undefined
+})
+
+const sizeText = computed(() => {
+  const bytes = props.photo.fileSize
+  if (!bytes) return undefined
+  return `${(bytes / 1024 / 1024).toFixed(1)}MB`
+})
+
+const hasDimensions = computed(() => {
+  return Boolean(props.photo.width && props.photo.height)
+})
+
+const specsText = computed(() => {
+  const parts: string[] = []
+  if (format.value) parts.push(format.value)
+  if (props.photo.width && props.photo.height) {
+    parts.push(`${props.photo.width} × ${props.photo.height}`)
+  }
+  if (sizeText.value) parts.push(sizeText.value)
+  return parts.join('  ·  ')
+})
+
+// 卡片足够高时才展示 EXIF 网格（Afilmory 阈值 ~200px），且需存在实际 EXIF 数据
+const hasExif = computed(
+  () =>
+    Boolean(props.photo.exif?.FocalLengthIn35mmFormat) ||
+    Boolean(props.photo.exif?.FNumber) ||
+    Boolean(props.photo.exif?.ExposureTime) ||
+    Boolean(props.photo.exif?.ISO),
+)
+
+// 相机参数标签：只要存在真实 EXIF 数据即显示（不限卡片高度，避免宽幅照片标签被隐藏）
+const showExifGrid = computed(() => {
+  if (!hasExif.value) return false
+  return Boolean(specsText.value)
 })
 
 // Show info overlay only when not playing video or video has finished
@@ -493,7 +534,7 @@ onUnmounted(() => {
     @touchcancel="handleTouchEnd"
     @contextmenu.prevent=""
   >
-    <div class="relative group overflow-hidden transition-all duration-300">
+    <div class="relative group overflow-hidden bg-neutral-900 transition-all duration-300">
       <!-- Container with fixed aspect ratio -->
       <div
         class="w-full relative"
@@ -546,9 +587,10 @@ onUnmounted(() => {
         />
       </div>
 
-      <!-- Overlay -->
+      <!-- 底部渐变叠加层（Afilmory：独立图层，悬停淡入） -->
       <div
-        class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300"
+        v-if="!isLoading"
+        class="pointer-events-none absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
       />
 
       <!-- Live Photo indicator -->
@@ -560,131 +602,89 @@ onUnmounted(() => {
         :processing-state="processingState || null"
       />
 
-      <!-- Photo info overlay (bottom) -->
-      <motion.div
-        v-show="shouldShowInfoOverlay"
-        class="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/60 to-transparent p-3"
-        :initial="{ y: '100%', opacity: 0 }"
-        :animate="{
-          y: shouldShowInfoOverlay && isHovering && !isMobile ? 0 : '100%',
-          opacity: shouldShowInfoOverlay && isHovering && !isMobile ? 1 : 0,
-        }"
-        :transition="{
-          duration: 0.3,
-          ease: [0.25, 0.1, 0.25, 1],
-        }"
+      <!-- 图片信息与 EXIF 叠加层（Afilmory 精确复刻） -->
+      <div
+        v-if="!isLoading"
+        class="pointer-events-none absolute inset-x-0 bottom-0 p-4 pb-0 text-white"
       >
-        <div class="text-white flex flex-col gap-1">
-          <div class="flex flex-col">
-            <p
-              v-if="photo.title"
-              class="text-base font-medium text-ellipsis line-clamp-1"
-            >
-              {{ photo.title }}
-            </p>
-            <p
-              v-if="photo.description"
-              class="text-xs text-justify opacity-80 line-clamp-2"
-            >
-              {{ photo.description }}
-            </p>
-            <p
-              v-if="photo.dateTaken || photo.city"
-              class="text-xs font-medium opacity-80"
-            >
-              <span v-if="photo.dateTaken">
-                {{ $dayjs(photo.dateTaken).format('YYYY-MM-DD') }}
-              </span>
-              <span v-if="photo.city">
-                <span v-if="photo.dateTaken"> · </span>{{ photo.city }}
-              </span>
-            </p>
-          </div>
-          <div
-            v-if="photo.tags?.length"
-            class="mt-1 flex items-center gap-1"
+        <div class="mb-3">
+          <h3
+            v-if="photo.title"
+            class="mb-2 truncate text-sm font-medium opacity-0 transition-opacity duration-300 group-hover:opacity-100"
           >
-            <UBadge
+            {{ photo.title }}
+          </h3>
+
+          <p
+            v-if="photo.description"
+            class="mb-2 line-clamp-2 text-sm text-white/80 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+          >
+            {{ photo.description }}
+          </p>
+
+          <!-- 基本信息：格式 • 宽 × 高 • 大小 -->
+          <div
+            class="mb-2 flex flex-wrap items-center gap-2 text-xs text-white/80 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+          >
+            <span v-if="format">{{ format }}</span>
+            <span v-if="format && hasDimensions">•</span>
+            <span v-if="hasDimensions" class="whitespace-nowrap">
+              {{ photo.width }} × {{ photo.height }}
+            </span>
+            <span v-if="hasDimensions && sizeText">•</span>
+            <span v-if="sizeText" class="whitespace-nowrap">{{ sizeText }}</span>
+          </div>
+
+          <!-- Tags -->
+          <div v-if="photo.tags?.length" class="flex flex-wrap gap-1.5">
+            <span
               v-for="tag in photo.tags"
               :key="tag"
-              size="sm"
-              color="neutral"
-              class="bg-white/20 text-white/80 backdrop-blur-3xl"
+              class="rounded-full bg-white/20 px-2 py-0.5 text-xs text-white/90 opacity-0 backdrop-blur-0 transition-all duration-300 group-hover:opacity-100 group-hover:backdrop-blur-sm"
             >
               {{ tag }}
-            </UBadge>
-          </div>
-          <div>
-            <!-- Camera info from EXIF if available -->
-            <div
-              v-if="photo.exif && (photo.exif.Make || photo.exif.Model)"
-              class="text-sm opacity-70 mt-1 flex items-center gap-1"
-            >
-              <Icon name="tabler:camera" />
-              <span class="text-xs font-medium text-ellipsis line-clamp-1">
-                {{ formatCameraInfo(photo.exif.Make, photo.exif.Model) }}
-              </span>
-            </div>
-            <!-- Photo specs from EXIF -->
-            <div
-              v-if="
-                photo.exif &&
-                (photo.exif.FNumber ||
-                  photo.exif.ExposureTime ||
-                  photo.exif.ISO)
-              "
-              class="text-sm opacity-70 mt-1 flex gap-2"
-            >
-              <div
-                v-if="photo.exif.FocalLengthIn35mmFormat"
-                class="flex items-center gap-0.5"
-              >
-                <Icon
-                  name="streamline:image-accessories-lenses-photos-camera-shutter-picture-photography-pictures-photo-lens"
-                  class="-mt-0.5"
-                />
-                <span class="text-xs font-medium">
-                  {{ photo.exif.FocalLengthIn35mmFormat }}
-                </span>
-              </div>
-              <div
-                v-if="photo.exif.FNumber"
-                class="flex items-center gap-0.5"
-              >
-                <Icon
-                  name="tabler:aperture"
-                  class="-mt-0.5"
-                />
-                <span class="text-xs font-medium">
-                  f/{{ photo.exif.FNumber }}
-                </span>
-              </div>
-              <div
-                v-if="photo.exif.ExposureTime"
-                class="flex items-center gap-0.5"
-              >
-                <Icon
-                  name="material-symbols:shutter-speed"
-                  class="-mt-0.5"
-                />
-                <span class="text-xs font-medium">
-                  {{ formatExposureTime(photo.exif.ExposureTime) }}
-                </span>
-              </div>
-              <div
-                v-if="photo.exif.ISO"
-                class="flex items-center gap-0.5"
-              >
-                <Icon
-                  name="carbon:iso-outline"
-                  class="-mt-0.5"
-                />
-                <span class="text-xs font-medium">{{ photo.exif.ISO }}</span>
-              </div>
-            </div>
+            </span>
           </div>
         </div>
-      </motion.div>
+
+        <!-- EXIF 相机参数网格（常驻显示、恒定高斯模糊，不随悬停隐藏） -->
+        <div
+          v-if="showExifGrid"
+          class="grid grid-cols-2 gap-2 pb-4 text-xs"
+        >
+          <div
+            v-if="photo.exif?.FocalLengthIn35mmFormat"
+            class="flex items-center gap-1.5 rounded-md bg-white/10 px-2 py-1 backdrop-blur-md opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          >
+            <Icon
+              name="streamline:image-accessories-lenses-photos-camera-shutter-picture-photography-pictures-photo-lens"
+              class="shrink-0 text-white/70"
+            />
+            <span class="text-white/90">{{ photo.exif.FocalLengthIn35mmFormat }}</span>
+          </div>
+          <div
+            v-if="photo.exif?.FNumber"
+            class="flex items-center gap-1.5 rounded-md bg-white/10 px-2 py-1 backdrop-blur-md opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          >
+            <Icon name="tabler:aperture" class="shrink-0 text-white/70" />
+            <span class="text-white/90">f/{{ photo.exif.FNumber }}</span>
+          </div>
+          <div
+            v-if="photo.exif?.ExposureTime"
+            class="flex items-center gap-1.5 rounded-md bg-white/10 px-2 py-1 backdrop-blur-md opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          >
+            <Icon name="material-symbols:shutter-speed" class="shrink-0 text-white/70" />
+            <span class="text-white/90">{{ formatExposureTime(photo.exif.ExposureTime) }}</span>
+          </div>
+          <div
+            v-if="photo.exif?.ISO"
+            class="flex items-center gap-1.5 rounded-md bg-white/10 px-2 py-1 backdrop-blur-md opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          >
+            <Icon name="carbon:iso-outline" class="shrink-0 text-white/70" />
+            <span class="text-white/90">ISO {{ photo.exif.ISO }}</span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>

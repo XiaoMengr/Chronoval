@@ -21,6 +21,8 @@ const currentPhoto = computed(() =>
 
 defineOgImage('Photo', {
   photo: currentPhoto.value || undefined,
+  width: 1200,
+  height: 628,
 })
 
 // 处理标签查询参数
