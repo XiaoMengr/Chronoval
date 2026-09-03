@@ -123,11 +123,13 @@ jobs:
           REGISTRY: ${{ secrets.GITEA_SERVER_URL || 'http://172.16.0.1:322' }}
           OWNER: ${{ github.repository_owner }}
         run: |
+          # Docker tag 不允许带 scheme，需去掉 http(s):// 前缀
+          REG="${REGISTRY##*://}"
           if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            TAGS="${REGISTRY}/${OWNER}/chronoval:latest"
+            TAGS="${REG}/${OWNER}/chronoval:latest"
           else
             BRANCH="${GITHUB_REF##*/}"
-            TAGS="${REGISTRY}/${OWNER}/chronoval:${BRANCH}"
+            TAGS="${REG}/${OWNER}/chronoval:${BRANCH}"
           fi
           echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
           echo "Built tag: $TAGS"
@@ -159,6 +161,7 @@ jobs:
     steps:
       - name: Show pull usage
         run: |
+          REG="${GITEA_SERVER_URL##*://}"
           echo "镜像已推送：${{ secrets.GITEA_SERVER_URL || 'http://172.16.0.1:322' }}/${{ github.repository_owner }}/chronoval"
-          echo "使用：docker pull ${{ secrets.GITEA_SERVER_URL || 'http://172.16.0.1:322' }}/${{ github.repository_owner }}/chronoval:latest"
+          echo "使用：docker pull ${REG}/${{ github.repository_owner }}/chronoval:latest"
           echo "离线资源见仓库 Release 附件（版本下载）。"
