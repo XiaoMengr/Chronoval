@@ -74,7 +74,9 @@ jobs:
             curl -sf -X POST -H "$AUTH" -H "Content-Type: application/json" \
               -d "{\"tag_name\":\"${REL_TAG}\",\"name\":\"Chronoval 离线构建资源\",\"body\":\"用于离线构建的依赖包与源码快照\"}" \
               "${BASE}/repos/${OWNER}/${REPO}/releases" || echo '{}')
-          echo "release_json=$RELEASE_JSON" | tee /workdir/release.json
+          # 写入纯 JSON（不要加前缀，后续步骤会直接 json.parse 该文件）
+          printf '%s\n' "$RELEASE_JSON" > /workdir/release.json
+          echo "release_json=$RELEASE_JSON"
           cp /workdir/src.tar.gz /workdir/chronoval-src.tar.gz
 
       - name: Upload offline resources as release attachments
