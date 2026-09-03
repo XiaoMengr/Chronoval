@@ -26,7 +26,21 @@ await settingsStore.initSettings()
 
 const appTitle = useSettingRef('app:title')
 
-colorMode.preference = useSettingRef('app:appearance.theme').value as string
+// 主题持久化修复：优先尊重浏览器已保存的配色选择（顶栏切换后 Nuxt ColorMode
+// 会写入 cframe-color-mode）。仅当用户从未显式选择过浅/暗色时，才用服务端设置的
+// 默认主题兜底。此前无条件覆盖导致首页切换主题后一旦刷新就被服务端默认值打回浅色。
+if (import.meta.client) {
+  let storedTheme: string | null = null
+  try {
+    storedTheme = window.localStorage.getItem('cframe-color-mode')
+  } catch {
+    storedTheme = null
+  }
+  colorMode.preference =
+    storedTheme === 'light' || storedTheme === 'dark'
+      ? storedTheme
+      : (useSettingRef('app:appearance.theme').value as string)
+}
 
 useHead({
   titleTemplate: (title) =>
