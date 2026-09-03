@@ -104,22 +104,17 @@ volumes:
   - /data/videos:/app/videos:ro   # ← 换成你的视频目录（独立文件夹）
 ```
 
-> 若目录里有照片放路边不识别，或想立即生效，可在管理后台触发一次扫描；也支持把 `LIBRARY_SCAN_INTERVAL_MS` 调小（毫秒）。
+> 想立即生效可在管理后台手动扫描，或将 `LIBRARY_SCAN_INTERVAL_MS` 调小（毫秒）。完整环境变量见 [docs/configuration.md](docs/configuration.md) 和 `.env.example`。
 
-## 配置
-
-完整环境变量参考见 [docs/configuration.md](docs/configuration.md) 与 `.env.example`。
-
-关键项：
+关键环境变量：
 
 | 环境变量 | 说明 | 默认 |
 |---|---|---|
 | `CFRAME_ADMIN_EMAIL` | 管理员邮箱（必填） | - |
 | `CFRAME_ADMIN_PASSWORD` | 管理员密码 | `CF1234@!` |
-| `NUXT_SESSION_PASSWORD` | 会话加密密钥（必填，32 位） | - |
+| `NUXT_SESSION_PASSWORD` | 会话密钥（必填，32 位） | - |
 | `NUXT_PUBLIC_APP_TITLE` | 站点标题 | `Chronoval` |
 | `NUXT_STORAGE_PROVIDER` | 存储方案 `local`/`s3`/`openlist` | `local` |
-| `NUXT_PROVIDER_LOCAL_PATH` | 本地存储路径 | `./data/storage` |
 | `NUXT_PUBLIC_MAP_PROVIDER` | 地图 `maplibre`/`mapbox` | `maplibre` |
 | `LIBRARY_PHOTOS_PATH` | 只读照片目录（容器内） | `/app/photos` |
 | `LIBRARY_VIDEOS_PATH` | 只读视频目录（容器内） | `/app/videos` |
