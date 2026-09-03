@@ -55,7 +55,7 @@ docker-compose pull
 docker-compose up -d
 
 # 6. 查看启动日志
-docker-compose logs -f chronoframe
+docker-compose logs -f chronoval
 ```
 
 #### 指定版本更新
@@ -65,8 +65,8 @@ docker-compose logs -f chronoframe
 ```yaml
 # docker-compose.yml
 services:
-  chronoframe:
-    image: ghcr.io/hoshinosuzumi/chronoframe:v1.2.3 # 指定版本
+  chronoval:
+    image: 172.16.0.1:322/xiaomengr/chronoval:latest # 按需指定版本
     # ... 其他配置
 ```
 
@@ -78,19 +78,21 @@ docker-compose up -d
 
 ```bash
 # 停止现有容器
-docker stop chronoframe
-docker rm chronoframe
+docker stop chronoval
+docker rm chronoval
 
 # 拉取最新镜像
-docker pull ghcr.io/hoshinosuzumi/chronoframe:latest
+docker pull 172.16.0.1:322/xiaomengr/chronoval:latest
 
 # 使用相同配置启动新容器
 docker run -d \
-  --name chronoframe \
+  --name chronoval \
   -p 3000:3000 \
   -v $(pwd)/data:/app/data \
+  -v /data/photos:/app/photos:ro \
+  -v /data/videos:/app/videos:ro \
   --env-file .env \
-  ghcr.io/hoshinosuzumi/chronoframe:latest
+  172.16.0.1:322/xiaomengr/chronoval:latest
 ```
 
 ## 数据库迁移
@@ -101,7 +103,7 @@ ChronoFrame 在启动时会自动执行数据库迁移：
 
 ```bash
 # 查看迁移日志
-docker logs chronoframe | grep -i migration
+docker logs chronoval | grep -i migration
 ```
 
 ### 手动迁移（高级）
@@ -110,7 +112,7 @@ docker logs chronoframe | grep -i migration
 
 ```bash
 # 进入容器
-docker exec -it chronoframe sh
+docker exec -it chronoval sh
 
 # 执行迁移
 npx drizzle-kit migrate

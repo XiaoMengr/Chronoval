@@ -64,8 +64,10 @@ docker run -d --name chronoval -p 3000:3000 \
   -v /data/photos:/app/photos:ro \
   -v /data/videos:/app/videos:ro \
   --env-file .env \
-  http://172.16.0.1:322/<owner>/chronoval:latest
+  172.16.0.1:322/xiaomengr/chronoval:latest
 ```
+
+> 注册表为内网 HTTP 地址，部署机需将 `172.16.0.1:322` 加入 Docker 的 `insecure-registries` 才能拉取。完整镜像地址（用户级命名空间）为 `172.16.0.1:322/xiaomengr/chronoval:latest`。镜像归属你的用户（owner）命名空间，可在 Gitea 右上角头像 → 你的用户名 → 「软件包」中查看；Gitea 容器镜像不支持绑定到仓库命名空间。
 
 ## 通过 Gitea Actions 自动构建镜像
 

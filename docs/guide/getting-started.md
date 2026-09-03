@@ -25,18 +25,10 @@ The documentation is still being written; some sections may be incomplete.
 
 ### Pull Image
 
-Use the published image on GitHub Container Registry and Docker Hub. Choose the source that works best for your network:
-
-#### [GitHub Container Registry (GHCR)](https://github.com/HoshinoSuzumi/chronoframe/pkgs/container/chronoframe)
+Chronoval is built and published to your private Gitea's built‑in Container Registry by the included Gitea Actions workflow. Pull it from the internal registry (add `172.16.0.1:322` to Docker's `insecure-registries` if the registry is plain HTTP):
 
 ```bash
-docker pull ghcr.io/hoshinosuzumi/chronoframe:latest
-```
-
-#### [Docker Hub](https://hub.docker.com/r/hoshinosuzumi/chronoframe)
-
-```bash
-docker pull hoshinosuzumi/chronoframe:latest
+docker pull 172.16.0.1:322/xiaomengr/chronoval:latest
 ```
 
 ### Create `.env`
@@ -105,11 +97,13 @@ NUXT_OAUTH_GITHUB_CLIENT_SECRET=
 
 ```bash
 docker run -d \
-  --name chronoframe \
+  --name chronoval \
   -p 3000:3000 \
   -v "$(pwd)/data:/app/data" \
+  -v /data/photos:/app/photos:ro \
+  -v /data/videos:/app/videos:ro \
   --env-file .env \
-  ghcr.io/hoshinosuzumi/chronoframe:latest
+  172.16.0.1:322/xiaomengr/chronoval:latest
 ```
 
 ### Docker Compose
@@ -118,14 +112,16 @@ Create `docker-compose.yml`:
 
 ```yaml
 services:
-  chronoframe:
-    image: ghcr.io/hoshinosuzumi/chronoframe:latest
-    container_name: chronoframe
+  chronoval:
+    image: 172.16.0.1:322/xiaomengr/chronoval:latest
+    container_name: chronoval
     restart: unless-stopped
     ports:
       - '3000:3000'
     volumes:
       - ./data:/app/data
+      - /data/photos:/app/photos:ro   # put photos here, auto-detected
+      - /data/videos:/app/videos:ro   # put videos here, auto-detected
     env_file:
       - .env
 ```
@@ -137,7 +133,7 @@ Start / manage lifecycle:
 docker compose up -d
 
 # Follow logs
-docker compose logs -f chronoframe
+docker compose logs -f chronoval
 
 # Stop
 docker compose down
@@ -201,20 +197,22 @@ server {
 
 ```yaml
 services:
-  chronoframe:
-    image: ghcr.io/hoshinosuzumi/chronoframe:latest
-    container_name: chronoframe
+  chronoval:
+    image: 172.16.0.1:322/xiaomengr/chronoval:latest
+    container_name: chronoval
     restart: unless-stopped
     volumes:
       - ./data:/app/data
+      - /data/photos:/app/photos:ro
+      - /data/videos:/app/videos:ro
     env_file:
       - .env
     labels:
       - 'traefik.enable=true'
-      - 'traefik.http.routers.chronoframe.rule=Host(`your-domain.com`)'
-      - 'traefik.http.routers.chronoframe.entrypoints=websecure'
-      - 'traefik.http.routers.chronoframe.tls.certresolver=letsencrypt'
-      - 'traefik.http.services.chronoframe.loadbalancer.server.port=3000'
+      - 'traefik.http.routers.chronoval.rule=Host(`your-domain.com`)'
+      - 'traefik.http.routers.chronoval.entrypoints=websecure'
+      - 'traefik.http.routers.chronoval.tls.certresolver=letsencrypt'
+      - 'traefik.http.services.chronoval.loadbalancer.server.port=3000'
     networks:
       - traefik
 

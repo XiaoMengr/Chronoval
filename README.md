@@ -173,8 +173,10 @@ chronoval/
 
 仓库已内置 Gitea Actions 工作流（`.gitea/workflows/docker-build.yml`）。推送到私有 Gitea 的 `main` 分支或 `v*` 标签后，Runner 会自动构建并将其推送到该 Gitea 实例的内置容器注册表（走内网 `172.16.0.1:322`），同时把离线构建资源上传到仓库的版本下载：
 
+> 注册表为内网 HTTP 地址，部署机需将 `172.16.0.1:322` 加入 Docker 的 `insecure-registries` 才能拉取。镜像归属你的用户命名空间（Gitea 右上角头像 → 用户名 → 「软件包」），完整地址为 `172.16.0.1:322/xiaomengr/chronoval:latest`。
+
 ```bash
-docker pull <gitea-host>:322/<owner>/chronoval:latest
+docker pull 172.16.0.1:322/xiaomengr/chronoval:latest
 ```
 
 详情见 [docs/deployment.md](docs/deployment.md)。

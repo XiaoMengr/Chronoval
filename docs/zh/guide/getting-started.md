@@ -25,18 +25,10 @@
 
 ### 拉取镜像
 
-我们推荐使用预构建的 Docker 镜像进行部署，镜像托管在 GHCR 和 Docker Hub，您可以根据网络情况选择合适的源。
-
-#### [GitHub Container Registry (GHCR)](https://github.com/HoshinoSuzumi/chronoframe/pkgs/container/chronoframe)
+Chronoval 由内置的 Gitea Actions 工作流自动构建并推送到你的私有 Gitea 内置容器注册表。从内网注册表拉取（若注册表为 HTTP，需将 `172.16.0.1:322` 加入 Docker 的 `insecure-registries`）：
 
 ```bash
-docker pull ghcr.io/hoshinosuzumi/chronoframe:latest
-```
-
-#### [Docker Hub](https://hub.docker.com/r/hoshinosuzumi/chronoframe)
-
-```bash
-docker pull hoshinosuzumi/chronoframe:latest
+docker pull 172.16.0.1:322/xiaomengr/chronoval:latest
 ```
 
 ### 创建配置文件
@@ -106,7 +98,12 @@ NUXT_OAUTH_GITHUB_CLIENT_SECRET=
 #### 快速启动
 
 ```bash
-docker run -d --name chronoframe -p 3000:3000 -v $(pwd)/data:/app/data --env-file .env ghcr.io/hoshinosuzumi/chronoframe:latest
+docker run -d --name chronoval -p 3000:3000 \
+  -v $(pwd)/data:/app/data \
+  -v /data/photos:/app/photos:ro \
+  -v /data/videos:/app/videos:ro \
+  --env-file .env \
+  172.16.0.1:322/xiaomengr/chronoval:latest
 ```
 
 ### Docker Compose 部署
@@ -117,26 +114,28 @@ docker run -d --name chronoframe -p 3000:3000 -v $(pwd)/data:/app/data --env-fil
 
 ```yaml
 services:
-  chronoframe:
-    image: ghcr.io/hoshinosuzumi/chronoframe:latest
-    container_name: chronoframe
+  chronoval:
+    image: 172.16.0.1:322/xiaomengr/chronoval:latest
+    container_name: chronoval
     restart: unless-stopped
     ports:
       - '3000:3000'
     volumes:
       - ./data:/app/data
+      - /data/photos:/app/photos:ro   # 照片目录，放入即自动识别
+      - /data/videos:/app/videos:ro   # 视频目录，放入即自动识别
     env_file:
       - .env
 ```
 
-#### 2. 启动 ChronoFrame 服务
+#### 2. 启动 ChronoVal 服务
 
 ```bash
 # 启动服务
 docker compose up -d
 
 # 查看日志
-docker compose logs -f chronoframe
+docker compose logs -f chronoval
 
 # 停止服务
 docker compose down
@@ -214,20 +213,22 @@ server {
 
 ```yaml
 services:
-  chronoframe:
-    image: ghcr.io/hoshinosuzumi/chronoframe:latest
-    container_name: chronoframe
+  chronoval:
+    image: 172.16.0.1:322/xiaomengr/chronoval:latest
+    container_name: chronoval
     restart: unless-stopped
     volumes:
       - ./data:/app/data
+      - /data/photos:/app/photos:ro
+      - /data/videos:/app/videos:ro
     env_file:
       - .env
     labels:
       - 'traefik.enable=true'
-      - 'traefik.http.routers.chronoframe.rule=Host(`your-domain.com`)'
-      - 'traefik.http.routers.chronoframe.entrypoints=websecure'
-      - 'traefik.http.routers.chronoframe.tls.certresolver=letsencrypt'
-      - 'traefik.http.services.chronoframe.loadbalancer.server.port=3000'
+      - 'traefik.http.routers.chronoval.rule=Host(`your-domain.com`)'
+      - 'traefik.http.routers.chronoval.entrypoints=websecure'
+      - 'traefik.http.routers.chronoval.tls.certresolver=letsencrypt'
+      - 'traefik.http.services.chronoval.loadbalancer.server.port=3000'
     networks:
       - traefik
 

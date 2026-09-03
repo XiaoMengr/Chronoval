@@ -55,7 +55,7 @@ docker-compose pull
 docker-compose up -d
 
 # 6. View startup logs
-docker-compose logs -f chronoframe
+docker-compose logs -f chronoval
 ```
 
 #### Specific Version Update
@@ -65,8 +65,8 @@ If you need to update to a specific version:
 ```yaml
 # docker-compose.yml
 services:
-  chronoframe:
-    image: ghcr.io/hoshinosuzumi/chronoframe:v1.2.3 # Specify version
+  chronoval:
+    image: 172.16.0.1:322/xiaomengr/chronoval:latest # specify a tag if needed
     # ... other configurations
 ```
 
@@ -78,19 +78,21 @@ docker-compose up -d
 
 ```bash
 # Stop existing container
-docker stop chronoframe
-docker rm chronoframe
+docker stop chronoval
+docker rm chronoval
 
 # Pull latest image
-docker pull ghcr.io/hoshinosuzumi/chronoframe:latest
+docker pull 172.16.0.1:322/xiaomengr/chronoval:latest
 
 # Start new container with same configuration
 docker run -d \
-  --name chronoframe \
+  --name chronoval \
   -p 3000:3000 \
   -v $(pwd)/data:/app/data \
+  -v /data/photos:/app/photos:ro \
+  -v /data/videos:/app/videos:ro \
   --env-file .env \
-  ghcr.io/hoshinosuzumi/chronoframe:latest
+  172.16.0.1:322/xiaomengr/chronoval:latest
 ```
 
 ## Database Migration
@@ -101,7 +103,7 @@ ChronoFrame automatically executes database migrations on startup:
 
 ```bash
 # View migration logs
-docker logs chronoframe | grep -i migration
+docker logs chronoval | grep -i migration
 ```
 
 ### Manual Migration (Advanced)
@@ -110,7 +112,7 @@ In special cases, you may need to manually execute migrations:
 
 ```bash
 # Enter container
-docker exec -it chronoframe sh
+docker exec -it chronoval sh
 
 # Execute migration
 npx drizzle-kit migrate
