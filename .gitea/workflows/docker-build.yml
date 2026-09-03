@@ -1,30 +1,28 @@
 # Chronoval Docker 镜像构建工作流（Gitea Actions）
 #
+# ▍零第三方 Action 设计（重要）
+#   本仓库 Runner 处于私有/受限网络，无法访问 github.com —— 所有基于 GitHub 的
+#   第三方 action（actions/checkout、docker/login-action、build-push-action、setup-buildx 等）
+#   在拉取 action 本体时都会超时失败（read tcp ...:443 connection timed out）。
+#   因此本工作流【完全不用任何 uses: 第三方 action】，改用纯 shell 命令：
+#     · 取源码   -> git clone（内网 172.16.0.1:322，带凭据）
+#     · 构建     -> docker buildx / docker build + docker push（内网 Container 注册表）
+#     · 离线资源 -> Gitea 内网 API 创建/上传 Release 附件（版本下载）
+#
 # ▍内网地址
-#   本仓库部署在私有网络，Runner 访问 Gitea 走内网地址 `http://172.16.0.1:322`
-#   （Container 注册表、API、上传离线资源均基于该地址）。
-#
-# ▍离线资源落地版本下载
-#   Gitea 的公网源/registry 访问可能受限，为保证构建可用，把构建所需的离线资源
-#   （noscript 构建缓存、可离线安装的 pnpm 离线包）打成压缩包，作为 Release 附件
-#   落地到「版本下载」。后续构建优先从该 Release 下载离线资源，避免依赖外网。
-#
-# ▍触发
-#   推送 main / tag v*；也可手动触发。
+#   统一走内网 `http://172.16.0.1:322`（Container 注册表 / API / clone / Release 上传）。
 #
 # ▍前置要求
 #   - Gitea 已启用 Actions 与 Container 注册表
 #   - Runner 可访问内网 172.16.0.1:322
-#   - 仓库已配置 `GITHUB_TOKEN`（具备 write:package 与 write contents 权限）
+#   - 仓库已配置 Secret：CI_TOKEN（Gitea 用户 PAT，含 write:package 与 write contents）。
+#     该 PAT 同时用于 内网 git clone、registry 登录、创建/上传 Release 附件。
 #
-# ▍可选仓库 Secrets（便于离线包更新）
-#   GITEA_SERVER_URL  -> 默认 http://172.16.0.1:322
-#   GITEA_OWNER       -> 镜像/Release 归属（默认取仓库 owner）
-#   GITEA_API_TOKEN   -> 用于创建/上传 Release 附件；缺省用 GITHUB_TOKEN
+# ▍可选 Secrets
+#   GITEA_SERVER_URL -> 默认 http://172.16.0.1:322
+#   GITEA_OWNER      -> 镜像/Release 归属（默认取仓库 owner）
 
 name: docker-build
-
-# (build) 触发：推送 main/tag v* 或手动触发
 
 on:
   push:
@@ -40,119 +38,120 @@ env:
   # 统一走内网地址
   GITEA_SERVER_URL: ${{ secrets.GITEA_SERVER_URL || 'http://172.16.0.1:322' }}
   IMAGE_NAME: chronoval
+  # 仓库鉴权 PAT（内网 clone / registry / API / Release 全用它）
+  CI_TOKEN: ${{ secrets.CI_TOKEN }}
 
 jobs:
   offline-assets:
-    # 生成/更新离线资源，并作为 Release 附件上传，供后续构建离线使用
+    # 生成/更新离线资源，并作为 Release 附件上传（版本下载），供后续构建离线使用
     runs-on: ubuntu-latest
-    permissions:
-      packages: write
-      contents: write
     env:
       GITEA_API: ${{ secrets.GITEA_SERVER_URL || 'http://172.16.0.1:322' }}/api/v1
       OWNER: ${{ github.repository_owner }}
       REPO: ${{ github.event.repository.name }}
       REL_TAG: build-offline-assets
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Enable corepack & prepare offline packages
-        run: |
-          corepack enable
-          mkdir -p offline/downloads /workdir
-          tar --exclude=node_modules --exclude=.output --exclude=.nuxt -czf /workdir/src.tar.gz -C . . 2>/dev/null || tar -czf /workdir/src.tar.gz -C . .
-
-      - name: Fetch offline build dependencies
-        env:
-          TOKEN: ${{ secrets.GITEA_API_TOKEN || github.token }}
+      - name: Clone source from internal Gitea
         run: |
           set -e
-          BASE="${GITEA_API}"
-          AUTH="Authorization: token ${TOKEN}"
-          # 确保 Release 存在，不存在则创建
+          REPO_ID="${OWNER}/${REPO}"
+          # 复用 GITHUB_REPOSITORY（owner/repo，act_runner 会注入）；为空则用 OWNER/REPO
+          THE_REPO="${GITHUB_REPOSITORY:-${OWNER}/${REPO}}"
+          mkdir -p src
+          git clone --depth 1 "http://${OWNER}:${CI_TOKEN}@172.16.0.1:322/${THE_REPO}.git" src
+
+      - name: Package source snapshot for offline fallback
+        run: |
+          set -e
+          mkdir -p /workdir
+          tar --exclude=node_modules --exclude=.output --exclude=.nuxt -czf /workdir/src.tar.gz -C src .
+
+      - name: Ensure offline-assets Release exists
+        run: |
+          set -e
+          AUTH="Authorization: token ${CI_TOKEN}"
           RELEASE_JSON=$(curl -sf -H "$AUTH" \
-            "${BASE}/repos/${OWNER}/${REPO}/releases/tags/${REL_TAG}" 2>/dev/null || \
+            "${GITEA_API}/repos/${OWNER}/${REPO}/releases/tags/${REL_TAG}" 2>/dev/null || \
             curl -sf -X POST -H "$AUTH" -H "Content-Type: application/json" \
-              -d "{\"tag_name\":\"${REL_TAG}\",\"name\":\"Chronoval 离线构建资源\",\"body\":\"用于离线构建的依赖包与源码快照\"}" \
-              "${BASE}/repos/${OWNER}/${REPO}/releases" || echo '{}')
-          # 写入纯 JSON（不要加前缀，后续步骤会直接 json.parse 该文件）
+              -d "{\"tag_name\":\"${REL_TAG}\",\"name\":\"Chronoval 离线构建资源\",\"body\":\"用于离线构建的依赖包与源码快照（内网自动生成）\"}" \
+              "${GITEA_API}/repos/${OWNER}/${REPO}/releases" || echo '{}')
+          # 写入纯 JSON（后续步骤直接 json.parse）
           printf '%s\n' "$RELEASE_JSON" > /workdir/release.json
           echo "release_json=$RELEASE_JSON"
-          cp /workdir/src.tar.gz /workdir/chronoval-src.tar.gz
 
-      - name: Upload offline resources as release attachments
-        env:
-          TOKEN: ${{ secrets.GITEA_API_TOKEN || github.token }}
+      - name: Upload source snapshot as release attachment
         run: |
-          BASE="${GITEA_API}"
-          AUTH="Authorization: token ${TOKEN}"
-          RELEASE_ID=$(python3 -c "import json,sys; d=json.load(open('/workdir/release.json')); print(d.get('id',''))")
+          set -e
+          AUTH="Authorization: token ${CI_TOKEN}"
+          RELEASE_ID=$(python3 -c "import json,sys; d=json.load(open('/workdir/release.json')); print(d.get('id',''))" 2>/dev/null || echo '')
           echo "release_id=$RELEASE_ID"
-          if [ -n "$RELEASE_ID" ]; then
-            curl -sf -X POST -H "$AUTH" \
-              -F "attachment=@/workdir/chronoval-src.tar.gz" \
-              "${BASE}/repos/${OWNER}/${REPO}/releases/${RELEASE_ID}/assets" || echo "upload-src-warn"
+          if [ -n "$RELEASE_ID" ] && [ -f /workdir/src.tar.gz ]; then
+            curl -sS -X POST -H "$AUTH" \
+              -F "attachment=@/workdir/src.tar.gz" \
+              "${GITEA_API}/repos/${OWNER}/${REPO}/releases/${RELEASE_ID}/assets" \
+              || echo "upload-src-warn"
           fi
 
   docker:
     needs: offline-assets
     runs-on: ubuntu-latest
-    permissions:
-      packages: write
-      contents: read
     env:
-      # 内网 Container 注册表地址
-      REGISTRY: ${{ secrets.GITEA_SERVER_URL || 'http://172.16.0.1:322' }}
+      # 内网 Container 注册表地址（去 scheme）
+      REG: ${{ secrets.GITEA_SERVER_URL || 'http://172.16.0.1:322' }}
       OWNER: ${{ github.repository_owner }}
+      REG_H: ${{ secrets.GITEA_SERVER_URL || 'http://172.16.0.1:322' }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Compute image tags
-        # 不使用 docker/metadata-action（其运行时需访问 GitHub API，内网 Runner 会超时）。
-        # 手动计算 tag：push 到 main 打 latest，tag/其它分支用 ref 名。
-        id: meta
-        env:
-          REGISTRY: ${{ secrets.GITEA_SERVER_URL || 'http://172.16.0.1:322' }}
-          OWNER: ${{ github.repository_owner }}
+      - name: Clone source from internal Gitea
         run: |
-          # Docker tag 不允许带 scheme，需去掉 http(s):// 前缀
-          REG="${REGISTRY##*://}"
+          # 仓库地址缺省用当前仓库
+          REPO_ID="${OWNER}/${IMAGE_NAME}"
+          # 从内置上下文取得仓库名；若为空则用 IMAGE_NAME 兜底
+          THE_REPO="${GITHUB_REPOSITORY:-${OWNER}/${IMAGE_NAME}}"
+          echo "cloning ${THE_REPO}"
+          git clone --depth 1 "http://${OWNER}:${CI_TOKEN}@172.16.0.1:322/${THE_REPO}.git" . 2>/dev/null \
+            || git --config http.sslVerify=false clone "http://${OWNER}:${CI_TOKEN}@172.16.0.1:322/${THE_REPO}.git" .
+          ls -la
+
+      - name: Compute image tag
+        id: meta
+        run: |
+          SRV="${REG_H#*://}"          # 去掉 http(s)://
+          SRV="${SRV%%/*}"
           if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            TAGS="${REG}/${OWNER}/chronoval:latest"
+            TAG_REF="latest"
           else
-            BRANCH="${GITHUB_REF##*/}"
-            TAGS="${REG}/${OWNER}/chronoval:${BRANCH}"
+            TAG_REF="${GITHUB_REF##*/}"
           fi
-          echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
-          echo "Built tag: $TAGS"
+          TAGS="${SRV}/${OWNER}/chronoval:${TAG_REF}"
+          echo "tags=${TAGS}" >> "$GITHUB_OUTPUT"
+          echo "Built tag: ${TAGS}"
 
       - name: Log in to Gitea Container Registry (internal)
-        # Gitea 容器注册表登录需要用户级 PAT（含 write:package）。
-        # 用仓库 Secret CI_TOKEN（Gitea 用户 PAT），比 GITHUB_TOKEN 更可靠。
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.CI_TOKEN }}
+        run: |
+          SRV="${REG_H#*://}"; SRV="${SRV%%/*}"
+          echo "${CI_TOKEN}" | docker login "$SRV" --username "${OWNER}" --password-stdin 2>&1 || \
+            echo "${CI_TOKEN}" | docker login "http://${SRV}" --username "${OWNER}" --password-stdin
 
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          # 内网环境构建更稳，仅构建 native 架构即可（如需多架构去掉该行并配合 --platform）
-          platforms: linux/amd64
+      - name: Set up QEMU (native only, fallback no-op)
+        run: |
+          echo "native build on linux/amd64"
+          docker version || true
+          docker buildx version || true
+
+      - name: Build and push Docker image (buildx legacy fallback)
+        run: |
+          set -e
+          TAGS="${{ steps.meta.outputs.tags }}"
+          echo "== Try buildx cache mount =="
+          if docker buildx version >/dev/null 2>&1 && docker buildx create --use --driver docker-container --name gitea-builder >/dev/null 2>&1; then
+             DOCKER_BUILDKIT=1 docker buildx build --progress=plain --platform linux/amd64 --push -t "${TAGS}" . 2>&1 \
+              || { echo "buildx failed, fallback to docker build"; \
+                   DOCKER_BUILDKIT=1 docker build -t "${TAGS}" .; docker push "${TAGS}"; }
+          else
+             echo "buildx unavailable, use classic docker build"
+             DOCKER_BUILDKIT=1 docker build -t "${TAGS}" . 2>&1
+             docker push "${TAGS}"
+          fi
 
   echo-usage:
     needs: [docker]
@@ -161,7 +160,9 @@ jobs:
     steps:
       - name: Show pull usage
         run: |
-          REG="${GITEA_SERVER_URL##*://}"
-          echo "镜像已推送：${{ secrets.GITEA_SERVER_URL || 'http://172.16.0.1:322' }}/${{ github.repository_owner }}/chronoval"
-          echo "使用：docker pull ${REG}/${{ github.repository_owner }}/chronoval:latest"
+          SRV="${GITEA_SERVER_URL#*://}"; SRV="${SRV%%/*}"
+          echo "构建完成（最终以 docker job 结论为准）。"
+          echo "镜像地址：${GITEA_SERVER_URL}/${OWNER}/chronoval:latest"
+          echo "拉取（若注册表为 http 需配置 insecure-registry）："
+          echo "  docker pull ${SRV}/${OWNER}/chronoval:latest"
           echo "离线资源见仓库 Release 附件（版本下载）。"
