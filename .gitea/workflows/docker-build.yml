@@ -140,24 +140,21 @@ jobs:
           docker version || true
           docker buildx version || true
 
-      - name: Build and push Docker image (buildx legacy fallback)
+      - name: Build and push Docker image
+        # 优先使用经典 docker build + docker push：
+        #  · buildx docker-container driver 启动的 buildkit 容器会继承 Runner 的
+        #    HTTP(S)_PROXY（指向宿主 192.168.43.1:2080），在 buildkit 内该代理不可达，
+        #    导致取 /v2/token 时报 "proxyconnect ... i/o timeout"。
+        #  · 而 daemon（docker build/push）走宿主网络，已 docker login 且注册表标记 insecure，
+        #    直连即可推送成功。Dockerfile 的 buildkit cache mount 在 docker 28 的默认
+        #    BuildKit 后端同样支持，不影响。
         run: |
           set -e
           TAGS="${{ steps.meta.outputs.tags }}"
-          # 注册表为内网 HTTP，推送到 buildkit 需声明 insecure；否则报
-          # "http: server gave HTTP response to HTTPS client"。
-          SRV="${REG_H#*://}"; SRV="${SRV%%/*}"
-          if docker buildx version >/dev/null 2>&1 && docker buildx create --use --driver docker-container --name gitea-builder >/dev/null 2>&1; then
-             DOCKER_BUILDKIT=1 docker buildx build \
-               --progress=plain --platform linux/amd64 \
-               --output "type=image,push=true,registry.insecure=true,name=${TAGS}" . 2>&1 \
-              || { echo "buildx(registry.insecure) failed, fallback to docker build"; \
-                   DOCKER_BUILDKIT=1 docker build -t "${TAGS}" . 2>&1; docker push "${TAGS}"; }
-          else
-             echo "buildx unavailable, use classic docker build"
-             DOCKER_BUILDKIT=1 docker build -t "${TAGS}" . 2>&1
-             docker push "${TAGS}"
-          fi
+          echo "== Classic docker build + docker push =="
+          DOCKER_BUILDKIT=1 docker build -t "${TAGS}" . 2>&1
+          docker push "${TAGS}"
+          echo "PUSH OK: ${TAGS}"
 
   echo-usage:
     needs: [docker]
