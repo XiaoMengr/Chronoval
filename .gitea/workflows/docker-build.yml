@@ -117,12 +117,14 @@ jobs:
         run: |
           SRV="${REG_H#*://}"          # 去掉 http(s)://
           SRV="${SRV%%/*}"
+          # Docker 注册表仓库名必须全小写（Gitea 对 owner 大小写不敏感，路径用小写即可）
+          OWNER_L="$(printf '%s' "${OWNER}" | tr '[:upper:]' '[:lower:]')"
           if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
             TAG_REF="latest"
           else
             TAG_REF="${GITHUB_REF##*/}"
           fi
-          TAGS="${SRV}/${OWNER}/chronoval:${TAG_REF}"
+          TAGS="${SRV}/${OWNER_L}/chronoval:${TAG_REF}"
           echo "tags=${TAGS}" >> "$GITHUB_OUTPUT"
           echo "Built tag: ${TAGS}"
 
