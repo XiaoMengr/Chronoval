@@ -24,6 +24,8 @@
 
 name: docker-build
 
+# (build) 触发：推送 main/tag v* 或手动触发
+
 on:
   push:
     branches: [main]
