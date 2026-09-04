@@ -488,7 +488,8 @@
       "reset": "Reset",
       "cancel": "Cancel",
       "continue": "Continue",
-      "delete": "Delete"
+      "delete": "Delete",
+      "close": "Close"
     },
     "unknownError": "Unknown error"
   },
@@ -1399,7 +1400,87 @@
       },
       "actions": {
         "add": "Add Storage",
-        "create": "Create Storage"
+        "create": "Create Storage",
+        "info": "Info"
+      },
+      "info": {
+        "title": "Storage Scheme Info",
+        "name": "Name",
+        "type": "Type",
+        "createdAt": "Created At",
+        "updatedAt": "Updated At",
+        "config": {
+          "basePath": "Storage Base Path",
+          "baseUrl": "Base URL",
+          "prefix": "Prefix",
+          "bucket": "Bucket",
+          "region": "Region",
+          "endpoint": "Endpoint",
+          "cdnUrl": "CDN URL",
+          "rootPath": "Root Path",
+          "token": "Token"
+        }
+      },
+      "scanLibrary": {
+        "sectionTitle": "Local Scan Library",
+        "sectionDescription": "A separate storage method: drop plain photos or videos into a folder and they are automatically scanned and thumbnailed. Fully independent from the encrypted upload storage.",
+        "table": {
+          "photoCount": "Indexed",
+          "notScanned": "Not scanned yet",
+          "lastScanAt": "Last scan",
+          "lastScanResult": "Result"
+        },
+        "empty": "No scan libraries yet. Add a folder to get started.",
+        "messages": {
+          "saved": "Scan library saved",
+          "created": "Scan library created",
+          "updated": "Scan library updated",
+          "deleted": "Scan library deleted",
+          "saveError": "Error saving scan library",
+          "deleteError": "Failed to delete scan library",
+          "scanned": "Scan triggered:",
+          "scanError": "Failed to trigger scan"
+        },
+        "form": {
+          "nameLabel": "Library Name",
+          "namePlaceholder": "Leave empty to use the folder name",
+          "pathLabel": "Folder Path",
+          "pathPlaceholder": "Absolute path to the watched folder, e.g. /photos",
+          "intervalLabel": "Watch Interval (ms)",
+          "enabledLabel": "Enable automatic scanning"
+        },
+        "info": {
+          "title": "Scan Library Info",
+          "name": "Name",
+          "path": "Folder Path",
+          "provider": "Source Type",
+          "status": "Status",
+          "enabled": "Enabled",
+          "disabled": "Disabled",
+          "interval": "Watch Interval",
+          "intervalMs": "{value} ms",
+          "notScanned": "Not scanned yet",
+          "scannedAt": "Last scanned",
+          "scanResult": "Last result",
+          "photoIndexed": "Indexed photos",
+          "thumbnailDirHint": "Thumbnails are written in-place",
+          "thumbnailDir": "A thumbnails subfolder inside the library folder",
+          "scanIntervalHint": "Interval at which this folder is auto-polled",
+          "createdAt": "Created",
+          "updatedAt": "Updated"
+        },
+        "slideover": {
+          "title": "Add Scan Library",
+          "editTitle": "Edit Scan Library",
+          "infoTitle": "Scan Library Info"
+        },
+        "actions": {
+          "add": "Add Scan Library",
+          "save": "Save",
+          "edit": "Edit",
+          "info": "Info",
+          "delete": "Delete"
+        }
       }
     },
     "analytics": {

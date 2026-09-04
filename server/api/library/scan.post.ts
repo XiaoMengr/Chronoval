@@ -1,5 +1,5 @@
 import { libraryScanner } from '~~/server/services/library/scanner'
-import { getLibraryMounts } from '~~/server/services/library/config'
+import { getLibraryMounts } from '~~/server/services/scan-library/manager'
 
 export default eventHandler(async (event) => {
   await requireUserSession(event)
@@ -13,7 +13,7 @@ export default eventHandler(async (event) => {
         statusMessage: `Unknown mount: ${mount}`,
       })
     }
-    return await libraryScanner.scanMount(found)
+    return await libraryScanner.scanMountByName(mount)
   }
 
   return await libraryScanner.scanAll()

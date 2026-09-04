@@ -89,18 +89,53 @@ const handleOgError = () => {
 onUnmounted(() => { if (loadTimer) clearTimeout(loadTimer) })
 
 /* ---------------- 下载工具 ---------------- */
+// 校验字节是否为常见图片格式（PNG/JPEG/WebP/GIF）。
+// OG 预览端点（/_og/r/**）在按需渲染失败时可能返回 HTML/错误页却带 2xx，需据此兜掉。
+function isImageBytes(buf: ArrayBuffer): boolean {
+  const bytes = new Uint8Array(buf)
+  if (bytes.length < 12) return false
+  // PNG: 89 50 4E 47
+  if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) return true
+  // JPEG: FF D8 FF
+  if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return true
+  // WebP: 'RIFF' .... 'WEBP'
+  if (
+    bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 &&
+    bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50
+  ) return true
+  // GIF: 'GIF8'
+  if (bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x38) return true
+  return false
+}
+
 async function downloadFile(url: string, filename: string) {
-  const res = await fetch(url)
-  if (!res.ok) throw new Error('Unable to download file')
-  const blob = await res.blob()
-  const blobUrl = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = blobUrl
-  link.download = filename
-  document.body.append(link)
-  link.click()
-  link.remove()
-  URL.revokeObjectURL(blobUrl)
+  // 25s 超时：OG 端点在服务端按需渲染大图时可能较慢/超时，避免无响应挂起
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 25000)
+  try {
+    const res = await fetch(url, { credentials: 'same-origin', signal: controller.signal })
+    if (!res.ok) throw new Error('Unable to download file')
+    const blob = await res.blob()
+    if (blob.size === 0) throw new Error('Empty download')
+    // OG 端点可能把渲染报错以 HTML/2xx 返回，这里按签名校验，非图片则视为失败
+    const contentType = res.headers.get('content-type') || ''
+    if (
+      !contentType.includes('image/') &&
+      !isImageBytes(await blob.arrayBuffer().catch(() => new ArrayBuffer(0)))
+    ) {
+      throw new Error('Response is not an image')
+    }
+    const blobUrl = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = blobUrl
+    link.download = filename
+    document.body.append(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(blobUrl)
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 const isDownloadingOriginal = ref(false)
@@ -125,7 +160,18 @@ const handleDownloadOriginal = async () => {
 const handleDownloadPreview = async () => {
   try {
     isDownloadingPreview.value = true
-    await downloadFile(ogPreviewUrl.value, `${props.photo.id}-og.png`)
+    // 优先下载 OG 社交预览图；OG 端点在服务端按需渲染大图时可能失败/超时，
+    // 失败时回退到直接下载原图，保证「预览」按钮始终能拿到文件。
+    try {
+      await downloadFile(ogPreviewUrl.value, `${props.photo.id}-og.png`)
+      writePhotoDownload('og')
+      toast.add({ title: $t('ui.action.share.success.ogImageDownloaded'), color: 'success', icon: 'tabler:check', duration: 3000 })
+      return
+    } catch {
+      if (!props.photo.originalUrl) throw new Error('No original')
+    }
+    await downloadFile(props.photo.originalUrl!, `${props.photo.id}-og.jpg`)
+    writePhotoDownload('og')
     toast.add({ title: $t('ui.action.share.success.ogImageDownloaded'), color: 'success', icon: 'tabler:check', duration: 3000 })
   } catch {
     toast.add({ title: $t('ui.action.share.error.ogImageDownloadFailed'), color: 'error', icon: 'tabler:x', duration: 3000 })
@@ -250,7 +296,7 @@ onUnmounted(() => { if (copyResetTimer) clearTimeout(copyResetTimer) })
         :animate="{ opacity: 1 }"
         :exit="{ opacity: 0 }"
         :transition="{ duration: 0.18, ease: 'easeOut' }"
-        class="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm"
+        class="share-scrim fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm"
         @click="emit('close')"
       >
         <motion.div
@@ -258,22 +304,22 @@ onUnmounted(() => { if (copyResetTimer) clearTimeout(copyResetTimer) })
           :animate="{ opacity: 1, scale: 1, filter: 'blur(0px)' }"
           :exit="{ opacity: 0, scale: 0.98, filter: 'blur(6px)' }"
           :transition="{ type: 'spring', duration: 0.32, bounce: 0.12 }"
-          class="glass-surface fixed left-1/2 top-1/2 z-[70] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-xl px-4 pt-4 pb-4 shadow-2xl"
+          class="glass-surface share-surface fixed left-1/2 top-1/2 z-[70] w-[calc(100%-1.5rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl shadow-2xl"
           @click.stop
         >
-          <!-- 顶部琥珀发丝高光线 + 氛围辉光（与统计条/头部玻璃一致） -->
+          <!-- 顶部发丝高光线 + 氛围辉光（中性色调，随明暗自适应） -->
           <div
-            class="pointer-events-none absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-(--glass-accent) to-transparent"
+            class="pointer-events-none absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-(--glass-border) to-transparent"
           />
           <div
-            class="pointer-events-none absolute -top-12 left-1/2 h-16 w-1/2 -translate-x-1/2 rounded-full bg-(--glass-accent) opacity-15 blur-3xl"
+            class="pointer-events-none absolute -top-12 left-1/2 h-16 w-1/2 -translate-x-1/2 rounded-full bg-(--glass-text) opacity-[0.06] blur-3xl"
           />
 
           <!-- 头部：琥珀标记 + 标题 + 位置 + 关闭 -->
           <div class="mb-4 flex items-start justify-between gap-3">
             <div class="min-w-0">
               <div class="flex items-center gap-1.5">
-                <span class="size-1.5 shrink-0 rounded-full bg-(--glass-accent)" />
+                <span class="size-1.5 shrink-0 rounded-full bg-(--glass-muted)" />
                 <p class="text-[11px] font-semibold uppercase tracking-widest text-(--glass-muted)">
                   {{ $t('ui.action.share.title') }}
                 </p>
@@ -306,7 +352,7 @@ onUnmounted(() => { if (copyResetTimer) clearTimeout(copyResetTimer) })
               <span class="flex-1 truncate text-xs text-(--glass-muted)">{{ shareUrl }}</span>
               <button
                 type="button"
-                class="shrink-0 rounded-lg bg-(--glass-accent)/15 p-1.5 text-(--glass-accent) transition-all duration-300 hover:bg-(--glass-accent)/25"
+                class="shrink-0 rounded-lg bg-(--glass-chip) p-1.5 text-(--glass-text) transition-all duration-300 hover:bg-(--glass-hover)"
                 :title="$t('ui.action.share.actions.shareUrl')"
                 :disabled="isCopying || isCopied"
                 @click="handleCopyLink"
@@ -339,7 +385,7 @@ onUnmounted(() => { if (copyResetTimer) clearTimeout(copyResetTimer) })
                 <template v-if="ogImageLoading">
                   <div class="absolute inset-0 flex items-center justify-center bg-(--glass-chip)">
                     <div
-                      class="size-8 animate-spin rounded-full border-2 border-(--glass-border) border-t-(--glass-accent)"
+                      class="size-8 animate-spin rounded-full border-2 border-(--glass-border) border-t-(--glass-text)"
                     />
                   </div>
                 </template>
@@ -367,7 +413,7 @@ onUnmounted(() => { if (copyResetTimer) clearTimeout(copyResetTimer) })
               <button
                 v-if="canUseNativeShare"
                 type="button"
-                class="flex size-9 cursor-pointer items-center justify-center rounded-full border border-(--glass-border) bg-(--glass-chip) text-(--glass-muted) transition-all duration-200 hover:border-(--glass-accent)/40 hover:bg-(--glass-hover) hover:text-(--glass-text)"
+                class="flex size-9 cursor-pointer items-center justify-center rounded-full border border-(--glass-border) bg-(--glass-chip) text-(--glass-muted) transition-all duration-200 hover:border-(--glass-muted)/40 hover:bg-(--glass-hover) hover:text-(--glass-text)"
                 :title="$t('ui.action.share.actions.nativeShare')"
                 @click="handleNativeShare"
               >
@@ -379,7 +425,7 @@ onUnmounted(() => { if (copyResetTimer) clearTimeout(copyResetTimer) })
                 v-for="option in socialOptions"
                 :key="option.id"
                 type="button"
-                class="flex size-9 cursor-pointer items-center justify-center rounded-full border border-(--glass-border) bg-(--glass-chip) text-(--glass-muted) transition-all duration-200 hover:border-(--glass-accent)/40 hover:bg-(--glass-hover) hover:text-(--glass-text)"
+                class="flex size-9 cursor-pointer items-center justify-center rounded-full border border-(--glass-border) bg-(--glass-chip) text-(--glass-muted) transition-all duration-200 hover:border-(--glass-muted)/40 hover:bg-(--glass-hover) hover:text-(--glass-text)"
                 :title="option.label"
                 @click="handleSocialShare(option.url)"
               >
@@ -428,5 +474,60 @@ onUnmounted(() => { if (copyResetTimer) clearTimeout(copyResetTimer) })
 </template>
 
 <style scoped>
-/* .glassmorphic-btn 未定义，按钮样式已内联为双主题玻璃 */
+/* 分享弹窗表面：比通用 glass-surface 更透明 + 更高斯模糊，营造通透的磨砂玻璃质感。
+   背景纹理基于自适应的 --glass-bg（明暗自适应），透明度降到 ~72% 并加饱和强化 */
+.share-surface {
+  background: color-mix(in srgb, var(--glass-bg) 72%, transparent);
+  backdrop-filter: blur(34px) saturate(160%);
+  -webkit-backdrop-filter: blur(34px) saturate(160%);
+  box-shadow:
+    0 20px 50px -16px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  /* 自适应高度：不超过安全视口，纵向超限时内部滚动，避免小屏/横屏内容被截断 */
+  box-sizing: border-box;
+  max-height: min(90dvh, 720px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  padding: 1rem;
+}
+
+/* 超小屏（<480px）：进一步收紧宽度与留白，让内容更紧凑地贴合手指操作区 */
+@media (max-width: 480px) {
+  .share-surface {
+    width: calc(100% - 1.25rem);
+    border-radius: 1.125rem;
+    padding: 0.875rem;
+  }
+  /* 底部预留安全区（iPhone 横条/手势条），滚动到末尾时不被遮挡 */
+  .share-surface {
+    padding-bottom: calc(0.875rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* 中屏平板：放宽到适中宽度，兼顾可读性 */
+@media (min-width: 640px) {
+  .share-surface {
+    max-height: min(88dvh, 760px);
+  }
+}
+
+/* 浅色模式覆写：35% 白太透 + 描边太淡，在浅色/彩色背景下会发白发灰、文字沉不下去。
+   改用更实的高透白底 + 清晰描边，保证可读性又保留玻璃质感 */
+:global(html:not(.dark)) .share-surface {
+  background: rgba(255, 255, 255, 0.82);
+  border-color: rgba(15, 23, 42, 0.1);
+  box-shadow:
+    0 18px 40px -18px rgba(15, 23, 42, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+/* 浅色模式遮罩：避免黑色背景太重 */
+.share-scrim {
+  background: rgba(15, 23, 42, 0.55);
+}
+:global(html:not(.dark)) .share-scrim {
+  background: rgba(15, 23, 42, 0.32);
+}
 </style>

@@ -4,9 +4,12 @@ import { motion, useDomRef } from 'motion-v'
 interface Props {
   photo: Photo
   index: number
+  columnWidth?: number
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  columnWidth: 250,
+})
 const emit = defineEmits<{
   'visibility-change': [
     { index: number; isVisible: boolean; date: string | Date },
@@ -35,7 +38,6 @@ const longPressTimer = ref<NodeJS.Timeout | null>(null)
 const initialTouchPos = ref<{ x: number; y: number } | null>(null)
 const isMobile = useMediaQuery('(max-width: 768px)')
 
-const resizeObserverRef = ref<ResizeObserver | null>(null)
 const intersectionObserverRef = ref<IntersectionObserver | null>(null)
 
 const processingState = getProcessingState(props.photo.id)
@@ -53,6 +55,14 @@ const aspectRatio = computed(() => {
 
   // Fallback: Default aspect ratio
   return 1.2
+})
+
+// 卡片实际渲染高度 ≈ 列宽 ÷ aspectRatio（aspectRatio 为 CSS 长宽比 width/height）。
+// 用于给 `content-visibility` 跳过渲染的视口外卡片提供正确的固有高度，
+// 避免首帧瀑布流用固定兜底 320px 参与排版导致首页排版错乱（首图莫名放大）。
+const intrinsicSize = computed(() => {
+  const height = Math.round((props.columnWidth || 250) / aspectRatio.value)
+  return Math.max(height, 100)
 })
 
 // Afilmory 式悬浮详情：格式 · 尺寸 · 大小
@@ -425,42 +435,11 @@ const formatExposureTime = (
   }
 }
 
-// Preload image on mount to get dimensions
+// Set up intersection observer for visibility tracking (LivePhoto 等仅在可见时处理)
+// 注意：缩略图加载由 <ThumbImage> 内部的 loading="lazy" + IntersectionObserver 负责，
+// isLoading 由它的 @load/@error 事件驱动（模板已绑定），这里不再额外 new Image() 预加载，
+// 避免数百张卡片在挂载瞬间同时创建 Image 对象导致主线程阻塞。
 onMounted(() => {
-  // Get container width
-  nextTick(() => {
-    if (photoRef.value) {
-      containerWidth.value = photoRef.value.offsetWidth
-
-      // Set up resize observer to track width changes
-      const resizeObserver = new ResizeObserver(() => {
-        if (photoRef.value) {
-          containerWidth.value = photoRef.value.offsetWidth
-        }
-      })
-      resizeObserver.observe(photoRef.value)
-      resizeObserverRef.value = resizeObserver
-    }
-  })
-
-  // Preload thumbnail image
-  if (props.photo.thumbnailUrl) {
-    const img = new Image()
-    img.onload = () => {
-      // Update loading state after preload completes
-      isLoading.value = false
-    }
-    img.onerror = () => {
-      // Even if preload fails, we should stop loading state
-      isLoading.value = false
-    }
-    img.src = props.photo.thumbnailUrl
-  } else {
-    // If no thumbnail URL, stop loading immediately
-    isLoading.value = false
-  }
-
-  // Set up intersection observer for visibility tracking
   nextTick(() => {
     if (photoRef.value) {
       const observer = new IntersectionObserver(
@@ -498,9 +477,6 @@ onMounted(() => {
 
 // Cleanup observers on unmount
 onUnmounted(() => {
-  if (resizeObserverRef.value) {
-    resizeObserverRef.value.disconnect()
-  }
   if (intersectionObserverRef.value) {
     intersectionObserverRef.value.disconnect()
   }
@@ -522,6 +498,7 @@ onUnmounted(() => {
   <div
     ref="photoRef"
     class="photo-card w-full transition-transform duration-300 cursor-pointer select-none"
+    :style="{ 'contain-intrinsic-size': `auto ${intrinsicSize}px` }"
     @click="handleClick"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
@@ -688,7 +665,9 @@ onUnmounted(() => {
 
 <style scoped>
 /* 性能：用 content-visibility 跳过屏幕外卡片的绘制（水墙图片高度由 aspectRatio 预留，
-   不会引起滚动跳动）；不再给每张卡强制 will-change/translateZ 常驻合成层，
+   不会引起滚动跳动）；固有高度单张内联按真实长宽比计算（colWidth÷aspectRatio），
+   保证首帧视口外卡片以正确高度参与瀑布流排版；此处 320px 仅为极少数缺宽高数据的兜底。
+   不再给每张卡强制 will-change/translateZ 常驻合成层，
    否则几百张卡会生成几千个 GPU 图层，滚动时逐层合成导致卡顿。
    悬浮 scale/淡入仅在悬停瞬间由 motion/WAAPI 触发，天然走合成器，无需常驻 will-change。 */
 .photo-card {

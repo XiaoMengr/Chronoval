@@ -2,35 +2,32 @@ name: chronoval
 
 # Chronoval —— 个人摄影画廊
 #
-# 说明：
-#   Chronoval 是一个基于 Nuxt 4 的全栈应用（前端 + 后端 API 由同一 Nitro 服务托管），
-#   因此 docker-compose 中只有一个应用服务即可同时提供页面与接口。
-#
-#   ▍数据目录（单目录持久化）
-#   所有应用数据（SQLite 数据库、上传照片/缩略图、配置文件）集中在宿主机 ./data
-#   目录，自动映射到容器 /app/data。备份/迁移只需复制 ./data。
-#
-#   ▍只读媒体库目录（直接放入即识别，无需后台上传）
-#     - /data/photos  ->  /app/photos  (只读)  照片目录
-#     - /data/videos  ->  /app/videos  (只读)  视频目录
-#   把照片 / 视频直接放进这两个目录，应用启动 / 定时自动扫描识别并生成缩略图，
-#   原文件始终留在目录内（只读挂载，绝不做加密或改写）。
-#   目录里只要有文件就会自动识别为本地照片/视频，无需通过后台上传。
-#
-# ⚠️ 首次使用前，先在宿主机创建这两个目录：
-#     mkdir -p /data/photos /data/videos
-#   然后把你已有的照片丢进 /data/photos，视频丢进 /data/videos 即可。
-#
+# 单服务全栈：Nuxt 4 前端 + Nitro 后端由同一容器托管。
+
+# ▍数据目录（单目录持久化）
+#   ./data -> /app/data：SQLite 数据库、上传照片/缩略图、配置均在此，备份/迁移只需复制 ./data。
+
+# ▍媒体库目录（只读，自动扫描）
+#   ./data/storage -> /app/storage:ro
+#   - 图片目录：/app/storage/photos  => LIBRARY_PHOTOS_PATH
+#   - 视频目录：/app/storage/videos  => LIBRARY_VIDEOS_PATH
+#   把文件放进对应子目录即被自动扫描识别，原文件始终保留，只读挂载不会被改写。
+
+# ▍本地扫描库（独立存储方式，给分散相册）
+#   ./data/library -> /app/library（每个相册 = /app/library 下一个子目录，界面按容器内路径添加）。
+#   缩略图就地生成到相册目录 thumbnails/，因此该外部库目录挂载为可写（rw）。
+
+# 备注：通过「上传」进来的文件统一存入存储 prefix（默认 photos/）下一处，
+#       应用不会自动按文件类型拆分到 photos/ 与 videos/ 两个子目录。
+
+# 首次使用前先创建媒体库目录：
+#     mkdir -p data/storage/photos data/storage/videos
 # 快速开始：
-#   1) mkdir -p /data/photos /data/videos
+#   1) mkdir -p data/storage/photos data/storage/videos
 #   2) cp .env.example .env 并按需编辑（至少设置 NUXT_SESSION_PASSWORD）
-#   3) 把照片放入 /data/photos，视频放入 /data/videos
+#   3) 把照片放入 data/storage/photos，视频放入 data/storage/videos
 #   4) docker compose up -d --build
 #   5) 打开 http://localhost:3000
-#
-# 如需换成任意宿主机路径，改下方 volumes 左侧即可：
-#     - /data/photos:/app/photos:ro   # ← 换成你的照片目录
-#     - /data/videos:/app/videos:ro   # ← 换成你的视频目录（独立文件夹）
 
 services:
   chronoval:
@@ -53,9 +50,9 @@ services:
       NUXT_PROVIDER_LOCAL_PATH: /app/data/storage
       NUXT_PROVIDER_LOCAL_BASE_URL: /storage
       NUXT_PROVIDER_LOCAL_PREFIX: photos/
-      # 只读媒体库目录（对应下方 volumes 挂载点）
-      LIBRARY_PHOTOS_PATH: /app/photos
-      LIBRARY_VIDEOS_PATH: /app/videos
+      # 只读媒体库目录（对应下方 /app/storage 挂载点下的子目录）
+      LIBRARY_PHOTOS_PATH: /app/storage/photos
+      LIBRARY_VIDEOS_PATH: /app/storage/videos
       LIBRARY_ENABLED: 'true'
       # 自动扫描间隔（毫秒），默认 300 秒
       LIBRARY_SCAN_INTERVAL_MS: '300000'
@@ -63,12 +60,12 @@ services:
       # 从 .env 读取全部配置（管理员账号、会话密钥、站点信息等）
       - .env
     volumes:
-      # 单目录数据卷：数据库 + 上传照片/缩略图 + 配置全部集中于此
+      # 数据卷：数据库 + 上传照片/缩略图 + 配置（可写）
       - ./data:/app/data
-      # 只读媒体库目录：照片 / 视频直接放入即被自动识别（默认挂宿主机 /data 下，
-      # 可替换成任意宿主机路径，左侧改成你的绝对路径即可）
-      - /data/photos:/app/photos:ro
-      - /data/videos:/app/videos:ro
+      # 本地照片/视频目录（只读，需含 photos/ 与 videos/ 子目录）
+      - ./data/storage:/app/storage:ro
+      # 本地扫描库（独立相册，按容器内路径添加；缩略图就地生成，需可写）
+      - ./data/library:/app/library
     healthcheck:
       test:
         - CMD

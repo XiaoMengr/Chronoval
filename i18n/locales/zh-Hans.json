@@ -488,7 +488,8 @@
       "reset": "重置",
       "cancel": "取消",
       "continue": "继续",
-      "delete": "删除"
+      "delete": "删除",
+      "close": "关闭"
     },
     "unknownError": "未知错误"
   },
@@ -1399,7 +1400,87 @@
       },
       "actions": {
         "add": "添加存储",
-        "create": "创建存储"
+        "create": "创建存储",
+        "info": "信息"
+      },
+      "info": {
+        "title": "存储方案信息",
+        "name": "存储名称",
+        "type": "存储类型",
+        "createdAt": "创建时间",
+        "updatedAt": "更新时间",
+        "config": {
+          "basePath": "存储基础路径",
+          "baseUrl": "基础 URL",
+          "prefix": "前缀目录",
+          "bucket": "存储桶",
+          "region": "区域",
+          "endpoint": "端点",
+          "cdnUrl": "CDN URL",
+          "rootPath": "根路径",
+          "token": "令牌"
+        }
+      },
+      "scanLibrary": {
+        "sectionTitle": "本地扫描库",
+        "sectionDescription": "一种独立的存储方式：把明文照片/视频放入某文件夹即自动扫描并生成缩略图，与上传加密存储完全分离。",
+        "table": {
+          "photoCount": "已索引",
+          "notScanned": "尚未扫描",
+          "lastScanAt": "最近扫描",
+          "lastScanResult": "结果"
+        },
+        "empty": "暂无扫描库，添加一个文件夹开始使用。",
+        "messages": {
+          "saved": "扫描库已保存",
+          "created": "扫描库已创建",
+          "updated": "扫描库已更新",
+          "deleted": "扫描库已删除",
+          "saveError": "保存扫描库失败",
+          "deleteError": "删除扫描库失败",
+          "scanned": "扫描完成：",
+          "scanError": "触发扫描失败"
+        },
+        "form": {
+          "nameLabel": "扫描库名称",
+          "namePlaceholder": "留空则使用文件夹名",
+          "pathLabel": "文件夹路径",
+          "pathPlaceholder": "要监控的文件夹绝对路径，例如 /photos",
+          "intervalLabel": "监控间隔（毫秒）",
+          "enabledLabel": "启用自动扫描"
+        },
+        "info": {
+          "title": "扫描库信息",
+          "name": "名称",
+          "path": "文件夹路径",
+          "provider": "来源类型",
+          "status": "状态",
+          "enabled": "已启用",
+          "disabled": "已停用",
+          "interval": "监控间隔",
+          "intervalMs": "{value} 毫秒",
+          "notScanned": "尚未扫描",
+          "scannedAt": "最近扫描",
+          "scanResult": "最近结果",
+          "photoIndexed": "已索引照片",
+          "thumbnailDirHint": "缩略图就地产出位置",
+          "thumbnailDir": "当前相册下的 thumbnails 子目录",
+          "scanIntervalHint": "自动轮询扫描该目录的间隔",
+          "createdAt": "创建时间",
+          "updatedAt": "更新时间"
+        },
+        "slideover": {
+          "title": "添加扫描库",
+          "editTitle": "编辑扫描库",
+          "infoTitle": "扫描库信息"
+        },
+        "actions": {
+          "add": "添加扫描库",
+          "save": "保存",
+          "edit": "编辑",
+          "info": "信息",
+          "delete": "删除"
+        }
       }
     },
     "analytics": {

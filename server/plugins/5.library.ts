@@ -1,6 +1,8 @@
 import { libraryScanner, getLibraryConfig } from '../services/library'
+import { getMinWatchIntervalMs } from '../services/scan-library/manager'
 
 let scanTimer: NodeJS.Timeout | null = null
+let stopped = false
 
 export default defineNitroPlugin(async (_nitroApp) => {
   const cfg = getLibraryConfig()
@@ -41,19 +43,28 @@ export default defineNitroPlugin(async (_nitroApp) => {
     }
   }, initialDelay)
 
-  // 周期重扫，捕获新放入目录的文件（方式简单可靠，无需 inotify）
-  const interval = Number(process.env.LIBRARY_SCAN_INTERVAL_MS || 300000)
-  if (interval > 0) {
-    scanTimer = setInterval(async () => {
-      try {
-        await libraryScanner.scanAll()
-      } catch (err) {
-        log.error('Periodic library scan failed:', err)
-      }
-    }, interval)
+  // 自动监控：自适应的轮询循环（免 inotify，简单可靠）。
+  // 优先级：已启用扫描库的最小 watchIntervalMs > LIBRARY_SCAN_INTERVAL_MS > 300s
+  const envFallback = Number(process.env.LIBRARY_SCAN_INTERVAL_MS || 300000)
+  const nextDelay = (): number => getMinWatchIntervalMs() ?? envFallback
+
+  const tick = async () => {
+    if (stopped) return
+    try {
+      await libraryScanner.scanAll()
+    } catch (err) {
+      log.error('Periodic library scan failed:', err)
+    }
+    if (!stopped) {
+      scanTimer = setTimeout(tick, nextDelay())
+    }
   }
 
+  const firstDelay = envFallback
+  scanTimer = setTimeout(tick, firstDelay)
+
   const exitHandler = () => {
+    stopped = true
     if (scanTimer) clearInterval(scanTimer)
   }
   process.on('SIGINT', exitHandler)

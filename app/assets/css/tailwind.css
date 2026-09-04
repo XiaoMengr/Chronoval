@@ -93,6 +93,18 @@
   -webkit-backdrop-filter: blur(24px) saturate(150%);
 }
 
+/* 浅色模式：卡片调整为实心白底，避免 35% 玻璃在浅色画廊上发白发灰、层次不清晰。 */
+html:not(.dark) .glass-surface {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(15, 23, 42, 0.1);
+}
+
+/* 暗色模式：卡片调整为实心黑底，避免 28% 玻璃在深色画廊上发灰、层次不清晰。 */
+html.dark .glass-surface {
+  background: rgba(5, 6, 9, 0.9);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
 /* 页面自适应背景（浅色柔光 / 深色深邃），由 layouts/masonry 挂载 */
 .page-backdrop {
   background:

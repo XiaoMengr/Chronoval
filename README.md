@@ -7,6 +7,7 @@
 ## 特性
 
 - 照片与视频「本地目录即存储」：直接放进映射目录即自动识别、生成缩略图，**无需后台上传**；原文件只读挂载，绝不加密或改写
+- 「本地扫描库」独立存储方式：按文件夹管理外部相册，缩略图就地生成到相册 `thumbnails/` 子目录，与加密上传完全分离、统一首页画廊显示
 - 图片查看器：WebGL 高性能缩放平移、Exif 信息面板、底部缩略图画廊
 - 分享：生成分享链接 / 嵌入代码 / 原生 Web Share / 一键复制 / 下载原图与 OG 预览图
 - 多格式：JPEG / PNG / WebP / GIF / TIFF / HEIC / MOV / MP4，Live Photo 自动配对
@@ -66,24 +67,80 @@ services:
     restart: unless-stopped
     ports:
       - '3000:3000'              # 宿主机端口:容器端口
+    environment:
+      # 本地文件存储：上传照片落盘位置（prefix=photos/ 即写入宿主 ./data/storage/photos）
+      NUXT_STORAGE_PROVIDER: local
+      NUXT_PROVIDER_LOCAL_PATH: /app/data/storage
+      NUXT_PROVIDER_LOCAL_PREFIX: photos/
+      # 媒体库目录：指向 /app/storage 下的两个子目录
+      LIBRARY_PHOTOS_PATH: /app/storage/photos
+      LIBRARY_VIDEOS_PATH: /app/storage/videos
+      LIBRARY_ENABLED: 'true'
     env_file:
       - .env                     # 管理员账号、会话密钥、站点信息等
     volumes:
-      - ./data:/app/data                                   # 数据目录（SQLite + 上传照片/缩略图）
-      - /data/photos:/app/photos:ro   # ← 换成你的照片目录
-      - /data/videos:/app/videos:ro   # ← 换成你的视频目录（独立文件夹）
+      - ./data:/app/data                          # ① 数据目录（SQLite + 配置，可写）
+      - ./data/storage:/app/storage:ro            # ② 媒体库照片/视频目录（含 photos/ 与 videos/ 子目录）
+      - ./data/library:/app/library            # ③ 本地扫描库根（每个子目录 = 一个相册，可写）
 ```
 
-> 只读媒体库目录：照片 / 视频直接放入即自动识别（默认每 5 分钟扫描，也可后台手动触发），原文件只读挂载、绝不加密或改写，缩略图写入可写数据目录。视频用 ffmpeg 抽帧缩略图并支持直接播放。
+> **①②③ 三个目录统一在项目 `./data` 下一个备份/迁移**。启动前先在宿主机建好媒体库子目录：`mkdir -p data/storage/photos data/storage/videos`（在 `docker-compose.yml` 所在目录执行）。
+>
+> **① 数据目录**：SQLite 数据库、上传图片与缩略图、配置。上传经 `NUXT_PROVIDER_LOCAL_PATH=/app/data/storage` + `prefix=photos/` 落盘到宿主 `./data/storage/photos`。
+>
+> **② 媒体库照片/视频目录**：只读挂载。照片放入 `./data/storage/photos`、视频放入 `./data/storage/videos` 即被自动识别并生成缩略图（默认每 5 分钟扫描，也可后台手动触发），原文件绝不加密或改写。缩略图集中写入可写数据目录。注意：一旦在后台新建并**启用**任何「本地扫描库」，本机制即被忽略，统一改由扫描库接管。
+>
+> **③ 本地扫描库根**：见下文「本地扫描库」小节，适合按相册管理、需要缩略图跟随相册场景。该目录已挂载为**可写**（rw），缩略图可就地生成。
+
+### 本地扫描库（独立存储方式）
+
+除「后台上传（加密 blob 存储）」和「传统只读媒体库」外，Chronoval 提供第三种独立存储方式：**本地扫描库**。它把普通照片 / 视频按文件夹作为**可配置的引用源**，丢进去即自动扫描、自动生成缩略图，且与加密上传**完全分离**（数据库用 `source: 'library'` 区分，绝不混入上传 blob）。
+
+#### 概念
+
+- 每个扫描库 = 一个容器内绝对路径（相册），在「管理后台 → 存储设置 → 本地扫描库」中添加，可单独开关、配置轮询间隔、手动触发扫描。
+- 原图**只读引用**该目录（不加密、不改写），缩略图**就地生成**到该相册目录下的 `thumbnails/` 子目录，随相册一起管理。
+- 所有扫描库照片与上传照片**统一出现在首页画廊**（`/api/photos` 返回全部 `photos`，不做来源隔离）。
+- 一条扫描库都不启用时，才回退到传统的 `/app/photos`、`/app/videos` 环境变量目录。
+
+#### 推荐挂载
+
+```yaml
+volumes:
+  - ./data:/app/data                        # SQLite + 上传 blob（保持原样，独立）
+  - ./data/storage:/app/storage:ro          # 媒体库照片/视频（含 photos/ 与 videos/ 子目录）
+  - ./data/library:/app/library            # 外部引用库根：一层目录一个相册
+```
+
+> 缩略图就地生成要求外部库目录**可写**，本目录已挂载为 `rw`（区别于只读媒体库的 `ro`），缩略图就地写入相册 `thumbnails/`。
+
+#### 使用步骤
+
+1. 在宿主机按相册建目录，如 `./data/library/家庭相册`、`./data/library/旅行视频`（相对项目根），放入照片 / 视频。
+2. 进入「管理后台 → 存储设置 → 本地扫描库」，点「添加扫描库」。
+3. 根路径填**容器内**绝对路径，例如 `/app/library/家庭相册`（不是宿主机路径）。名称留空则自动取文件夹名。
+4. 保存后点该行的「扫描」立即触发，或等自动轮询（间隔可在表单里配置，默认 60 秒）。
+5. 缩略图自动生成在 `/app/library/家庭相册/thumbnails/`，照片出现在首页画廊。
+
+#### 要点
+
+- **填容器内路径，不是宿主机路径**：宿主 `./data/library` 可见，容器内是 `/app/library`。
+- 新增相册无需改 compose / 无需重启：外部库下一层子目录 + 界面加一条即可。
+- 相册目录被扫描时，`thumbnails/`、隐藏目录会自动跳过，不会被当原图重复入索引。
+- 删除扫描库照片只删缩略图与数据库记录，**不删外部原文件**。删除整个扫描库会一并清理其索引记录。
+- 容器需对挂载目录有读写权限，NAS / 外部盘注意 uid / gid。
 
 ### 应用数据目录（单目录映射）
 
-所有数据持久化在宿主机 `./data`，备份 / 迁移只需复制这一个目录：
+所有数据持久化在宿主机项目根 `./data`，备份 / 迁移只需复制这一个目录：
 
 ```
 data/
-├── app.sqlite3        # SQLite 数据库（元数据、相册、设置、账号）
-└── storage/           # 上传照片原图与缩略图（local 存储时）
+├── app.sqlite3              # SQLite 数据库（元数据、相册、设置、账号）
+├── storage/                 # 媒体库照片/视频（只读挂载到 /app/storage）
+│   ├── photos/              # 图片（LIBRARY_PHOTOS_PATH=/app/storage/photos），上传也落盘于此
+│   └── videos/              # 视频（LIBRARY_VIDEOS_PATH=/app/storage/videos）
+└── library/                 # 本地扫描库根（挂载到 /app/library，每个子目录=一个相册）
 ```
 
 ## 文档导航

@@ -558,10 +558,11 @@ const swiperModules = [Navigation, Keyboard, Virtual]
 <template>
   <Teleport to="body">
     <!-- 背景层：深色沉浸底（Afilmory 风格，非玻璃模糊） -->
+    <!-- 打开即到位（不透明度直接为 1），避免从透明渐变到近黑时两侧留白闪“黑一下” -->
     <AnimatePresence>
       <motion.div
         v-if="isOpen"
-        :initial="{ opacity: 0 }"
+        :initial="{ opacity: 1 }"
         :animate="{ opacity: 1 }"
         :exit="{ opacity: 0 }"
         :transition="{ duration: 0.3 }"
@@ -570,19 +571,21 @@ const swiperModules = [Navigation, Keyboard, Virtual]
       />
     </AnimatePresence>
 
-    <!-- 交叉溶解的 Thumbhash 背景 -->
-    <AnimatePresence mode="sync">
+    <!-- 常驻 ThumbHash 背景：打开即到位（不做进入淡入）并保持常驻；
+         切换图片时仅更新 hash 数据、不做整屏交叉溶解——
+         既遮挡底层页面避免滑动露底（“首页滑动阴影”），又不再整屏闪变 -->
+    <AnimatePresence>
       <motion.div
-        v-if="isOpen && currentPhoto?.thumbnailHash"
-        :key="currentPhoto.id"
-        :initial="{ opacity: 0 }"
+        v-if="isOpen"
+        :initial="{ opacity: 1 }"
         :animate="{ opacity: 1 }"
         :exit="{ opacity: 0 }"
         :transition="{ duration: 0.3 }"
         class="fixed inset-0 z-40"
       >
         <ThumbHash
-          :thumbhash="currentPhoto.thumbnailHash"
+          :key="currentPhoto?.id ?? 'empty'"
+          :thumbhash="currentPhoto?.thumbnailHash || ''"
           class="w-full h-full scale-110"
         />
       </motion.div>

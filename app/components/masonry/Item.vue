@@ -7,9 +7,11 @@ const props = withDefaults(
     index: number
     hasAnimated: boolean
     firstScreenItems?: number
+    columnWidth?: number
   }>(),
   {
     firstScreenItems: 30,
+    columnWidth: 250,
   },
 )
 
@@ -70,6 +72,7 @@ const itemVariants = {
     <MasonryItemPhoto
       :photo="photo"
       :index="index"
+      :column-width="columnWidth"
       @visibility-change="emit('visibility-change', $event)"
       @open-viewer="emit('openViewer', $event)"
     />

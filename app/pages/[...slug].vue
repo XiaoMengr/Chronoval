@@ -8,6 +8,18 @@ definePageMeta({
 const route = useRoute()
 const router = useRouter()
 
+// 移动端禁止页面缩放（双指/双击），保持首页照片画廊的沉浸观感。
+// 放在页面级头里以保证覆盖 Nuxt 的默认 viewport
+useHead({
+  meta: [
+    {
+      name: 'viewport',
+      content:
+        'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover',
+    },
+  ],
+})
+
 const { switchToIndex, closeViewer, openViewer } = useViewerState()
 const { isViewerOpen, scopedPhotos } = storeToRefs(useViewerState())
 

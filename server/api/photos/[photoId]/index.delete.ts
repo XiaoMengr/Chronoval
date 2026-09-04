@@ -1,3 +1,7 @@
+import path from 'node:path'
+import { promises as fs } from 'node:fs'
+import { getLibraryMounts } from '~~/server/services/scan-library/manager'
+
 const HEIC_EXTENSIONS = ['.heic', '.heif', '.hif']
 
 export default eventHandler(async (event) => {
@@ -27,13 +31,25 @@ export default eventHandler(async (event) => {
 
   logger.image.info(`Deleting photo ${photo.title || photo.id || photoId}`)
 
-  // 库目录来源：原文件位于只读映射目录，不写入存储也不允许删除原文件，仅删缩略图与记录
+  // 库目录来源：原文件位于映射目录，不写入存储也不删除原文件。
+  // 缩略图为就地生成在 <mountRoot>/thumbnails/ 下，用 fs 直接删除（不经过 storageProvider）。
   const isLibrarySource = photo.source === 'library'
   if (photo.thumbnailKey && isLibrarySource) {
-    try {
-      await storageProvider.delete(photo.thumbnailKey)
-    } catch {
-      // ignore
+    const mount = getLibraryMounts().find((m) => m.name === photo.libraryMount)
+    if (mount) {
+      const thumbAbs = path.resolve(mount.root, photo.thumbnailKey)
+      if (thumbAbs.startsWith(path.resolve(mount.root) + path.sep)) {
+        try {
+          await fs.unlink(thumbAbs)
+          // 尝试清理空的 thumbnails 目录
+          await fs.rmdir(path.dirname(thumbAbs)).catch(() => {})
+        } catch (err) {
+          logger.image.warn(
+            `Failed to remove in-place thumbnail ${thumbAbs}:`,
+            err,
+          )
+        }
+      }
     }
   }
 

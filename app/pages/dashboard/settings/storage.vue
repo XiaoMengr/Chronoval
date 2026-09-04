@@ -76,6 +76,19 @@ const availableStorageColumns = computed<TableColumn<SettingStorageProvider>[]>(
           {
             size: 'sm',
             variant: 'soft',
+            icon: 'tabler:info-circle',
+            onClick: () => {
+              storageInfo.value = cell.row.original
+              storageInfoOpen.value = true
+            },
+          },
+          { default: () => $t('settings.storage.actions.info') },
+        ),
+        h(
+          UButton,
+          {
+            size: 'sm',
+            variant: 'soft',
             color: 'error',
             icon: 'tabler:trash',
             disabled:
@@ -171,7 +184,7 @@ const getStorageConfigDefaults = (provider: string): Partial<StorageConfig> => {
     case 'local':
       return {
         provider: 'local',
-        basePath: '/data/storage',
+        basePath: '/app/photos',
         baseUrl: '/storage',
       } as any
     case 'openlist':
@@ -354,6 +367,200 @@ const onStorageDelete = async (storageId: number) => {
     })
   }
 }
+
+// ===== 本地扫描库（独立存储方式） =====
+interface ScanLibraryItem {
+  id: number
+  name: string
+  rootPath: string
+  provider: 'local'
+  enabled: boolean
+  watchIntervalMs: number
+  lastScanAt: string | null
+  lastScanResult: string | null
+  photoCount: number
+  createdAt?: string | null
+  updatedAt?: string | null
+}
+
+const {
+  data: scanLibData,
+  refresh: refreshScanLibs,
+} = await useFetch<{ libraries: ScanLibraryItem[] }>('/api/scan-library')
+
+const scanLibs = computed(() => scanLibData.value?.libraries ?? [])
+
+const scanLibraryFormState = reactive<{
+  editId: number | null
+  name: string
+  rootPath: string
+  enabled: boolean
+  watchIntervalMs: number
+}>({
+  editId: null,
+  name: '',
+  rootPath: '',
+  enabled: true,
+  watchIntervalMs: 60000,
+})
+
+const resetScanLibraryForm = () => {
+  scanLibraryFormState.editId = null
+  scanLibraryFormState.name = ''
+  scanLibraryFormState.rootPath = ''
+  scanLibraryFormState.enabled = true
+  scanLibraryFormState.watchIntervalMs = 60000
+}
+
+const openAddScanLibrary = () => resetScanLibraryForm()
+
+const openEditScanLibrary = (lib: ScanLibraryItem) => {
+  scanLibraryFormState.editId = lib.id
+  scanLibraryFormState.name = lib.name
+  scanLibraryFormState.rootPath = lib.rootPath
+  scanLibraryFormState.enabled = lib.enabled
+  scanLibraryFormState.watchIntervalMs = lib.watchIntervalMs
+}
+
+const scanLibraryPayload = () => ({
+  name: scanLibraryFormState.name || undefined,
+  rootPath: scanLibraryFormState.rootPath,
+  enabled: scanLibraryFormState.enabled,
+  watchIntervalMs: scanLibraryFormState.watchIntervalMs,
+})
+
+const onScanLibrarySubmit = async (close?: () => void) => {
+  const key = `settings.storage.scanLibrary.messages.`
+  try {
+    if (scanLibraryFormState.editId != null) {
+      await $fetch(`/api/scan-library/${scanLibraryFormState.editId}`, {
+        method: 'PUT',
+        body: scanLibraryPayload(),
+      })
+      toast.add({ title: $t(`${key}updated`), color: 'success' })
+    } else {
+      await $fetch('/api/scan-library', {
+        method: 'POST',
+        body: scanLibraryPayload(),
+      })
+      toast.add({ title: $t(`${key}created`), color: 'success' })
+    }
+    await refreshScanLibs()
+    close?.()
+  } catch (error) {
+    toast.add({
+      title: $t(`${key}saveError`),
+      description: (error as Error).message,
+      color: 'error',
+    })
+  }
+}
+
+const onScanLibraryToggle = async (lib: ScanLibraryItem) => {
+  try {
+    await $fetch(`/api/scan-library/${lib.id}`, {
+      method: 'PUT',
+      body: { enabled: lib.enabled },
+    })
+    toast.add({
+      title: $t('settings.storage.scanLibrary.messages.saved'),
+      color: 'success',
+    })
+  } catch (error) {
+    await refreshScanLibs()
+    toast.add({
+      title: $t('settings.storage.scanLibrary.messages.saveError'),
+      description: (error as Error).message,
+      color: 'error',
+    })
+  }
+}
+
+const scanLibRunning = ref<number | null>(null)
+const onScanLibraryScan = async (lib: ScanLibraryItem) => {
+  scanLibRunning.value = lib.id
+  try {
+    const res = await $fetch<{ scanResult: { indexed: number; updated: number; failed: number } | null }>(
+      `/api/scan-library/${lib.id}/scan`,
+      { method: 'POST' },
+    )
+    const r = res.scanResult
+    const desc = r
+      ? `indexed=${r.indexed} updated=${r.updated} failed=${r.failed}`
+      : undefined
+    toast.add({
+      title: $t('settings.storage.scanLibrary.messages.scanned'),
+      description: desc,
+      color: 'success',
+    })
+  } catch (error) {
+    toast.add({
+      title: $t('settings.storage.scanLibrary.messages.scanError'),
+      description: (error as Error).message,
+      color: 'error',
+    })
+  } finally {
+    scanLibRunning.value = null
+    await refreshScanLibs()
+  }
+}
+
+const onScanLibraryDelete = async (lib: ScanLibraryItem) => {
+  try {
+    await $fetch(`/api/scan-library/${lib.id}`, { method: 'DELETE' })
+    await refreshScanLibs()
+    toast.add({
+      title: $t('settings.storage.scanLibrary.messages.deleted'),
+      color: 'success',
+    })
+  } catch (error) {
+    toast.add({
+      title: $t('settings.storage.scanLibrary.messages.deleteError'),
+      description: (error as Error).message,
+      color: 'error',
+    })
+  }
+}
+
+const fmtScanTime = (iso: string | null) =>
+  iso ? new Date(iso).toLocaleString() : $t('settings.storage.scanLibrary.table.notScanned')
+
+// 查看扫描库详细配置信息
+const scanLibInfo = ref<ScanLibraryItem | null>(null)
+const openScanLibraryInfo = (lib: ScanLibraryItem) => {
+  scanLibInfo.value = lib
+}
+
+// 查看上传存储方案（本地/S3/Openlist）配置信息
+const storageInfo = ref<SettingStorageProvider | null>(null)
+const storageInfoOpen = ref(false)
+const storageConfigLabelKeyMap: Record<string, string> = {
+  basePath: 'settings.storage.info.config.basePath',
+  baseUrl: 'settings.storage.info.config.baseUrl',
+  prefix: 'settings.storage.info.config.prefix',
+  bucket: 'settings.storage.info.config.bucket',
+  region: 'settings.storage.info.config.region',
+  endpoint: 'settings.storage.info.config.endpoint',
+  cdnUrl: 'settings.storage.info.config.cdnUrl',
+  rootPath: 'settings.storage.info.config.rootPath',
+  token: 'settings.storage.info.config.token',
+}
+const storageInfoConfigEntries = computed(() => {
+  const cfg = storageInfo.value?.config as Record<string, any> | undefined
+  if (!cfg) return []
+  return Object.entries(cfg)
+    .filter(([key]) => key !== 'provider')
+    .map(([key, value]) => ({
+    key,
+    label: $t(
+      storageConfigLabelKeyMap[key] || `settings.storage.info.config.${key}`,
+    ),
+    value:
+      value && typeof value === 'object'
+        ? JSON.stringify(value)
+        : String(value ?? ''),
+  }))
+})
 </script>
 
 <template>
@@ -591,6 +798,390 @@ const onStorageDelete = async (storageId: number) => {
               :columns="availableStorageColumns"
               :data="availableStorage"
             />
+          </div>
+
+          <USlideover
+            v-model:open="storageInfoOpen"
+            :title="$t('settings.storage.info.title')"
+            :ui="{ footer: 'justify-end' }"
+          >
+            <template #body>
+              <div
+                v-if="storageInfo"
+                class="space-y-4"
+              >
+                <div
+                  class="grid gap-px rounded-md bg-neutral-100 dark:bg-neutral-800 overflow-hidden"
+                >
+                  <div class="bg-neutral-50 dark:bg-neutral-900 flex items-start justify-between gap-4 px-4 py-3">
+                    <span class="text-sm text-neutral-500 dark:text-neutral-400">
+                      {{ $t('settings.storage.info.name') }}
+                    </span>
+                    <span class="max-w-[60%] text-right text-sm font-medium text-neutral-900 dark:text-neutral-100 break-words">
+                      {{ storageInfo.name }}
+                    </span>
+                  </div>
+                  <div class="bg-neutral-50 dark:bg-neutral-900 flex items-start justify-between gap-4 px-4 py-3">
+                    <span class="text-sm text-neutral-500 dark:text-neutral-400">
+                      {{ $t('settings.storage.info.type') }}
+                    </span>
+                    <span class="text-right text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                      <UBadge
+                        variant="subtle"
+                        :icon="PROVIDER_ICON[storageInfo.provider as keyof typeof PROVIDER_ICON] || 'tabler:database'"
+                      >
+                        {{ storageInfo.provider }}
+                      </UBadge>
+                    </span>
+                  </div>
+                  <div
+                    v-for="entry in storageInfoConfigEntries"
+                    :key="entry.key"
+                    class="bg-neutral-50 dark:bg-neutral-900 flex items-start justify-between gap-4 px-4 py-3"
+                  >
+                    <span class="text-sm text-neutral-500 dark:text-neutral-400">
+                      {{ entry.label }}
+                    </span>
+                    <span class="max-w-[60%] text-right text-sm font-medium text-neutral-900 dark:text-neutral-100 break-all">
+                      {{ entry.value }}
+                    </span>
+                  </div>
+                  <div v-if="storageInfo.createdAt" class="bg-neutral-50 dark:bg-neutral-900 flex items-start justify-between gap-4 px-4 py-3">
+                    <span class="text-sm text-neutral-500 dark:text-neutral-400">
+                      {{ $t('settings.storage.info.createdAt') }}
+                    </span>
+                    <span class="text-right text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                      {{ fmtScanTime(storageInfo.createdAt) }}
+                    </span>
+                  </div>
+                  <div v-if="storageInfo.updatedAt" class="bg-neutral-50 dark:bg-neutral-900 flex items-start justify-between gap-4 px-4 py-3">
+                    <span class="text-sm text-neutral-500 dark:text-neutral-400">
+                      {{ $t('settings.storage.info.updatedAt') }}
+                    </span>
+                    <span class="text-right text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                      {{ fmtScanTime(storageInfo.updatedAt) }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </template>
+            <template #footer="{ close }">
+              <UButton
+                :label="$t('common.actions.close')"
+                color="neutral"
+                variant="outline"
+                @click="close"
+              />
+            </template>
+          </USlideover>
+        </section>
+
+        <section class="rounded-md border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
+          <header class="flex w-full items-center justify-between border-b border-neutral-200 px-5 py-4 dark:border-neutral-800">
+            <div>
+              <h3 class="text-base font-semibold text-neutral-900 dark:text-neutral-100">
+                {{ $t('settings.storage.scanLibrary.sectionTitle') }}
+              </h3>
+              <p class="mt-0.5 text-sm text-neutral-500 dark:text-neutral-400">
+                {{ $t('settings.storage.scanLibrary.sectionDescription') }}
+              </p>
+            </div>
+            <USlideover
+              :title="$t('settings.storage.scanLibrary.slideover.title')"
+              :ui="{ footer: 'justify-end' }"
+              @open="openAddScanLibrary"
+            >
+              <UButton size="sm" variant="soft" icon="tabler:folder-plus">
+                {{ $t('settings.storage.scanLibrary.actions.add') }}
+              </UButton>
+
+              <template #body>
+                <div class="space-y-4">
+                  <UFormField
+                    :label="$t('settings.storage.scanLibrary.form.nameLabel')"
+                    :ui="{ container: 'sm:max-w-full' }"
+                  >
+                    <UInput
+                      v-model="scanLibraryFormState.name"
+                      :placeholder="$t('settings.storage.scanLibrary.form.namePlaceholder')"
+                    />
+                  </UFormField>
+                  <UFormField
+                    :label="$t('settings.storage.scanLibrary.form.pathLabel')"
+                    required
+                    :ui="{ container: 'sm:max-w-full' }"
+                  >
+                    <UInput
+                      v-model="scanLibraryFormState.rootPath"
+                      :placeholder="$t('settings.storage.scanLibrary.form.pathPlaceholder')"
+                    />
+                  </UFormField>
+                  <UFormField
+                    :label="$t('settings.storage.scanLibrary.form.intervalLabel')"
+                    :ui="{ container: 'sm:max-w-full' }"
+                  >
+                    <UInput
+                      v-model.number="scanLibraryFormState.watchIntervalMs"
+                      type="number"
+                      :min="5000"
+                    />
+                  </UFormField>
+                  <UFormField :label="$t('settings.storage.scanLibrary.form.enabledLabel')">
+                    <UToggle v-model="scanLibraryFormState.enabled" />
+                  </UFormField>
+                </div>
+              </template>
+
+              <template #footer="{ close }">
+                <UButton
+                  :label="$t('common.actions.cancel')"
+                  color="neutral"
+                  variant="outline"
+                  @click="close"
+                />
+                <UButton
+                  :label="$t('settings.storage.scanLibrary.actions.save')"
+                  variant="soft"
+                  icon="tabler:check"
+                  @click="onScanLibrarySubmit(close)"
+                />
+              </template>
+            </USlideover>
+          </header>
+
+          <div v-if="!scanLibs.length" class="px-5 py-6 text-sm text-neutral-500 dark:text-neutral-400">
+            {{ $t('settings.storage.scanLibrary.empty') }}
+          </div>
+
+          <div v-else class="divide-y divide-neutral-100 dark:divide-neutral-800">
+            <div
+              v-for="lib in scanLibs"
+              :key="lib.id"
+              class="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3"
+            >
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2">
+                  <span class="font-medium text-neutral-900 dark:text-neutral-100">
+                    {{ lib.name }}
+                  </span>
+                  <UChip
+                    size="md"
+                    inset
+                    standalone
+                    :color="lib.enabled ? 'success' : undefined"
+                    :ui="{ base: lib.enabled ? '' : 'bg-neutral-300 dark:bg-neutral-700' }"
+                  />
+                </div>
+                <p class="truncate text-sm text-neutral-500 dark:text-neutral-400">
+                  {{ lib.rootPath }}
+                </p>
+                <p class="text-xs text-neutral-400 dark:text-neutral-500">
+                  {{ $t('settings.storage.scanLibrary.table.photoCount') }}: {{ lib.photoCount }}
+                  · {{ $t('settings.storage.scanLibrary.table.lastScanAt') }}:
+                  {{ fmtScanTime(lib.lastScanAt) }}
+                  <span v-if="lib.lastScanResult">
+                    · {{ $t('settings.storage.scanLibrary.table.lastScanResult') }}:
+                    {{ lib.lastScanResult }}
+                  </span>
+                </p>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <UTooltip :text="$t('settings.storage.scanLibrary.messages.scanned')">
+                  <UButton
+                    size="sm"
+                    variant="soft"
+                    icon="tabler:player-play"
+                    :loading="scanLibRunning === lib.id"
+                    :disabled="scanLibRunning !== null"
+                    @click="onScanLibraryScan(lib)"
+                  />
+                </UTooltip>
+                <UToggle v-model="lib.enabled" size="sm" @change="onScanLibraryToggle(lib)" />
+
+                <USlideover
+                  :title="$t('settings.storage.scanLibrary.slideover.editTitle')"
+                  :ui="{ footer: 'justify-end' }"
+                  @open="openEditScanLibrary(lib)"
+                >
+                  <UButton size="sm" variant="soft" icon="tabler:pencil" />
+                  <template #body>
+                    <div class="space-y-4">
+                      <UFormField
+                        :label="$t('settings.storage.scanLibrary.form.nameLabel')"
+                        :ui="{ container: 'sm:max-w-full' }"
+                      >
+                        <UInput v-model="scanLibraryFormState.name" />
+                      </UFormField>
+                      <UFormField
+                        :label="$t('settings.storage.scanLibrary.form.pathLabel')"
+                        required
+                        :ui="{ container: 'sm:max-w-full' }"
+                      >
+                        <UInput v-model="scanLibraryFormState.rootPath" />
+                      </UFormField>
+                      <UFormField
+                        :label="$t('settings.storage.scanLibrary.form.intervalLabel')"
+                        :ui="{ container: 'sm:max-w-full' }"
+                      >
+                        <UInput
+                          v-model.number="scanLibraryFormState.watchIntervalMs"
+                          type="number"
+                          :min="5000"
+                        />
+                      </UFormField>
+                      <UFormField :label="$t('settings.storage.scanLibrary.form.enabledLabel')">
+                        <UToggle v-model="scanLibraryFormState.enabled" />
+                      </UFormField>
+                    </div>
+                  </template>
+                  <template #footer="{ close }">
+                    <UButton
+                      :label="$t('common.actions.cancel')"
+                      color="neutral"
+                      variant="outline"
+                      @click="close"
+                    />
+                    <UButton
+                      :label="$t('settings.storage.scanLibrary.actions.save')"
+                      variant="soft"
+                      icon="tabler:check"
+                      @click="onScanLibrarySubmit(close)"
+                    />
+                  </template>
+                </USlideover>
+
+                <USlideover
+                  :title="$t('settings.storage.scanLibrary.slideover.infoTitle')"
+                  :ui="{ footer: 'justify-end' }"
+                  @open="openScanLibraryInfo(lib)"
+                >
+                  <UButton size="sm" variant="soft" icon="tabler:info-circle" />
+                  <template #body>
+                    <div
+                      v-if="scanLibInfo"
+                      class="space-y-4"
+                    >
+                      <div
+                        class="grid gap-px rounded-md bg-neutral-100 dark:bg-neutral-800 overflow-hidden"
+                      >
+                        <div class="bg-neutral-50 dark:bg-neutral-900 flex items-start justify-between gap-4 px-4 py-3">
+                          <span class="text-sm text-neutral-500 dark:text-neutral-400">
+                            {{ $t('settings.storage.scanLibrary.info.name') }}
+                          </span>
+                          <span class="max-w-[60%] text-right text-sm font-medium text-neutral-900 dark:text-neutral-100 break-words">
+                            {{ scanLibInfo.name }}
+                          </span>
+                        </div>
+                        <div class="bg-neutral-50 dark:bg-neutral-900 flex items-start justify-between gap-4 px-4 py-3">
+                          <span class="text-sm text-neutral-500 dark:text-neutral-400">
+                            {{ $t('settings.storage.scanLibrary.info.path') }}
+                          </span>
+                          <span class="max-w-[60%] text-right text-sm font-medium text-neutral-900 dark:text-neutral-100 break-all">
+                            {{ scanLibInfo.rootPath }}
+                          </span>
+                        </div>
+                        <div class="bg-neutral-50 dark:bg-neutral-900 flex items-start justify-between gap-4 px-4 py-3">
+                          <span class="text-sm text-neutral-500 dark:text-neutral-400">
+                            {{ $t('settings.storage.scanLibrary.info.provider') }}
+                          </span>
+                          <span class="text-right text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                            {{ scanLibInfo.provider }}
+                          </span>
+                        </div>
+                        <div class="bg-neutral-50 dark:bg-neutral-900 flex items-start justify-between gap-4 px-4 py-3">
+                          <span class="text-sm text-neutral-500 dark:text-neutral-400">
+                            {{ $t('settings.storage.scanLibrary.info.status') }}
+                          </span>
+                          <UChip
+                            size="md"
+                            inset
+                            standalone
+                            :color="scanLibInfo.enabled ? 'success' : undefined"
+                            :label="$t(
+                              scanLibInfo.enabled
+                                ? 'settings.storage.scanLibrary.info.enabled'
+                                : 'settings.storage.scanLibrary.info.disabled',
+                            )"
+                            :ui="{
+                              base: scanLibInfo.enabled
+                                ? 'font-medium'
+                                : 'font-medium bg-neutral-300 dark:bg-neutral-700',
+                            }"
+                          />
+                        </div>
+                        <div class="bg-neutral-50 dark:bg-neutral-900 flex items-start justify-between gap-4 px-4 py-3">
+                          <span class="text-sm text-neutral-500 dark:text-neutral-400">
+                            {{ $t('settings.storage.scanLibrary.info.interval') }}
+                          </span>
+                          <div class="text-right">
+                            <span class="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                              {{ $t('settings.storage.scanLibrary.info.intervalMs', { value: scanLibInfo.watchIntervalMs }) }}
+                            </span>
+                          </div>
+                        </div>
+                        <div class="bg-neutral-50 dark:bg-neutral-900 flex items-start justify-between gap-4 px-4 py-3">
+                          <span class="text-sm text-neutral-500 dark:text-neutral-400">
+                            {{ $t('settings.storage.scanLibrary.info.photoIndexed') }}
+                          </span>
+                          <span class="text-right text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                            {{ scanLibInfo.photoCount }}
+                          </span>
+                        </div>
+                        <div class="bg-neutral-50 dark:bg-neutral-900 flex items-start justify-between gap-4 px-4 py-3">
+                          <span class="text-sm text-neutral-500 dark:text-neutral-400">
+                            {{ $t('settings.storage.scanLibrary.info.scannedAt') }}
+                          </span>
+                          <span class="max-w-[60%] text-right text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                            {{ fmtScanTime(scanLibInfo.lastScanAt) }}
+                          </span>
+                        </div>
+                        <div v-if="scanLibInfo.lastScanResult" class="bg-neutral-50 dark:bg-neutral-900 flex items-start justify-between gap-4 px-4 py-3">
+                          <span class="text-sm text-neutral-500 dark:text-neutral-400">
+                            {{ $t('settings.storage.scanLibrary.info.scanResult') }}
+                          </span>
+                          <span class="max-w-[60%] text-right text-sm font-medium text-neutral-900 dark:text-neutral-100 break-words">
+                            {{ scanLibInfo.lastScanResult }}
+                          </span>
+                        </div>
+                        <div v-if="scanLibInfo.createdAt" class="bg-neutral-50 dark:bg-neutral-900 flex items-start justify-between gap-4 px-4 py-3">
+                          <span class="text-sm text-neutral-500 dark:text-neutral-400">
+                            {{ $t('settings.storage.scanLibrary.info.createdAt') }}
+                          </span>
+                          <span class="text-right text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                            {{ fmtScanTime(scanLibInfo.createdAt) }}
+                          </span>
+                        </div>
+                        <div v-if="scanLibInfo.updatedAt" class="bg-neutral-50 dark:bg-neutral-900 flex items-start justify-between gap-4 px-4 py-3">
+                          <span class="text-sm text-neutral-500 dark:text-neutral-400">
+                            {{ $t('settings.storage.scanLibrary.info.updatedAt') }}
+                          </span>
+                          <span class="text-right text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                            {{ fmtScanTime(scanLibInfo.updatedAt) }}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </template>
+                  <template #footer="{ close }">
+                    <UButton
+                      :label="$t('common.actions.close')"
+                      color="neutral"
+                      variant="outline"
+                      @click="close"
+                    />
+                  </template>
+                </USlideover>
+
+                <UButton
+                  size="sm"
+                  variant="soft"
+                  color="error"
+                  icon="tabler:trash"
+                  @click="onScanLibraryDelete(lib)"
+                />
+              </div>
+            </div>
           </div>
         </section>
       </div>

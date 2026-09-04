@@ -94,7 +94,7 @@ export default defineNuxtConfig({
         forcePathStyle: false,
       },
       local: {
-        localPath: './data/storage',
+        localPath: '/app/photos',
         baseUrl: '/storage',
         prefix: 'photos/',
       },

@@ -7,7 +7,11 @@ import type {
   LibraryMount,
   LibraryConfig,
 } from './config'
-import { getLibraryConfig, getLibraryMounts } from './config'
+import { getLibraryConfig, VIDEO_EXTENSIONS } from './config'
+import {
+  getLibraryMounts,
+  recordScanResult,
+} from '../scan-library/manager'
 import { probeVideo, extractVideoFrame } from './ffmpeg'
 import { generateThumbnailAndHash } from '../image/thumbnail'
 import { extractExifData, extractPhotoInfo } from '../image/exif'
@@ -17,8 +21,6 @@ import { getStorageManager } from '~~/server/plugins/3.storage'
 import type { Photo } from '~~/server/utils/db'
 
 const log = () => logger.dynamic('library')
-
-const IMAGE_MIME = 'image/jpeg'
 
 const sanitizeRelPath = (p: string): string =>
   p.replace(/\\/g, '/').replace(/^\/+/, '').replace(/\/+/g, '/')
@@ -168,6 +170,12 @@ export class LibraryScanner {
     log().info(
       `Scan "${mount.name}" done: indexed=${result.indexed} updated=${result.updated} failed=${result.failed}`,
     )
+    // 回写扫描库最近状态（挂载名为 scan_<id> 时）
+    recordScanResult(mount.name, {
+      indexed: result.indexed,
+      updated: result.updated,
+      failed: result.failed,
+    })
     return result
   }
 
@@ -175,6 +183,8 @@ export class LibraryScanner {
    * 扫描全部挂载目录
    */
   async scanAll(): Promise<Record<string, ScanResult>> {
+    // 每次从数据库重建挂载集合：新增/启用的扫描库立即生效（无需重启）
+    this.mounts = getLibraryMounts()
     const out: Record<string, ScanResult> = {}
     for (const mount of this.mounts) {
       out[mount.name] = await this.scanMount(mount)
@@ -183,9 +193,28 @@ export class LibraryScanner {
   }
 
   /**
-   * 递归收集目录内支持的媒体文件
+   * 按挂载名触发单目录扫描（供“立即扫描”使用）
    */
-  private async collectFiles(dir: string): Promise<string[]> {
+  async scanMountByName(name: string): Promise<ScanResult | null> {
+    this.mounts = getLibraryMounts()
+    const mount = this.mounts.find((m) => m.name === name)
+    return mount ? await this.scanMount(mount) : null
+  }
+
+  /**
+ * 本地扫描库索引根目录内的子目录名：含缩略图目录、隐藏目录等，均跳过不扫
+ */
+private static readonly LIBRARY_SKIP_DIRS = new Set([
+  '.thumbnails',
+  'thumbnails',
+  '.thumb',
+  '.thumbs',
+])
+
+/**
+ * 递归收集目录内支持的媒体文件
+ */
+private async collectFiles(dir: string): Promise<string[]> {
     const results: string[] = []
     const exts = new Set<string>()
     for (const mount of this.mounts) {
@@ -200,7 +229,8 @@ export class LibraryScanner {
         return
       }
       for (const entry of entries) {
-        if (entry.name.startsWith('.') || entry.name === '.thumbnails') continue
+        const skipName = LibraryScanner.LIBRARY_SKIP_DIRS.has(entry.name)
+        if (entry.name.startsWith('.') || skipName) continue
         const abs = path.join(current, entry.name)
         if (entry.isDirectory()) {
           await walk(abs)
@@ -223,17 +253,42 @@ export class LibraryScanner {
     rel: string,
     absFile: string,
     stat: Awaited<ReturnType<typeof fs.stat>>,
-    storageProvider: any,
+    _storageProvider: any,
   ): Promise<Partial<Photo> | null> {
     const photoId = buildLibraryPhotoId(mount.name, rel)
     const relUrl = encodeURIComponent(rel).replace(/%2F/g, '/')
     // 原文件只读引用：通过 /library/<mountName>/<relpath> 访问
     const originalUrl = `/library/${mount.name}/${relUrl}`
 
-    // 缩略图 key：落到可写数据目录
-    const thumbKey = `${this.cfg.thumbnailDir}/${photoId}.webp`
+    // 缩略图就地生成：写入挂载根目录下的 thumbnails/ 子目录，随相册一起存在、便于管理。
+    // 通过原图路由 /library/<mountName>/thumbnails/<id>.webp 访问（该路由能 serve 挂载根下任意文件）。
+    const thumbFileName = `${photoId}.webp`
+    const thumbRelKey = `thumbnails/${thumbFileName}`
+    const thumbAbsPath = path.resolve(mount.root, thumbRelKey)
+    const thumbnailPublicUrl = `/library/${mount.name}/thumbnails/${thumbFileName}`
 
-    if (mount.type === 'image') {
+    // 就地写入缩略图（确保子目录存在）
+    const writeThumbnailInPlace = async (
+      buffer: Buffer,
+    ): Promise<string | null> => {
+      try {
+        await fs.mkdir(path.dirname(thumbAbsPath), { recursive: true })
+        await fs.writeFile(thumbAbsPath, buffer)
+        return thumbRelKey
+      } catch (err) {
+        log().warn(
+          `Failed to write in-place thumbnail for ${absFile}:`,
+          err,
+        )
+        return null
+      }
+    }
+
+    // 一个文件夹内可混放图片和视频：按单个文件扩展名判定类型
+    const fileExt = path.extname(absFile).toLowerCase()
+    const isImage = !VIDEO_EXTENSIONS.has(fileExt)
+
+    if (isImage) {
       try {
         let imageBuffer = await fs.readFile(absFile)
         // HEIC/HEIF 需转 JPEG (对 exif/sharp 友好)
@@ -251,7 +306,7 @@ export class LibraryScanner {
         const { thumbnailBuffer, thumbnailHash } =
           await generateThumbnailAndHash(imageBuffer)
 
-        await storageProvider.create(thumbKey, thumbnailBuffer, IMAGE_MIME)
+        const written = await writeThumbnailInPlace(thumbnailBuffer)
 
         // EXIF
         let exifData: Awaited<ReturnType<typeof extractExifData>> = null
@@ -263,7 +318,7 @@ export class LibraryScanner {
         const photoInfo = extractPhotoInfo(rel, exifData)
         const coords = exifData ? parseGPSCoordinates(exifData) : null
 
-        const thumbnailUrl = storageProvider.getPublicUrl(thumbKey)
+        const thumbnailUrl = written ? thumbnailPublicUrl : null
 
         return {
           title: photoInfo.title,
@@ -274,7 +329,7 @@ export class LibraryScanner {
             width && height && height > 0 ? width / height : null,
           dateTaken: photoInfo.dateTaken,
           storageKey: `${mount.name}/${rel}`,
-          thumbnailKey: thumbKey,
+          thumbnailKey: written || null,
           fileSize: stat.size,
           lastModified: stat.mtime.toISOString(),
           originalUrl,
@@ -319,11 +374,11 @@ export class LibraryScanner {
         }
       }
 
+      let written: string | null = null
       if (thumbnailBuffer) {
-        await storageProvider.create(thumbKey, thumbnailBuffer, IMAGE_MIME)
+        written = await writeThumbnailInPlace(thumbnailBuffer)
       }
 
-      const db = useDB()
       const dbWidth = width || null
       const dbHeight = height || null
 
@@ -336,13 +391,11 @@ export class LibraryScanner {
           dbWidth && dbHeight && dbHeight > 0 ? dbWidth / dbHeight : 16 / 9,
         dateTaken: stat.mtime.toISOString(),
         storageKey: `${mount.name}/${rel}`,
-        thumbnailKey: thumbnailBuffer ? thumbKey : null,
+        thumbnailKey: written || null,
         fileSize: stat.size,
         lastModified: stat.mtime.toISOString(),
         originalUrl,
-        thumbnailUrl: thumbnailBuffer
-          ? storageProvider.getPublicUrl(thumbKey)
-          : null,
+        thumbnailUrl: written ? thumbnailPublicUrl : null,
         thumbnailHash: thumbnailHash ? compressUint8Array(thumbnailHash) : null,
         tags: ['video'],
         exif: null,

@@ -287,6 +287,7 @@ watch(currentPhotoIndex, (newIndex) => {
               :key="item.photo.id"
               :photo="item.photo"
               :index="item.originalIndex"
+              :column-width="columnWidth"
               :has-animated
               :first-screen-items="FIRST_SCREEN_ITEMS_COUNT"
               @visibility-change="handleVisibilityChange"

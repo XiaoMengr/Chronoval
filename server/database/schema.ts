@@ -224,3 +224,27 @@ export const settings_storage_providers = sqliteTable(
       .default(sql`(unixepoch())`),
   },
 )
+
+/**
+ * 本地扫描库（独立存储方式）：把明文照片/视频放入某一文件夹即被自动扫描、生成缩略图。
+ * 与 settings_storage_providers（上传加密 blob 存储后端）完全分离。
+ */
+export const scanLibraries = sqliteTable('scan_libraries', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(),
+  /** 扫描的根目录绝对路径（只读源，原图始终引用该目录） */
+  rootPath: text('root_path').notNull(),
+  provider: text('provider', { enum: ['local'] }).default('local').notNull(),
+  enabled: integer('enabled', { mode: 'boolean' }).default(true).notNull(),
+  /** 自动监控轮询间隔（毫秒），默认 60s */
+  watchIntervalMs: integer('watch_interval_ms').default(60000).notNull(),
+  /** 最近一次扫描时间与结果摘要（供状态展示） */
+  lastScanAt: integer('last_scan_at', { mode: 'timestamp' }),
+  lastScanResult: text('last_scan_result'),
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' })
+    .notNull()
+    .default(sql`(unixepoch())`),
+})

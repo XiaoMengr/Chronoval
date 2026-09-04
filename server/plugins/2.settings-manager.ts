@@ -242,7 +242,7 @@ function normalizeProviderConfig(provider: string, config: any): any {
     case 'local':
       return {
         provider: 'local',
-        basePath: config.localPath || './data/storage',
+        basePath: config.localPath || '/app/photos',
         baseUrl: config.baseUrl || '/storage',
         prefix: config.prefix || 'photos/',
       }

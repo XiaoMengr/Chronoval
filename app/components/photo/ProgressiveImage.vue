@@ -51,6 +51,9 @@ const highResLoaded = ref(false)
 const highResRendered = ref(false)
 const hasError = ref(false)
 const currentSrc = ref<string | null>()
+// 首帧门控：WebGL 引擎在解码/上传纹理前画布可能短暂呈黑色（分块首帧）。
+// 收到引擎「加载完成（首帧已绘制）」前保持图层隐藏，就绪后再淡入，避免进入查看器时黑屏闪烁。
+const webglReady = ref(false)
 
 const { loggedIn } = useUserSession()
 const webglImageViewerDebug = useSettingRef('system:webglImageViewerDebug')
@@ -133,6 +136,7 @@ watch(
       highResRendered.value = false
       hasError.value = false
       currentSrc.value = null
+      webglReady.value = false
 
       // 如果是当前图片，立即开始加载
       if (props.isCurrentImage) {
@@ -147,6 +151,19 @@ watch(
 loadImage()
 
 const handleWebGLStateChange = useWebGLWorkState(props.loadingIndicatorRef)
+
+// 同时驱动加载指示器与首帧门控：仅在引擎报告加载完成（首帧已绘制）后淡入显示，
+// 隐藏加载前画布的黑色首帧，避免进入/切换时黑屏闪烁
+const handleWebGLState = (
+  isLoading: boolean,
+  state?: unknown,
+  quality?: 'high' | 'medium' | 'low' | 'unknown',
+) => {
+  handleWebGLStateChange(isLoading, state, quality)
+  if (!isLoading) {
+    webglReady.value = true
+  }
+}
 
 // 处理缩放状态变化
 const handleZoomChange = (originalScale: number, relativeScale: number) => {
@@ -180,10 +197,13 @@ onUnmounted(() => {
       image-contain
     />
 
-    <!-- WebGL 图片查看器 (淡入) -->
+    <!-- WebGL 图片查看器 (首帧就绪后淡入，避免黑屏) -->
     <div
       v-if="showWebGLViewer"
-      class="webgl-viewer-fade absolute inset-0 w-full h-full"
+      :class="[
+        'absolute inset-0 w-full h-full',
+        webglReady ? 'webgl-viewer-in' : 'webgl-viewer-hidden',
+      ]"
     >
       <WebGLImageViewer
         ref="webglViewerRef"
@@ -203,7 +223,7 @@ onUnmounted(() => {
         :panning="{ velocityDisabled: false }"
         :debug="showDebugInfo"
         @zoom-change="handleZoomChange"
-        @loading-state-change="handleWebGLStateChange"
+        @loading-state-change="handleWebGLState"
       />
     </div>
 
@@ -222,9 +242,13 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-/* 高清 WebGL 查看器淡入，与占位缩略图的 blur → 淡出衔接，构成渐进加载节奏 */
-.webgl-viewer-fade {
-  animation: chrono-viewer-in 500ms ease both;
+/* 首帧门控：引擎绘制完成前保持隐藏，就绪后平滑淡入，避免进入查看器时黑屏闪烁 */
+.webgl-viewer-hidden {
+  opacity: 0;
+}
+
+.webgl-viewer-in {
+  animation: chrono-viewer-in 260ms ease-out both;
   will-change: opacity;
 }
 

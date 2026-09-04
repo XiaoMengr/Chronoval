@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { promises as fs, createReadStream } from 'node:fs'
-import { getLibraryMounts } from '~~/server/services/library/config'
+import { getLibraryMounts } from '~~/server/services/scan-library/manager'
 
 const guessContentType = (filePath: string): string => {
   const ext = (filePath.split('.').pop() || '').toLowerCase()
