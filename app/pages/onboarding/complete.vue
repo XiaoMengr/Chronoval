@@ -106,6 +106,20 @@ async function onComplete() {
         </p>
       </div>
 
+      <div
+        class="max-w-md rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-neutral-400"
+      >
+        <div class="flex items-start gap-3">
+          <UIcon
+            name="tabler:shield-check"
+            class="size-5 text-green-400 shrink-0 mt-0.5"
+          />
+          <span>
+            {{ $t('onboarding.complete.sessionSecretNote') }}
+          </span>
+        </div>
+      </div>
+
       <WizardButton
         size="xl"
         color="primary"

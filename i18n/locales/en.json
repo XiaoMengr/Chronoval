@@ -1654,6 +1654,7 @@
       "title": "Almost Done!",
       "description": "Your ChronoFrame gallery is ready to use.",
       "body": "You have completed all essential setup steps. You can now sign in with your admin account and start uploading photos.",
+      "sessionSecretNote": "A session encryption key has been auto-generated and saved so you don't need to set it manually.",
       "goToDashboard": "Go to Dashboard",
       "setupFailedTitle": "Setup Failed",
       "setupFailedDescription": "Failed to complete setup"

@@ -1655,6 +1655,7 @@
       "description": "您的 ChronoFrame 画廊已准备好使用。",
       "body": "您已完成了所有基本配置。现在可以使用管理员账户登录并开始上传照片。",
       "goToDashboard": "前往仪表盘",
+      "sessionSecretNote": "会话加密密钥已自动生成并保存，无需手动配置。",
       "setupFailedTitle": "设置失败",
       "setupFailedDescription": "完成设置失败"
     }

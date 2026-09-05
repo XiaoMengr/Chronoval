@@ -1443,6 +1443,7 @@
       "description": "你的 ChronoFrame 畫廊已可使用。",
       "body": "你已完成所有基本設定。現在可使用管理員帳號登入並開始上傳照片。",
       "goToDashboard": "前往儀表板",
+      "sessionSecretNote": "工作階段加密金鑰已自動產生並保存，無需手動設定。",
       "setupFailedTitle": "設定失敗",
       "setupFailedDescription": "完成設定失敗"
     }

@@ -1443,6 +1443,7 @@
       "description": "ChronoFrame ギャラリーの準備ができました。",
       "body": "基本設定はすべて完了しました。管理者アカウントでログインして写真のアップロードを開始できます。",
       "goToDashboard": "ダッシュボードへ",
+      "sessionSecretNote": "セッション暗号化キーは自動生成・保存済みのため、手動設定は不要です。",
       "setupFailedTitle": "セットアップ失敗",
       "setupFailedDescription": "セットアップの完了に失敗しました"
     }
