@@ -27,8 +27,21 @@ Chronoval 的所有配置通过环境变量提供（Docker 场景写入 `.env`�
 | 变量 | 说明 | 默认 |
 |---|---|---|
 | `NUXT_STORAGE_PROVIDER` | 存储方案：`local` / `s3` / `openlist` | `local` |
-| `NUXT_PROVIDER_LOCAL_PATH` | 本地存储根路径 | `./data/storage` |
+| `NUXT_PROVIDER_LOCAL_PATH` | 本地存储根路径 | `./data/storage`（镜像内为 `/app/data/storage`） |
 | `NUXT_PROVIDER_LOCAL_BASE_URL` | 本地图片访问基址 | `/storage` |
+| `NUXT_PROVIDER_LOCAL_PREFIX` | 本地存储子目录前缀 | `photos/` |
+
+> 本地存储与媒体库的默认值已固化在 Docker 镜像内（`Dockerfile ENV`），日常部署无需在 `docker-compose.yml` 中重复配置；如需改目录、切换 S3 或调扫描间隔，再在 `.env` 覆盖对应变量即可。
+
+## 媒体库（只读目录自动扫描）
+
+| 变量 | 说明 | 默认 |
+|---|---|---|
+| `LIBRARY_PHOTOS_PATH` | 图片目录（放入即被自动识别） | 镜像内 `/app/storage/photos` |
+| `LIBRARY_VIDEOS_PATH` | 视频目录（放入即被自动识别） | 镜像内 `/app/storage/videos` |
+| `LIBRARY_ENABLED` | 是否启用自动扫描 | `true` |
+| `LIBRARY_SCAN_INTERVAL_MS` | 自动扫描间隔（毫秒） | `300000`（5 分钟） |
+| `LIBRARY_THUMBNAIL_DIR` | 缩略图相对目录（位于本地存储根下） | `library/thumbnails` |
 
 ### S3 兼容存储
 `NUXT_STORAGE_PROVIDER=s3` 时启用：

@@ -60,7 +60,12 @@ export class LibraryScanner {
 
   constructor() {
     this.cfg = getLibraryConfig()
-    this.mounts = getLibraryMounts()
+    // 挂载集合延迟到首次扫描时再构建：getLibraryMounts() 会查询 scan_libraries 表，
+    // 而该表在全新部署（空数据库）中需由 0.db-migrate 迁移插件创建。
+    // 若在模块加载期（早于任何插件）即查询，会因表不存在而启动崩溃。
+    // scanAll / scanMountByName 每次都会主动刷新 this.mounts，
+    // collectFiles 仅依赖其扩展名集合，因此此处置空是安全的。
+    this.mounts = []
   }
 
   getConfig() {
@@ -99,9 +104,6 @@ export class LibraryScanner {
     }
 
     const files = await this.collectFiles(mount.root)
-    log().info(
-      `Scan "${mount.name}" at ${mount.root}: found ${files.length} media file(s)`,
-    )
 
     const seen = new Set<string>()
     for (const absFile of files) {
@@ -167,8 +169,13 @@ export class LibraryScanner {
       log().warn(`Failed to prune stale library entries:`, pruneErr)
     }
 
-    log().info(
-      `Scan "${mount.name}" done: indexed=${result.indexed} updated=${result.updated} failed=${result.failed}`,
+    // 空闲扫描（indexed/updated/failed 全为 0 时）保持静默，避免轮询循环刷屏；
+    // 仅在确有增删改或失败时输出 info，合并为一行便于排查
+    const hasWork =
+      result.indexed > 0 || result.updated > 0 || result.failed > 0
+    log()[hasWork ? 'info' : 'debug'](
+      `Scan "${mount.name}" at ${mount.root}: found ${files.length} media file(s); ` +
+        `done: indexed=${result.indexed} updated=${result.updated} failed=${result.failed}`,
     )
     // 回写扫描库最近状态（挂载名为 scan_<id> 时）
     recordScanResult(mount.name, {

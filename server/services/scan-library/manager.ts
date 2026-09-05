@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { and, count, eq } from 'drizzle-orm'
+import { count, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { useDB, tables } from '~~/server/utils/db'
 import { scanLibraries } from '~~/server/database/schema'
@@ -25,6 +25,10 @@ export interface ScanLibrary {
   rootPath: string
   provider: 'local'
   enabled: boolean
+  /** 是否以「相簿」形式在相册页展示（同时从首页全局画廊隐藏） */
+  asAlbum: boolean
+  /** 是否设置了访问密码 */
+  passwordProtected: boolean
   watchIntervalMs: number
   lastScanAt: string | null
   lastScanResult: string | null
@@ -39,6 +43,9 @@ export const scanLibraryInputSchema = z.object({
   name: z.string().trim().min(1).max(120).optional(),
   rootPath: z.string().trim().min(1).max(1024),
   enabled: z.boolean().optional(),
+  asAlbum: z.boolean().optional(),
+  /** 访问密码（明文，仅用于写入时哈希）；空字符串表示清除密码 */
+  password: z.string().max(128).optional(),
   watchIntervalMs: z.number().int().min(5000).max(3600000).optional(),
 })
 export type ScanLibraryInput = z.infer<typeof scanLibraryInputSchema>
@@ -104,47 +111,58 @@ export const listRawScanLibraries = (): Array<typeof scanLibraries.$inferSelect>
 export const listScanLibraries = async (): Promise<ScanLibrary[]> => {
   const rows = listRawScanLibraries()
   const db = useDB()
-  const out: ScanLibrary[] = []
-  for (const row of rows) {
-    const counted = db
-      .select({ c: count() })
-      .from(tables.photos)
-      .where(
-        and(
-          eq(tables.photos.source, 'library'),
-          eq(tables.photos.libraryMount, scanMountName(row.id)),
-        ),
-      )
-      .all()
-    const photoCount = counted[0]?.c ?? 0
-    out.push({
-      id: row.id,
-      name: row.name,
-      rootPath: row.rootPath,
-      provider: 'local',
-      enabled: row.enabled,
-      watchIntervalMs: row.watchIntervalMs,
-      lastScanAt: row.lastScanAt ? new Date(row.lastScanAt).toISOString() : null,
-      lastScanResult: row.lastScanResult,
-      photoCount,
-      createdAt: row.createdAt ? new Date(row.createdAt).toISOString() : null,
-      updatedAt: row.updatedAt ? new Date(row.updatedAt).toISOString() : null,
+  // 单条聚合查询一次取回所有扫描库的索引照片数，避免 N+1 计数
+  const counts = db
+    .select({
+      mount: tables.photos.libraryMount,
+      c: count(),
     })
-  }
-  return out
+    .from(tables.photos)
+    .where(eq(tables.photos.source, 'library'))
+    .groupBy(tables.photos.libraryMount)
+    .all()
+  const countByMount = new Map(counts.map((r) => [r.mount, r.c]))
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    rootPath: row.rootPath,
+    provider: 'local',
+    enabled: row.enabled,
+    asAlbum: row.asAlbum,
+    passwordProtected: Boolean(row.passwordHash),
+    watchIntervalMs: row.watchIntervalMs,
+    lastScanAt: row.lastScanAt ? new Date(row.lastScanAt).toISOString() : null,
+    lastScanResult: row.lastScanResult,
+    photoCount: countByMount.get(scanMountName(row.id)) ?? 0,
+    createdAt: row.createdAt ? new Date(row.createdAt).toISOString() : null,
+    updatedAt: row.updatedAt ? new Date(row.updatedAt).toISOString() : null,
+  }))
+}
+
+/** 进程内缓存：已启用扫描库 → 挂载集合（缩略图热路径避免每次请求都查库） */
+let cachedMounts: LibraryMount[] | null = null
+
+/** 使 getLibraryMounts 缓存失效（在扫描库新增/更新/删除后调用） */
+export const invalidateLibraryMountsCache = (): void => {
+  cachedMounts = null
 }
 
 /** 构建 active 挂载集合：优先使用已启用的扫描库；无启用扫描库时回退到环境变量目录 */
 export const getLibraryMounts = (): LibraryMount[] => {
+  if (cachedMounts) return cachedMounts
   const enabled = listRawScanLibraries().filter((r) => r.enabled)
-  if (enabled.length === 0) return envFallbackMounts()
-  return enabled.map<LibraryMount>((row) => ({
+  const mounts: LibraryMount[] =
+    enabled.length === 0
+      ? envFallbackMounts()
+      : enabled.map<LibraryMount>((row) => ({
     name: scanMountName(row.id),
     type: 'image', // 类型改为按单个文件扩展名判定（见 scanner.processFile）
     root: path.resolve(row.rootPath),
     extensions: unionMediaExtensions(),
     routePrefix: `/library/${scanMountName(row.id)}`,
   }))
+  cachedMounts = mounts
+  return mounts
 }
 
 /** 新增扫描库并返回其 id */
@@ -159,10 +177,16 @@ export const createScanLibrary = async (input: ScanLibraryInput): Promise<number
       rootPath: path.resolve(input.rootPath),
       provider: 'local',
       enabled: input.enabled ?? true,
+      asAlbum: input.asAlbum ?? false,
+      passwordHash:
+        input.password !== undefined && input.password !== ''
+          ? await hashPassword(input.password)
+          : null,
       watchIntervalMs: input.watchIntervalMs ?? 60000,
     })
     .returning({ id: scanLibraries.id })
     .get()
+  invalidateLibraryMountsCache()
   return res.id
 }
 
@@ -177,13 +201,28 @@ export const updateScanLibrary = async (
   if (input.name !== undefined && (input.name as string).trim())
     patch.name = (input.name as string).trim()
   if (input.enabled !== undefined) patch.enabled = input.enabled
+  if (input.asAlbum !== undefined) patch.asAlbum = input.asAlbum
   if (input.watchIntervalMs !== undefined) patch.watchIntervalMs = input.watchIntervalMs
-  if (Object.keys(patch).length === 0) return false
+  const colPatch: Record<string, unknown> = {}
+  for (const [k, v] of Object.entries(patch)) {
+    if (k === 'rootPath') colPatch.rootPath = v
+    else if (k === 'name') colPatch.name = v
+    else if (k === 'enabled') colPatch.enabled = v
+    else if (k === 'asAlbum') colPatch.asAlbum = v
+    else if (k === 'watchIntervalMs') colPatch.watchIntervalMs = v
+  }
+  // 密码：提供非空明文 → 更新哈希；提供空字符串 → 清除密码；缺省 → 保持不变
+  if (input.password !== undefined) {
+    colPatch.passwordHash =
+      input.password === '' ? null : await hashPassword(input.password)
+  }
+  if (Object.keys(colPatch).length === 0) return false
   await db
     .update(scanLibraries)
-    .set({ ...patch, updatedAt: new Date() })
+    .set({ ...colPatch, updatedAt: new Date() })
     .where(eq(scanLibraries.id, id))
     .run()
+  invalidateLibraryMountsCache()
   return true
 }
 
@@ -192,6 +231,7 @@ export const deleteScanLibrary = async (id: number): Promise<boolean> => {
   const db = useDB()
   await db.delete(tables.photos).where(eq(tables.photos.libraryMount, scanMountName(id))).run()
   await db.delete(scanLibraries).where(eq(scanLibraries.id, id)).run()
+  invalidateLibraryMountsCache()
   return true
 }
 
@@ -215,5 +255,206 @@ export const getMinWatchIntervalMs = (): number | null => {
   const enabled = listRawScanLibraries().filter((r) => r.enabled)
   if (enabled.length === 0) return null
   return Math.min(...enabled.map((r) => r.watchIntervalMs))
+}
+
+// ---------------------------------------------------------------------------
+// 扫描库 → 相簿
+// ---------------------------------------------------------------------------
+
+/** 只读单条扫描库（含内部字段：asAlbum / passwordHash） */
+export const getScanLibraryRow = (
+  id: number,
+): (typeof scanLibraries.$inferSelect) | null => {
+  const db = useDB()
+  const row = db
+    .select()
+    .from(scanLibraries)
+    .where(eq(scanLibraries.id, id))
+    .get()
+  return row ?? null
+}
+
+/** 以「相簿」展示且启用的扫描库挂载名集合（如 scan_1），用于从首页全局画廊隐藏 */
+export const getAlbumScanMountSet = (): Set<string> => {
+  const db = useDB()
+  const rows = db
+    .select({ id: scanLibraries.id })
+    .from(scanLibraries)
+    .where(
+      and(eq(scanLibraries.asAlbum, true), eq(scanLibraries.enabled, true)),
+    )
+    .all()
+  return new Set(rows.map((r) => scanMountName(r.id)))
+}
+
+export interface ScanAlbumCover {
+  id: string
+  thumbnailUrl: string | null
+  thumbnailHash: string | null
+  aspectRatio: number | null
+}
+
+/** 扫描相簿节点（顶层相簿或嵌套子相簿），用于相册页展示 */
+export interface ScanAlbumNode {
+  kind: 'scan'
+  libId: number
+  /** '' 表示库根；子目录为相对路径，如 'sub/dir' */
+  relPath: string
+  title: string
+  link: string
+  /** 该层目录直接包含的照片数（不含更深的子目录） */
+  photoCount: number
+  coverPhotoId: string | null
+  covers: ScanAlbumCover[]
+  passwordProtected: boolean
+  hasChildren: boolean
+}
+
+const dirOfScanPath = (rel: string): string => {
+  const idx = rel.lastIndexOf('/')
+  return idx === -1 ? '' : rel.slice(0, idx)
+}
+
+/** 计算 relPath 目录的直接子目录名 */
+const childSegmentsOf = (
+  mount: string,
+  relPath: string,
+  photos: Array<typeof tables.photos.$inferSelect>,
+): string[] => {
+  const segs = new Set<string>()
+  const prefix = relPath ? `${relPath}/` : ''
+  for (const p of photos) {
+    if (p.libraryMount !== mount) continue
+    const dir = dirOfScanPath(p.libraryPath || '')
+    if (dir === relPath || !dir.startsWith(prefix)) continue
+    const rest = dir.slice(prefix.length)
+    const seg = rest.split('/')[0]
+    if (seg) segs.add(seg)
+  }
+  return Array.from(segs)
+}
+
+const buildScanAlbumNode = (
+  lib: { id: number; name: string; passwordHash: string | null },
+  relPath: string,
+  photos: Array<typeof tables.photos.$inferSelect>,
+): ScanAlbumNode => {
+  const mount = scanMountName(lib.id)
+  const dirPhotos = photos.filter(
+    (p) => p.libraryMount === mount && dirOfScanPath(p.libraryPath || '') === relPath,
+  )
+  dirPhotos.sort((a, b) =>
+    (a.dateTaken || '').localeCompare(b.dateTaken || ''),
+  )
+  const covers: ScanAlbumCover[] = dirPhotos.slice(0, 3).map((p) => ({
+    id: p.id,
+    thumbnailUrl: p.thumbnailUrl,
+    thumbnailHash: p.thumbnailHash,
+    aspectRatio: p.aspectRatio,
+  }))
+  const seg = relPath.split('/').filter(Boolean).pop()
+  const title = relPath === '' ? lib.name : decodeURIComponent(seg || relPath)
+  const link =
+    `/albums/scan/${lib.id}` +
+    (relPath
+      ? '/' + relPath.split('/').map((s) => encodeURIComponent(s)).join('/')
+      : '')
+  return {
+    kind: 'scan',
+    libId: lib.id,
+    relPath,
+    title,
+    link,
+    photoCount: dirPhotos.length,
+    coverPhotoId: covers[0]?.id ?? null,
+    covers,
+    passwordProtected: Boolean(lib.passwordHash),
+    hasChildren: childSegmentsOf(mount, relPath, photos).length > 0,
+  }
+}
+
+/** 相册页顶层列表：返回所有「相簿」扫描库根节点 */
+export const listScanAlbumRoots = async (): Promise<ScanAlbumNode[]> => {
+  const db = useDB()
+  const rows = db
+    .select()
+    .from(scanLibraries)
+    .where(and(eq(scanLibraries.asAlbum, true), eq(scanLibraries.enabled, true)))
+    .all()
+  const out: ScanAlbumNode[] = []
+  for (const row of rows) {
+    const photos = db
+      .select()
+      .from(tables.photos)
+      .where(eq(tables.photos.libraryMount, scanMountName(row.id)))
+      .all()
+    out.push(buildScanAlbumNode(row, '', photos))
+  }
+  out.sort((a, b) => a.title.localeCompare(b.title))
+  return out
+}
+
+/** 单个扫描相簿详情（某目录层）：直接照片 + 嵌套子相簿 + 密码信息 */
+export const getScanAlbumDetail = async (
+  libId: number,
+  relPath: string,
+): Promise<{
+  node: ScanAlbumNode
+  dirPhotos: Array<{
+    id: string
+    title: string | null
+    thumbnailUrl: string | null
+    thumbnailHash: string | null
+    aspectRatio: number | null
+    originalUrl: string | null
+    dateTaken: string | null
+    isLivePhoto: number
+    livePhotoVideoUrl: string | null
+  }>
+  children: ScanAlbumNode[]
+} | null> => {
+  const lib = getScanLibraryRow(libId)
+  if (!lib || !lib.asAlbum || !lib.enabled) return null
+
+  const normalized =
+    relPath
+      .split('/')
+      .map((s) => decodeURIComponent(s))
+      .filter((s) => s && s !== '.' && s !== '..')
+      .join('/') || ''
+  const db = useDB()
+  const mount = scanMountName(libId)
+  const photos = db
+    .select()
+    .from(tables.photos)
+    .where(eq(tables.photos.libraryMount, mount))
+    .all()
+
+  const node = buildScanAlbumNode(lib, normalized, photos)
+  const dirPhotos = photos
+    .filter(
+      (p) => dirOfScanPath(p.libraryPath || '') === normalized,
+    )
+    .sort((a, b) => (a.dateTaken || '').localeCompare(b.dateTaken || ''))
+    .map((p) => ({
+      id: p.id,
+      title: p.title,
+      thumbnailUrl: p.thumbnailUrl,
+      thumbnailHash: p.thumbnailHash,
+      aspectRatio: p.aspectRatio,
+      originalUrl: p.originalUrl,
+      dateTaken: p.dateTaken,
+      isLivePhoto: p.isLivePhoto,
+      livePhotoVideoUrl: p.livePhotoVideoUrl,
+    }))
+
+  const children: ScanAlbumNode[] = childSegmentsOf(mount, normalized, photos)
+    .sort((a, b) => a.localeCompare(b))
+    .map((seg) => {
+      const childRel = normalized ? `${normalized}/${seg}` : seg
+      return buildScanAlbumNode(lib, childRel, photos)
+    })
+
+  return { node, dirPhotos, children }
 }
 

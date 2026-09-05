@@ -139,13 +139,15 @@
     "album": {
       "noImage": "Empty Album",
       "emptyAlbumTip": "Add photos to get started",
-      "noDescription": "No description"
+      "noDescription": "No description",
+      "scanPhotos": "photos"
     },
     "loading": "Loading",
     "photo": {
       "untitled": "Untitled",
       "altFallback": "Photo",
       "loadError": "Failed to load image",
+      "retry": "Retry",
       "avatarAlt": "Author's avatar"
     },
     "authForm": {
@@ -162,6 +164,7 @@
   },
   "album": {
     "notFound": "Album not found",
+      "empty": "This album is empty",
     "noDateInfo": "No date info",
     "noPhotosTip": "No photos in this album yet",
     "emptyAlbumTitle": "This Album Is Empty",
@@ -418,6 +421,23 @@
     "systemSettings": "System Settings",
     "analyticsSettings": "Analytics & Tracking"
   },
+  "albums": {
+    "scan": {
+      "loading": "Loading...",
+      "notFound": "Album not found",
+      "lockedTitle": "This album is locked",
+      "lockedHint": "Enter the password to view this album.",
+      "passwordPlaceholder": "Enter password",
+      "unlock": "Unlock",
+      "wrongPassword": "Incorrect password, please try again",
+      "unlockError": "Failed to unlock. Please try again later.",
+      "subAlbums": "Sub Albums",
+      "photos": "Photos",
+      "close": "Close",
+      "prev": "Previous",
+      "next": "Next"
+    }
+  },
   "auth": {
     "form": {
       "errors": {
@@ -652,6 +672,12 @@
           "eraseLocation": {
             "label": "Erase location info on upload",
             "description": "This upload can override the system default and be toggled on or off anytime."
+          },
+          "uploadTarget": {
+            "label": "Upload location",
+            "description": "Choose whether to store files in local storage or an external scan library.",
+            "localStorage": "Local storage",
+            "defaultHint": "Default upload location"
           },
           "duplicateCheck": {
             "label": "Duplicate file strategy",
@@ -1431,6 +1457,17 @@
           "lastScanResult": "Result"
         },
         "empty": "No scan libraries yet. Add a folder to get started.",
+        "result": {
+          "new": "New",
+          "updated": "Updated",
+          "failed": "Failed",
+          "noChange": "No changes this scan"
+        },
+        "dotStatus": {
+          "ok": "Healthy · thumbnails up to date",
+          "error": "Last scan had failures",
+          "off": "Disabled"
+        },
         "messages": {
           "saved": "Scan library saved",
           "created": "Scan library created",
@@ -1446,8 +1483,23 @@
           "namePlaceholder": "Leave empty to use the folder name",
           "pathLabel": "Folder Path",
           "pathPlaceholder": "Absolute path to the watched folder, e.g. /photos",
-          "intervalLabel": "Watch Interval (ms)",
-          "enabledLabel": "Enable automatic scanning"
+          "intervalLabel": "Watch Interval",
+          "intervalMsSuffix": "ms",
+          "intervalHint": "How often this folder is auto-scanned",
+          "intervalSeconds": "{value} sec",
+          "intervalMinutes": "{value} min",
+          "intervalMixed": "{minutes} min {seconds} sec",
+          "enabledLabel": "Enable external library",
+          "enabledStateOn": "On",
+          "enabledStateOff": "Off",
+          "enabledHint": "When enabled, this external folder is mounted and scanned into the library. When disabled, it is hidden from viewing and scanning pauses.",
+          "asAlbumLabel": "Show as album",
+          "asAlbumStateOn": "Album",
+          "asAlbumStateOff": "Gallery",
+          "asAlbumHint": "Show this library as an album in the Albums page and hide its photos from the home gallery. Subfolders appear as nested albums.",
+          "passwordLabel": "Access password",
+          "passwordPlaceholder": "Leave empty to keep / remove current password",
+          "passwordHint": "When set, visiting the album requires this password. Sub-albums inherit it automatically."
         },
         "info": {
           "title": "Scan Library Info",
@@ -1463,6 +1515,9 @@
           "scannedAt": "Last scanned",
           "scanResult": "Last result",
           "photoIndexed": "Indexed photos",
+          "displayMode": "Display mode",
+          "modeAlbum": "Album",
+          "modeGallery": "Gallery",
           "thumbnailDirHint": "Thumbnails are written in-place",
           "thumbnailDir": "A thumbnails subfolder inside the library folder",
           "scanIntervalHint": "Interval at which this folder is auto-polled",

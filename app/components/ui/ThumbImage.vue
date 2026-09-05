@@ -5,6 +5,8 @@ import type { CSSProperties } from 'vue'
 const props = withDefaults(
   defineProps<{
     src: string
+    /** 缩略图加载失败时的回退地址（如原图）；默认无回退 */
+    fallbackSrc?: string | null
     alt: string
     thumbhash?: string | null
     class?: string
@@ -16,6 +18,7 @@ const props = withDefaults(
     lazy?: boolean
   }>(),
   {
+    fallbackSrc: null,
     thumbhash: null,
     class: '',
     thumbhashClass: '',
@@ -36,6 +39,56 @@ const elemRef = useTemplateRef('elemRef')
 const isElemVisible = ref(false)
 const isLoaded = ref(false)
 const isError = ref(false)
+
+// 缩略图失败处理：先自动重试一次（容忍瞬时失败），仍失败且有回退地址（如原图）
+// 则透明降级到回退地址渲染；最后才落入可手动重试的失败态。
+// 重试/回退时给 URL 追加缓存粉碎参数，避免再次命中浏览器缓存的损坏/4xx 响应。
+const MAX_AUTO_RETRIES = 1
+const attempts = ref(0)
+const retryKey = ref(0)
+const usedFallback = ref(false)
+let retryTimer: ReturnType<typeof setTimeout> | null = null
+
+// 当前实际使用的来源：使用原图(thubnail)或回退(original)
+const activeSrc = computed(() =>
+  usedFallback.value ? props.fallbackSrc : props.src,
+)
+const hasFallback = computed(() => Boolean(props.fallbackSrc))
+
+const displayedSrc = computed(() => {
+  const s = activeSrc.value
+  if (!s) return ''
+  if (!retryKey.value) return s
+  const sep = s.includes('?') ? '&' : '?'
+  return `${s}${sep}t=${Date.now()}_${retryKey.value}`
+})
+
+const clearRetryTimer = () => {
+  if (retryTimer !== null) {
+    clearTimeout(retryTimer)
+    retryTimer = null
+  }
+}
+
+const retry = () => {
+  clearRetryTimer()
+  isError.value = false
+  retryKey.value++
+}
+
+// 无有效 src（空串）不发起请求，直接进入失败态
+watch(
+  activeSrc,
+  (s) => {
+    if (!s && !isLoaded.value) {
+      isError.value = true
+    }
+  },
+  { immediate: true },
+)
+
+// 生命周期结束后不再触发重试
+onBeforeUnmount(clearRetryTimer)
 
 onMounted(() => {
   if (!props.lazy) {
@@ -60,12 +113,38 @@ const { stop } = useIntersectionObserver(
 
 const onLoaded = () => {
   isLoaded.value = true
+  isError.value = false
+  attempts.value = 0
+  clearRetryTimer()
   emit('load')
 }
 
 const onError = () => {
-  isError.value = true
   emit('error')
+
+  // 无有效来源：直接失败态
+  if (!activeSrc.value) {
+    isError.value = true
+    return
+  }
+
+  attempts.value++
+
+  // 1) 自动重试一次以容忍瞬时失败
+  if (attempts.value <= MAX_AUTO_RETRIES) {
+    isError.value = false
+    clearRetryTimer()
+    retryTimer = setTimeout(() => retry(), 900)
+  } else if (!usedFallback.value && hasFallback.value) {
+    // 2) 主缩略图持续失败 → 透明降级到回退地址（原图），并清空计数重来
+    usedFallback.value = true
+    attempts.value = 0
+    isError.value = false
+    clearRetryTimer()
+  } else {
+    // 3) 回退也失败（或无回退）→ 保留失败态，等待用户手动重试
+    isError.value = true
+  }
 }
 </script>
 
@@ -100,7 +179,7 @@ const onError = () => {
     <img
       v-if="isElemVisible"
       loading="lazy"
-      :src="src"
+      :src="displayedSrc"
       :alt="alt"
       :class="
         twMerge(
@@ -113,18 +192,20 @@ const onError = () => {
       @error="onError"
     />
 
-    <div
+    <!-- 加载失败：可点按重试（自动重试耗尽后显示） -->
+    <button
       v-if="isError"
-      class="absolute inset-0 flex justify-center items-center bg-neutral-200 dark:bg-neutral-800"
+      type="button"
+      class="absolute inset-0 flex flex-col items-center justify-center gap-2 cursor-pointer bg-neutral-200 dark:bg-neutral-800 outline-offset-[-2px] hover:bg-neutral-300/70 dark:hover:bg-neutral-700/60 transition-colors focus-visible:outline-2 focus-visible:outline-accent"
+      :aria-label="$t('ui.photo.retry')"
+      @click="retry"
     >
-      <Icon
-        name="tabler:photo-off"
-        class="size-6 text-neutral-400"
-      />
-      <p class="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
-        {{ $t('ui.photo.loadError') }}
-      </p>
-    </div>
+      <Icon name="tabler:photo-off" class="size-6 text-neutral-400" />
+      <span class="flex items-center gap-1 text-sm text-neutral-500 dark:text-neutral-400">
+        <Icon name="tabler:refresh" class="size-3.5" />
+        {{ $t('ui.photo.retry') }}
+      </span>
+    </button>
   </div>
 </template>
 

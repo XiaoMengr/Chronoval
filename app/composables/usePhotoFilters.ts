@@ -25,6 +25,19 @@ const globalFilters = ref<FilterOptions>({
   search: '',
 })
 
+// 搜索输入防抖：减轻每敲一个字符就全库重算筛选项的成本
+const debouncedSearch = ref(globalFilters.value.search)
+let searchDebounceTimer: ReturnType<typeof setTimeout> | undefined
+watch(
+  () => globalFilters.value.search,
+  (val) => {
+    if (searchDebounceTimer) clearTimeout(searchDebounceTimer)
+    searchDebounceTimer = setTimeout(() => {
+      debouncedSearch.value = val
+    }, 300)
+  },
+)
+
 export function usePhotoFilters() {
   const { photos } = usePhotos()
   const { sortedPhotos } = usePhotoSort()
@@ -121,9 +134,9 @@ export function usePhotoFilters() {
   const filteredPhotos = computed(() => {
     // 先获取排序后的照片，再应用筛选
     return sortedPhotos.value.filter((photo) => {
-      // 搜索筛选
-      if (activeFilters.value.search) {
-        const searchTerm = activeFilters.value.search.toLowerCase()
+      // 搜索筛选（使用防抖后的关键词）
+      if (debouncedSearch.value) {
+        const searchTerm = debouncedSearch.value.toLowerCase()
         const searchableFields = [
           photo.tags?.join(' ') || '',
           photo.exif?.Make || '',

@@ -137,6 +137,7 @@
       "untitled": "無題",
       "altFallback": "写真",
       "loadError": "画像の読み込みに失敗しました",
+      "retry": "再試行",
       "avatarAlt": "作者のアバター"
     },
     "authForm": {
@@ -565,6 +566,12 @@
         "title": "写真をアップロード",
         "description": "ドラッグアンドドロップするか、ファイルを選択します。写真は自動的に処理され、ライブラリに追加されます。",
         "options": {
+          "uploadTarget": {
+            "label": "アップロード先",
+            "description": "ローカルストレージまたは外部スキャンライブラリのどちらに保存するかを選択します。",
+            "localStorage": "ローカルストレージ",
+            "defaultHint": "既定のアップロード先"
+          },
           "eraseLocation": {
             "label": "アップロード時に位置情報を抹消",
             "description": "このアップロードではシステム既定値を上書きでき、いつでもオン/オフを切り替えできます。"

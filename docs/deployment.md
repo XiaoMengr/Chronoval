@@ -7,10 +7,10 @@ Chronoval 为**全栈单体**：前端页面与后端 API 由同一个 Nitro 服
 | 宿主机路径 | 容器路径 | 用途 | 读写 |
 | ---------- | -------- | ---- | ---- |
 | `./data` | `/app/data` | SQLite 数据库、上传照片原图、缩略图、日志 | 读写（持久化） |
-| `/data/photos` | `/app/photos` | **照片目录**，放入即被自动识别 | 只读 |
-| `/data/videos` | `/app/videos` | **视频目录**，放入即被自动识别 | 只读 |
+| `./data/storage` | `/app/storage` | **只读媒体库**，其下 `photos/`（图片）与 `videos/`（视频）放入即被自动识别 | 只读 |
+| `./data/library` | `/app/library` | **本地扫描库**（分散相册，按容器内路径添加） | 读写 |
 
-> **本地目录即存储**：照片/视频目录是**只读映射**，你只要把文件放进目录，应用启动或定时扫描就会自动识别、生成缩略图并展示。**原文件绝不加密、绝不改写、绝不搬移**，始终留在你的目录里；也不需要通过后台上传。这就是"本地存储"式的用法，和 chronoframe 那种"必须上传才会被加密识别"的做法完全不同。
+> **本地目录即存储**：照片/视频目录是**只读映射**，你只要把文件放进 `/app/storage/photos`、`/app/storage/videos`，应用启动或定时扫描就会自动识别、生成缩略图并展示。**原文件绝不加密、绝不改写、绝不搬移**，始终留在你的目录里；也不需要通过后台上传。这就是"本地存储"式的用法，和 chronoframe 那种"必须上传才会被加密识别"的做法完全不同。
 
 ## 方式一：docker compose 一键启动（推荐）
 
@@ -20,19 +20,19 @@ Chronoval 为**全栈单体**：前端页面与后端 API 由同一个 Nitro 服
 cp .env.example .env
 # 编辑 .env：至少设置管理员邮箱/密码 与 NUXT_SESSION_PASSWORD
 
-# 1. 创建媒体库目录（可换成任意绝对路径）
-mkdir -p /data/photos /data/videos
+# 1. 创建媒体库目录（与 compose 卷映射对应）
+mkdir -p data/storage/photos data/storage/videos
 
 # 2. 直接把你已有的照片 / 视频复制进去（放进即识别，无需后台上传）
-cp ~/photos/*.jpg /data/photos/
-cp ~/videos/*.mp4 /data/videos/
+cp ~/photos/*.jpg data/storage/photos/
+cp ~/videos/*.mp4 data/storage/videos/
 
 docker compose up -d --build
 ```
 
 - 服务端口：`3000:3000`（改端口只改 `ports` 左侧即可）
-- 应用在容器内使用本地存储的路径为 `NUXT_PROVIDER_LOCAL_PATH=/app/data/storage`
-- 首次启动会自动扫描 `/data/photos`、`/data/videos` 并生成缩略图（间隔默认 5 分钟，可用 `LIBRARY_SCAN_INTERVAL_MS` 调整）
+- 本地存储路径、媒体库目录等默认值已固化在镜像内（见 `Dockerfile ENV`），无需在 compose 中重复配置，需要时再在 `.env` 覆盖
+- 首次启动会自动扫描 `/app/storage/photos`、`/app/storage/videos` 并生成缩略图（间隔默认 5 分钟，可用 `LIBRARY_SCAN_INTERVAL_MS` 调整）
 
 ### 使用自定义目录映射
 
@@ -41,11 +41,11 @@ docker compose up -d --build
 ```yaml
 volumes:
   - ./data:/app/data
-  - /data/photos:/app/photos:ro   # ← 换成你的照片目录，目录有照片自动生成缩略图
-  - /data/videos:/app/videos:ro   # ← 换成你的视频目录（独立文件夹）
+  - /data/media:/app/storage:ro   # ← 换成你的媒体根目录，其下需含 photos/ 与 videos/ 子目录
+  - ./data/library:/app/library
 ```
 
-> 视频目录独立挂载。若目录内既有照片又有视频，也都能被识别：普通图片走图片流程，视频用 ffmpeg 抽帧生成缩略图并支持在查看器中播放。
+> 视频目录与图片目录同属 `/app/storage` 挂载点下的 `videos/`、`photos/` 两个子目录。若目录内既有照片又有视频，也都能被识别：普通图片走图片流程，视频用 ffmpeg 抽帧生成缩略图并支持在查看器中播放。
 
 ### 升级
 
@@ -61,8 +61,7 @@ docker compose up -d --build # 若从源码构建
 ```bash
 docker run -d --name chronoval -p 3000:3000 \
   -v $(pwd)/data:/app/data \
-  -v /data/photos:/app/photos:ro \
-  -v /data/videos:/app/videos:ro \
+  -v /data/media:/app/storage:ro \
   --env-file .env \
   172.16.0.1:322/xiaomengr/chronoval:latest
 ```

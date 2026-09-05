@@ -62,5 +62,17 @@ ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 ENV EXIFTOOL_PATH=/usr/bin/exiftool
 ENV FFMPEG_PATH=/usr/bin/ffmpeg
 ENV FFPROBE_PATH=/usr/bin/ffprobe
+# ---- 本地存储与媒体库默认值（docker-compose 无需再重复配置，必要时可覆盖） ----
+# 本地文件存储：上传照片落盘位置（prefix=photos/ 即写入 /app/data/storage/photos）
+ENV NUXT_STORAGE_PROVIDER=local
+ENV NUXT_PROVIDER_LOCAL_PATH=/app/data/storage
+ENV NUXT_PROVIDER_LOCAL_BASE_URL=/storage
+ENV NUXT_PROVIDER_LOCAL_PREFIX=photos/
+# 媒体库目录：只读映射，把文件放进即被自动扫描识别
+ENV LIBRARY_PHOTOS_PATH=/app/storage/photos
+ENV LIBRARY_VIDEOS_PATH=/app/storage/videos
+ENV LIBRARY_ENABLED=true
+# 自动扫描间隔（毫秒），默认 300 秒
+ENV LIBRARY_SCAN_INTERVAL_MS=300000
 
 CMD ["/usr/bin/node", ".output/server/index.mjs"]

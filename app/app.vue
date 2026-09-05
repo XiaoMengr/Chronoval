@@ -56,8 +56,9 @@ const apiEndpoint = computed(() => {
   if (route.path.startsWith('/dashboard')) {
     return '/api/photos'
   }
-  // 前端页面：登录用户显示所有照片，未登录用户只显示可见照片
-  return loggedIn.value ? '/api/photos' : '/api/photos/visible'
+  // 前端画廊：设为「相簿」的扫描库照片始终不显示（未登录走 /visible，
+  // 登录走 /api/photos?gallery=1，均已排除相簿扫描库）。
+  return loggedIn.value ? '/api/photos?gallery=1' : '/api/photos/visible'
 })
 const { data, refresh, status } = await useFetch(() => apiEndpoint.value, {
   watch: [apiEndpoint],

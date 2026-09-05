@@ -236,6 +236,10 @@ export const scanLibraries = sqliteTable('scan_libraries', {
   rootPath: text('root_path').notNull(),
   provider: text('provider', { enum: ['local'] }).default('local').notNull(),
   enabled: integer('enabled', { mode: 'boolean' }).default(true).notNull(),
+  /** 转为相簿展示：启用后该库以「相簿」形式出现在相册页，并从首页全局画廊隐藏 */
+  asAlbum: integer('as_album', { mode: 'boolean' }).default(false).notNull(),
+  /** 相簿访问密码（哈希）；为空表示不设密码 */
+  passwordHash: text('password_hash'),
   /** 自动监控轮询间隔（毫秒），默认 60s */
   watchIntervalMs: integer('watch_interval_ms').default(60000).notNull(),
   /** 最近一次扫描时间与结果摘要（供状态展示） */

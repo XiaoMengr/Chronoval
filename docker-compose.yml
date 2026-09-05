@@ -40,24 +40,9 @@ services:
     ports:
       # 宿主机端口:容器端口，如需换端口改左侧即可
       - '3000:3000'
-    environment:
-      NODE_ENV: production
-      NITRO_HOST: 0.0.0.0
-      NITRO_PORT: 3000
-      DATABASE_URL: ./data/app.sqlite3
-      # 存储提供商：本地文件系统
-      NUXT_STORAGE_PROVIDER: local
-      NUXT_PROVIDER_LOCAL_PATH: /app/data/storage
-      NUXT_PROVIDER_LOCAL_BASE_URL: /storage
-      NUXT_PROVIDER_LOCAL_PREFIX: photos/
-      # 只读媒体库目录（对应下方 /app/storage 挂载点下的子目录）
-      LIBRARY_PHOTOS_PATH: /app/storage/photos
-      LIBRARY_VIDEOS_PATH: /app/storage/videos
-      LIBRARY_ENABLED: 'true'
-      # 自动扫描间隔（毫秒），默认 300 秒
-      LIBRARY_SCAN_INTERVAL_MS: '300000'
     env_file:
-      # 从 .env 读取全部配置（管理员账号、会话密钥、站点信息等）
+      # 从 .env 读取配置（管理员账号、会话密钥、站点信息等）。
+      # 本地存储与媒体库的默认值已固化在镜像内（Dockerfile ENV），无需在此重复配置。
       - .env
     volumes:
       # 数据卷：数据库 + 上传照片/缩略图 + 配置（可写）

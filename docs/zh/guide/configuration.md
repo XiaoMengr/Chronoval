@@ -21,6 +21,11 @@
 | NUXT_STORAGE_PROVIDER                    | 存储提供者，支持 `local`、`s3`、`openlist`           | `local`                               | 是                                                                    |
 | NUXT_PROVIDER_LOCAL_PATH                 | 本地存储路径                                         | `/app/data/storage`                   | 否                                                                    |
 | NUXT_PROVIDER_LOCAL_BASE_URL             | 本地存储的访问 URL                                   | `/storage`                            | 否                                                                    |
+| NUXT_PROVIDER_LOCAL_PREFIX               | 本地存储子目录前缀                                   | `photos/`                             | 否                                                                    |
+| LIBRARY_PHOTOS_PATH                      | 媒体库图片目录（放入即自动识别，镜像内为 `/app/storage/photos`） | 无（镜像内置默认）          | 否                                                                    |
+| LIBRARY_VIDEOS_PATH                      | 媒体库视频目录（放入即自动识别，镜像内为 `/app/storage/videos`） | 无（镜像内置默认）          | 否                                                                    |
+| LIBRARY_ENABLED                          | 是否启用媒体库自动扫描                               | `true`                                | 否                                                                    |
+| LIBRARY_SCAN_INTERVAL_MS                 | 媒体库自动扫描间隔（毫秒）                            | `300000`（5 分钟）                    | 否                                                                    |
 | NUXT_PROVIDER_S3_ENDPOINT                | S3 兼容存储服务的 Endpoint                           | 无                                    | 当 `NUXT_STORAGE_PROVIDER` 为 `s3` 时必需                             |
 | NUXT_PROVIDER_S3_BUCKET                  | S3 存储桶名称                                        | `chronoframe`                         | 当 `NUXT_STORAGE_PROVIDER` 为 `s3` 时必需                             |
 | NUXT_PROVIDER_S3_REGION                  | S3 存储桶区域                                        | `auto`                                | 当 `NUXT_STORAGE_PROVIDER` 为 `s3` 时必需                             |

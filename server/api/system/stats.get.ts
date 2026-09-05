@@ -2,6 +2,10 @@ import { sql, gte } from 'drizzle-orm'
 import * as si from 'systeminformation'
 import { readFileSync } from 'node:fs'
 
+// 短 TTL 缓存：stats 数据变化频率远低于请求频率（后台页每 5s 轮询）
+const STATS_TTL_MS = 10_000
+let statsCache: { at: number; data: any } | null = null
+
 async function getQueueStats() {
   const workerPool = globalThis.__workerPool
   return workerPool ? workerPool.getPoolStats() : null
@@ -120,6 +124,11 @@ function mapSystemInfo(distribution: string): string {
 export default eventHandler(async (event) => {
   await requireUserSession(event)
 
+  // 命中缓存直接返回，避免重复执行 7 条聚合 + systeminformation
+  if (statsCache && Date.now() - statsCache.at < STATS_TTL_MS) {
+    return statsCache.data
+  }
+
   // 获取基础统计
   const totalPhotos = await useDB()
     .select({ count: sql<number>`count(*)` })
@@ -217,7 +226,7 @@ export default eventHandler(async (event) => {
     }
   }
 
-  return {
+  const data = {
     uptime: process.uptime() || 0,
     runningOn: systemInfo,
     memory: (await getMemoryStats()) || { used: 0, total: 0 },
@@ -236,4 +245,6 @@ export default eventHandler(async (event) => {
     trends: trendData.toReversed(),
     timestamp: new Date().toISOString(),
   }
+  statsCache = { at: Date.now(), data }
+  return data
 })

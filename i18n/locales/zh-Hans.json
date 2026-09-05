@@ -147,13 +147,15 @@
     "album": {
       "noImage": "空相簿",
       "emptyAlbumTip": "添加照片开始吧",
-      "noDescription": "无描述"
+      "noDescription": "无描述",
+      "scanPhotos": "张照片"
     },
     "loading": "加载中",
     "photo": {
       "untitled": "未命名",
       "altFallback": "照片",
       "loadError": "加载图片失败",
+      "retry": "重试",
       "avatarAlt": "作者头像"
     },
     "authForm": {
@@ -418,6 +420,24 @@
     "mapAndLocation": "地图和位置",
     "location": "位置服务"
   },
+  "albums": {
+    "scan": {
+      "loading": "加载中...",
+      "notFound": "相簿不存在",
+      "empty": "该相簿为空",
+      "lockedTitle": "该相簿已上锁",
+      "lockedHint": "请输入密码以查看此相簿。",
+      "passwordPlaceholder": "请输入密码",
+      "unlock": "解锁",
+      "wrongPassword": "密码错误，请重试",
+      "unlockError": "解锁失败，请稍后再试。",
+      "subAlbums": "子相簿",
+      "photos": "照片",
+      "close": "关闭",
+      "prev": "上一张",
+      "next": "下一张"
+    }
+  },
   "auth": {
     "form": {
       "errors": {
@@ -649,6 +669,12 @@
         "title": "上传照片",
         "description": "拖拽或选择文件。上传后照片会自动处理并添加到库中。",
         "options": {
+          "uploadTarget": {
+            "label": "上传位置",
+            "description": "选择将文件保存到本地存储，还是外部扫描库。",
+            "localStorage": "本地存储",
+            "defaultHint": "默认上传位置"
+          },
           "eraseLocation": {
             "label": "上传时抹除位置信息",
             "description": "本次上传将覆盖系统默认值，可随时开启或关闭。"
@@ -1431,6 +1457,17 @@
           "lastScanResult": "结果"
         },
         "empty": "暂无扫描库，添加一个文件夹开始使用。",
+        "result": {
+          "new": "新增",
+          "updated": "更新",
+          "failed": "失败",
+          "noChange": "本次无改动"
+        },
+        "dotStatus": {
+          "ok": "运行正常 · 缩略图生成正常",
+          "error": "最近扫描存在失败",
+          "off": "已停用"
+        },
         "messages": {
           "saved": "扫描库已保存",
           "created": "扫描库已创建",
@@ -1446,8 +1483,23 @@
           "namePlaceholder": "留空则使用文件夹名",
           "pathLabel": "文件夹路径",
           "pathPlaceholder": "要监控的文件夹绝对路径，例如 /photos",
-          "intervalLabel": "监控间隔（毫秒）",
-          "enabledLabel": "启用自动扫描"
+          "intervalLabel": "监控间隔",
+          "intervalMsSuffix": "毫秒",
+          "intervalHint": "自动轮询该目录的间隔",
+          "intervalSeconds": "{value} 秒",
+          "intervalMinutes": "{value} 分钟",
+          "intervalMixed": "{minutes} 分钟 {seconds} 秒",
+          "enabledLabel": "启用外部库",
+          "enabledStateOn": "已开启",
+          "enabledStateOff": "已关闭",
+          "enabledHint": "开启后挂载该外部文件夹并自动扫描入库；关闭后将暂时从相册中隐藏并停止扫描。",
+          "asAlbumLabel": "作为相簿展示",
+          "asAlbumStateOn": "相簿",
+          "asAlbumStateOff": "画廊",
+          "asAlbumHint": "将该库以「相簿」形式展示在相册页，并从首页全局画廊中隐藏。库内子文件夹会自动嵌套为子相簿。",
+          "passwordLabel": "访问密码",
+          "passwordPlaceholder": "留空表示保持不变 / 清除现有密码",
+          "passwordHint": "设置后访问该相簿需输入密码；子相簿会自动继承该密码。"
         },
         "info": {
           "title": "扫描库信息",
@@ -1463,6 +1515,9 @@
           "scannedAt": "最近扫描",
           "scanResult": "最近结果",
           "photoIndexed": "已索引照片",
+          "displayMode": "展示方式",
+          "modeAlbum": "相簿",
+          "modeGallery": "画廊",
           "thumbnailDirHint": "缩略图就地产出位置",
           "thumbnailDir": "当前相册下的 thumbnails 子目录",
           "scanIntervalHint": "自动轮询扫描该目录的间隔",

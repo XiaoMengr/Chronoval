@@ -31,10 +31,39 @@ const refreshData = async () => {
   }
 }
 
-const refreshInterval = setInterval(refreshData, 5000)
+// 后台主页轮询：30s 一次，页面隐藏时暂停、回到前台立即刷新（减少无效请求）
+const REFRESH_MS = 30000
+let refreshInterval: ReturnType<typeof setInterval> | undefined
+
+const stopPolling = () => {
+  if (refreshInterval) {
+    clearInterval(refreshInterval)
+    refreshInterval = undefined
+  }
+}
+const startPolling = () => {
+  stopPolling()
+  refreshInterval = setInterval(refreshData, REFRESH_MS)
+}
+const onVisibilityChange = () => {
+  if (document.visibilityState === 'visible') {
+    refreshData()
+    startPolling()
+  } else {
+    stopPolling()
+  }
+}
+
+startPolling()
+if (import.meta.client) {
+  document.addEventListener('visibilitychange', onVisibilityChange)
+}
 
 onBeforeUnmount(() => {
-  clearInterval(refreshInterval)
+  stopPolling()
+  if (import.meta.client) {
+    document.removeEventListener('visibilitychange', onVisibilityChange)
+  }
 })
 
 const systemStatus = computed(() => {

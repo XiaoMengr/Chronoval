@@ -24,6 +24,15 @@ const { currentPhotoIndex, isViewerOpen } = storeToRefs(useViewerState())
 const FIRST_SCREEN_ITEMS_COUNT = 50
 const MASONRY_GAP = 4
 
+// 增量渲染：首屏只挂载有限数量的照片，滚动到接近底部时再逐步追加。
+// 避免大图库一次性创建全部卡片（content-visibility 只是跳过绘制，仍需逐张挂载组件），
+// 这是进入首页首帧与可交互时间（TBT/INP）的最大瓶颈。
+const INCREMENT_INITIAL_VIEWPORT_FACTOR = 1.6
+const INCREMENT_STEP = 96
+const renderedCount = ref(0)
+const sentinelRef = ref<HTMLElement>()
+const loadMoreObserver = ref<IntersectionObserver | null>(null)
+
 const hasAnimated = ref(false)
 const showFloatingActions = ref(false)
 const dateRange = ref<string>()
@@ -64,16 +73,43 @@ const minColumns = computed(() => {
   return 1
 })
 
-// Prepare items for masonry-wall
+// 首屏渲染量：按列数 × 行数 × 视口倍数估算（移动 4 列 / 桌面 8 列），下限 36
+const initialRenderedCount = () => {
+  const cols = isMobile.value ? 4 : 8
+  const rows = isMobile.value ? 8 : 12
+  return Math.max(36, Math.ceil(cols * rows * INCREMENT_INITIAL_VIEWPORT_FACTOR))
+}
+
+// Prepare items for masonry-wall（只取已"激活"的前 N 张；滚动接近底部由哨兵追加）
 const masonryItems = computed(() => {
-  return (
-    displayPhotos.value?.map((photo, index) => ({
-      id: photo.id,
-      photo,
-      originalIndex: index,
-    })) ?? []
-  )
+  const list = displayPhotos.value ?? []
+  const end = Math.min(renderedCount.value || 0, list.length)
+  return list.slice(0, end).map((photo, index) => ({
+    id: photo.id,
+    photo,
+    originalIndex: index,
+  }))
 })
+
+// 数据就绪 / 列表变化（筛选、排序、刷新）时，把渲染窗口重置回首屏量。
+// 增量追加由底部哨兵负责，避免新一屏数据仍挂着上次滑过的尽头。
+watch(
+  () => displayPhotos.value,
+  (list) => {
+    if (!list) return
+    renderedCount.value = list.length
+      ? Math.min(initialRenderedCount(), list.length)
+      : 0
+  },
+  { immediate: true },
+)
+
+// 追加下一批：张开渲染窗口，允许水墙继续向下生长
+const appendBatch = () => {
+  const total = displayPhotos.value?.length ?? 0
+  if (renderedCount.value >= total) return
+  renderedCount.value = Math.min(renderedCount.value + INCREMENT_STEP, total)
+}
 
 const handleVisibilityChange = ({
   index,
@@ -206,6 +242,19 @@ const scrollToTop = () => {
 onMounted(() => {
   window.addEventListener('scroll', handleScroll, { passive: true })
 
+  // 底部哨兵：滚动接近传感器时，增量追加下一批照片
+  if (sentinelRef.value) {
+    loadMoreObserver.value = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          appendBatch()
+        }
+      },
+      { rootMargin: '1400px 0px 0px 0px', threshold: 0 },
+    )
+    loadMoreObserver.value.observe(sentinelRef.value)
+  }
+
   nextTick(() => {
     if (currentPhotoIndex.value) {
       scrollToPhoto(currentPhotoIndex.value)
@@ -215,6 +264,8 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll)
+  loadMoreObserver.value?.disconnect()
+  loadMoreObserver.value = null
 })
 
 const handleOpenViewer = (index: number) => {
@@ -225,9 +276,11 @@ const scrollToPhoto = (photoIndex: number) => {
   if (!displayPhotos.value[photoIndex]) return
 
   const photoId = displayPhotos.value[photoIndex].id
-  const photoElement = document.querySelector(`[data-photo-id="${photoId}"]`)
 
-  if (photoElement) {
+  const performScroll = () => {
+    const photoElement = document.querySelector(`[data-photo-id="${photoId}"]`)
+    if (!photoElement) return
+
     const elementRect = photoElement.getBoundingClientRect()
     const windowHeight = window.innerHeight
     const currentScrollY = window.pageYOffset
@@ -243,6 +296,17 @@ const scrollToPhoto = (photoIndex: number) => {
       top: Math.max(0, targetScrollY),
       behavior: 'smooth',
     })
+  }
+
+  // 若目标照片尚未被增量渲染出来，先张开水墙窗口，待 DOM 就绪后再滚动
+  if (photoIndex >= renderedCount.value) {
+    renderedCount.value = Math.min(
+      photoIndex + INCREMENT_STEP,
+      displayPhotos.value.length,
+    )
+    nextTick(performScroll)
+  } else {
+    performScroll()
   }
 }
 
@@ -295,6 +359,14 @@ watch(currentPhotoIndex, (newIndex) => {
             />
           </template>
         </MasonryWall>
+
+        <!-- 增量渲染哨兵：接近底部时触发 appendBatch，继续加载更多照片 -->
+        <div
+          v-if="renderedCount < (displayPhotos?.length ?? 0)"
+          ref="sentinelRef"
+          class="h-px w-full"
+          aria-hidden="true"
+        />
       </div>
     </div>
   </div>

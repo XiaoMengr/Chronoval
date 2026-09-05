@@ -145,6 +145,7 @@
       "untitled": "未命名",
       "altFallback": "相片",
       "loadError": "載入圖片失敗",
+      "retry": "重試",
       "avatarAlt": "作者頭像"
     },
     "authForm": {
@@ -565,6 +566,12 @@
         "title": "上傳相片",
         "description": "拖曳或選擇檔案。相片會自動處理並新增到圖庫。",
         "options": {
+          "uploadTarget": {
+            "label": "上傳位置",
+            "description": "選擇將檔案儲存至本地儲存，還是外部掃描庫。",
+            "localStorage": "本地儲存",
+            "defaultHint": "預設上傳位置"
+          },
           "eraseLocation": {
             "label": "上傳時抹除位置資訊",
             "description": "本次上傳可覆蓋系統預設值，您可隨時切換開啟或關閉。"

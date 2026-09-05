@@ -1,13 +1,24 @@
 <script lang="ts" setup>
 import { motion } from 'motion-v'
 import type { Album } from '~~/server/utils/db'
-interface AlbumWithPhotos extends Album {
+interface ScanAlbumCover {
+  id: string
+  thumbnailUrl: string | null
+  thumbnailHash: string | null
+  aspectRatio: number | null
+}
+interface AlbumItem extends Album {
+  kind?: 'manual' | 'scan'
   photoIds?: string[]
+  covers?: ScanAlbumCover[]
+  link?: string
+  photoCount?: number
+  passwordProtected?: boolean
 }
 const config = useRuntimeConfig()
 const { photos } = usePhotos()
 const { loggedIn } = useUserSession()
-const { data: albums } = useAsyncData<AlbumWithPhotos[]>(
+const { data: albums } = useAsyncData<AlbumItem[]>(
   'albums',
   () => $fetch('/api/albums'),
   {
@@ -23,6 +34,11 @@ const visibleAlbums = computed(() => {
   }
   return (albums.value || []).filter((album) => !album.isHidden)
 })
+
+const albumLink = (album: AlbumItem) =>
+  album.kind === 'scan'
+    ? album.link || `/albums/scan/${album.libId}`
+    : `/albums/${album.id}`
 
 // randomly pick 30 photos for waterfall
 const waterfallPhotos = computed(() =>
@@ -69,7 +85,11 @@ const getPhotoById = (photoId: string) => {
   return photos.value.find((p) => p.id === photoId) || null
 }
 
-const getAlbumDisplayPhotos = (album: AlbumWithPhotos) => {
+const getAlbumDisplayPhotos = (album: AlbumItem) => {
+  // 扫描库相簿自带封面缩略图数据（其照片已从全局画廊隐藏）
+  if (album.kind === 'scan' && album.covers && album.covers.length > 0) {
+    return album.covers
+  }
   if (!album.photoIds || album.photoIds.length === 0) return []
 
   const displayPhotos: Photo[] = []
@@ -213,8 +233,8 @@ const hoveredAlbum = ref<number | null>(null)
       >
         <NuxtLink
           v-for="album in visibleAlbums"
-          :key="album.id"
-          :to="`/albums/${album.id}`"
+          :key="album.kind === 'scan' ? `scan-${album.libId}-${album.relPath}` : album.id"
+          :to="albumLink(album)"
           class="block"
           @mouseenter="hoveredAlbum = album.id"
           @mouseleave="hoveredAlbum = null"
@@ -304,17 +324,32 @@ const hoveredAlbum = ref<number | null>(null)
                   {{ album.title }}
                 </h2>
 
-                <p
-                  class="flex items-center gap-0.5 text-sm text-neutral-600 dark:text-neutral-400"
-                >
+                <div class="flex items-center gap-2">
                   <Icon
-                    name="tabler:clock"
-                    class="h-lh size-4"
+                    v-if="album.passwordProtected"
+                    name="tabler:lock"
+                    class="size-4 text-neutral-500 dark:text-neutral-400"
                   />
-                  {{ $dayjs(album.createdAt).fromNow() }}
-                </p>
+                  <p
+                    v-if="album.kind !== 'scan'"
+                    class="flex items-center gap-0.5 text-sm text-neutral-600 dark:text-neutral-400"
+                  >
+                    <Icon
+                      name="tabler:clock"
+                      class="h-lh size-4"
+                    />
+                    {{ $dayjs(album.createdAt).fromNow() }}
+                  </p>
+                </div>
               </div>
               <p
+                v-if="album.kind === 'scan'"
+                class="text-sm text-neutral-600 dark:text-neutral-400 line-clamp-2"
+              >
+                {{ album.photoCount }} {{ $t('ui.album.scanPhotos') }}
+              </p>
+              <p
+                v-else
                 class="text-sm text-neutral-600 dark:text-neutral-400 line-clamp-2"
               >
                 {{ album.description || $t('ui.album.noDescription') }}

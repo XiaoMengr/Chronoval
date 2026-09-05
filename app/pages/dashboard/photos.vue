@@ -92,10 +92,14 @@ const fetchReactions = async (photoIds: string[]) => {
 
   reactionsLoading.value = true
   try {
-    const data = await $fetch('/api/photos/reactions', {
-      query: { ids: photoIds },
-    })
-    reactionsData.value = data as Record<string, Record<string, number>>
+    const data = await $fetch<Record<string, Record<string, number>>>(
+      '/api/photos/reactions',
+      {
+        query: { ids: photoIds },
+      },
+    )
+    // 增量合并，避免整体替换导致表格所有表态列重渲染
+    reactionsData.value = { ...reactionsData.value, ...data }
   } catch (error) {
     console.error('获取表态数据失败:', error)
   } finally {
@@ -266,6 +270,7 @@ const uploadImage = async (
   file: File,
   existingFileId?: string,
   eraseLocationOnUpload?: boolean,
+  target: 'storage' | number = 'storage',
 ) => {
   const fileName = file.name
   const fileId = existingFileId || `${Date.now()}-${fileName}`
@@ -273,6 +278,9 @@ const uploadImage = async (
   const uploadManager = useUpload({
     timeout: 10 * 60 * 1000, // 10分钟超时
   })
+
+  // 本次上传的目标扫描库 id（'storage' 表示本地存储）
+  const targetLibraryId = target === 'storage' ? undefined : target
 
   // 获取或创建 uploadingFile
   let uploadingFile = uploadingFiles.value.get(fileId)
@@ -303,6 +311,9 @@ const uploadImage = async (
       body: {
         fileName: file.name,
         contentType: file.type,
+        ...(targetLibraryId != null
+          ? { targetLibraryId }
+          : {}),
       },
     })
 
@@ -371,6 +382,29 @@ const uploadImage = async (
         uploadingFile.canAbort = false
         uploadingFile.stage = null // 重置 stage，准备显示任务状态
         uploadingFiles.value = new Map(uploadingFiles.value)
+
+        // 入库上传：文件已写完到选定扫描库目录，直接触发该库扫描使其被索引，跳过本地处理管道
+        if (signedUrlResponse?.library) {
+          const libId = Number(signedUrlResponse.library.id)
+          try {
+            await $fetch(`/api/scan-library/${libId}/scan`, {
+              method: 'POST',
+            })
+            uploadingFile.status = 'completed'
+            uploadingFile.progress = 100
+            uploadingFile.stage = null
+            uploadingFile.canAbort = false
+            uploadingFiles.value = new Map(uploadingFiles.value)
+          } catch (scanError: any) {
+            uploadingFile.status = 'error'
+            uploadingFile.canAbort = false
+            uploadingFile.error =
+              scanError?.message ||
+              $t('dashboard.photos.messages.uploadFailed')
+            uploadingFiles.value = new Map(uploadingFiles.value)
+          }
+          return
+        }
 
         try {
           // 检查是否为MOV视频文件（通过MIME类型或文件扩展名）
@@ -490,6 +524,22 @@ const selectedFiles = ref<File[]>([])
 const isUploadSlideoverOpen = ref(false)
 const uploadEraseLocationEnabled = ref(systemUploadEraseLocationDefault.value)
 
+// —— 上传目标位置：'storage'（本地存储默认）或某个扫描库 id ——
+const { data: uploadScanLibraries } = await useFetch<{
+  libraries: Array<{
+    id: number
+    name: string
+    rootPath: string
+    provider: string
+    enabled: boolean
+  }>
+}>('/api/scan-library')
+const enabledUploadLibraries = computed(() =>
+  (uploadScanLibraries.value?.libraries ?? []).filter((lib) => lib.enabled),
+)
+const uploadTarget = ref<'storage' | number>('storage')
+const hasSelectedUploadLibrary = computed(() => uploadTarget.value !== 'storage')
+
 const hasSelectedFiles = computed(() => selectedFiles.value.length > 0)
 
 const selectedFilesTotalSize = computed(() =>
@@ -604,17 +654,23 @@ const filteredData = computed(() => {
   }
 })
 
-// 监听过滤后的照片变化，自动获取表态数据
+// 监听过滤后的照片变化，自动获取表态数据（300ms 防抖，合并连续筛选动作）
+let reactionsTimer: ReturnType<typeof setTimeout> | undefined
 watch(
   () => filteredData.value,
-  async (photos) => {
-    if (photos && photos.length > 0) {
-      const photoIds = photos.map((p: Photo) => p.id)
-      await fetchReactions(photoIds)
-    }
+  (photos) => {
+    if (reactionsTimer) clearTimeout(reactionsTimer)
+    reactionsTimer = setTimeout(() => {
+      if (photos && photos.length > 0) {
+        fetchReactions((photos as Photo[]).map((p) => p.id))
+      }
+    }, 300)
   },
   { immediate: true },
 )
+onUnmounted(() => {
+  if (reactionsTimer) clearTimeout(reactionsTimer)
+})
 
 // 状态检查间隔 Map，每个任务对应一个定时器
 const statusIntervals = ref<Map<number, NodeJS.Timeout>>(new Map())
@@ -1208,7 +1264,12 @@ const handleUpload = async () => {
   const startUpload = async (file: File): Promise<void> => {
     const fileId = fileIdMapping.get(file)!
     try {
-      await uploadImage(file, fileId, uploadEraseLocationEnabled.value)
+      await uploadImage(
+        file,
+        fileId,
+        uploadEraseLocationEnabled.value,
+        uploadTarget.value,
+      )
     } catch (error: any) {
       errors.push(`${file.name}: ${error.message || '上传失败'}`)
       console.error('上传错误:', error)
@@ -2145,6 +2206,117 @@ onUnmounted(() => {
                   fileTrailingButton: 'text-neutral-400 hover:text-error-500',
                 }"
               />
+
+              <!-- 上传位置选择：本地存储 / 外部扫描库 -->
+              <UCard
+                variant="soft"
+                class="border border-neutral-200/80 dark:border-neutral-800/80"
+              >
+                <div class="space-y-3">
+                  <div class="space-y-1">
+                    <p
+                      class="text-sm font-medium text-neutral-800 dark:text-neutral-100"
+                    >
+                      {{
+                        $t(
+                          'dashboard.photos.slideover.options.uploadTarget.label',
+                        )
+                      }}
+                    </p>
+                    <p
+                      class="text-xs text-neutral-500 dark:text-neutral-400"
+                    >
+                      {{
+                        $t(
+                          'dashboard.photos.slideover.options.uploadTarget.description',
+                        )
+                      }}
+                    </p>
+                  </div>
+                  <div class="grid gap-2">
+                    <button
+                      type="button"
+                      class="flex items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors"
+                      :class="
+                        uploadTarget === 'storage'
+                          ? 'border-primary-400 bg-primary-500/10 dark:border-primary-500/60 dark:bg-primary-500/10'
+                          : 'border-neutral-200/80 bg-white/70 hover:border-neutral-300 dark:border-neutral-800/80 dark:bg-neutral-900/60 dark:hover:border-neutral-700'
+                      "
+                      @click="uploadTarget = 'storage'"
+                    >
+                      <span class="flex size-5 items-center justify-center">
+                        <span
+                          class="size-4 rounded-full border-2"
+                          :class="
+                            uploadTarget === 'storage'
+                              ? 'border-primary-500 bg-primary-500'
+                              : 'border-neutral-300 dark:border-neutral-600'
+                          "
+                        />
+                      </span>
+                      <UIcon
+                        name="tabler:database"
+                        class="size-4.5 shrink-0 text-neutral-500 dark:text-neutral-400"
+                      />
+                      <span class="min-w-0">
+                        <span
+                          class="block text-sm font-medium text-neutral-800 dark:text-neutral-100"
+                        >
+                          {{
+                            $t(
+                              'dashboard.photos.slideover.options.uploadTarget.localStorage',
+                            )
+                          }}
+                        </span>
+                        <span
+                          class="block text-xs text-neutral-500 dark:text-neutral-400"
+                        >
+                          {{
+                            $t(
+                              'dashboard.photos.slideover.options.uploadTarget.defaultHint',
+                            )
+                          }}
+                        </span>
+                      </span>
+                    </button>
+
+                    <button
+                      v-for="lib in enabledUploadLibraries"
+                      :key="lib.id"
+                      type="button"
+                      class="flex items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors"
+                      :class="
+                        uploadTarget === lib.id
+                          ? 'border-primary-400 bg-primary-500/10 dark:border-primary-500/60 dark:bg-primary-500/10'
+                          : 'border-neutral-200/80 bg-white/70 hover:border-neutral-300 dark:border-neutral-800/80 dark:bg-neutral-900/60 dark:hover:border-neutral-700'
+                      "
+                      @click="uploadTarget = lib.id"
+                    >
+                      <span class="flex size-5 items-center justify-center">
+                        <span
+                          class="size-4 rounded-full border-2"
+                          :class="
+                            uploadTarget === lib.id
+                              ? 'border-primary-500 bg-primary-500'
+                              : 'border-neutral-300 dark:border-neutral-600'
+                          "
+                        />
+                      </span>
+                      <UIcon
+                        name="tabler:folder-open"
+                        class="size-4.5 shrink-0 text-neutral-500 dark:text-neutral-400"
+                      />
+                      <span class="min-w-0">
+                        <span
+                          class="block truncate text-sm font-medium text-neutral-800 dark:text-neutral-100"
+                        >
+                          {{ lib.name }}
+                        </span>
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              </UCard>
 
               <UCard
                 variant="soft"

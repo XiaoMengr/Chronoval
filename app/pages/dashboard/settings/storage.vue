@@ -375,6 +375,8 @@ interface ScanLibraryItem {
   rootPath: string
   provider: 'local'
   enabled: boolean
+  asAlbum: boolean
+  passwordProtected: boolean
   watchIntervalMs: number
   lastScanAt: string | null
   lastScanResult: string | null
@@ -395,12 +397,18 @@ const scanLibraryFormState = reactive<{
   name: string
   rootPath: string
   enabled: boolean
+  /** 作为「相簿」在相册页展示（同时从首页全局画廊隐藏） */
+  asAlbum: boolean
+  /** 访问密码（明文，仅编辑时使用；留空表示保持不变） */
+  password: string
   watchIntervalMs: number
 }>({
   editId: null,
   name: '',
   rootPath: '',
   enabled: true,
+  asAlbum: false,
+  password: '',
   watchIntervalMs: 60000,
 })
 
@@ -409,23 +417,42 @@ const resetScanLibraryForm = () => {
   scanLibraryFormState.name = ''
   scanLibraryFormState.rootPath = ''
   scanLibraryFormState.enabled = true
+  scanLibraryFormState.asAlbum = false
+  scanLibraryFormState.password = ''
   scanLibraryFormState.watchIntervalMs = 60000
 }
 
 const openAddScanLibrary = () => resetScanLibraryForm()
 
-const openEditScanLibrary = (lib: ScanLibraryItem) => {
+// 编辑/查看复用的单一滑动抽屉（避免多个 Slideover 叠加导致的遮罩层互相遮挡/点击失效）
+const scanLibSlideover = reactive<{
+  open: boolean
+  mode: 'edit' | 'info'
+  lib: ScanLibraryItem | null
+}>({
+  open: false,
+  mode: 'edit',
+  lib: null,
+})
+
+const openScanLibraryEdit = (lib: ScanLibraryItem) => {
   scanLibraryFormState.editId = lib.id
   scanLibraryFormState.name = lib.name
   scanLibraryFormState.rootPath = lib.rootPath
   scanLibraryFormState.enabled = lib.enabled
+  scanLibraryFormState.asAlbum = lib.asAlbum
+  // 密码单向存储为哈希，编辑时不回填，留空表示保持不变
+  scanLibraryFormState.password = ''
   scanLibraryFormState.watchIntervalMs = lib.watchIntervalMs
+  Object.assign(scanLibSlideover, { open: true, mode: 'edit', lib })
 }
 
 const scanLibraryPayload = () => ({
   name: scanLibraryFormState.name || undefined,
   rootPath: scanLibraryFormState.rootPath,
   enabled: scanLibraryFormState.enabled,
+  asAlbum: scanLibraryFormState.asAlbum,
+  password: scanLibraryFormState.password || undefined,
   watchIntervalMs: scanLibraryFormState.watchIntervalMs,
 })
 
@@ -486,7 +513,7 @@ const onScanLibraryScan = async (lib: ScanLibraryItem) => {
     )
     const r = res.scanResult
     const desc = r
-      ? `indexed=${r.indexed} updated=${r.updated} failed=${r.failed}`
+      ? `${$t('settings.storage.scanLibrary.result.new')} ${r.indexed} · ${$t('settings.storage.scanLibrary.result.updated')} ${r.updated} · ${$t('settings.storage.scanLibrary.result.failed')} ${r.failed}`
       : undefined
     toast.add({
       title: $t('settings.storage.scanLibrary.messages.scanned'),
@@ -522,14 +549,41 @@ const onScanLibraryDelete = async (lib: ScanLibraryItem) => {
   }
 }
 
-const fmtScanTime = (iso: string | null) =>
-  iso ? new Date(iso).toLocaleString() : $t('settings.storage.scanLibrary.table.notScanned')
+// 已挂载标记：用于时间格式化的 SSR 水合一致性
+const isHydrated = ref(false)
+onMounted(() => {
+  isHydrated.value = true
+})
+
+// 格式化时间：输出浏览器本地时区文案（避免服务端 UTC 与客户端东八区不一致导致的水合 mismatch）
+const fmtScanTime = (iso: string | null) => {
+  if (!iso) return $t('settings.storage.scanLibrary.table.notScanned')
+  // 服务端/水合首帧渲染空占位，挂载后再补真实本地时间
+  if (!isHydrated.value) return ''
+  return new Date(iso).toLocaleString()
+}
+
+// 把监控间隔毫秒格式化成人类可读文本（60 秒 / 1 分钟 等）
+const intervalHumanText = computed(() => {
+  const ms = scanLibraryFormState.watchIntervalMs || 0
+  const s = Math.round(ms / 1000)
+  if (s < 60) return $t('settings.storage.scanLibrary.form.intervalSeconds', { value: s })
+  if (s % 60 === 0) return $t('settings.storage.scanLibrary.form.intervalMinutes', { value: s / 60 })
+  return $t('settings.storage.scanLibrary.form.intervalMixed', {
+    minutes: Math.floor(s / 60),
+    seconds: s % 60,
+  })
+})
 
 // 查看扫描库详细配置信息
-const scanLibInfo = ref<ScanLibraryItem | null>(null)
 const openScanLibraryInfo = (lib: ScanLibraryItem) => {
-  scanLibInfo.value = lib
+  Object.assign(scanLibSlideover, { open: true, mode: 'info', lib })
 }
+
+/** 详情抽屉当前展示的扫描库（mode==='info' 时为指向的 lib） */
+const scanLibInfo = computed(() =>
+  scanLibSlideover.mode === 'info' ? scanLibSlideover.lib : null,
+)
 
 // 查看上传存储方案（本地/S3/Openlist）配置信息
 const storageInfo = ref<SettingStorageProvider | null>(null)
@@ -917,18 +971,51 @@ const storageInfoConfigEntries = computed(() => {
                     />
                   </UFormField>
                   <UFormField
-                    :label="$t('settings.storage.scanLibrary.form.intervalLabel')"
-                    :ui="{ container: 'sm:max-w-full' }"
-                  >
-                    <UInput
-                      v-model.number="scanLibraryFormState.watchIntervalMs"
-                      type="number"
-                      :min="5000"
-                    />
-                  </UFormField>
-                  <UFormField :label="$t('settings.storage.scanLibrary.form.enabledLabel')">
-                    <UToggle v-model="scanLibraryFormState.enabled" />
-                  </UFormField>
+                        :label="$t('settings.storage.scanLibrary.form.intervalLabel')"
+                        :ui="{ container: 'sm:max-w-full' }"
+                      >
+                        <div class="flex items-center gap-2 w-full">
+                          <UInput
+                            v-model.number="scanLibraryFormState.watchIntervalMs"
+                            type="number"
+                            :min="5000"
+                            class="w-full"
+                          />
+                          <span class="shrink-0 text-sm text-neutral-400">
+                            {{ $t('settings.storage.scanLibrary.form.intervalMsSuffix') }}
+                          </span>
+                        </div>
+                        <p class="mt-1.5 flex items-center gap-1 text-xs text-neutral-400 dark:text-neutral-500">
+                          <UIcon name="tabler:clock" class="size-3.5 shrink-0" />
+                          {{ $t('settings.storage.scanLibrary.form.intervalHint') }}：{{ intervalHumanText }}
+                        </p>
+                      </UFormField>
+                      <UFormField
+                        :ui="{ container: 'sm:max-w-full' }"
+                      >
+                        <div class="flex w-full items-center justify-between gap-4 rounded-md border border-neutral-200 dark:border-neutral-800 bg-neutral-50/60 dark:bg-neutral-900/40 px-3 py-2.5">
+                          <div class="flex flex-col gap-0.5">
+                            <span class="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                              {{ $t('settings.storage.scanLibrary.form.enabledLabel') }}
+                            </span>
+                            <span
+                              class="text-xs"
+                              :class="scanLibraryFormState.enabled
+                                ? 'text-emerald-600 dark:text-emerald-400'
+                                : 'text-neutral-400 dark:text-neutral-500'"
+                            >
+                              {{ scanLibraryFormState.enabled
+                                ? $t('settings.storage.scanLibrary.form.enabledStateOn')
+                                : $t('settings.storage.scanLibrary.form.enabledStateOff') }}
+                            </span>
+                          </div>
+                          <USwitch v-model="scanLibraryFormState.enabled" color="success" />
+                        </div>
+                        <p class="mt-1.5 flex items-start gap-1 text-xs text-neutral-400 dark:text-neutral-500">
+                          <UIcon name="tabler:info-circle" class="size-3.5 shrink-0 mt-px" />
+                          {{ $t('settings.storage.scanLibrary.form.enabledHint') }}
+                        </p>
+                      </UFormField>
                 </div>
               </template>
 
@@ -961,29 +1048,29 @@ const storageInfoConfigEntries = computed(() => {
             >
               <div class="min-w-0 flex-1">
                 <div class="flex items-center gap-2">
+                  <ScanStatusDot :enabled="lib.enabled" :raw="lib.lastScanResult" />
                   <span class="font-medium text-neutral-900 dark:text-neutral-100">
                     {{ lib.name }}
                   </span>
-                  <UChip
-                    size="md"
-                    inset
-                    standalone
-                    :color="lib.enabled ? 'success' : undefined"
-                    :ui="{ base: lib.enabled ? '' : 'bg-neutral-300 dark:bg-neutral-700' }"
-                  />
                 </div>
                 <p class="truncate text-sm text-neutral-500 dark:text-neutral-400">
                   {{ lib.rootPath }}
                 </p>
-                <p class="text-xs text-neutral-400 dark:text-neutral-500">
-                  {{ $t('settings.storage.scanLibrary.table.photoCount') }}: {{ lib.photoCount }}
-                  · {{ $t('settings.storage.scanLibrary.table.lastScanAt') }}:
-                  {{ fmtScanTime(lib.lastScanAt) }}
-                  <span v-if="lib.lastScanResult">
-                    · {{ $t('settings.storage.scanLibrary.table.lastScanResult') }}:
-                    {{ lib.lastScanResult }}
+                <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-neutral-400 dark:text-neutral-500">
+                  <span>
+                    {{ $t('settings.storage.scanLibrary.table.photoCount') }}
+                    <span class="font-medium text-neutral-700 dark:text-neutral-300">{{ lib.photoCount }}</span>
                   </span>
-                </p>
+                  <span aria-hidden="true">·</span>
+                  <span class="inline-flex items-center gap-1">
+                    <UIcon name="tabler:clock" class="size-3.5" />
+                    {{ fmtScanTime(lib.lastScanAt) }}
+                  </span>
+                  <template v-if="lib.lastScanResult">
+                    <span aria-hidden="true">·</span>
+                    <ScanResultBadges :raw="lib.lastScanResult" />
+                  </template>
+                </div>
               </div>
 
               <div class="flex items-center gap-2">
@@ -997,181 +1084,20 @@ const storageInfoConfigEntries = computed(() => {
                     @click="onScanLibraryScan(lib)"
                   />
                 </UTooltip>
-                <UToggle v-model="lib.enabled" size="sm" @change="onScanLibraryToggle(lib)" />
+                <USwitch v-model="lib.enabled" size="sm" @change="onScanLibraryToggle(lib)" />
 
-                <USlideover
-                  :title="$t('settings.storage.scanLibrary.slideover.editTitle')"
-                  :ui="{ footer: 'justify-end' }"
-                  @open="openEditScanLibrary(lib)"
-                >
-                  <UButton size="sm" variant="soft" icon="tabler:pencil" />
-                  <template #body>
-                    <div class="space-y-4">
-                      <UFormField
-                        :label="$t('settings.storage.scanLibrary.form.nameLabel')"
-                        :ui="{ container: 'sm:max-w-full' }"
-                      >
-                        <UInput v-model="scanLibraryFormState.name" />
-                      </UFormField>
-                      <UFormField
-                        :label="$t('settings.storage.scanLibrary.form.pathLabel')"
-                        required
-                        :ui="{ container: 'sm:max-w-full' }"
-                      >
-                        <UInput v-model="scanLibraryFormState.rootPath" />
-                      </UFormField>
-                      <UFormField
-                        :label="$t('settings.storage.scanLibrary.form.intervalLabel')"
-                        :ui="{ container: 'sm:max-w-full' }"
-                      >
-                        <UInput
-                          v-model.number="scanLibraryFormState.watchIntervalMs"
-                          type="number"
-                          :min="5000"
-                        />
-                      </UFormField>
-                      <UFormField :label="$t('settings.storage.scanLibrary.form.enabledLabel')">
-                        <UToggle v-model="scanLibraryFormState.enabled" />
-                      </UFormField>
-                    </div>
-                  </template>
-                  <template #footer="{ close }">
-                    <UButton
-                      :label="$t('common.actions.cancel')"
-                      color="neutral"
-                      variant="outline"
-                      @click="close"
-                    />
-                    <UButton
-                      :label="$t('settings.storage.scanLibrary.actions.save')"
-                      variant="soft"
-                      icon="tabler:check"
-                      @click="onScanLibrarySubmit(close)"
-                    />
-                  </template>
-                </USlideover>
-
-                <USlideover
-                  :title="$t('settings.storage.scanLibrary.slideover.infoTitle')"
-                  :ui="{ footer: 'justify-end' }"
-                  @open="openScanLibraryInfo(lib)"
-                >
-                  <UButton size="sm" variant="soft" icon="tabler:info-circle" />
-                  <template #body>
-                    <div
-                      v-if="scanLibInfo"
-                      class="space-y-4"
-                    >
-                      <div
-                        class="grid gap-px rounded-md bg-neutral-100 dark:bg-neutral-800 overflow-hidden"
-                      >
-                        <div class="bg-neutral-50 dark:bg-neutral-900 flex items-start justify-between gap-4 px-4 py-3">
-                          <span class="text-sm text-neutral-500 dark:text-neutral-400">
-                            {{ $t('settings.storage.scanLibrary.info.name') }}
-                          </span>
-                          <span class="max-w-[60%] text-right text-sm font-medium text-neutral-900 dark:text-neutral-100 break-words">
-                            {{ scanLibInfo.name }}
-                          </span>
-                        </div>
-                        <div class="bg-neutral-50 dark:bg-neutral-900 flex items-start justify-between gap-4 px-4 py-3">
-                          <span class="text-sm text-neutral-500 dark:text-neutral-400">
-                            {{ $t('settings.storage.scanLibrary.info.path') }}
-                          </span>
-                          <span class="max-w-[60%] text-right text-sm font-medium text-neutral-900 dark:text-neutral-100 break-all">
-                            {{ scanLibInfo.rootPath }}
-                          </span>
-                        </div>
-                        <div class="bg-neutral-50 dark:bg-neutral-900 flex items-start justify-between gap-4 px-4 py-3">
-                          <span class="text-sm text-neutral-500 dark:text-neutral-400">
-                            {{ $t('settings.storage.scanLibrary.info.provider') }}
-                          </span>
-                          <span class="text-right text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                            {{ scanLibInfo.provider }}
-                          </span>
-                        </div>
-                        <div class="bg-neutral-50 dark:bg-neutral-900 flex items-start justify-between gap-4 px-4 py-3">
-                          <span class="text-sm text-neutral-500 dark:text-neutral-400">
-                            {{ $t('settings.storage.scanLibrary.info.status') }}
-                          </span>
-                          <UChip
-                            size="md"
-                            inset
-                            standalone
-                            :color="scanLibInfo.enabled ? 'success' : undefined"
-                            :label="$t(
-                              scanLibInfo.enabled
-                                ? 'settings.storage.scanLibrary.info.enabled'
-                                : 'settings.storage.scanLibrary.info.disabled',
-                            )"
-                            :ui="{
-                              base: scanLibInfo.enabled
-                                ? 'font-medium'
-                                : 'font-medium bg-neutral-300 dark:bg-neutral-700',
-                            }"
-                          />
-                        </div>
-                        <div class="bg-neutral-50 dark:bg-neutral-900 flex items-start justify-between gap-4 px-4 py-3">
-                          <span class="text-sm text-neutral-500 dark:text-neutral-400">
-                            {{ $t('settings.storage.scanLibrary.info.interval') }}
-                          </span>
-                          <div class="text-right">
-                            <span class="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                              {{ $t('settings.storage.scanLibrary.info.intervalMs', { value: scanLibInfo.watchIntervalMs }) }}
-                            </span>
-                          </div>
-                        </div>
-                        <div class="bg-neutral-50 dark:bg-neutral-900 flex items-start justify-between gap-4 px-4 py-3">
-                          <span class="text-sm text-neutral-500 dark:text-neutral-400">
-                            {{ $t('settings.storage.scanLibrary.info.photoIndexed') }}
-                          </span>
-                          <span class="text-right text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                            {{ scanLibInfo.photoCount }}
-                          </span>
-                        </div>
-                        <div class="bg-neutral-50 dark:bg-neutral-900 flex items-start justify-between gap-4 px-4 py-3">
-                          <span class="text-sm text-neutral-500 dark:text-neutral-400">
-                            {{ $t('settings.storage.scanLibrary.info.scannedAt') }}
-                          </span>
-                          <span class="max-w-[60%] text-right text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                            {{ fmtScanTime(scanLibInfo.lastScanAt) }}
-                          </span>
-                        </div>
-                        <div v-if="scanLibInfo.lastScanResult" class="bg-neutral-50 dark:bg-neutral-900 flex items-start justify-between gap-4 px-4 py-3">
-                          <span class="text-sm text-neutral-500 dark:text-neutral-400">
-                            {{ $t('settings.storage.scanLibrary.info.scanResult') }}
-                          </span>
-                          <span class="max-w-[60%] text-right text-sm font-medium text-neutral-900 dark:text-neutral-100 break-words">
-                            {{ scanLibInfo.lastScanResult }}
-                          </span>
-                        </div>
-                        <div v-if="scanLibInfo.createdAt" class="bg-neutral-50 dark:bg-neutral-900 flex items-start justify-between gap-4 px-4 py-3">
-                          <span class="text-sm text-neutral-500 dark:text-neutral-400">
-                            {{ $t('settings.storage.scanLibrary.info.createdAt') }}
-                          </span>
-                          <span class="text-right text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                            {{ fmtScanTime(scanLibInfo.createdAt) }}
-                          </span>
-                        </div>
-                        <div v-if="scanLibInfo.updatedAt" class="bg-neutral-50 dark:bg-neutral-900 flex items-start justify-between gap-4 px-4 py-3">
-                          <span class="text-sm text-neutral-500 dark:text-neutral-400">
-                            {{ $t('settings.storage.scanLibrary.info.updatedAt') }}
-                          </span>
-                          <span class="text-right text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                            {{ fmtScanTime(scanLibInfo.updatedAt) }}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </template>
-                  <template #footer="{ close }">
-                    <UButton
-                      :label="$t('common.actions.close')"
-                      color="neutral"
-                      variant="outline"
-                      @click="close"
-                    />
-                  </template>
-                </USlideover>
+                <UButton
+                  size="sm"
+                  variant="soft"
+                  icon="tabler:pencil"
+                  @click="openScanLibraryEdit(lib)"
+                />
+                <UButton
+                  size="sm"
+                  variant="soft"
+                  icon="tabler:info-circle"
+                  @click="openScanLibraryInfo(lib)"
+                />
 
                 <UButton
                   size="sm"
@@ -1183,6 +1109,271 @@ const storageInfoConfigEntries = computed(() => {
               </div>
             </div>
           </div>
+
+          <USlideover
+            v-model:open="scanLibSlideover.open"
+            :title="scanLibSlideover.mode === 'edit'
+              ? $t('settings.storage.scanLibrary.slideover.editTitle')
+              : $t('settings.storage.scanLibrary.slideover.infoTitle')"
+            :ui="{ footer: 'justify-end' }"
+          >
+            <template #body>
+              <div
+                v-if="scanLibSlideover.mode === 'edit'"
+                class="space-y-4"
+              >
+                <UFormField
+                  :label="$t('settings.storage.scanLibrary.form.nameLabel')"
+                  :ui="{ container: 'sm:max-w-full' }"
+                >
+                  <UInput v-model="scanLibraryFormState.name" />
+                </UFormField>
+                <UFormField
+                  :label="$t('settings.storage.scanLibrary.form.pathLabel')"
+                  required
+                  :ui="{ container: 'sm:max-w-full' }"
+                >
+                  <UInput v-model="scanLibraryFormState.rootPath" />
+                </UFormField>
+                <UFormField
+                  :label="$t('settings.storage.scanLibrary.form.intervalLabel')"
+                  :ui="{ container: 'sm:max-w-full' }"
+                >
+                  <div class="flex items-center gap-2 w-full">
+                    <UInput
+                      v-model.number="scanLibraryFormState.watchIntervalMs"
+                      type="number"
+                      :min="5000"
+                      class="w-full"
+                    />
+                    <span class="shrink-0 text-sm text-neutral-400">
+                      {{ $t('settings.storage.scanLibrary.form.intervalMsSuffix') }}
+                    </span>
+                  </div>
+                  <p class="mt-1.5 flex items-center gap-1 text-xs text-neutral-400 dark:text-neutral-500">
+                    <UIcon name="tabler:clock" class="size-3.5 shrink-0" />
+                    {{ $t('settings.storage.scanLibrary.form.intervalHint') }}：{{ intervalHumanText }}
+                  </p>
+                </UFormField>
+                <UFormField
+                  :ui="{ container: 'sm:max-w-full' }"
+                >
+                  <div class="flex w-full items-center justify-between gap-4 rounded-md border border-neutral-200 dark:border-neutral-800 bg-neutral-50/60 dark:bg-neutral-900/40 px-3 py-2.5">
+                    <div class="flex flex-col gap-0.5">
+                      <span class="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                        {{ $t('settings.storage.scanLibrary.form.enabledLabel') }}
+                      </span>
+                      <span
+                        class="text-xs"
+                        :class="scanLibraryFormState.enabled
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-neutral-400 dark:text-neutral-500'"
+                      >
+                        {{ scanLibraryFormState.enabled
+                          ? $t('settings.storage.scanLibrary.form.enabledStateOn')
+                          : $t('settings.storage.scanLibrary.form.enabledStateOff') }}
+                      </span>
+                    </div>
+                    <USwitch v-model="scanLibraryFormState.enabled" color="success" />
+                  </div>
+                  <p class="mt-1.5 flex items-start gap-1 text-xs text-neutral-400 dark:text-neutral-500">
+                    <UIcon name="tabler:info-circle" class="size-3.5 shrink-0 mt-px" />
+                    {{ $t('settings.storage.scanLibrary.form.enabledHint') }}
+                  </p>
+                </UFormField>
+                <UFormField
+                  :ui="{ container: 'sm:max-w-full' }"
+                >
+                  <div class="flex w-full items-center justify-between gap-4 rounded-md border border-neutral-200 dark:border-neutral-800 bg-neutral-50/60 dark:bg-neutral-900/40 px-3 py-2.5">
+                    <div class="flex flex-col gap-0.5">
+                      <span class="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                        {{ $t('settings.storage.scanLibrary.form.asAlbumLabel') }}
+                      </span>
+                      <span
+                        class="text-xs"
+                        :class="scanLibraryFormState.asAlbum
+                          ? 'text-primary-600 dark:text-primary-400'
+                          : 'text-neutral-400 dark:text-neutral-500'"
+                      >
+                        {{ scanLibraryFormState.asAlbum
+                          ? $t('settings.storage.scanLibrary.form.asAlbumStateOn')
+                          : $t('settings.storage.scanLibrary.form.asAlbumStateOff') }}
+                      </span>
+                    </div>
+                    <USwitch v-model="scanLibraryFormState.asAlbum" color="primary" />
+                  </div>
+                  <p class="mt-1.5 flex items-start gap-1 text-xs text-neutral-400 dark:text-neutral-500">
+                    <UIcon name="tabler:book-2" class="size-3.5 shrink-0 mt-px" />
+                    {{ $t('settings.storage.scanLibrary.form.asAlbumHint') }}
+                  </p>
+                </UFormField>
+                <UFormField
+                  :label="$t('settings.storage.scanLibrary.form.passwordLabel')"
+                  :ui="{ container: 'sm:max-w-full' }"
+                >
+                  <UInput
+                    v-model="scanLibraryFormState.password"
+                    type="password"
+                    autocomplete="new-password"
+                    :placeholder="$t('settings.storage.scanLibrary.form.passwordPlaceholder')"
+                  />
+                  <p class="mt-1.5 flex items-start gap-1 text-xs text-neutral-400 dark:text-neutral-500">
+                    <UIcon name="tabler:lock" class="size-3.5 shrink-0 mt-px" />
+                    {{ $t('settings.storage.scanLibrary.form.passwordHint') }}
+                  </p>
+                </UFormField>
+              </div>
+
+              <div
+                v-else-if="scanLibInfo"
+                class="space-y-4"
+              >
+                <div
+                  class="grid gap-px rounded-md bg-neutral-100 dark:bg-neutral-800 overflow-hidden"
+                >
+                  <div class="bg-neutral-50 dark:bg-neutral-900 flex items-start justify-between gap-4 px-4 py-3">
+                    <span class="text-sm text-neutral-500 dark:text-neutral-400">
+                      {{ $t('settings.storage.scanLibrary.info.name') }}
+                    </span>
+                    <span class="max-w-[60%] text-right text-sm font-medium text-neutral-900 dark:text-neutral-100 break-words">
+                      {{ scanLibInfo.name }}
+                    </span>
+                  </div>
+                  <div class="bg-neutral-50 dark:bg-neutral-900 flex items-start justify-between gap-4 px-4 py-3">
+                    <span class="text-sm text-neutral-500 dark:text-neutral-400">
+                      {{ $t('settings.storage.scanLibrary.info.path') }}
+                    </span>
+                    <span class="max-w-[60%] text-right text-sm font-medium text-neutral-900 dark:text-neutral-100 break-all">
+                      {{ scanLibInfo.rootPath }}
+                    </span>
+                  </div>
+                  <div class="bg-neutral-50 dark:bg-neutral-900 flex items-start justify-between gap-4 px-4 py-3">
+                    <span class="text-sm text-neutral-500 dark:text-neutral-400">
+                      {{ $t('settings.storage.scanLibrary.info.provider') }}
+                    </span>
+                    <span class="text-right text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                      {{ scanLibInfo.provider }}
+                    </span>
+                  </div>
+                  <div class="bg-neutral-50 dark:bg-neutral-900 flex items-start justify-between gap-4 px-4 py-3">
+                    <span class="text-sm text-neutral-500 dark:text-neutral-400">
+                      {{ $t('settings.storage.scanLibrary.info.status') }}
+                    </span>
+                    <UChip
+                      size="md"
+                      inset
+                      standalone
+                      :color="scanLibInfo.enabled ? 'success' : undefined"
+                      :label="$t(
+                        scanLibInfo.enabled
+                          ? 'settings.storage.scanLibrary.info.enabled'
+                          : 'settings.storage.scanLibrary.info.disabled',
+                      )"
+                      :ui="{
+                        base: scanLibInfo.enabled
+                          ? 'font-medium'
+                          : 'font-medium bg-neutral-300 dark:bg-neutral-700',
+                      }"
+                    />
+                  </div>
+                  <div class="bg-neutral-50 dark:bg-neutral-900 flex items-start justify-between gap-4 px-4 py-3">
+                    <span class="text-sm text-neutral-500 dark:text-neutral-400">
+                      {{ $t('settings.storage.scanLibrary.info.interval') }}
+                    </span>
+                    <div class="text-right">
+                      <span class="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                        {{ $t('settings.storage.scanLibrary.info.intervalMs', { value: scanLibInfo.watchIntervalMs }) }}
+                      </span>
+                    </div>
+                  </div>
+                  <div class="bg-neutral-50 dark:bg-neutral-900 flex items-start justify-between gap-4 px-4 py-3">
+                    <span class="text-sm text-neutral-500 dark:text-neutral-400">
+                      {{ $t('settings.storage.scanLibrary.info.photoIndexed') }}
+                    </span>
+                    <span class="text-right text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                      {{ scanLibInfo.photoCount }}
+                    </span>
+                  </div>
+                  <div class="bg-neutral-50 dark:bg-neutral-900 flex items-start justify-between gap-4 px-4 py-3">
+                    <span class="text-sm text-neutral-500 dark:text-neutral-400">
+                      {{ $t('settings.storage.scanLibrary.info.displayMode') }}
+                    </span>
+                    <span class="flex max-w-[60%] items-center justify-end gap-1.5 text-right text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                      <UIcon
+                        :name="scanLibInfo.asAlbum ? 'tabler:book-2' : 'tabler:photo'"
+                        class="size-4"
+                        :class="scanLibInfo.asAlbum ? 'text-primary-500' : 'text-neutral-400'"
+                      />
+                      {{ scanLibInfo.asAlbum
+                        ? $t('settings.storage.scanLibrary.info.modeAlbum')
+                        : $t('settings.storage.scanLibrary.info.modeGallery') }}
+                      <UIcon
+                        v-if="scanLibInfo.passwordProtected"
+                        name="tabler:lock"
+                        class="size-3.5 text-amber-500"
+                      />
+                    </span>
+                  </div>
+                  <div class="bg-neutral-50 dark:bg-neutral-900 flex items-start justify-between gap-4 px-4 py-3">
+                    <span class="text-sm text-neutral-500 dark:text-neutral-400">
+                      {{ $t('settings.storage.scanLibrary.info.scannedAt') }}
+                    </span>
+                    <span class="max-w-[60%] text-right text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                      {{ fmtScanTime(scanLibInfo.lastScanAt) }}
+                    </span>
+                  </div>
+                  <div v-if="scanLibInfo.lastScanResult" class="bg-neutral-50 dark:bg-neutral-900 flex items-start justify-between gap-4 px-4 py-3">
+                    <span class="text-sm text-neutral-500 dark:text-neutral-400">
+                      {{ $t('settings.storage.scanLibrary.info.scanResult') }}
+                    </span>
+                    <span class="max-w-[60%] text-right">
+                      <ScanResultBadges :raw="scanLibInfo.lastScanResult" />
+                    </span>
+                  </div>
+                  <div v-if="scanLibInfo.createdAt" class="bg-neutral-50 dark:bg-neutral-900 flex items-start justify-between gap-4 px-4 py-3">
+                    <span class="text-sm text-neutral-500 dark:text-neutral-400">
+                      {{ $t('settings.storage.scanLibrary.info.createdAt') }}
+                    </span>
+                    <span class="text-right text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                      {{ fmtScanTime(scanLibInfo.createdAt) }}
+                    </span>
+                  </div>
+                  <div v-if="scanLibInfo.updatedAt" class="bg-neutral-50 dark:bg-neutral-900 flex items-start justify-between gap-4 px-4 py-3">
+                    <span class="text-sm text-neutral-500 dark:text-neutral-400">
+                      {{ $t('settings.storage.scanLibrary.info.updatedAt') }}
+                    </span>
+                    <span class="text-right text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                      {{ fmtScanTime(scanLibInfo.updatedAt) }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </template>
+            <template #footer="{ close }">
+              <template v-if="scanLibSlideover.mode === 'edit'">
+                <UButton
+                  :label="$t('common.actions.cancel')"
+                  color="neutral"
+                  variant="outline"
+                  @click="close"
+                />
+                <UButton
+                  :label="$t('settings.storage.scanLibrary.actions.save')"
+                  variant="soft"
+                  icon="tabler:check"
+                  @click="onScanLibrarySubmit(close)"
+                />
+              </template>
+              <template v-else>
+                <UButton
+                  :label="$t('common.actions.close')"
+                  color="neutral"
+                  variant="outline"
+                  @click="close"
+                />
+              </template>
+            </template>
+          </USlideover>
         </section>
       </div>
     </template>

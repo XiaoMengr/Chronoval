@@ -1,5 +1,8 @@
 export default eventHandler(async (_event) => {
   const db = useDB()
+  const { listScanAlbumRoots } = await import(
+    '~~/server/services/scan-library/manager'
+  )
 
   // 获取所有相册，按创建时间倒序
   const albums = await db.select().from(tables.albums)
@@ -18,14 +21,21 @@ export default eventHandler(async (_event) => {
 
       return {
         ...album,
+        kind: 'manual',
         // 即使是空相册，也返回空数组而不是 undefined
         photoIds: photoIds.length > 0 ? photoIds.map((p) => p.photoId) : [],
       }
     }),
   )
 
-  // 按创建时间倒序排列
-  return albumsWithPhotoIds.sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-  )
+  // 扫描库转为的相簿以根节点合并进相册列表（kind: 'scan'）
+  const scanRoots = await listScanAlbumRoots()
+  const combined: unknown[] = [
+    ...albumsWithPhotoIds.sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    ),
+    ...scanRoots,
+  ]
+  return combined
 })
