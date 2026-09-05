@@ -23,6 +23,8 @@ interface Props {
   isLivePhoto?: boolean
   livePhotoVideoUrl?: string
   isHDR?: boolean
+  /** 变化时对当前 WebGL 图像重新适配/居中，用于布局尺寸变化（如信息面板折叠）后修正渲染 */
+  refitKey?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -45,6 +47,23 @@ const props = withDefaults(defineProps<Props>(), {
   isHDR: false,
 })
 
+// 布局尺寸变化（如信息面板折叠）后，图片舞台宽度变化：
+// 若 WebGL 引擎已就绪则仅重新适配/居中渲染；若引擎因挂载失败未就绪（engine 为空，resetView 是空操作），
+// 则通过自增 key 重建 WebGL 查看器以重试挂载，避免图片停留在模糊占位
+const webglMountKey = ref(0)
+watch(
+  () => props.refitKey,
+  () => {
+    nextTick(() => {
+      if (showWebGLViewer.value && !webglReady.value) {
+        webglMountKey.value++
+      } else {
+        webglViewerRef.value?.resetView()
+      }
+    })
+  },
+)
+
 const containerRef = ref<HTMLDivElement>()
 
 const highResLoaded = ref(false)
@@ -54,6 +73,42 @@ const currentSrc = ref<string | null>()
 // 首帧门控：WebGL 引擎在解码/上传纹理前画布可能短暂呈黑色（分块首帧）。
 // 收到引擎「加载完成（首帧已绘制）」前保持图层隐藏，就绪后再淡入，避免进入查看器时黑屏闪烁。
 const webglReady = ref(false)
+
+// 「构建纹理」细节指示：从 0.3 过渡到 0.9（近清晰），随后淡出，不显示终值 x1.0，
+// 贴合图片左上角自适应显示，让切换照片时的模糊→清晰过渡有实时数值反馈
+const detailLevel = ref(0.3)
+const showDetail = ref(false)
+let sharpenTimer: ReturnType<typeof setInterval> | null = null
+let sharpening = false
+const startSharpen = () => {
+  if (sharpenTimer) clearInterval(sharpenTimer)
+  detailLevel.value = 0.3
+  showDetail.value = true
+  if (sharpening) return
+  sharpening = true
+  let d = 0.3
+  // 从模糊到清晰：数值到 0.9 即视为接近清晰，随后淡出，不显示终值 x1.0
+  const MAX = 0.9
+  sharpenTimer = setInterval(() => {
+    d = Math.min(MAX, d + 0.06)
+    detailLevel.value = Math.round(d * 10) / 10
+    if (d >= MAX) {
+      if (sharpenTimer) clearInterval(sharpenTimer)
+      sharpenTimer = null
+      sharpening = false
+      setTimeout(() => {
+        showDetail.value = false
+      }, 200)
+    }
+  }, 34)
+}
+const stopSharpenTimer = () => {
+  if (sharpenTimer) {
+    clearInterval(sharpenTimer)
+    sharpenTimer = null
+  }
+  sharpening = false
+}
 
 const { loggedIn } = useUserSession()
 const webglImageViewerDebug = useSettingRef('system:webglImageViewerDebug')
@@ -162,8 +217,22 @@ const handleWebGLState = (
   handleWebGLStateChange(isLoading, state, quality)
   if (!isLoading) {
     webglReady.value = true
+    startSharpen()
   }
 }
+
+// 兜底门控：个别图片引擎的「就绪事件」可能偶尔未触发，导致画布一直 hidden，
+// 而此时缩略图又已淡出，视觉上只看到背景模糊层、图片像「躲在模糊层下一层」。
+// 只要高清图已在 WebGL 中真正渲染出帧（highResRendered=true），就强制把它置为就绪浮现。
+watch(
+  () => highResRendered.value,
+  (rendered) => {
+    if (rendered && showWebGLViewer.value && !webglReady.value) {
+      webglReady.value = true
+      startSharpen()
+    }
+  },
+)
 
 // 处理缩放状态变化
 const handleZoomChange = (originalScale: number, relativeScale: number) => {
@@ -174,9 +243,17 @@ const handleZoomChange = (originalScale: number, relativeScale: number) => {
 }
 
 // 组件卸载时清理
+
+// 指示器定位：与首页画廊「构建纹理」加载指示一致，固定在舞台左下角内侧
+const indicatorStyle = computed(() => ({
+  left: '16px',
+  bottom: '24px',
+}))
+
 onUnmounted(() => {
   loaderManagerRef.value?.cleanup()
   loaderManagerRef.value = null
+  stopSharpenTimer()
 })
 </script>
 
@@ -197,7 +274,22 @@ onUnmounted(() => {
       image-contain
     />
 
-    <!-- WebGL 图片查看器 (首帧就绪后淡入，避免黑屏) -->
+    <!-- 「构建纹理」细节指示：模糊→清晰期间在舞台左下角（与加载指示对齐）显示 0.3→0.9，随后淡出（无终值 x1.0） -->
+    <Transition name="detail-pop">
+      <div
+        v-if="showDetail && !isLivePhoto"
+        class="pointer-events-none absolute z-20"
+        :style="indicatorStyle"
+      >
+        <span
+          class="rounded-full bg-black/45 px-3.5 py-1.5 font-mono text-sm tabular-nums text-white/95 shadow-lg backdrop-blur-md"
+        >
+          x{{ detailLevel.toFixed(1) }}
+        </span>
+      </div>
+    </Transition>
+
+    <!-- WebGL 图片查看器 (首帧就绪后淡入且从模糊到清晰，避免黑屏) -->
     <div
       v-if="showWebGLViewer"
       :class="[
@@ -206,6 +298,7 @@ onUnmounted(() => {
       ]"
     >
       <WebGLImageViewer
+        :key="webglMountKey"
         ref="webglViewerRef"
         :src="currentSrc!"
         :class="className"
@@ -242,14 +335,16 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-/* 首帧门控：引擎绘制完成前保持隐藏，就绪后平滑淡入，避免进入查看器时黑屏闪烁 */
+/* 首帧门控：引擎绘制完成前保持隐藏，就绪后平滑淡入并从模糊到清晰，避免黑屏闪烁 */
 .webgl-viewer-hidden {
   opacity: 0;
 }
 
 .webgl-viewer-in {
-  animation: chrono-viewer-in 260ms ease-out both;
-  will-change: opacity;
+  animation:
+    chrono-viewer-in 260ms ease-out both,
+    chrono-sharpen 460ms ease-out both;
+  will-change: opacity, filter;
 }
 
 @keyframes chrono-viewer-in {
@@ -259,5 +354,29 @@ onUnmounted(() => {
   to {
     opacity: 1;
   }
+}
+
+/* 纹理清晰化：从高斯模糊过渡到清晰，模拟「构建纹理中从小图到大图」 */
+@keyframes chrono-sharpen {
+  from {
+    filter: blur(18px);
+  }
+  to {
+    filter: blur(0px);
+  }
+}
+
+/* 细节指示器淡入/淡出 */
+.detail-pop-enter-active,
+.detail-pop-leave-active {
+  transition:
+    opacity 0.24s ease,
+    transform 0.24s ease;
+}
+
+.detail-pop-enter-from,
+.detail-pop-leave-to {
+  opacity: 0;
+  transform: scale(0.94);
 }
 </style>

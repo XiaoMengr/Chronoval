@@ -94,6 +94,15 @@ const { convertMovToMp4, getProcessingState } = useLivePhotoProcessor()
 const currentPhoto = computed(() => props.photos[props.currentIndex])
 const isMobile = useMediaQuery('(max-width: 768px)')
 
+// 背景模糊图就绪门控：切换图片时先隐藏，@load 后再平滑淡入，避免"黑屏闪断"
+const blurReady = ref(false)
+watch(
+  () => currentPhoto.value?.thumbnailUrl,
+  () => {
+    blurReady.value = false
+  },
+)
+
 // 渐进式预解码：当前图加载的同时，静默预取上一张/下一张的全尺寸图进 Blob 缓存，
 // 用户前后切换时直接命中缓存（Blob URL 已被 WebGL 消费，不再联网重新下载）
 const prefetchManager = new ImageLoaderManager()
@@ -553,12 +562,93 @@ onUnmounted(() => {
 
 // Swiper modules
 const swiperModules = [Navigation, Keyboard, Virtual]
+
+// ===== 与 afilmory 一致的动效预设 =====
+// smooth = { type:'spring', duration:0.4, bounce:0 }，snappy = { type:'spring', duration:0.4, bounce:0.15 }
+const SPRING_SMOOTH = { type: 'spring', duration: 0.4, bounce: 0 } as const
+const SPRING_SNAPPY = { type: 'spring', duration: 0.4, bounce: 0.15 } as const
+
+// 桌面端信息面板默认展开（afilmory 桌面端默认展示 inspector）
+const isDesktopInspectorVisible = ref(!isMobile.value)
+
+// 面板折叠/展开会改变图片舞台宽度（flex 布局重排）：
+// - WebGL 画布 resize 后需重新适配图片（imageRefitKey 自增触发 ProgressiveImage 处理）
+// - Swiper 未启用 observer，容器宽度变化不会被自动感知，需手动 update()，
+//   否则滑动器/幻灯片位置不随新宽度重排，导致查看界面布局错乱
+const imageRefitKey = ref(0)
+
+// 桌面端：信息面板展开时，让图片舞台右侧收缩出面板宽度（InfoPanel 为绝对定位
+// 覆盖层 w-80=320px，不参与布局重排），使图片在面板左侧区域内渲染、不被遮挡；
+// 面板折叠后恢复全屏自适应。
+const stageInlinePaddingRight = computed(() =>
+  !isMobile.value && isDesktopInspectorVisible.value ? '320px' : '0px',
+)
+
+// 叠影/重影修复：面板折叠/展开会改变图片舞台宽度。WebGL 画布宽度随之变化时，
+// 在引擎完成"清空缓冲+重绘"之前的同一帧里，陈旧帧会被 CSS 拉伸成残影，视觉上即
+// "照片折叠出去重影"。因此：宽度变化一开始就把照片层整体隐藏（凭背景高斯模糊兜
+// 底，界面不空洞），等舞台宽度翻转 + WebGL 重绘稳定后再淡入并重新适配。
+// 这样无论图片开合快慢，拉伸的陈旧帧都不可见，叠影被彻底消除。
+const stageResizing = ref(false)
+let resizeGuardTimer: ReturnType<typeof setTimeout> | null = null
+const restoreStage = () => {
+  stageResizing.value = false
+  nextTick(() => {
+    imageRefitKey.value++
+    swiperRef.value?.update()
+  })
+}
+watch(isDesktopInspectorVisible, () => {
+  if (resizeGuardTimer) clearTimeout(resizeGuardTimer)
+  stageResizing.value = true
+  // 覆盖：160ms padding 去抖翻转 + 舞台重排 + WebGL 重绘余量
+  resizeGuardTimer = setTimeout(restoreStage, 560)
+})
+
+// 舞台宽度一步到位翻转（160ms 去抖，避免频繁点击导致反复重排抖动）
+const stagePadRight = ref(stageInlinePaddingRight.value)
+let padTimer: ReturnType<typeof setTimeout> | null = null
+watch(stageInlinePaddingRight, (v) => {
+  if (padTimer) clearTimeout(padTimer)
+  padTimer = setTimeout(() => {
+    stagePadRight.value = v
+  }, 160)
+})
+onUnmounted(() => {
+  if (padTimer) clearTimeout(padTimer)
+  if (resizeGuardTimer) clearTimeout(resizeGuardTimer)
+})
+
+// 入场「内容可见」门控：打开后短暂延迟，工具栏/覆盖层等 UI 等入场动画先行，
+// 之后再淡入——与 afilmory 的 isViewerContentVisible 行为一致
+const entryDone = ref(false)
+let entryTimer: ReturnType<typeof setTimeout> | null = null
+const chromeVisible = computed(() => props.isOpen && entryDone.value)
+const showEntryCatchup = computed(() => props.isOpen && !entryDone.value)
+watch(
+  () => props.isOpen,
+  (open) => {
+    if (entryTimer) clearTimeout(entryTimer)
+    entryDone.value = false
+    if (open) {
+      entryTimer = setTimeout(() => {
+        entryDone.value = true
+      }, 420)
+    } else {
+      isDesktopInspectorVisible.value = !isMobile.value
+    }
+  },
+  { immediate: true },
+)
+onUnmounted(() => {
+  if (entryTimer) clearTimeout(entryTimer)
+})
 </script>
 
 <template>
   <Teleport to="body">
-    <!-- 背景层：深色沉浸底（Afilmory 风格，非玻璃模糊） -->
-    <!-- 打开即到位（不透明度直接为 1），避免从透明渐变到近黑时两侧留白闪“黑一下” -->
+    <!-- 背景层：当前图片的高斯模糊大背景（颜色随当前图自适应，100% 不透明遮挡底层页面，
+         清晰主图浮在其上层；switch 图片时仅更新 src，不整屏闪变） -->
     <AnimatePresence>
       <motion.div
         v-if="isOpen"
@@ -566,27 +656,30 @@ const swiperModules = [Navigation, Keyboard, Virtual]
         :animate="{ opacity: 1 }"
         :exit="{ opacity: 0 }"
         :transition="{ duration: 0.3 }"
-        class="fixed inset-0 z-30 bg-[#0a0a0e]/[0.97]"
-        @click="emit('close')"
-      />
-    </AnimatePresence>
-
-    <!-- 常驻 ThumbHash 背景：打开即到位（不做进入淡入）并保持常驻；
-         切换图片时仅更新 hash 数据、不做整屏交叉溶解——
-         既遮挡底层页面避免滑动露底（“首页滑动阴影”），又不再整屏闪变 -->
-    <AnimatePresence>
-      <motion.div
-        v-if="isOpen"
-        :initial="{ opacity: 1 }"
-        :animate="{ opacity: 1 }"
-        :exit="{ opacity: 0 }"
-        :transition="{ duration: 0.3 }"
-        class="fixed inset-0 z-40"
+        class="fixed inset-0 z-30 overflow-hidden bg-[#3a3a42]"
       >
-        <ThumbHash
+        <!-- 模糊图片本体：放大 + 强 blur，避免四周露边，颜色随当前图变化；
+             打开/切换时先隐藏，@load 就绪后平滑淡入，避免"黑屏闪断" -->
+        <img
+          v-if="currentPhoto?.thumbnailUrl"
           :key="currentPhoto?.id ?? 'empty'"
-          :thumbhash="currentPhoto?.thumbnailHash || ''"
-          class="w-full h-full scale-110"
+          :src="currentPhoto.thumbnailUrl"
+          alt=""
+          aria-hidden="true"
+          draggable="false"
+          class="absolute inset-0 h-full w-full scale-[1.8] object-cover transition-opacity duration-700"
+          :class="blurReady ? 'opacity-100' : 'opacity-0'"
+          style="filter: blur(64px) saturate(1.1) brightness(1.45)"
+          @load="blurReady = true"
+        />
+        <!-- 无缩略图时的兜底浅灰 -->
+        <div
+          v-else
+          class="absolute inset-0 h-full w-full bg-[#3a3a42]"
+        />
+        <!-- 主题自适应提亮渐变：浅色模式整体提亮（黑色照片也变灰白）；暗色模式轻微压暗保证工具栏/控件可读性 -->
+        <div
+          class="pointer-events-none absolute inset-0 h-full w-full bg-linear-to-b from-white/12 via-transparent to-white/5 dark:from-black/20 dark:via-transparent dark:to-black/30"
         />
       </motion.div>
     </AnimatePresence>
@@ -604,26 +697,62 @@ const swiperModules = [Navigation, Keyboard, Virtual]
         :style="{ touchAction: isMobile ? 'manipulation' : 'none' }"
         @click.self="emit('close')"
       >
-        <div
-          class="flex w-full h-full"
-          :class="isMobile ? 'flex-col' : 'flex-row'"
-        >
+        <div class="relative h-full w-full">
           <!-- 图片显示区域 -->
-          <div class="z-10 flex min-h-0 min-w-0 flex-1 flex-col">
-            <div class="group relative flex min-h-0 min-w-0 flex-1">
-              <!-- 顶部工具栏 -->
+          <div class="z-10 flex h-full min-h-0 min-w-0 flex-1 flex-col">
+            <div class="group/photo-viewer relative flex min-h-0 min-w-0 flex-1">
+              <!-- 顶部工具栏（afilmory 布局：左侧标题/信息按钮，右侧操作按钮） -->
               <motion.div
-                :initial="{ opacity: 0 }"
-                :animate="{ opacity: 1 }"
-                :exit="{ opacity: 0 }"
-                :transition="{ duration: 0.3 }"
-                class="absolute z-30 flex items-center justify-between"
+                :initial="false"
+                :animate="{ opacity: chromeVisible ? 1 : 0 }"
+                :transition="SPRING_SNAPPY"
+                class="pointer-events-none absolute z-40 flex items-center justify-between gap-3"
                 :class="
                   isMobile ? 'top-2 right-2 left-2' : 'top-4 right-4 left-4'
                 "
               >
                 <!-- 左侧工具按钮 -->
-                <div class="flex items-center gap-1">
+                <div class="pointer-events-auto flex items-center gap-2">
+                  <!-- 展开/收起信息面板 - 桌面端（移到最左边） -->
+                  <button
+                    v-if="!isMobile"
+                    type="button"
+                    :aria-label="
+                      isDesktopInspectorVisible ? 'collapse info' : 'expand info'
+                    "
+                    class="flex size-9 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm transition-colors hover:bg-black/50"
+                    @click="isDesktopInspectorVisible = !isDesktopInspectorVisible"
+                  >
+                    <Icon
+                      :name="
+                        isDesktopInspectorVisible
+                          ? 'tabler:layout-sidebar-right-collapse'
+                          : 'tabler:layout-sidebar-right-expand'
+                      "
+                      class="size-5"
+                    />
+                  </button>
+
+                  <!-- 信息按钮 - 在移动设备上显示 -->
+                  <button
+                    v-if="isMobile"
+                    type="button"
+                    aria-label="info"
+                    class="flex size-9 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm transition-colors hover:bg-black/50"
+                    :class="showExifPanel ? 'bg-black/50' : ''"
+                    @click="showExifPanel = !showExifPanel"
+                  >
+                    <Icon name="tabler:info-circle" class="size-5" />
+                  </button>
+
+                  <!-- 照片标题 - 桌面端显示 -->
+                  <span
+                    v-if="!isMobile && currentPhoto?.title"
+                    class="truncate rounded-full bg-black/35 px-3 py-1 text-sm font-medium text-white backdrop-blur-sm"
+                  >
+                    {{ currentPhoto.title }}
+                  </span>
+
                   <!-- LivePhoto 标志 -->
                   <PhotoLivePhotoIndicator
                     v-if="currentPhoto?.isLivePhoto"
@@ -652,41 +781,65 @@ const swiperModules = [Navigation, Keyboard, Virtual]
                 </div>
 
                 <!-- 右侧按钮组 -->
-                <div class="flex items-center gap-2">
-                  <!-- 信息按钮 - 在移动设备上显示 -->
-                  <GlassButton
-                    v-if="isMobile"
-                    icon="tabler:info-circle"
-                    :class="
-                      !showExifPanel
-                        ? ''
-                        : 'bg-black/20 hover:bg-black/30 text-white'
-                    "
-                    size="sm"
-                    rounded
-                    @click="showExifPanel = !showExifPanel"
-                  />
-
+                <div class="pointer-events-auto flex items-center gap-2">
                   <!-- 分享按钮 -->
-                  <GlassButton
-                    icon="tabler:share-3"
-                    size="sm"
-                    rounded
+                  <button
+                    type="button"
+                    aria-label="share"
+                    class="flex size-9 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm transition-colors hover:bg-black/50"
                     @click="showShareModal = true"
-                  />
+                  >
+                    <Icon name="tabler:share-3" class="size-5" />
+                  </button>
 
                   <!-- 关闭按钮 -->
-                  <GlassButton
-                    icon="tabler:x"
-                    size="sm"
-                    rounded
+                  <button
+                    type="button"
+                    aria-label="close"
+                    class="flex size-9 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm transition-colors hover:bg-black/50"
                     @click="emit('close')"
-                  />
+                  >
+                    <Icon name="tabler:x" class="size-5" />
+                  </button>
                 </div>
               </motion.div>
 
               <!-- 加载指示器 -->
               <LoadingIndicator ref="loadingIndicatorRef" />
+
+              <!-- 图片舞台（afilmory：入场 catchup 纹理层 + Swiper）
+                   阶段重排（信息面板折叠/展开改宽度）期间隐藏照片层，避免 WebGL 陈旧帧
+                   被拉伸成叠影；重排完成后再淡入 -->
+              <div
+                class="relative flex h-full w-full items-center justify-center"
+                :class="stageResizing ? 'opacity-0' : 'photo-stage-reveal'"
+                data-photo-viewer-stage="true"
+                :style="{
+                  touchAction: isMobile ? 'pan-x pinch-zoom' : 'pan-y',
+                  paddingRight: stagePadRight,
+                }"
+              >
+                <!-- 入场 catchup 层：入场动画期间用 thumbhash+缩略图兜底，避免 WebGL 首帧/黑屏闪断 -->
+                <div
+                  v-if="showEntryCatchup"
+                  class="pointer-events-none absolute inset-0 z-10 flex items-center justify-center transition-opacity duration-150"
+                  data-photo-viewer-entry-catchup="true"
+                >
+                  <div class="relative h-full w-full">
+                    <ThumbHash
+                      v-if="currentPhoto?.thumbnailHash"
+                      :thumbhash="currentPhoto.thumbnailHash"
+                      class="pointer-events-none absolute inset-0 h-full w-full"
+                    />
+                    <img
+                      v-if="currentPhoto?.thumbnailUrl"
+                      :src="currentPhoto.thumbnailUrl"
+                      alt=""
+                      class="absolute inset-0 h-full w-full object-contain"
+                      draggable="false"
+                    />
+                  </div>
+                </div>
 
               <!-- Swiper 容器 -->
               <Swiper
@@ -714,7 +867,7 @@ const swiperModules = [Navigation, Keyboard, Virtual]
                     :initial="{ opacity: 0.5, scale: 0.95 }"
                     :animate="{ opacity: 1, scale: 1 }"
                     :exit="{ opacity: 0, scale: 0.95 }"
-                    :transition="{ type: 'spring', duration: 0.4, bounce: 0 }"
+                    :transition="SPRING_SMOOTH"
                     class="relative flex h-full w-full items-center justify-center"
                     style="
                       user-select: none;
@@ -747,6 +900,7 @@ const swiperModules = [Navigation, Keyboard, Virtual]
                         'opacity-0':
                           isLivePhotoPlaying && currentPhoto?.isLivePhoto,
                       }"
+                      :refit-key="imageRefitKey"
                       :loading-indicator-ref="loadingIndicatorRef || null"
                       :is-current-image="index === currentIndex"
                       :src="photo.originalUrl!"
@@ -964,33 +1118,34 @@ const swiperModules = [Navigation, Keyboard, Virtual]
                 </SwiperSlide>
               </Swiper>
 
-              <!-- 自定义导航按钮 (桌面端) -->
-              <template v-if="!isMobile">
-                <button
-                  v-if="currentIndex > 0"
-                  type="button"
-                  class="absolute top-1/2 left-4 z-20 flex size-8 -translate-y-1/2 items-center justify-center rounded-full text-white opacity-0 backdrop-blur-sm duration-200 group-hover:opacity-100 bg-black/30 hover:bg-black/40"
-                  @click="handlePrevious"
-                >
-                  <Icon
-                    name="tabler:chevron-left"
-                    class="text-xl cursor-pointer"
-                  />
-                </button>
+                <!-- 自定义导航按钮 (桌面端) -->
+                <template v-if="!isMobile">
+                  <button
+                    v-if="currentIndex > 0"
+                    type="button"
+                    class="absolute top-1/2 left-4 z-20 flex size-8 -translate-y-1/2 items-center justify-center rounded-full text-white opacity-0 backdrop-blur-sm duration-200 bg-black/30 hover:bg-black/40 group-hover/photo-viewer:opacity-100"
+                    @click="handlePrevious"
+                  >
+                    <Icon
+                      name="tabler:chevron-left"
+                      class="text-xl cursor-pointer"
+                    />
+                  </button>
 
-                <button
-                  v-if="currentIndex < photos.length - 1"
-                  type="button"
-                  class="absolute top-1/2 right-4 z-20 flex size-8 -translate-y-1/2 items-center justify-center rounded-full text-white opacity-0 backdrop-blur-sm duration-200 group-hover:opacity-100 bg-black/30 hover:bg-black/40"
-                  @click="handleNext"
-                >
-                  <Icon
-                    name="tabler:chevron-right"
-                    class="text-xl cursor-pointer"
-                  />
-                </button>
-              </template>
-            </div>
+                  <button
+                    v-if="currentIndex < photos.length - 1"
+                    type="button"
+                    class="absolute top-1/2 right-4 z-20 flex size-8 -translate-y-1/2 items-center justify-center rounded-full text-white opacity-0 backdrop-blur-sm duration-200 bg-black/30 hover:bg-black/40 group-hover/photo-viewer:opacity-100"
+                    @click="handleNext"
+                  >
+                    <Icon
+                      name="tabler:chevron-right"
+                      class="text-xl cursor-pointer"
+                    />
+                  </button>
+                </template>
+                </div>
+              </div>
 
             <!-- 缩略图导航 -->
             <GalleryThumbnail
@@ -999,22 +1154,25 @@ const swiperModules = [Navigation, Keyboard, Virtual]
               @index-change="emit('indexChange', $event)"
             />
           </div>
+        </div>
 
-          <!-- EXIF 面板 - 在桌面端始终显示，在移动端根据状态显示 -->
-          <AnimatePresence v-if="isMobile">
-            <InfoPanel
-              v-if="showExifPanel && currentPhoto"
-              :current-photo="currentPhoto"
-              :exif-data="currentPhoto?.exif"
-              :on-close="() => (showExifPanel = false)"
-            />
-          </AnimatePresence>
+        <!-- EXIF/信息面板 - 覆盖层：桌面端右侧悬浮、移动端底部弹层，均不参与图片布局流 -->
+        <AnimatePresence v-if="isMobile">
           <InfoPanel
-            v-else-if="currentPhoto"
+            v-if="showExifPanel && currentPhoto"
             :current-photo="currentPhoto"
             :exif-data="currentPhoto?.exif"
+            :on-close="() => (showExifPanel = false)"
           />
-        </div>
+        </AnimatePresence>
+        <AnimatePresence v-else>
+          <InfoPanel
+            v-if="isDesktopInspectorVisible && currentPhoto"
+            :current-photo="currentPhoto"
+            :exif-data="currentPhoto?.exif"
+            :on-close="() => (isDesktopInspectorVisible = false)"
+          />
+        </AnimatePresence>
       </motion.div>
     </AnimatePresence>
 
@@ -1033,6 +1191,11 @@ const swiperModules = [Navigation, Keyboard, Virtual]
 .swiper {
   width: 100%;
   height: 100%;
+}
+
+/* 照片层从"重排隐藏"恢复到显示：仅淡入不淡出（隐藏瞬间完成，避免陈旧帧被拉伸时可见） */
+.photo-stage-reveal {
+  transition: opacity 0.25s ease;
 }
 
 .swiper-slide {

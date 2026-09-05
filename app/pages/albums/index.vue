@@ -40,10 +40,32 @@ const albumLink = (album: AlbumItem) =>
     ? album.link || `/albums/scan/${album.libId}`
     : `/albums/${album.id}`
 
-// randomly pick 30 photos for waterfall
-const waterfallPhotos = computed(() =>
-  photos.value.toSorted(() => 0.5 - Math.random()).slice(0, 30),
-)
+interface WaterfallPhoto {
+  thumbnailUrl: string
+  thumbnailHash?: string | null
+  aspectRatio?: number
+}
+// 背景瀑布照片：合并默认照片库 + 所有相簿封面，保证浅色/暗色主题下都有真实照片纹理
+const waterfallPhotos = computed<WaterfallPhoto[]>(() => {
+  const pool: WaterfallPhoto[] = [
+    ...photos.value.map((p) => ({
+      thumbnailUrl: p.thumbnailUrl!,
+      thumbnailHash: p.thumbnailHash ?? null,
+      aspectRatio: p.aspectRatio || 1,
+    })),
+    ...(albums.value || []).flatMap((album) =>
+      (album.covers || []).map((cover) => ({
+        thumbnailUrl: cover.thumbnailUrl,
+        thumbnailHash: cover.thumbnailHash ?? null,
+        aspectRatio: cover.aspectRatio || 1,
+      })),
+    ),
+  ]
+  // 去重 + 打乱 + 取前 30
+  return [...new Map(pool.map((p) => [p.thumbnailUrl, p])).values()]
+    .toSorted(() => 0.5 - Math.random())
+    .slice(0, 30)
+})
 const isMobile = useMediaQuery('(max-width: 768px)')
 
 const waterfallColumnCount = computed(() => (isMobile.value ? 3 : 8))
@@ -143,11 +165,18 @@ const hoveredAlbum = ref<number | null>(null)
 </script>
 
 <template>
-  <div class="relative">
-    <!-- Animated waterfall area -->
-    <div
-      class="absolute inset-x-0 top-0 h-[30vh] sm:h-[50vh] overflow-hidden -z-10"
-    >
+  <div class="relative isolate min-h-svh bg-white dark:bg-neutral-950">
+    <!-- 顶部照片流：与首页相片墙一致的可见瀑布流（饱和、无圆角、无阴影），引用相簿内照片，向下方渐隐 -->
+    <ClientOnly>
+      <div
+        class="absolute inset-x-0 top-0 h-[26vh] sm:h-[34vh] overflow-hidden -z-10"
+        :style="{
+          maskImage:
+            'linear-gradient(to bottom, black 0%, black 42%, transparent 88%)',
+          WebkitMaskImage:
+            'linear-gradient(to bottom, black 0%, black 42%, transparent 88%)',
+        }"
+      >
       <div class="absolute inset-0 flex h-full gap-0">
         <!-- Per column -->
         <div
@@ -172,16 +201,16 @@ const hoveredAlbum = ref<number | null>(null)
             >
               <div
                 v-for="(photo, photoIndex) in column"
-                :key="`${photo.id}-${groupIndex}-${photoIndex}`"
+                :key="`${photo.thumbnailUrl}-${groupIndex}-${photoIndex}`"
                 class="w-full overflow-hidden"
               >
                 <ClientOnly>
                   <ThumbImage
-                    class="w-full h-auto object-cover saturate-50"
+                    class="w-full h-auto object-cover"
                     :lazy="false"
                     :src="photo.thumbnailUrl!"
                     :thumbhash="photo.thumbnailHash"
-                    :alt="photo.exif?.ImageDescription || $t('ui.photo.altFallback')"
+                    :alt="$t('ui.photo.altFallback')"
                     :style="{
                       aspectRatio: photo.aspectRatio || 1,
                     }"
@@ -192,11 +221,13 @@ const hoveredAlbum = ref<number | null>(null)
           </div>
         </div>
       </div>
-      <!-- Overlay -->
-      <div
-        class="absolute -inset-1 bg-linear-to-b from-neutral-100/80 to-white dark:from-neutral-900/80 dark:to-neutral-900"
-      />
-    </div>
+      </div>
+    </ClientOnly>
+
+    <!-- 标题可读性遮罩：弱化顶部照片以突出相簿标题，向下透明 -->
+    <div
+      class="pointer-events-none absolute inset-x-0 top-0 h-[26vh] sm:h-[34vh] -z-10 bg-linear-to-b from-white/60 via-white/5 to-transparent dark:from-neutral-950/60 dark:via-neutral-950/5 dark:to-transparent"
+    />
 
     <div class="absolute p-4">
       <!-- Back to home -->
@@ -213,7 +244,7 @@ const hoveredAlbum = ref<number | null>(null)
     </div>
 
     <!-- Titles -->
-    <div class="flex flex-col items-center pt-16 sm:pt-48 pb-24">
+    <div class="flex flex-col items-center pt-16 sm:pt-28 pb-6">
       <h1
         class="font-black text-6xl sm:text-7xl drop-shadow-2xl bg-clip-text bg-linear-to-br from-neutral-800 to-neutral-400 dark:from-white dark:to-neutral-500 text-transparent"
       >
@@ -227,7 +258,7 @@ const hoveredAlbum = ref<number | null>(null)
     </div>
 
     <!-- Albums Grid -->
-    <div class="container mx-auto px-10 sm:px-6 lg:px-8 py-12">
+    <div class="container mx-auto px-20 sm:px-6 lg:px-8 pt-32 sm:pt-52 pb-16">
       <div
         class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-16"
       >
@@ -240,7 +271,7 @@ const hoveredAlbum = ref<number | null>(null)
           @mouseleave="hoveredAlbum = null"
         >
           <!-- Stacked Photos Card -->
-          <div class="relative h-48 mb-4 group">
+          <div class="relative h-32 sm:h-48 mb-4 group">
             <!-- Photo Stack (3 layers) -->
             <motion.div
               v-for="(photo, index) in getAlbumDisplayPhotos(album)"
@@ -356,7 +387,7 @@ const hoveredAlbum = ref<number | null>(null)
               </p>
             </div>
           </div>
-        </NuxtLink>
+          </NuxtLink>
       </div>
     </div>
   </div>

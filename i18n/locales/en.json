@@ -234,6 +234,7 @@
   },
   "exif": {
     "sections": {
+      "info": "Photo Info",
       "basic": "Basic information",
       "deviceInfomation": "Equipment Information",
       "specification": "Technical parameters",
@@ -252,9 +253,13 @@
       "title": "Shooting Time"
     },
     "filename": "Filename",
+    "format": "Format",
+    "dimensions": "Dimensions",
     "fileSize": "File Size",
     "resolution": "Resolution",
     "pixels": "Pixels",
+    "copyright": "Copyright",
+    "exposureBias": "Exposure Compensation",
     "colorSpace": {
       "title": "Color Space"
     },
@@ -264,7 +269,12 @@
     "country": "Country",
     "city": "City",
     "gps": {
-      "title": "Coordinate"
+      "title": "Coordinate",
+      "latitude": "Latitude",
+      "longitude": "Longitude",
+      "altitude": "Altitude",
+      "address": "Address",
+      "location": "Location Info"
     },
     "focal": {
       "length": {
@@ -305,6 +315,24 @@
     },
     "sensing": {
       "method": "Sensing Method"
+    },
+    "histogram": {
+      "title": "Histogram"
+    },
+    "tone": {
+      "analysis": "Tone Analysis",
+      "toneType": "Tone Type",
+      "brightness": "Brightness",
+      "contrast": "Contrast",
+      "shadowRatio": "Shadow Ratio",
+      "highlightRatio": "Highlight Ratio",
+      "low-key": "Low Key",
+      "high-key": "High Key",
+      "normal": "Normal",
+      "high-contrast": "High Contrast"
+    },
+    "lightSource": {
+      "title": "Light Source"
     },
     "values": {
       "exposureProgram": {

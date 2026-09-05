@@ -12,6 +12,89 @@ export interface HistogramDataCompressed {
   gray: number[]
 }
 
+export type ToneType = 'low-key' | 'high-key' | 'high-contrast' | 'normal'
+
+export interface ToneAnalysis {
+  toneType: ToneType
+  brightness: number
+  contrast: number
+  shadowRatio: number
+  highlightRatio: number
+}
+
+/**
+ * 影调分析：基于 ITU-R BT.709 亮度直方图计算亮度 / 对比度 / 阴影占比 / 高光占比，
+ * 并根据阈值判定影调类型。算法与 afilmory 的 analyzeTone 一致。
+ */
+export const analyzeToneFromImageData = (imageData: ImageData): ToneAnalysis => {
+  // 256 级亮度直方图
+  const luminance = zeroArray(256)
+
+  const { data } = imageData
+  const pixelCount = Math.max(1, imageData.width * imageData.height)
+
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i]!
+    const g = data[i + 1]!
+    const b = data[i + 2]!
+
+    const lum = Math.round(0.2126 * r + 0.7152 * g + 0.0722 * b)
+    luminance[lum]!++
+  }
+
+  // 归一化为占比
+  for (let i = 0; i < luminance.length; i++) {
+    luminance[i] = luminance[i]! / pixelCount
+  }
+
+  // 亮度（加权平均）
+  let totalLuminance = 0
+  let totalPixels = 0
+  for (const [i, element] of luminance.entries()) {
+    totalLuminance += i * element!
+    totalPixels += element!
+  }
+  const brightness = Math.round((totalLuminance / totalPixels) * (100 / 255))
+
+  // 阴影 / 高光占比
+  let shadowRatio = 0
+  let highlightRatio = 0
+  for (let i = 0; i < 86; i++) {
+    shadowRatio += luminance[i]!
+  }
+  for (let i = 170; i < 256; i++) {
+    highlightRatio += luminance[i]!
+  }
+
+  // 对比度（标准差）
+  const mean = totalLuminance / totalPixels
+  let variance = 0
+  for (const [i, element] of luminance.entries()) {
+    variance += element! * (i - mean) ** 2
+  }
+  const stdDev = Math.sqrt(variance)
+  const contrast = Math.min(100, Math.round((stdDev / 127.5) * 100))
+
+  let toneType: ToneType
+  if (brightness < 30 && shadowRatio > 0.6) {
+    toneType = 'low-key'
+  } else if (brightness > 70 && highlightRatio > 0.6) {
+    toneType = 'high-key'
+  } else if (contrast > 60 && shadowRatio > 0.3 && highlightRatio > 0.3) {
+    toneType = 'high-contrast'
+  } else {
+    toneType = 'normal'
+  }
+
+  return {
+    toneType,
+    brightness,
+    contrast,
+    shadowRatio: Math.round(shadowRatio * 100) / 100,
+    highlightRatio: Math.round(highlightRatio * 100) / 100,
+  }
+}
+
 const compressHistogramBin = (data: number[]): number[] => {
   const compressed: number[] = zeroArray(128)
   for (let i = 0; i < data.length; i++) {

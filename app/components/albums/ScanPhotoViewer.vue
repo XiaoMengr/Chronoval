@@ -30,6 +30,47 @@ const isZoomed = ref(false)
 
 const currentPhoto = computed(() => props.photos[props.currentIndex])
 
+// 背景模糊图就绪门控：切换图片时先置为未就绪，待新模糊图 @load 后再淡入，
+// 避免打开/切换时"黑屏闪断"
+const blurReady = ref(false)
+watch(
+  () => currentPhoto.value?.thumbnailUrl,
+  () => {
+    blurReady.value = false
+  },
+)
+
+const { width: viewportW, height: viewportH } = useWindowSize()
+
+// 计算当前图在 object-contain 下的实际显示矩形（宽/高，居中），让两侧高斯模糊
+// 紧密贴合图片边缘，不铺满整屏、不过分越界
+const displayRect = computed(() => {
+  const ar = Math.max(currentPhoto.value?.aspectRatio ?? 1, 0.05)
+  const availW = viewportW.value
+  const availH = viewportH.value
+  let w = availW
+  let h = availW / ar
+  if (h > availH) {
+    h = availH
+    w = availH * ar
+  }
+  return { w, h }
+})
+// 模糊片在图片矩形基础上外扩 margin，形成"贴着图片边缘的一圈高斯模糊"，
+// 颜色随图片本身变化（非黑色）
+const blurScale = 1.4
+const blurStyle = computed(() => {
+  const r = displayRect.value
+  const w = r.w * blurScale
+  const h = r.h * blurScale
+  return {
+    left: `${(viewportW.value - w) / 2}px`,
+    top: `${(viewportH.value - h) / 2}px`,
+    width: `${w}px`,
+    height: `${h}px`,
+  }
+})
+
 // 拍摄时间格式化，与首页查看器工具栏一致
 const dayjs = useDayjs()
 const currentDateLabel = computed(() => {
@@ -90,6 +131,10 @@ const handleZoomChange = (zoomed: boolean) => {
   isZoomed.value = zoomed
 }
 
+// 当前图片在 WebGL/高清图加载完成后触发的回调：
+// 扫描相簿查看器以"模糊图就绪"为主门控淡入，此处仅作为加载完成信号保留即可
+const handleImageLoaded = () => {}
+
 // 键盘：Esc 关闭；左右方向键前后切换
 const onKeydown = (e: KeyboardEvent) => {
   if (!props.isOpen) return
@@ -108,20 +153,8 @@ const swiperModules = [Navigation, Keyboard, Virtual]
 
 <template>
   <Teleport to="body">
-    <!-- 背景层：深色沉浸底 -->
-    <AnimatePresence>
-      <motion.div
-        v-if="props.isOpen"
-        :initial="{ opacity: 0 }"
-        :animate="{ opacity: 1 }"
-        :exit="{ opacity: 0 }"
-        :transition="{ duration: 0.3 }"
-        class="fixed inset-0 z-[120] bg-[#0a0a0e]/[0.97]"
-        @click="emit('close')"
-      />
-    </AnimatePresence>
-
-    <!-- ThumbHash 常驻背景（与首页查看器一致，切换仅换 hash 数据、不做整屏闪变） -->
+    <!-- 背景层：当前图片的高斯模糊大背景（颜色随当前图自适应，100% 不透明遮挡底层页面，
+         清晰主图浮在其上层；切换图片时仅更新 src） -->
     <AnimatePresence>
       <motion.div
         v-if="props.isOpen"
@@ -129,13 +162,27 @@ const swiperModules = [Navigation, Keyboard, Virtual]
         :animate="{ opacity: 1 }"
         :exit="{ opacity: 0 }"
         :transition="{ duration: 0.3 }"
-        class="fixed inset-0 z-[121]"
+        class="fixed inset-0 z-[120] overflow-hidden bg-[#0a0a0e]"
       >
-        <ThumbHash
+        <!-- 模糊图片本体：尺寸自适应图片显示矩形并略外扩，贴着图片边缘形成一圈高斯模糊，
+             颜色随当前图变化（明亮非黑色）；打开/切换时先隐藏，@load 就绪后平滑淡入 -->
+        <img
+          v-if="currentPhoto?.thumbnailUrl"
           :key="currentPhoto?.id ?? 'empty'"
-          :thumbhash="currentPhoto?.thumbnailHash || ''"
-          class="h-full w-full scale-110"
+          :src="currentPhoto.thumbnailUrl"
+          alt=""
+          aria-hidden="true"
+          draggable="false"
+          class="absolute object-cover transition-opacity duration-700"
+          :class="blurReady ? 'opacity-100' : 'opacity-0'"
+          :style="{
+            ...blurStyle,
+            filter: 'blur(64px) saturate(1.35) brightness(1.05)',
+          }"
+          @load="blurReady = true"
         />
+        <!-- 无缩略图时的兜底深色 -->
+        <div v-else class="absolute inset-0 h-full w-full bg-[#0a0a0e]" />
       </motion.div>
     </AnimatePresence>
 
@@ -147,7 +194,7 @@ const swiperModules = [Navigation, Keyboard, Virtual]
         :animate="{ opacity: 1 }"
         :exit="{ opacity: 0 }"
         :transition="{ duration: 0.3 }"
-        class="fixed inset-0 z-[122] flex items-center justify-center"
+        class="fixed inset-0 z-[130] flex items-center justify-center"
         :style="{ touchAction: isMobile ? 'manipulation' : 'none' }"
         @click.self="emit('close')"
       >
@@ -227,7 +274,9 @@ const swiperModules = [Navigation, Keyboard, Virtual]
                 :src="photo.originalUrl || ''"
                 :thumbnail-src="photo.thumbnailUrl || ''"
                 :thumbhash="photo.thumbnailHash"
-                :alt="photo.id"
+                :on-image-loaded="
+                  index === props.currentIndex ? handleImageLoaded : undefined
+                "
                 :enable-pan="index === props.currentIndex"
                 :enable-zoom="index === props.currentIndex"
                 :on-zoom-change="

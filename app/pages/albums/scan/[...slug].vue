@@ -92,7 +92,7 @@ const onViewerIndexChange = (index: number) => {
 
 <template>
   <!-- 全宽展示容器：与首页画廊一致（edge-to-edge），照片从左右边缘贴边铺满 -->
-  <div class="w-full pb-16">
+  <div class="min-h-svh w-full bg-white pb-16 dark:bg-neutral-950">
     <!-- 顶部导航 / 标题区（带宽适内边距，照片瀑布流保持全宽） -->
     <div class="px-6 pt-6">
       <div class="mb-6 flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">

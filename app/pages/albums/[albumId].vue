@@ -151,7 +151,7 @@ onBeforeMount(() => {
 </script>
 
 <template>
-  <div class="relative w-full">
+  <div class="relative min-h-svh w-full bg-white dark:bg-neutral-950">
     <div
       v-if="pending"
       class="flex flex-col items-center justify-center min-h-[50vh] gap-4"

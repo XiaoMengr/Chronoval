@@ -112,6 +112,32 @@ html.dark .glass-surface {
     linear-gradient(180deg, var(--page-bg-top) 0%, var(--page-bg-bottom) 100%);
 }
 
+/* ---------------------------------------------------------------
+   照片信息侧栏：afilmory InspectorPanel 同款 macOS 系统材质
+   材质色值来自 tailwindcss-uikit-colors/v4/macos.css 的 material 系列，
+   --cm-* 为 Chronoval 复刻用的材质 token（随 .dark 自动翻转）
+   --------------------------------------------------------------- */
+:root {
+  --cm-material-medium: 246 246 246 / 0.6;
+  --cm-material-thick: 246 246 246 / 0.72;
+  --cm-accent: 0 122 255;
+  --cm-text: 17 24 28;
+  --cm-text-muted: 17 24 28 / 0.6;
+  --cm-text-faint: 17 24 28 / 0.4;
+  --cm-chip: 17 24 28 / 0.05;
+  --cm-border: 17 24 28 / 0.1;
+}
+.dark {
+  --cm-material-medium: 40 40 40 / 0.6;
+  --cm-material-thick: 40 40 40 / 0.72;
+  --cm-accent: 0 122 255;
+  --cm-text: 255 255 255;
+  --cm-text-muted: 255 255 255 / 0.62;
+  --cm-text-faint: 255 255 255 / 0.4;
+  --cm-chip: 255 255 255 / 0.07;
+  --cm-border: 255 255 255 / 0.12;
+}
+
 @theme {
   --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
     'Helvetica Neue', Arial, 'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB',

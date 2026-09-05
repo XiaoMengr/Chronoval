@@ -230,6 +230,7 @@
   },
   "exif": {
     "sections": {
+      "info": "照片信息",
       "basic": "基本信息",
       "deviceInfomation": "设备信息",
       "specification": "技术参数",
@@ -244,9 +245,13 @@
       }
     },
     "filename": "文件名",
+    "format": "格式",
+    "dimensions": "尺寸",
     "fileSize": "文件大小",
     "resolution": "分辨率",
     "pixels": "像素",
+    "copyright": "版权",
+    "exposureBias": "曝光补偿",
     "dateTaken": {
       "title": "拍摄时间"
     },
@@ -259,7 +264,30 @@
     "country": "国家",
     "city": "城市",
     "gps": {
-      "title": "坐标"
+      "title": "坐标",
+      "latitude": "纬度",
+      "longitude": "经度",
+      "altitude": "海拔",
+      "address": "地址",
+      "location": "位置信息"
+    },
+    "tone": {
+      "analysis": "影像分析",
+      "toneType": "影调类型",
+      "brightness": "亮度",
+      "contrast": "对比度",
+      "shadowRatio": "阴影占比",
+      "highlightRatio": "高光占比",
+      "low-key": "低调",
+      "high-key": "高调",
+      "normal": "标准",
+      "high-contrast": "高对比度"
+    },
+    "histogram": {
+      "title": "直方图"
+    },
+    "lightSource": {
+      "title": "光源"
     },
     "focal": {
       "length": {

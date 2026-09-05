@@ -36,3 +36,12 @@ logs
 # VitePress outputs
 docs/.vitepress/dist
 docs/.vitepress/cache
+
+# Local infra / secrets (do not commit)
+certs/
+db.sqlite
+frpc.toml
+Caddyfile
+_hash*.mjs
+_off_*.mjs
+_set_realhash.mjs
