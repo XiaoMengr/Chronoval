@@ -223,6 +223,8 @@
         "rateLimited": "Too many requests, please try again later"
       }
     },
+    "share": "Share photo",
+      "close": "Close",
     "photoload": {
       "loadError": "Image loading failed",
       "loading": "Loading image",

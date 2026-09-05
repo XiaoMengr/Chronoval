@@ -219,6 +219,8 @@
         "rateLimited": "操作过于频繁，请稍后再试"
       }
     },
+    "share": "分享照片",
+      "close": "关闭",
     "photoload": {
       "loadError": "图片加载失败",
       "loading": "正在加载图片",

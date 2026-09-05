@@ -779,29 +779,6 @@ onUnmounted(() => {
                     />
                   </div>
                 </div>
-
-                <!-- 右侧按钮组 -->
-                <div class="pointer-events-auto flex items-center gap-2">
-                  <!-- 分享按钮 -->
-                  <button
-                    type="button"
-                    aria-label="share"
-                    class="flex size-9 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm transition-colors hover:bg-black/50"
-                    @click="showShareModal = true"
-                  >
-                    <Icon name="tabler:share-3" class="size-5" />
-                  </button>
-
-                  <!-- 关闭按钮 -->
-                  <button
-                    type="button"
-                    aria-label="close"
-                    class="flex size-9 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm transition-colors hover:bg-black/50"
-                    @click="emit('close')"
-                  >
-                    <Icon name="tabler:x" class="size-5" />
-                  </button>
-                </div>
               </motion.div>
 
               <!-- 加载指示器 -->
@@ -1114,6 +1091,34 @@ onUnmounted(() => {
                         </div>
                       </motion.div>
                     </AnimatePresence>
+
+                    <!-- 分享 / 关闭：与 afilmory 同步，悬浮在照片内部右上角（在图片舞台内、
+                         随舞台收缩/展开 自适应移动，不开在信息侧栏上） -->
+                    <div
+                      v-if="index === currentIndex && !isImageZoomed"
+                      class="absolute top-4 right-4 z-30 flex items-center gap-2 pointer-events-auto"
+                    >
+                      <button
+                        type="button"
+                        aria-label="share photo"
+                        :title="$t('viewer.share')"
+                        class="flex size-8 items-center justify-center rounded-full text-white backdrop-blur-2xl duration-200 hover:bg-black/40"
+                        style="background-color: rgba(var(--cm-material-thick))"
+                        @click="showShareModal = true"
+                      >
+                        <Icon name="tabler:share-3" class="size-4.5" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="close"
+                        :title="$t('viewer.close')"
+                        class="flex size-8 items-center justify-center rounded-full text-white backdrop-blur-2xl duration-200 hover:bg-black/40"
+                        style="background-color: rgba(var(--cm-material-thick))"
+                        @click="emit('close')"
+                      >
+                        <Icon name="tabler:x" class="size-4.5" />
+                      </button>
+                    </div>
                   </motion.div>
                 </SwiperSlide>
               </Swiper>

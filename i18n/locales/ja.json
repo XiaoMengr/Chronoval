@@ -219,7 +219,9 @@
       "loadingWebGL": "WebGLを読み込み中...",
       "loadingHEIC": "HEIC画像を読み込み中...",
       "loadingTexture": "テクスチャを構築中"
-    }
+    },
+    "share": "写真を共有",
+    "close": "閉じる"
   },
   "exif": {
     "sections": {

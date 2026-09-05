@@ -219,7 +219,9 @@
       "loadingWebGL": "Загрузка WebGL…",
       "loadingHEIC": "Загрузка изображения HEIC…",
       "loadingTexture": "Создание текстуры"
-    }
+    },
+    "share": "Поделиться фото",
+    "close": "Закрыть"
   },
   "exif": {
     "sections": {

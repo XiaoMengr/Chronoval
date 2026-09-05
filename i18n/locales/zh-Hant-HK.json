@@ -216,7 +216,9 @@
       "loadingWebGL": "正在載入 WebGL...",
       "loadingHEIC": "HEIC 圖片載入中...",
       "loadingTexture": "正在建立紋理"
-    }
+    },
+    "share": "分享照片",
+    "close": "關閉"
   },
   "exif": {
     "sections": {
