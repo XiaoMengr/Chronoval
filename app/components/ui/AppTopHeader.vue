@@ -47,11 +47,12 @@ const avatarUrl = computed(
 const siteTitle = computed(() => (getSetting('app:title') as string) || '')
 const photoCount = computed(() => photos.value?.length ?? 0)
 
-// 顶栏玻璃：改为「单一高斯模糊层」，避免原先「tint 层 + 两层 blur」叠加造成的
-// 「底层又一层透明层 / 分层 / 悬浮灰面板」观感。
-// - 浅色：柔和浅灰 frosted，与浅色画廊融为一体；
-// - 深色：沉浸暗玻璃。
-// mask 让玻璃在顶部完整、向下自然淡出，避免出现硬底边，滚动时照片顺畅从玻璃后穿过。
+// 顶栏玻璃：单一高斯模糊层，浅色与深色互为反相——
+// - 深色：深色近黑毛玻璃 + 白色内容（沉浸）
+// - 浅色：明亮白色苹果式毛玻璃 + 深色内容（反相），几无灰感
+// 两者使用同一套 blur/saturate 与向下淡出 mask，滚动时照片顺畅从玻璃后穿过。
+// 浅色特别提高模糊强度与饱和度、压正白色并以半透叠加出"亮而通透"的 frosted，
+// 只让顶部一小段最亮，向下快速淡出，避免与画廊卷面分层。
 const glassStyle = computed(() =>
   isDark.value
     ? {
@@ -63,12 +64,13 @@ const glassStyle = computed(() =>
           'linear-gradient(to bottom, black 0%, black 60%, transparent 100%)',
       }
     : {
-        background: 'rgba(248, 248, 250, 0.38)',
-        backdropFilter: 'blur(22px) saturate(1.5)',
-        WebkitBackdropFilter: 'blur(22px) saturate(1.5)',
-        mask: 'linear-gradient(to bottom, black 0%, black 60%, transparent 100%)',
+        background:
+          'linear-gradient(to bottom, rgba(255,255,255,0.66) 0%, rgba(255,255,255,0.42) 40%, rgba(255,255,255,0.04) 100%)',
+        backdropFilter: 'blur(30px) saturate(1.25)',
+        WebkitBackdropFilter: 'blur(30px) saturate(1.25)',
+        mask: 'linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 60%, transparent 100%)',
         WebkitMask:
-          'linear-gradient(to bottom, black 0%, black 60%, transparent 100%)',
+          'linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 60%, transparent 100%)',
       },
 )
 </script>
@@ -263,4 +265,5 @@ const glassStyle = computed(() =>
   </header>
 </template>
 
-<style scoped></style>
+<style scoped>
+</style>
