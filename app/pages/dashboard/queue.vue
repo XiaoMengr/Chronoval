@@ -430,7 +430,7 @@ onBeforeUnmount(() => {
               <!-- 创建时间 -->
               <template #createdAt-cell="{ row }">
                 <span class="text-sm">{{
-                  $dayjs(row.original.createdAt).format('MM-DD HH:mm:ss')
+                  $dayjs(row.original.createdAt).tz('Asia/Shanghai').format('MM-DD HH:mm:ss')
                 }}</span>
               </template>
 

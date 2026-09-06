@@ -1029,10 +1029,9 @@ const columns = computed<any[]>(() => [
                             {{ photo.title || photo.storageKey || $t('ui.photo.untitled') }}
                           </p>
                           <p class="truncate text-[9px] text-white/72">
-                            {{
-                              photo.city
-                                ? `${photo.city} · ${dayjs(photo.createdAt).format('MM-DD')}`
-                                : dayjs(photo.createdAt).format('YYYY-MM-DD')
+                            {{ photo.city
+                                ? `${photo.city} · ${dayjs(photo.createdAt).tz('Asia/Shanghai').format('MM-DD')}`
+                                : dayjs(photo.createdAt).tz('Asia/Shanghai').format('YYYY-MM-DD')
                             }}
                           </p>
                         </div>

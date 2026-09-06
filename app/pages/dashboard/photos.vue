@@ -1010,7 +1010,7 @@ const columns = computed<TableColumn<Photo>[]>(() => [
         'span',
         { class: 'font-mono text-xs' },
         date
-          ? dayjs(date).format('YYYY-MM-DD HH:mm:ss')
+          ? dayjs(date).tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
           : $t('dashboard.photos.table.cells.unknown'),
       )
     },
@@ -1024,7 +1024,7 @@ const columns = computed<TableColumn<Photo>[]>(() => [
         'span',
         { class: 'font-mono text-xs' },
         date
-          ? dayjs(date).format('YYYY-MM-DD HH:mm:ss')
+          ? dayjs(date).tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
           : $t('dashboard.photos.table.cells.unknown'),
       )
     },

@@ -589,7 +589,7 @@ onUnmounted(() => {
                   :style="{ height: `${ROW_HEIGHT}px` }"
                 >
                   <span class="t-time whitespace-nowrap shrink-0 text-xs">
-                    {{ $dayjs(log.date).format('HH:mm:ss.SSS') }}
+                    {{ $dayjs(log.date).tz('Asia/Shanghai').format('HH:mm:ss.SSS') }}
                   </span>
                   <span
                     class="t-level shrink-0 text-[10px] font-semibold tracking-wide rounded px-1.5 py-px"
