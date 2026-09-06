@@ -272,14 +272,15 @@ onUnmounted(() => {
       image-contain
     />
 
-    <!-- 「构建纹理」细节指示：模糊→清晰期间在舞台左下角（与加载指示对齐）显示 0.3→0.9，随后淡出（无终值 x1.0） -->
+    <!-- 「构建纹理」细节指示：模糊→清晰期间在舞台左下角显示 0.3→0.9（纯文本读数，无胶囊背景，
+          贴合图片，仅加轻微投影保证任何背景下都可读），随后淡出（无终值 x1.0） -->
     <Transition name="detail-pop">
       <div
         v-if="showDetail && !isLivePhoto"
         class="detail-indicator pointer-events-none absolute z-20"
       >
         <span
-          class="rounded-full bg-black/45 px-3.5 py-1.5 font-mono text-sm tabular-nums text-white/95 shadow-lg backdrop-blur-md"
+          class="font-mono text-sm tabular-nums text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.85)]"
         >
           x{{ detailLevel.toFixed(1) }}
         </span>
