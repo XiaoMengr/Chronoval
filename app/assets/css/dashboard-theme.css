@@ -1,0 +1,291 @@
+/* ============================================================
+   Chronoval 管理后台独立主题（dashboard-root scope）
+   ------------------------------------------------------------
+   - 与前台画廊完全隔离：只作用于 .dashboard-root 内部，不触碰
+     --cm-* / --glass-* 等画廊 token。
+   - 苹果风高斯模糊磨砂玻璃：仅用两种色调（暖象牙 ↔ 墨黑；
+   深色：炭灰 ↔ 近白）+ 单一 ink 强调色，无任何 AI 渐变。
+   - 通过覆盖 Nuxt UI 的 --ui-* token 使整个后台组件树（侧栏、
+   导航、卡片、输入框、按钮）自动套用本主题。
+   ============================================================ */
+
+.dashboard-root {
+  /* ---- 外壳表面：暖象牙底 ---- */
+  --ui-bg: #f3f2f0;
+  --ui-bg-muted: #ecebe8;
+  --ui-bg-elevated: rgba(255, 255, 255, 0.55);
+  --ui-bg-accented: rgba(255, 255, 255, 0.92);
+  --ui-bg-inverted: #141417;
+
+  /* ---- 文字：墨黑层级 ---- */
+  --ui-text-dimmed: #9a9a9f;
+  --ui-text-muted: #6e6e75;
+  --ui-text-toned: #4a4a50;
+  --ui-text: #2d2d33;
+  --ui-text-highlighted: #141417;
+  --ui-text-inverted: #f6f6f8;
+
+  /* ---- 发丝边框 ---- */
+  --ui-border: rgba(20, 20, 24, 0.1);
+  --ui-border-muted: rgba(20, 20, 24, 0.07);
+  --ui-border-accented: rgba(20, 20, 24, 0.14);
+  --ui-border-inverted: rgba(255, 255, 255, 0.16);
+
+  /* ---- 强调色 = 墨黑（单色）---- */
+  --ui-primary: #141417;
+  --ui-primary-inverted: #f6f6f8;
+  --ui-color-primary-50: #f4f4f5;
+  --ui-color-primary-100: #e8e8ea;
+  --ui-color-primary-200: #d4d4d6;
+  --ui-color-primary-300: #aeadb0;
+  --ui-color-primary-400: #6e6e73;
+  --ui-color-primary-500: #3a3a3d;
+  --ui-color-primary-600: #2a2a2d;
+  --ui-color-primary-700: #1e1e20;
+  --ui-color-primary-800: #141417;
+  --ui-color-primary-900: #0f0f11;
+  --ui-color-primary-950: #0a0a0b;
+
+  color: var(--ui-text);
+  background-color: var(--ui-bg);
+}
+
+.dark .dashboard-root {
+  /* ---- 外壳表面：深炭灰底 ---- */
+  --ui-bg: #101013;
+  --ui-bg-muted: #18181c;
+  --ui-bg-elevated: rgba(46, 46, 53, 0.5);
+  --ui-bg-accented: rgba(255, 255, 255, 0.07);
+  --ui-bg-inverted: #ececef;
+
+  /* ---- 文字：近白层级 ---- */
+  --ui-text-dimmed: #6c6c73;
+  --ui-text-muted: #9b9ba2;
+  --ui-text-toned: #c7c7cd;
+  --ui-text: #e8e8ec;
+  --ui-text-highlighted: #ffffff;
+  --ui-text-inverted: #141417;
+
+  /* ---- 发丝边框 ---- */
+  --ui-border: rgba(255, 255, 255, 0.1);
+  --ui-border-muted: rgba(255, 255, 255, 0.07);
+  --ui-border-accented: rgba(255, 255, 255, 0.16);
+  --ui-border-inverted: rgba(20, 20, 24, 0.6);
+
+  /* ---- 强调色 = 近白（单色）---- */
+  --ui-primary: #ececef;
+  --ui-primary-inverted: #141417;
+  --ui-color-primary-50: #0a0a0b;
+  --ui-color-primary-100: #0f0f11;
+  --ui-color-primary-200: #141417;
+  --ui-color-primary-300: #1e1e20;
+  --ui-color-primary-400: #2a2a2d;
+  --ui-color-primary-500: #3a3a3d;
+  --ui-color-primary-600: #6e6e73;
+  --ui-color-primary-700: #aeadb0;
+  --ui-color-primary-800: #d4d4d6;
+  --ui-color-primary-900: #e8e8ea;
+  --ui-color-primary-950: #f4f4f5;
+
+  color: var(--ui-text);
+  background-color: var(--ui-bg);
+}
+
+/* ============================================================
+   苹果磨砂玻璃：侧栏为半透明玻璃，模糊背后主内容区
+   主内容区为实体双色调底，侧栏/顶部导航/卡片悬浮其上
+   ============================================================ */
+.dashboard-root #cframe-dashboard-sidebar {
+  background: var(--ui-bg-elevated);
+  -webkit-backdrop-filter: blur(38px) saturate(1.5);
+  backdrop-filter: blur(38px) saturate(1.5);
+  border-right: 1px solid var(--ui-border-accented);
+  box-shadow:
+    inset -1px 0 0 rgba(255, 255, 255, 0.04),
+    4px 0 30px -22px rgba(20, 20, 24, 0.28);
+}
+.dark .dashboard-root #cframe-dashboard-sidebar {
+  background: rgba(30, 30, 36, 0.5);
+  box-shadow:
+    inset -1px 0 0 rgba(255, 255, 255, 0.03),
+    4px 0 30px -20px rgba(0, 0, 0, 0.6);
+}
+
+/* 顶部导航：横向通栏毛玻璃（无底部边框，与下方融为一体） */
+.dashboard-root .ui-dashboard-navbar {
+  background: color-mix(in srgb, var(--ui-bg) 48%, transparent);
+  -webkit-backdrop-filter: blur(30px) saturate(1.4);
+  backdrop-filter: blur(30px) saturate(1.4);
+  border-bottom: 1px solid var(--ui-border-muted);
+}
+
+/* ---- 圆角标尺：让后台所有组件（按钮/输入框/徽章等）整体更圆润 ---- */
+.dashboard-root,
+html body.dashboard-active {
+  --ui-radius: 0.1875rem;
+  --ui-radius-sm: 0.25rem;
+  --ui-radius-md: 0.3125rem;
+  --ui-radius-lg: 0.4375rem;
+  --ui-radius-xl: 0.5rem;
+  --ui-radius-2xl: 0.625rem;
+}
+
+/* ---- 卡片：苹果毛玻璃（大圆角 + 高模糊 + 高光内描边） ---- */
+.dashboard-root .ui-card {
+  background: var(--ui-bg-elevated);
+  -webkit-backdrop-filter: blur(30px) saturate(1.4);
+  backdrop-filter: blur(30px) saturate(1.4);
+  border: 1px solid var(--ui-border-accented);
+  border-radius: 8px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 rgba(20, 20, 24, 0.03),
+    0 1px 2px rgba(20, 20, 24, 0.04),
+    0 24px 48px -28px rgba(20, 20, 24, 0.22);
+}
+.dark .dashboard-root .ui-card {
+  background: rgba(255, 255, 255, 0.045);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 1px 2px rgba(0, 0, 0, 0.28),
+    0 28px 60px -30px rgba(0, 0, 0, 0.8);
+}
+
+/* ---- 页面外壳（导航 + 主体）：不与卡片争抢，保持整屏通栏 ---- */
+.dashboard-root .ui-dashboard-panel {
+  background: transparent;
+}
+
+/* ---- 悬浮毛玻璃面板（供页面数据卡使用）---- */
+.dashboard-root .da-frost {
+  background: var(--ui-bg-elevated);
+  border: 1px solid var(--ui-border-accented);
+  border-radius: 8px;
+  -webkit-backdrop-filter: blur(28px) saturate(1.5);
+  backdrop-filter: blur(28px) saturate(1.5);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    0 1px 2px rgba(20, 20, 24, 0.04),
+    0 16px 40px -20px rgba(20, 20, 24, 0.22);
+}
+
+.dark .dashboard-root .da-frost {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 1px 2px rgba(0, 0, 0, 0.3),
+    0 20px 48px -24px rgba(0, 0, 0, 0.66);
+}
+
+/* ---- 内缩毛玻璃（用作列表/表单容器）---- */
+.dashboard-root .da-inset {
+  background: var(--ui-bg-muted);
+  border: 1px solid var(--ui-border);
+  border-radius: 4px;
+}
+
+/* ---- 主题滚动条（后台专用）---- */
+.dashboard-root * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ui-border-accented) transparent;
+}
+.dashboard-root ::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+.dashboard-root ::-webkit-scrollbar-thumb {
+  background: var(--ui-border-accented);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+.dashboard-root ::-webkit-scrollbar-thumb:hover {
+  background: var(--ui-text-muted);
+  background-clip: content-box;
+}
+.dashboard-root ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ---- 选区与焦点：克制、无光斑 ---- */
+.dashboard-root ::selection {
+  background: color-mix(in srgb, var(--ui-text) 22%, transparent);
+}
+.dashboard-root :focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--ui-text) 55%, transparent);
+  outline-offset: 2px;
+}
+
+/* ============================================================
+   body.dashboard-active：让 teleport 到 <body> 的覆盖层
+   （Slideover / Popover / Dropdown / Tooltip / Drawer / Modal）
+   同样套用双色调主题，避免后台弹层仍是全局中性灰而突兀、
+   或文字因 token 缺失看不清。
+   仅后台路由挂载，不污染画廊。
+   ============================================================ */
+html body.dashboard-active {
+  --ui-bg: #f3f2f0;
+  --ui-bg-muted: #ecebe8;
+  --ui-bg-elevated: rgba(255, 255, 255, 0.78);
+  --ui-bg-accented: rgba(255, 255, 255, 0.94);
+
+  --ui-text-dimmed: #9a9a9f;
+  --ui-text-muted: #6e6e75;
+  --ui-text-toned: #4a4a50;
+  --ui-text: #2d2d33;
+  --ui-text-highlighted: #141417;
+  --ui-text-inverted: #f6f6f8;
+
+  --ui-border: rgba(20, 20, 24, 0.1);
+  --ui-border-muted: rgba(20, 20, 24, 0.07);
+  --ui-border-accented: rgba(20, 20, 24, 0.14);
+
+  --ui-primary: #141417;
+  --ui-primary-inverted: #f6f6f8;
+}
+html.dark body.dashboard-active {
+  --ui-bg: #101013;
+  --ui-bg-muted: #18181c;
+  --ui-bg-elevated: rgba(40, 40, 46, 0.66);
+  --ui-bg-accented: rgba(255, 255, 255, 0.06);
+
+  --ui-text-dimmed: #6c6c73;
+  --ui-text-muted: #9b9ba2;
+  --ui-text-toned: #c7c7cd;
+  --ui-text: #e8e8ec;
+  --ui-text-highlighted: #ffffff;
+  --ui-text-inverted: #141417;
+
+  --ui-border: rgba(255, 255, 255, 0.1);
+  --ui-border-muted: rgba(255, 255, 255, 0.07);
+  --ui-border-accented: rgba(255, 255, 255, 0.16);
+
+  --ui-primary: #ececef;
+  --ui-primary-inverted: #141417;
+}
+
+/* 覆盖层容器：苹果磨砂玻璃 */
+html body.dashboard-active .ui-overlay-container,
+html body.dashboard-active .ui-slideover,
+html body.dashboard-active .ui-drawer,
+html body.dashboard-active .ui-popover,
+html body.dashboard-active .ui-dropdown-menu,
+html body.dashboard-active [role='dialog'] {
+  background: var(--ui-bg-elevated);
+  -webkit-backdrop-filter: blur(28px) saturate(1.4);
+  backdrop-filter: blur(28px) saturate(1.4);
+  border: 1px solid var(--ui-border-accented);
+  box-shadow:
+    0 1px 2px rgba(20, 20, 24, 0.04),
+    0 20px 50px -24px rgba(20, 20, 24, 0.35);
+}
+html.dark body.dashboard-active .ui-overlay-container,
+html.dark body.dashboard-active .ui-slideover,
+html.dark body.dashboard-active .ui-drawer,
+html.dark body.dashboard-active .ui-popover,
+html.dark body.dashboard-active .ui-dropdown-menu,
+html.dark body.dashboard-active [role='dialog'] {
+  background: rgba(24, 24, 30, 0.82);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.3),
+    0 26px 60px -28px rgba(0, 0, 0, 0.8);
+}

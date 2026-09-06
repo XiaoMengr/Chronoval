@@ -568,8 +568,8 @@ const swiperModules = [Navigation, Keyboard, Virtual]
 const SPRING_SMOOTH = { type: 'spring', duration: 0.4, bounce: 0 } as const
 const SPRING_SNAPPY = { type: 'spring', duration: 0.4, bounce: 0.15 } as const
 
-// 桌面端信息面板默认展开（afilmory 桌面端默认展示 inspector）
-const isDesktopInspectorVisible = ref(!isMobile.value)
+// 桌面端信息面板默认折叠；用户通过照片右上角"展开信息"按钮手动打开
+const isDesktopInspectorVisible = ref(false)
 
 // 面板折叠/展开会改变图片舞台宽度（flex 布局重排）：
 // - WebGL 画布 resize 后需重新适配图片（imageRefitKey 自增触发 ProgressiveImage 处理）
@@ -635,7 +635,7 @@ watch(
         entryDone.value = true
       }, 420)
     } else {
-      isDesktopInspectorVisible.value = !isMobile.value
+      isDesktopInspectorVisible.value = false
     }
   },
   { immediate: true },
@@ -713,27 +713,7 @@ onUnmounted(() => {
               >
                 <!-- 左侧工具按钮 -->
                 <div class="pointer-events-auto flex items-center gap-2">
-                  <!-- 展开/收起信息面板 - 桌面端（移到最左边） -->
-                  <button
-                    v-if="!isMobile"
-                    type="button"
-                    :aria-label="
-                      isDesktopInspectorVisible ? 'collapse info' : 'expand info'
-                    "
-                    class="flex size-9 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm transition-colors hover:bg-black/50"
-                    @click="isDesktopInspectorVisible = !isDesktopInspectorVisible"
-                  >
-                    <Icon
-                      :name="
-                        isDesktopInspectorVisible
-                          ? 'tabler:layout-sidebar-right-collapse'
-                          : 'tabler:layout-sidebar-right-expand'
-                      "
-                      class="size-5"
-                    />
-                  </button>
-
-                  <!-- 信息按钮 - 在移动设备上显示 -->
+                  <!-- 信息按钮 - 在移动设备上显示（桌面端改由照片右上角展开） -->
                   <button
                     v-if="isMobile"
                     type="button"
@@ -1098,12 +1078,33 @@ onUnmounted(() => {
                       v-if="index === currentIndex && !isImageZoomed"
                       class="absolute top-4 right-4 z-30 flex items-center gap-2 pointer-events-auto"
                     >
+                      <!-- 展开/收起信息面板 - 桌面端（右上角） -->
+                      <button
+                        v-if="!isMobile"
+                        type="button"
+                        :aria-label="
+                          isDesktopInspectorVisible ? 'collapse info' : 'expand info'
+                        "
+                        class="flex size-8 items-center justify-center rounded-full backdrop-blur-2xl duration-200 hover:bg-black/40"
+                        style="background-color: rgba(var(--cm-material-thick)); color: rgb(var(--cm-text))"
+                        @click="isDesktopInspectorVisible = !isDesktopInspectorVisible"
+                      >
+                        <Icon
+                          :name="
+                            isDesktopInspectorVisible
+                              ? 'tabler:layout-sidebar-right-collapse'
+                              : 'tabler:layout-sidebar-right-expand'
+                          "
+                          class="size-4.5"
+                        />
+                      </button>
+
                       <button
                         type="button"
                         aria-label="share photo"
                         :title="$t('viewer.share')"
-                        class="flex size-8 items-center justify-center rounded-full text-white backdrop-blur-2xl duration-200 hover:bg-black/40"
-                        style="background-color: rgba(var(--cm-material-thick))"
+                        class="flex size-8 items-center justify-center rounded-full backdrop-blur-2xl duration-200 hover:bg-black/40"
+                        style="background-color: rgba(var(--cm-material-thick)); color: rgb(var(--cm-text))"
                         @click="showShareModal = true"
                       >
                         <Icon name="tabler:share-3" class="size-4.5" />
@@ -1112,8 +1113,8 @@ onUnmounted(() => {
                         type="button"
                         aria-label="close"
                         :title="$t('viewer.close')"
-                        class="flex size-8 items-center justify-center rounded-full text-white backdrop-blur-2xl duration-200 hover:bg-black/40"
-                        style="background-color: rgba(var(--cm-material-thick))"
+                        class="flex size-8 items-center justify-center rounded-full backdrop-blur-2xl duration-200 hover:bg-black/40"
+                        style="background-color: rgba(var(--cm-material-thick)); color: rgb(var(--cm-text))"
                         @click="emit('close')"
                       >
                         <Icon name="tabler:x" class="size-4.5" />
@@ -1161,23 +1162,21 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <!-- EXIF/信息面板 - 覆盖层：桌面端右侧悬浮、移动端底部弹层，均不参与图片布局流 -->
-        <AnimatePresence v-if="isMobile">
-          <InfoPanel
-            v-if="showExifPanel && currentPhoto"
-            :current-photo="currentPhoto"
-            :exif-data="currentPhoto?.exif"
-            :on-close="() => (showExifPanel = false)"
-          />
-        </AnimatePresence>
-        <AnimatePresence v-else>
-          <InfoPanel
-            v-if="isDesktopInspectorVisible && currentPhoto"
-            :current-photo="currentPhoto"
-            :exif-data="currentPhoto?.exif"
-            :on-close="() => (isDesktopInspectorVisible = false)"
-          />
-        </AnimatePresence>
+        <!-- EXIF/信息面板 - 覆盖层：桌面端右侧悬浮、移动端底部弹层。
+             随查看器打开即常驻挂载以预热数据（直方图/影调/相册加载），通过 visible 控制显隐 -->
+        <InfoPanel
+          v-if="isOpen && currentPhoto"
+          :key="currentPhoto.id"
+          :current-photo="currentPhoto"
+          :exif-data="currentPhoto?.exif"
+          :visible="isMobile ? showExifPanel : isDesktopInspectorVisible"
+          :on-close="
+            () =>
+              isMobile
+                ? (showExifPanel = false)
+                : (isDesktopInspectorVisible = false)
+          "
+        />
       </motion.div>
     </AnimatePresence>
 

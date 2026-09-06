@@ -18,7 +18,11 @@ Chronoval 为**全栈单体**：前端页面与后端 API 由同一个 Nitro 服
 
 ```bash
 cp .env.example .env
-# 编辑 .env：至少设置管理员邮箱/密码 与 NUXT_SESSION_PASSWORD
+# .env 默认不填也可正常完成首次安装：
+#   - 管理员邮箱/密码：在打开网页后的【首次运行引导向导】里填写即可
+#   - NUXT_SESSION_PASSWORD：未设置时应用首次启动会自动生成随机密钥，
+#     并持久化到 ./data/.session-password，之后启动复用，无需手动 openssl
+#   仅当需要高级覆盖（S3 存储 / 地图 / 主题 / 固定会话密钥等）时才编辑 .env
 
 # 1. 创建媒体库目录（与 compose 卷映射对应）
 mkdir -p data/storage/photos data/storage/videos

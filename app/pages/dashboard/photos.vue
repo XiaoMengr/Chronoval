@@ -2165,9 +2165,9 @@ onUnmounted(() => {
             content: 'sm:max-w-xl',
             body: 'p-2',
             header:
-              'px-6 py-5 border-b border-neutral-200 dark:border-neutral-800',
+              'px-6 py-5 border-b border-(--ui-border)',
             footer:
-              'px-6 py-5 border-t border-neutral-200 dark:border-neutral-800',
+              'px-6 py-5 border-t border-(--ui-border)',
           }"
         >
           <template #body>
@@ -2190,32 +2190,29 @@ onUnmounted(() => {
                 :file-delete="{ variant: 'soft', color: 'neutral' }"
                 :ui="{
                   root: 'w-full',
-                  base: 'group relative flex flex-col items-center justify-center gap-3 rounded-3xl border-2 border-dashed border-neutral-200/80 bg-white/90 px-6 py-12 text-center shadow-sm transition-all duration-300 hover:border-primary-400/80 hover:bg-primary-500/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/60 dark:border-neutral-700/70 dark:bg-neutral-900/80',
+                  base: 'group relative flex flex-col items-center justify-center gap-3 rounded-3xl border-2 border-dashed border-(--ui-border-accented) bg-(--ui-bg-accented) px-6 py-12 text-center shadow-sm transition-all duration-300 hover:border-(--ui-text-muted) hover:bg-(--ui-bg) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--ui-text)/60',
                   wrapper: 'flex flex-col items-center gap-2',
-                  label:
-                    'text-base font-semibold text-neutral-800 dark:text-neutral-100',
-                  description: 'text-sm text-neutral-500 dark:text-neutral-400',
+                  label: 'text-base font-semibold text-(--ui-text)',
+                  description: 'text-sm text-(--ui-text-muted)',
                   files: 'mt-2 flex w-full flex-col gap-2 overflow-y-auto',
-                  file: 'flex items-center justify-between gap-3 rounded-2xl border border-neutral-200/80 bg-white/80 px-4 py-3 text-left shadow-sm shadow-black/5 backdrop-blur-sm dark:border-neutral-800/80 dark:bg-neutral-900/70',
-                  fileLeadingAvatar:
-                    'ring-1 ring-white/80 dark:ring-neutral-800',
+                  file: 'flex items-center justify-between gap-3 rounded-2xl border border-(--ui-border-accented) bg-(--ui-bg-elevated) px-4 py-3 text-left shadow-sm shadow-black/5 backdrop-blur-sm',
+                  fileLeadingAvatar: 'ring-1 ring-(--ui-border)',
                   fileWrapper: 'min-w-0 flex-1',
-                  fileName:
-                    'text-sm font-medium text-neutral-700 dark:text-neutral-100 truncate',
-                  fileSize: 'text-xs text-neutral-500 dark:text-neutral-400',
-                  fileTrailingButton: 'text-neutral-400 hover:text-error-500',
+                  fileName: 'text-sm font-medium text-(--ui-text) truncate',
+                  fileSize: 'text-xs text-(--ui-text-muted)',
+                  fileTrailingButton: 'text-(--ui-text-dimmed) hover:text-error-500',
                 }"
               />
 
               <!-- 上传位置选择：本地存储 / 外部扫描库 -->
               <UCard
                 variant="soft"
-                class="border border-neutral-200/80 dark:border-neutral-800/80"
+                class="border-(--ui-border-accented)"
               >
                 <div class="space-y-3">
                   <div class="space-y-1">
                     <p
-                      class="text-sm font-medium text-neutral-800 dark:text-neutral-100"
+                      class="text-sm font-medium text-(--ui-text)"
                     >
                       {{
                         $t(
@@ -2224,7 +2221,7 @@ onUnmounted(() => {
                       }}
                     </p>
                     <p
-                      class="text-xs text-neutral-500 dark:text-neutral-400"
+                      class="text-xs text-(--ui-text-muted)"
                     >
                       {{
                         $t(
@@ -2239,8 +2236,8 @@ onUnmounted(() => {
                       class="flex items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors"
                       :class="
                         uploadTarget === 'storage'
-                          ? 'border-primary-400 bg-primary-500/10 dark:border-primary-500/60 dark:bg-primary-500/10'
-                          : 'border-neutral-200/80 bg-white/70 hover:border-neutral-300 dark:border-neutral-800/80 dark:bg-neutral-900/60 dark:hover:border-neutral-700'
+                          ? 'border-(--ui-text) bg-(--ui-text)/8'
+                          : 'border-(--ui-border) bg-(--ui-bg-accented) hover:border-(--ui-border-accented)'
                       "
                       @click="uploadTarget = 'storage'"
                     >
@@ -2249,18 +2246,18 @@ onUnmounted(() => {
                           class="size-4 rounded-full border-2"
                           :class="
                             uploadTarget === 'storage'
-                              ? 'border-primary-500 bg-primary-500'
-                              : 'border-neutral-300 dark:border-neutral-600'
+                              ? 'border-(--ui-text) bg-(--ui-text)'
+                              : 'border-(--ui-border-accented)'
                           "
                         />
                       </span>
                       <UIcon
                         name="tabler:database"
-                        class="size-4.5 shrink-0 text-neutral-500 dark:text-neutral-400"
+                        class="size-4.5 shrink-0 text-(--ui-text-muted)"
                       />
                       <span class="min-w-0">
                         <span
-                          class="block text-sm font-medium text-neutral-800 dark:text-neutral-100"
+                          class="block text-sm font-medium text-(--ui-text)"
                         >
                           {{
                             $t(
@@ -2269,7 +2266,7 @@ onUnmounted(() => {
                           }}
                         </span>
                         <span
-                          class="block text-xs text-neutral-500 dark:text-neutral-400"
+                          class="block text-xs text-(--ui-text-muted)"
                         >
                           {{
                             $t(
@@ -2287,8 +2284,8 @@ onUnmounted(() => {
                       class="flex items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors"
                       :class="
                         uploadTarget === lib.id
-                          ? 'border-primary-400 bg-primary-500/10 dark:border-primary-500/60 dark:bg-primary-500/10'
-                          : 'border-neutral-200/80 bg-white/70 hover:border-neutral-300 dark:border-neutral-800/80 dark:bg-neutral-900/60 dark:hover:border-neutral-700'
+                          ? 'border-(--ui-text) bg-(--ui-text)/8'
+                          : 'border-(--ui-border) bg-(--ui-bg-accented) hover:border-(--ui-border-accented)'
                       "
                       @click="uploadTarget = lib.id"
                     >
@@ -2297,18 +2294,18 @@ onUnmounted(() => {
                           class="size-4 rounded-full border-2"
                           :class="
                             uploadTarget === lib.id
-                              ? 'border-primary-500 bg-primary-500'
-                              : 'border-neutral-300 dark:border-neutral-600'
+                              ? 'border-(--ui-text) bg-(--ui-text)'
+                              : 'border-(--ui-border-accented)'
                           "
                         />
                       </span>
                       <UIcon
                         name="tabler:folder-open"
-                        class="size-4.5 shrink-0 text-neutral-500 dark:text-neutral-400"
+                        class="size-4.5 shrink-0 text-(--ui-text-muted)"
                       />
                       <span class="min-w-0">
                         <span
-                          class="block truncate text-sm font-medium text-neutral-800 dark:text-neutral-100"
+                          class="block truncate text-sm font-medium text-(--ui-text)"
                         >
                           {{ lib.name }}
                         </span>
@@ -2320,12 +2317,12 @@ onUnmounted(() => {
 
               <UCard
                 variant="soft"
-                class="border border-neutral-200/80 dark:border-neutral-800/80"
+                class="border-(--ui-border-accented)"
               >
                 <div class="flex items-start justify-between gap-4">
                   <div class="space-y-1">
                     <p
-                      class="text-sm font-medium text-neutral-800 dark:text-neutral-100"
+                      class="text-sm font-medium text-(--ui-text)"
                     >
                       {{
                         $t(
@@ -2333,7 +2330,7 @@ onUnmounted(() => {
                         )
                       }}
                     </p>
-                    <p class="text-xs text-neutral-500 dark:text-neutral-400">
+                    <p class="text-xs text-(--ui-text-muted)">
                       {{
                         $t(
                           'dashboard.photos.slideover.options.eraseLocation.description',
@@ -2393,23 +2390,23 @@ onUnmounted(() => {
 
         <!-- 统合容器：工具栏 + 照片列表 -->
         <div
-          class="relative flex-1 min-h-0 flex flex-col bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800/80 rounded-2xl shadow-sm overflow-hidden"
+          class="relative flex-1 min-h-0 flex flex-col bg-(--ui-bg) border border-(--ui-border) rounded-2xl shadow-sm overflow-hidden"
         >
           <!-- 工具栏 -->
           <div
-            class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 sm:px-4 sm:py-3 bg-neutral-50/50 dark:bg-neutral-900/50 backdrop-blur-sm border-b border-neutral-200/80 dark:border-neutral-800/80 z-20"
+            class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 sm:px-4 sm:py-3 bg-(--ui-bg-muted) backdrop-blur-sm border-b border-(--ui-border) z-20"
           >
             <div class="flex items-center gap-3">
               <div
-                class="flex size-8 items-center justify-center rounded-[10px] bg-neutral-200/50 dark:bg-neutral-800/50 border border-neutral-200/50 dark:border-neutral-700/50"
+                class="flex size-8 items-center justify-center rounded-[10px] bg-(--ui-bg-accented) border border-(--ui-border)"
               >
                 <UIcon
                   name="tabler:photo"
-                  class="size-4.5 text-neutral-600 dark:text-neutral-400"
+                  class="size-4.5 text-(--ui-text-toned)"
                 />
               </div>
               <span
-                class="font-semibold text-sm text-neutral-700 dark:text-neutral-300 hidden sm:inline"
+                class="font-semibold text-sm text-(--ui-text) hidden sm:inline"
               >
                 {{ $t('dashboard.photos.toolbar.title') }}
               </span>
@@ -2579,15 +2576,15 @@ onUnmounted(() => {
               wrapper: 'relative scroll-smooth h-full overflow-auto',
               base: 'min-w-full table-fixed',
               divide:
-                'divide-y divide-neutral-200/80 dark:divide-neutral-800/80',
+                'divide-y divide-(--ui-border)',
               thead:
-                'bg-neutral-50/80 dark:bg-neutral-900/80 backdrop-blur-md sticky top-0 z-10 whitespace-nowrap',
+                'bg-(--ui-bg-muted) backdrop-blur-md sticky top-0 z-10 whitespace-nowrap',
               tbody:
-                'divide-y divide-neutral-200/80 dark:divide-neutral-800/80 bg-white dark:bg-neutral-900',
+                'divide-y divide-(--ui-border) bg-transparent',
               tr: {
-                base: 'hover:bg-neutral-50/50 dark:hover:bg-neutral-800/50 transition-colors',
-                selected: 'bg-primary-50/50 dark:bg-primary-900/20',
-              },
+                  base: 'hover:bg-(--ui-bg-muted) transition-colors',
+                  selected: 'bg-primary-50/50 dark:bg-primary-900/20',
+                },
               th: {
                 base: 'text-left rtl:text-right ',
                 padding: 'px-4 py-3.5',
@@ -2598,7 +2595,7 @@ onUnmounted(() => {
                 padding: 'px-4 py-3',
                 color: 'text-neutral-700 dark:text-neutral-300 text-sm',
               },
-              separator: 'bg-neutral-200/80 dark:bg-neutral-800/80',
+              separator: 'bg-(--ui-border)',
             }"
           >
             <template #actions-cell="{ row }">
@@ -2632,13 +2629,13 @@ onUnmounted(() => {
           >
             <div
               v-if="selectedRowsCount > 0"
-              class="fixed bottom-8 left-1/2 -translate-x-1/2 px-2 py-1.5 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-xl shadow-xl rounded-full border border-neutral-200/80 dark:border-neutral-800/80 z-60 flex items-center gap-3 sm:gap-6 shadow-black/5 dark:shadow-black/20"
+              class="fixed bottom-8 left-1/2 -translate-x-1/2 px-2 py-1.5 bg-(--ui-bg-elevated) backdrop-blur-xl shadow-xl rounded-full border border-(--ui-border-accented) z-60 flex items-center gap-3 sm:gap-6 shadow-black/5 dark:shadow-black/20"
             >
               <div
-                class="pl-4 pr-1 border-r border-neutral-200 dark:border-neutral-800 min-w-max"
+                class="pl-4 pr-1 border-r border-(--ui-border) min-w-max"
               >
                 <p
-                  class="text-sm font-medium tracking-wide text-neutral-700 dark:text-neutral-200"
+                  class="text-sm font-medium tracking-wide text-(--ui-text)"
                 >
                   {{
                     $t('dashboard.photos.selection.selected', {
@@ -2654,7 +2651,7 @@ onUnmounted(() => {
                   color="neutral"
                   variant="ghost"
                   size="sm"
-                  class="rounded-full text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-neutral-800"
+                  class="rounded-full text-(--ui-text-muted) hover:text-(--ui-text-highlighted) hover:bg-(--ui-bg)"
                   icon="tabler:refresh"
                   @click="handleBatchReprocess"
                 >
@@ -2667,7 +2664,7 @@ onUnmounted(() => {
                   color="neutral"
                   variant="ghost"
                   size="sm"
-                  class="rounded-full text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-neutral-800"
+                  class="rounded-full text-(--ui-text-muted) hover:text-(--ui-text-highlighted) hover:bg-(--ui-bg)"
                   icon="tabler:map-off"
                   @click="handleBatchEraseLocation"
                 >
@@ -2680,7 +2677,7 @@ onUnmounted(() => {
                   color="neutral"
                   variant="ghost"
                   size="sm"
-                  class="rounded-full text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-neutral-800"
+                  class="rounded-full text-(--ui-text-muted) hover:text-(--ui-text-highlighted) hover:bg-(--ui-bg)"
                   icon="tabler:download"
                   @click="handleBatchDownload"
                 >
@@ -2715,9 +2712,9 @@ onUnmounted(() => {
             content: 'sm:max-w-xl',
             body: 'p-2',
             header:
-              'px-6 py-5 border-b border-neutral-200 dark:border-neutral-800',
+              'px-6 py-5 border-b border-(--ui-border)',
             footer:
-              'px-6 py-5 border-t border-neutral-200 dark:border-neutral-800',
+              'px-6 py-5 border-t border-(--ui-border)',
           }"
         >
           <template #body>
@@ -2726,7 +2723,7 @@ onUnmounted(() => {
                 v-if="editingPhoto"
                 class="space-y-1"
               >
-                <p class="text-xs text-neutral-500 dark:text-neutral-500">
+                <p class="text-xs text-(--ui-text-muted)">
                   {{ editingPhoto.title || editingPhoto.id }}
                 </p>
               </div>
@@ -2831,7 +2828,7 @@ onUnmounted(() => {
                   >
                     <template #empty>
                       <span
-                        class="px-3 py-2 rounded-full bg-white/80 text-neutral-600 dark:bg-neutral-900/80 dark:text-neutral-200 shadow"
+                        class="px-3 py-2 rounded-full bg-(--ui-bg-accented) text-(--ui-text-muted) shadow border border-(--ui-border)"
                       >
                         {{
                           $t('dashboard.photos.editModal.fields.locationHint')

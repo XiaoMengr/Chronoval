@@ -75,6 +75,19 @@ const {
   scopedPhotos,
 } = storeToRefs(useViewerState())
 
+// 从画廊查看器跳转到系统页面（如后台 /dashboard）时主动关闭查看器。
+// 查看器是 Teleport 到 body 的全屏覆盖层（z-50，固定在照片上方），若停留在打开态，
+// 会挡在后台页之上导致"点了没反应"；且其 direct-access 关闭逻辑（handleClose）会把
+// 用户再弹回首页，造成"跳转变成回家"的间歇性行为。进入后台前先关掉并复位即可。
+watch(
+  () => route.path,
+  (path) => {
+    if (path.startsWith('/dashboard') && isViewerOpen.value) {
+      closeViewer()
+    }
+  },
+)
+
 // The photo collection the viewer actually navigates: the scoped list (e.g. an
 // album) when present, otherwise the global list.
 const viewerPhotos = computed(() => scopedPhotos.value ?? photos.value)

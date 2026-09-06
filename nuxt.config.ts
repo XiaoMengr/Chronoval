@@ -24,7 +24,10 @@ export default defineNuxtConfig({
     'nuxt-gtag',
   ],
 
-  css: ['~/assets/css/tailwind.css'],
+  css: [
+    '~/assets/css/tailwind.css',
+    '~/assets/css/dashboard-theme.css',
+  ],
 
   // 允许通过 dev.1xc.top 访问（frp 穿透 + caddy 反代的 Host）
   server: {

@@ -418,7 +418,7 @@ const columns = computed<any[]>(() => [
         <template #right>
           <UButton
             icon="tabler:plus"
-            variant="soft"
+            color="primary"
             @click="openCreateSlideover"
           >
             {{ $t('dashboard.albums.createButton') }}

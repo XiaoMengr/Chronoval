@@ -388,7 +388,8 @@
         "rgb": "RGB"
       }
     },
-    "iso": "ISO"
+    "iso": "ISO",
+    "metadataButton": "写真メタ情報"
   },
   "title": {
     "gallery": "ギャラリー",
@@ -1010,7 +1011,9 @@
       "empty": {
         "waiting": "ログデータを待機中...",
         "noMatch": "一致するログエントリがありません"
-      }
+      },
+      "historyHint": "最新 {count} 件のログのみ表示中",
+      "loadHistory": "履歴を読み込む"
     },
     "access": {
       "pleaseLogin": "ダッシュボードを表示するにはログインしてください",

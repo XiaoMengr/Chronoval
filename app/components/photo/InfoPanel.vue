@@ -8,6 +8,7 @@ interface Props {
   currentPhoto: Photo
   exifData?: NeededExif | null
   onClose?: () => void
+  visible?: boolean
 }
 
 interface Album {
@@ -36,6 +37,78 @@ const { data: _albums } = useFetch<Album[]>(
 const albums = computed(() => _albums.value || [])
 
 const isMobile = useMediaQuery('(max-width: 768px)')
+
+// ===== 移动端底部弹层（Afilmory 风格）：拖拽把手，上滑展开 / 下滑收起 / 再下滑关闭 =====
+const PEEK_H = () => Math.round(window.innerHeight * 0.5)
+const MAX_H = () => Math.min(Math.round(window.innerHeight * 0.86), 680)
+const sheetHeight = ref(isMobile.value ? PEEK_H() : 0)
+const dragActive = ref(false)
+let dragStartY = 0
+let dragStartHeight = 0
+
+const sheetStyle = computed(() =>
+  isMobile.value
+    ? {
+        height: `${sheetHeight.value}px`,
+        touchAction: 'none',
+        transition: dragActive.value
+          ? 'none'
+          : 'height 0.32s cubic-bezier(0.32, 0.72, 0, 1)',
+      }
+    : {},
+)
+
+// 整张卡片任意位置可上下滑动（区别于仅中间白线可拖）：
+// 用窗口级 pointer 监听，上滑撑高、下滑收矮、滑到最低自动隐藏。
+function onSheetDown(e: PointerEvent) {
+  if (!isMobile.value) return
+  dragStartY = e.clientY
+  dragStartHeight = sheetHeight.value
+  dragActive.value = false
+  window.addEventListener('pointermove', onSheetMove)
+  window.addEventListener('pointerup', onSheetUp)
+  window.addEventListener('pointercancel', onSheetUp)
+}
+
+function onSheetMove(e: PointerEvent) {
+  if (!isMobile.value) return
+  const dy = e.clientY - dragStartY
+  // 小于阈值视为“点按”，不占用（内部按钮/链接的 click 正常触发）
+  if (!dragActive.value && Math.abs(dy) < 8) return
+  dragActive.value = true
+  const next = dragStartHeight - dy
+  sheetHeight.value = Math.max(0, Math.min(MAX_H(), next))
+}
+
+function onSheetUp() {
+  if (!isMobile.value) return
+  window.removeEventListener('pointermove', onSheetMove)
+  window.removeEventListener('pointerup', onSheetUp)
+  window.removeEventListener('pointercancel', onSheetUp)
+  if (!dragActive.value) return
+  dragActive.value = false
+  const PEEK = PEEK_H()
+  if (sheetHeight.value < PEEK * 0.6) {
+    // 下滑到最低：自动隐藏，只能通过左上角信息按钮重新展开
+    props.onClose?.()
+  } else {
+    sheetHeight.value =
+      sheetHeight.value >= (PEEK + MAX_H()) / 2 ? MAX_H() : PEEK
+  }
+}
+
+onBeforeUnmount(() => {
+  window.removeEventListener('pointermove', onSheetMove)
+  window.removeEventListener('pointerup', onSheetUp)
+  window.removeEventListener('pointercancel', onSheetUp)
+})
+
+// 面板显隐由 visible 驱动（常驻挂载预热数据，仅切换可见性/位置）
+const motionPanel = computed(() => {
+  if (!props.visible)
+    return isMobile.value ? { opacity: 0, y: '110%' } : { opacity: 0, x: '100%' }
+  return { opacity: 1, x: 0, y: 0 }
+})
 
 // ===== 格式化辅助（与 afilmory formatExifData 对齐） =====
 
@@ -335,42 +408,43 @@ const onAlbumClick = (albumId: number) => {
 
 <template>
   <motion.div
-    :initial="{
-      opacity: 0,
-      x: isMobile ? 0 : 80,
-      y: isMobile ? 20 : 0,
-    }"
-    :animate="{
-      opacity: 1,
-      x: 0,
-      y: 0,
-    }"
-    :exit="{
-      opacity: 0,
-      x: isMobile ? 0 : 80,
-      y: isMobile ? 20 : 0,
-    }"
-    :transition="{ type: 'spring', duration: 0.4, bounce: 0, delay: 0.1 }"
+    :initial="false"
+    :animate="motionPanel"
+    :transition="{ type: 'spring', duration: 0.45, bounce: 0 }"
     class="flex flex-col"
+    :style="sheetStyle"
     :class="{
-      'fixed inset-x-0 bottom-0 z-10 max-h-[60vh] w-full rounded-t-2xl overflow-hidden': isMobile,
+      'pointer-events-none': !props.visible,
+      'fixed inset-x-0 bottom-0 z-10 w-full rounded-t-2xl overflow-hidden cursor-grab active:cursor-grabbing': isMobile,
       'absolute inset-y-0 right-0 z-30 w-80 border-l border-black/10 dark:border-white/10': !isMobile,
       'inspector-glass': true,
     }"
+    @pointerdown="onSheetDown"
   >
     <!-- afilmory 内发光层 -->
     <div class="pointer-events-none absolute inset-0 inspector-glass-glow" />
 
-    <!-- afilmory Header：mt-3.5 mb-3 px-3.5，关闭按钮为 40px 圆角方形（对应其 ActionButton） -->
-    <div class="relative z-10 mt-3.5 mb-3 flex shrink-0 items-center justify-between px-3.5">
+    <!-- 移动端把手（纯装饰，整卡任意位置可上下滑动） -->
+    <div
+      v-if="isMobile"
+      class="flex shrink-0 justify-center pt-2 pb-1 select-none pointer-events-none"
+    >
+      <div class="h-1.5 w-10 rounded-full" style="background: rgb(var(--cm-text-faint))" />
+    </div>
+
+    <!-- afilmory Header：左标题 + 仅移动端的右上角关闭按钮 -->
+    <div
+      class="relative z-10 mb-3 flex shrink-0 items-center justify-between px-3.5"
+      :class="isMobile ? 'mt-0.5' : 'mt-3.5'"
+    >
       <h3 :class="isMobile ? 'text-base' : 'text-sm'" class="font-medium" style="color: rgb(var(--cm-text-muted))">
         {{ $t('exif.sections.info') }}
       </h3>
       <button
-        v-if="onClose"
+        v-if="isMobile && onClose"
         type="button"
-        aria-label="close inspector"
-        class="inspector-close flex size-9 items-center justify-center rounded-lg"
+        aria-label="close"
+        class="sheet-close flex size-8 shrink-0 items-center justify-center rounded-full"
         @click="onClose"
       >
         <Icon name="tabler:x" class="size-4" />
@@ -379,8 +453,11 @@ const onAlbumClick = (albumId: number) => {
 
     <!-- 内容区域 -->
     <div
-      class="min-h-0 flex-1 px-4 pb-4"
-      :class="isMobile ? 'overflow-y-auto' : 'overflow-y-auto pb-8'"
+      class="min-h-0 flex-1 px-4 pb-4 content-fade"
+      :class="[
+        props.visible ? 'content-fade-in' : '',
+        isMobile ? 'overflow-hidden' : 'overflow-y-auto pb-8',
+      ]"
     >
       <!-- 基本信息 -->
       <div>
@@ -601,14 +678,32 @@ const onAlbumClick = (albumId: number) => {
     color-mix(in srgb, rgb(var(--cm-accent)) 5%, transparent)
   );
 }
-/* 关闭按钮：accent 悬停（对应 afilmory ActionButton） */
-.inspector-close {
-  color: color-mix(in srgb, rgb(var(--cm-text)) 80%, transparent);
+
+/* 打开面板时文字平滑渐入（每次 visible 变 true 触发一次） */
+.content-fade-in {
+  animation: contentFadeIn 0.36s ease-out both;
+}
+@keyframes contentFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 移动端右上角"关闭信息"按钮（仅移动端显示） */
+.sheet-close {
+  background-color: rgb(var(--cm-chip));
+  color: color-mix(in srgb, rgb(var(--cm-text)) 82%, transparent);
+  border: 1px solid rgb(var(--cm-border));
   transition:
     background-color 0.15s ease,
     color 0.15s ease;
 }
-.inspector-close:hover {
+.sheet-close:hover {
   background-color: color-mix(in srgb, rgb(var(--cm-accent)) 12%, transparent);
   color: rgb(var(--cm-text));
 }

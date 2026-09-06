@@ -385,7 +385,8 @@
         "rgb": "RGB"
       }
     },
-    "iso": "ISO"
+    "iso": "ISO",
+    "metadataButton": "照片元資訊"
   },
   "plural": {
     "photo": "沒有相片 | 一張相片 | {count} 張相片"
@@ -1010,7 +1011,9 @@
       "empty": {
         "waiting": "等待日誌資料...",
         "noMatch": "沒有符合的日誌條目"
-      }
+      },
+      "historyHint": "現時僅顯示最近 {count} 條日誌",
+      "loadHistory": "查看歷史記錄"
     },
     "access": {
       "pleaseLogin": "請登入以檢視儀表板",

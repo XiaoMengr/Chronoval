@@ -260,7 +260,7 @@ const hoveredAlbum = ref<number | null>(null)
     <!-- Albums Grid -->
     <div class="container mx-auto px-20 sm:px-6 lg:px-8 pt-32 sm:pt-52 pb-16">
       <div
-        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-16"
+        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 sm:gap-16"
       >
         <NuxtLink
           v-for="album in visibleAlbums"

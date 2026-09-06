@@ -103,6 +103,14 @@ useHead({
   titleTemplate: (title) => `${title ? `${title} | ` : ''}${appTitle.value}`,
 })
 
+onMounted(() => {
+  document.body.classList.add('dashboard-active')
+})
+
+onBeforeUnmount(() => {
+  document.body.classList.remove('dashboard-active')
+})
+
 const handleLogin = () => {
   router.push({
     path: '/signin',
@@ -130,7 +138,7 @@ const handleLogin = () => {
     </p>
     <UButton @click="handleLogin">{{ $t('auth.form.signin.title') }}</UButton>
   </div>
-  <UDashboardGroup v-else>
+  <UDashboardGroup v-else class="dashboard-root">
     <UDashboardSidebar
       id="cframe-dashboard-sidebar"
       resizable
@@ -205,8 +213,32 @@ const handleLogin = () => {
       </template>
     </UDashboardSidebar>
 
-    <NuxtPage />
+    <NuxtPage v-slot="{ Component }">
+      <Transition name="dash-page" mode="out-in">
+        <component :is="Component" :key="route.path" />
+      </Transition>
+    </NuxtPage>
   </UDashboardGroup>
 </template>
 
-<style scoped></style>
+<style scoped>
+/* 苹果式页面切换：浮入淡出（仅后台路由，配合 v-slot Transition） */
+.dash-page-enter-active {
+  transition:
+    opacity 0.3s cubic-bezier(0.32, 0.72, 0.24, 1),
+    transform 0.3s cubic-bezier(0.32, 0.72, 0.24, 1);
+}
+.dash-page-enter-from {
+  opacity: 0;
+  transform: translateY(10px) scale(0.992);
+}
+.dash-page-leave-active {
+  transition:
+    opacity 0.16s ease-out,
+    transform 0.16s ease-out;
+}
+.dash-page-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+</style>

@@ -511,7 +511,7 @@ const onShareSite = () => {
   min-width: 100%;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  scrollbar-color: var(--ui-border-accented, rgba(0, 0, 0, 0.2)) transparent;
 }
 
 .heatmap-container::-webkit-scrollbar {

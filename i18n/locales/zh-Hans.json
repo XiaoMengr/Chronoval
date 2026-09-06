@@ -220,7 +220,7 @@
       }
     },
     "share": "分享照片",
-      "close": "关闭",
+    "close": "关闭",
     "photoload": {
       "loadError": "图片加载失败",
       "loading": "正在加载图片",
@@ -423,7 +423,8 @@
         "rgb": "RGB"
       }
     },
-    "iso": "ISO"
+    "iso": "ISO",
+    "metadataButton": "照片元信息"
   },
   "plural": {
     "photo": "没有照片 | 一张照片 | {count} 张照片"
@@ -1141,7 +1142,9 @@
       "empty": {
         "waiting": "等待日志数据...",
         "noMatch": "没有匹配的日志条目"
-      }
+      },
+      "historyHint": "当前仅显示最近 {count} 条日志",
+      "loadHistory": "查看历史记录"
     },
     "access": {
       "pleaseLogin": "请登录以查看仪表盘",

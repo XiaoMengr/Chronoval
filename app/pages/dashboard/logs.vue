@@ -44,7 +44,10 @@ const MAX_LOG_LINES = 6000
 const TRIM_TO_LOG_LINES = 4000
 const BATCH_SIZE = 100 // 每批处理的日志条数
 const BATCH_DELAY = 8 // 每批处理间隔（毫秒）
-const INITIAL_LOG_LINES = 1000 // 仅回放最近 N 行历史，避免整文件逐行回放导致的缓慢
+const INITIAL_LOG_LINES = 15 // 默认仅回放最近 N 行，避免一进页面就解析整文件导致卡死
+const HISTORY_LOG_LINES = 2000 // 点击“查看历史记录”时最多回放的最近行数（贴合服务端上限）
+const historyFullyLoaded = ref(false) // 是否已展开历史记录
+const isLoadingHistory = ref(false) // 正在加载历史
 const ROW_HEIGHT = 28
 const VIRTUAL_OVERSCAN = 20
 const VIRTUAL_BOTTOM_PADDING = 8
@@ -245,11 +248,11 @@ const statusDotClass = computed(() => {
 const tRowClass = (log: LogEntry) => {
   const logType = log.type || getLevelType(log.level)
   const map: Record<string, string> = {
-    error: 'hover:bg-white/[0.05] text-red-400',
-    warn: 'hover:bg-white/[0.05] text-yellow-300',
-    info: 'hover:bg-white/[0.05] text-zinc-300',
-    success: 'hover:bg-white/[0.05] text-emerald-400',
-    debug: 'hover:bg-white/[0.05] text-zinc-500',
+    error: 'hover:bg-black/[0.04] dark:hover:bg-white/[0.05] text-red-600 dark:text-red-400',
+    warn: 'hover:bg-black/[0.04] dark:hover:bg-white/[0.05] text-amber-600 dark:text-yellow-300',
+    info: 'hover:bg-black/[0.04] dark:hover:bg-white/[0.05] text-zinc-800 dark:text-zinc-300',
+    success: 'hover:bg-black/[0.04] dark:hover:bg-white/[0.05] text-emerald-600 dark:text-emerald-400',
+    debug: 'hover:bg-black/[0.04] dark:hover:bg-white/[0.05] text-zinc-500',
   }
   return map[logType] || map.info
 }
@@ -258,11 +261,11 @@ const tRowClass = (log: LogEntry) => {
 const tLevelClass = (log: LogEntry) => {
   const logType = log.type || getLevelType(log.level)
   const map: Record<string, string> = {
-    error: 'bg-red-500/15 text-red-400',
-    warn: 'bg-yellow-500/15 text-yellow-300',
-    info: 'bg-sky-500/15 text-sky-400',
-    success: 'bg-emerald-500/15 text-emerald-400',
-    debug: 'bg-zinc-500/15 text-zinc-500',
+    error: 'bg-red-500/15 text-red-600 dark:text-red-400',
+    warn: 'bg-yellow-500/15 text-amber-600 dark:text-yellow-300',
+    info: 'bg-sky-500/15 text-sky-600 dark:text-sky-400',
+    success: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
+    debug: 'bg-zinc-500/15 text-zinc-600 dark:text-zinc-500',
   }
   return map[logType] || map.info
 }
@@ -344,8 +347,8 @@ const handleScroll = () => {
   })
 }
 
-// 连接日志流
-const connectLogStream = () => {
+// 连接日志流（initialLines 决定回放多少条历史，默认最近 15 条）
+const connectLogStream = (initialLines: number = INITIAL_LOG_LINES) => {
   if (eventSource) {
     eventSource.close()
   }
@@ -355,9 +358,10 @@ const connectLogStream = () => {
   batchQueue.value = []
   isInitialLoading.value = true
   loadingProgress.value = 5
+  historyFullyLoaded.value = false
 
   connectionState.value = 'connecting'
-  eventSource = new EventSource(`/api/system/logs?initial=${INITIAL_LOG_LINES}`)
+  eventSource = new EventSource(`/api/system/logs?initial=${initialLines}`)
 
   let initialLoadCompleteTimer: NodeJS.Timeout | null = null
   const MESSAGE_TIMEOUT = 2000 // 消息间隔超时时间（毫秒）
@@ -420,6 +424,19 @@ watch(
   { deep: true },
 )
 
+// 加载更多历史：以更大的回溯行数重新连接日志流
+const loadFullHistory = () => {
+  if (isLoadingHistory.value) return
+  isLoadingHistory.value = true
+  try {
+    // 重新连接会重置列表并以最近 HISTORY_LOG_LINES 行回放
+    connectLogStream(HISTORY_LOG_LINES)
+    historyFullyLoaded.value = true
+  } finally {
+    isLoadingHistory.value = false
+  }
+}
+
 onMounted(() => {
   if (logContainer.value) {
     containerHeight.value = logContainer.value.clientHeight
@@ -468,14 +485,14 @@ onUnmounted(() => {
             <span class="t-dot bg-[#febc2e]"></span>
             <span class="t-dot bg-[#28c840]"></span>
           </div>
-          <div class="flex-1 min-w-0 flex items-center justify-center gap-2 text-xs text-zinc-400 truncate">
+          <div class="flex-1 min-w-0 flex items-center justify-center gap-2 text-xs text-[var(--term-dim)] truncate">
             <UIcon
               name="tabler:terminal-2"
               class="size-3.5 shrink-0"
             />
             <span class="truncate font-medium">app.log</span>
-            <span class="text-zinc-600">–</span>
-            <span class="text-zinc-500 truncate">~/chronoval/data/logs</span>
+            <span class="text-[var(--term-dim)]">–</span>
+            <span class="text-[var(--term-dim)] truncate">~/chronoval/data/logs</span>
           </div>
           <div class="flex items-center gap-2 shrink-0">
             <UBadge
@@ -500,7 +517,7 @@ onUnmounted(() => {
 
         <!-- 工具栏 -->
         <div
-          class="terminal-toolbar flex flex-wrap items-center gap-2 px-3 py-2 border-t border-white/[0.06] shrink-0"
+          class="terminal-toolbar flex flex-wrap items-center gap-2 px-3 py-2 border-t border-[var(--term-border)] shrink-0"
         >
           <UInput
             v-model="searchQuery"
@@ -567,7 +584,7 @@ onUnmounted(() => {
                 <div
                   v-for="(log, index) in visibleLogs"
                   :key="`${virtualStart + index}-${log.raw}`"
-                  class="t-row flex items-center gap-3 px-3 border-b border-white/[0.03]"
+                  class="t-row flex items-center gap-3 px-3 border-b border-[var(--term-border)]"
                   :class="tRowClass(log)"
                   :style="{ height: `${ROW_HEIGHT}px` }"
                 >
@@ -601,26 +618,60 @@ onUnmounted(() => {
             </div>
             <div
               v-if="filteredLogs.length === 0"
-              class="absolute inset-0 flex items-center justify-center text-zinc-600"
+              class="absolute inset-0 flex items-center justify-center text-[var(--term-dim)]"
             >
               <div v-if="logs.length === 0">{{ $t('dashboard.logs.empty.waiting') }}</div>
               <div v-else>{{ $t('dashboard.logs.empty.noMatch') }}</div>
             </div>
           </div>
 
+          <!-- 仅显示最近 N 条时的历史提示条 -->
+          <transition
+            enter-active-class="transition-all duration-200"
+            enter-from-class="opacity-0 -translate-y-1"
+            enter-to-class="opacity-100 translate-y-0"
+            leave-active-class="transition-all duration-150"
+            leave-from-class="opacity-100"
+            leave-to-class="opacity-0"
+          >
+            <div
+              v-if="!historyFullyLoaded && !isInitialLoading"
+              class="absolute top-2 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 rounded-full border border-[var(--term-border)] bg-[var(--term-bg)]/85 px-3 py-1.5 shadow-md backdrop-blur-md"
+            >
+              <UIcon
+                name="tabler:history"
+                class="size-3.5 shrink-0 text-[var(--term-dim)]"
+              />
+              <span class="text-xs whitespace-nowrap text-[var(--term-text)]">
+                {{ $t('dashboard.logs.historyHint', { count: INITIAL_LOG_LINES }) }}
+              </span>
+              <UButton
+                size="xs"
+                color="neutral"
+                variant="soft"
+                icon="tabler:dots-vertical"
+                class="shrink-0"
+                :loading="isLoadingHistory"
+                @click="loadFullHistory"
+              >
+                {{ $t('dashboard.logs.loadHistory') }}
+              </UButton>
+            </div>
+          </transition>
+
           <!-- 初始加载遮罩 -->
           <div
             v-if="isInitialLoading"
-            class="absolute inset-0 bg-[#0c0c10]/90 backdrop-blur-sm flex flex-col items-center justify-center gap-3 z-10"
+            class="absolute inset-0 bg-[var(--term-bg)]/90 backdrop-blur-sm flex flex-col items-center justify-center gap-3 z-10"
           >
             <UIcon
               name="tabler:loader-2"
-              class="animate-spin w-7 h-7 text-emerald-400"
+              class="animate-spin w-7 h-7 text-emerald-500 dark:text-emerald-400"
             />
-            <div class="text-xs text-zinc-400">
+            <div class="text-xs text-[var(--term-dim)]">
               {{ $t('dashboard.logs.connectionStatus.loadingHistory') }}
             </div>
-            <div class="w-56 h-1 bg-white/10 rounded-full overflow-hidden">
+            <div class="w-56 h-1 bg-[var(--term-border)] rounded-full overflow-hidden">
               <div
                 class="h-full bg-emerald-400 rounded-full transition-all duration-300 ease-out"
                 :style="{ width: `${loadingProgress}%` }"
@@ -631,7 +682,7 @@ onUnmounted(() => {
 
         <!-- 状态栏 -->
         <div
-          class="terminal-statusbar flex items-center gap-3 px-3 h-7 text-[11px] text-zinc-500 border-t border-white/[0.06] shrink-0"
+          class="terminal-statusbar flex items-center gap-3 px-3 h-7 text-[11px] text-[var(--term-dim)] border-t border-[var(--term-border)] shrink-0"
         >
           <span class="t-dot size-1.5" :class="statusDotClass"></span>
           <span>{{ $t('dashboard.logs.connectionStatus.' + connectionState) }}</span>
@@ -649,26 +700,49 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+/* 终端外壳：以局部 CSS 变量承载主题，浅色/深色均可读（macOS 终端窗口观感） */
 .terminal-shell {
-  background: #0c0c10;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  --term-bg: #fbfbfc;
+  --term-bg2: #f2f3f5;
+  --term-text: #3f4650;
+  --term-dim: #7a828c;
+  --term-border: rgba(15, 23, 42, 0.1);
+  --term-thumb: #cbd4dc;
+  --term-thumb-hover: #b6c2cc;
+  --term-title-bg: #ffffff;
+  --term-hover-row: rgba(15, 23, 42, 0.04);
+  background: var(--term-bg);
+  border: 1px solid var(--term-border);
   border-radius: 10px;
-  color: #d4d4d4;
+  color: var(--term-text);
   overflow: hidden;
+  box-shadow: 0 12px 32px -12px rgba(15, 23, 42, 0.12);
+}
+
+.dark .terminal-shell {
+  --term-bg: #0c0c10;
+  --term-bg2: #141419;
+  --term-text: #d4d4d4;
+  --term-dim: #565f89;
+  --term-border: rgba(255, 255, 255, 0.08);
+  --term-thumb: #2a2a31;
+  --term-thumb-hover: #3a3a44;
+  --term-title-bg: #1b1b20;
+  --term-hover-row: rgba(255, 255, 255, 0.05);
   box-shadow: 0 12px 32px -12px rgba(0, 0, 0, 0.6);
 }
 
 .terminal-titlebar {
-  background: linear-gradient(#1b1b20, #141419);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--term-title-bg);
+  border-bottom: 1px solid var(--term-border);
 }
 
 .terminal-toolbar {
-  background: #141419;
+  background: var(--term-bg2);
 }
 
 .terminal-statusbar {
-  background: #141419;
+  background: var(--term-bg2);
 }
 
 .t-dot {
@@ -678,28 +752,28 @@ onUnmounted(() => {
 }
 
 .terminal-toolbar :deep(input) {
-  background-color: #0c0c10 !important;
-  color: #d4d4d4 !important;
-  border-color: rgba(255, 255, 255, 0.1) !important;
+  background-color: var(--term-bg) !important;
+  color: var(--term-text) !important;
+  border-color: var(--term-border) !important;
 }
 .terminal-toolbar :deep(input::placeholder) {
-  color: #565f89 !important;
+  color: var(--term-dim) !important;
 }
 .terminal-toolbar :deep(button) {
-  background-color: #141419;
+  background-color: var(--term-bg2);
 }
 .terminal-toolbar :deep([data-slot='trigger']) {
-  background-color: #0c0c10 !important;
-  color: #d4d4d4 !important;
-  border-color: rgba(255, 255, 255, 0.1) !important;
+  background-color: var(--term-bg) !important;
+  color: var(--term-text) !important;
+  border-color: var(--term-border) !important;
 }
 
 /* 行内配色 */
 .t-time {
-  color: #565f89;
+  color: var(--term-dim);
 }
 .t-tag {
-  color: #565f89;
+  color: var(--term-dim);
 }
 
 /* 滚动条 */
@@ -708,11 +782,11 @@ onUnmounted(() => {
   height: 8px;
 }
 .t-scroll::-webkit-scrollbar-thumb {
-  background: #2a2a31;
+  background: var(--term-thumb);
   border-radius: 4px;
 }
 .t-scroll::-webkit-scrollbar-thumb:hover {
-  background: #3a3a44;
+  background: var(--term-thumb-hover);
 }
 .t-scroll::-webkit-scrollbar-track {
   background: transparent;
