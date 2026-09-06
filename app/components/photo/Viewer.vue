@@ -35,6 +35,8 @@ const swiperRef = ref<SwiperType>()
 const loadingIndicatorRef = ref<LoadingIndicatorRef>()
 
 const isImageZoomed = ref(false)
+// 当前图片纹理（WebGL）构建成功标志：只有构建完成才显示表态按钮等附属控件
+const currentTextureReady = ref(false)
 const showExifPanel = ref(false)
 const showShareModal = ref(false)
 const currentBlobSrc = ref<string | null>(null)
@@ -135,6 +137,7 @@ watch(
       showExifPanel.value = false
       showShareModal.value = false
       currentBlobSrc.value = null
+      currentTextureReady.value = false
       zoomLevel.value = 0
       showZoomLevel.value = false
 
@@ -186,6 +189,7 @@ watch(
     // 切换图片时重置缩放状态
     isImageZoomed.value = false
     zoomLevel.value = 0
+    currentTextureReady.value = false
 
     // Reset reaction state when switching photos
     showReactionPicker.value = false
@@ -870,6 +874,11 @@ onUnmounted(() => {
                       :on-image-loaded="
                         index === currentIndex ? handleImageLoaded : undefined
                       "
+                      :on-texture-ready="
+                        index === currentIndex
+                          ? () => (currentTextureReady = true)
+                          : undefined
+                      "
                       :is-live-photo="photo.isLivePhoto === 1"
                       :live-photo-video-url="
                         photo.livePhotoVideoUrl || undefined
@@ -953,7 +962,11 @@ onUnmounted(() => {
                     <!-- 表态按钮 -->
                     <AnimatePresence>
                       <motion.div
-                        v-if="!isImageZoomed && !isLivePhotoPlaying"
+                        v-if="
+                          !isImageZoomed &&
+                          !isLivePhotoPlaying &&
+                          currentTextureReady
+                        "
                         :initial="{ opacity: 0, scale: 0.8, y: 20 }"
                         :animate="{ opacity: 1, scale: 1, y: 0 }"
                         :exit="{ opacity: 0, scale: 0.8, y: 20 }"

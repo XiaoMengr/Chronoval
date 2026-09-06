@@ -23,6 +23,8 @@ interface Props {
   onZoomChange?: (isZoomed: boolean, level?: number) => void
   onBlobSrcChange?: (blobSrc: string | null) => void
   onImageLoaded?: () => void
+  /** 纹理（WebGL）构建成功、首帧已绘制并浮现后回调，用于父级按「加载完成」门控附属控件显隐 */
+  onTextureReady?: () => void
   isLivePhoto?: boolean
   livePhotoVideoUrl?: string
   isHDR?: boolean
@@ -46,6 +48,7 @@ const props = withDefaults(defineProps<Props>(), {
   onZoomChange: undefined,
   onBlobSrcChange: undefined,
   onImageLoaded: undefined,
+  onTextureReady: undefined,
   isLivePhoto: false,
   livePhotoVideoUrl: '',
   isHDR: false,
@@ -221,6 +224,7 @@ const handleWebGLState = (
   handleWebGLStateChange(isLoading, state, quality)
   if (!isLoading) {
     webglReady.value = true
+    props.onTextureReady?.()
     startSharpen()
   }
 }
@@ -233,6 +237,7 @@ watch(
   (rendered) => {
     if (rendered && showWebGLViewer.value && !webglReady.value) {
       webglReady.value = true
+      props.onTextureReady?.()
       startSharpen()
     }
   },
