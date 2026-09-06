@@ -324,8 +324,10 @@ watch(currentPhotoIndex, (newIndex) => {
     <!-- 活跃筛选器全宽展示区（Afilmory 风格） -->
     <MasonryActiveFiltersHero v-if="hasActiveFilters" />
 
-    <!-- Afilmory 式浮动操作按钮 -->
-    <MasonryFloatingActionButton :show-floating="showFloatingActions" />
+    <!-- Afilmory 式浮动操作按钮（仅桌面端显示，移动端右下角隐藏） -->
+    <div class="hidden md:block">
+      <MasonryFloatingActionButton :show-floating="showFloatingActions" />
+    </div>
 
     <div
       :class="isMobile ? 'pb-1' : ''"

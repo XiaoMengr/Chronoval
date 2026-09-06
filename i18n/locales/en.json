@@ -1182,6 +1182,11 @@
           "light": "Light",
           "dark": "Dark",
           "system": "System"
+        },
+        "themeToggle": {
+          "label": "Show theme switch in header",
+          "description": "Show the light/dark toggle button in the gallery header",
+          "help": "When enabled, visitors can switch theme in the header; when disabled, visitors use the theme set above"
         }
       },
       "upload": {

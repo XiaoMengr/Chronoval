@@ -65,6 +65,15 @@ export const DEFAULT_SETTINGS = [
     isPublic: true,
   },
   {
+    namespace: 'app',
+    key: 'appearance.themeToggle',
+    type: 'boolean',
+    defaultValue: false,
+    label: 'settings.app.appearance.themeToggle.label',
+    description: 'settings.app.appearance.themeToggle.description',
+    isPublic: true,
+  },
+  {
     namespace: 'system',
     key: 'upload.maxFileSize',
     type: 'number',

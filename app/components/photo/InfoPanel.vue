@@ -38,19 +38,28 @@ const albums = computed(() => _albums.value || [])
 
 const isMobile = useMediaQuery('(max-width: 768px)')
 
-// ===== 移动端底部弹层（Afilmory 风格）：拖拽把手，上滑展开 / 下滑收起 / 再下滑关闭 =====
+// ===== 移动端底部弹层（抖音长按式信息卡）：
+// - 打开呈现在约 50% 高度（封面/上半部分）；整卡可上滑拉伸到「满卡高度」（约 92%，接近全屏）。
+// - 拉满卡之前内容区锁定（overflow-hidden），手势只用于拉伸/收矮卡片本身；
+//   只有上滑到「满卡高度」后，内容区才切换为内部滚动（overflow-y-auto），
+//   才能继续往下查看底部信息（含地理位置小地图）——即「先拉满卡、再滑内容」的两段式交互。
+// - 满卡高度下，下拉顶部把手区域仍可把卡片收矮/关闭；内容区则交给原生内部滚动。
 const PEEK_H = () => Math.round(window.innerHeight * 0.5)
-const MAX_H = () => Math.min(Math.round(window.innerHeight * 0.86), 680)
-const sheetHeight = ref(isMobile.value ? PEEK_H() : 0)
+const FULL_H = () => Math.round(window.innerHeight * 0.92)
+const sheetHeight = ref(0)
 const dragActive = ref(false)
 let dragStartY = 0
 let dragStartHeight = 0
+
+// 是否已把卡片拉伸到「满卡高度」（到达后才允许内容区内部滚动）
+const sheetAtMax = computed(
+  () => isMobile.value && sheetHeight.value >= FULL_H() - 2,
+)
 
 const sheetStyle = computed(() =>
   isMobile.value
     ? {
         height: `${sheetHeight.value}px`,
-        touchAction: 'none',
         transition: dragActive.value
           ? 'none'
           : 'height 0.32s cubic-bezier(0.32, 0.72, 0, 1)',
@@ -58,10 +67,20 @@ const sheetStyle = computed(() =>
     : {},
 )
 
-// 整张卡片任意位置可上下滑动（区别于仅中间白线可拖）：
-// 用窗口级 pointer 监听，上滑撑高、下滑收矮、滑到最低自动隐藏。
-function onSheetDown(e: PointerEvent) {
-  if (!isMobile.value) return
+// 面板被打开/关闭时复位到「半高」起始位置（关闭即隐藏、重开回到 50%）
+watch(
+  () => props.visible,
+  (v) => {
+    if (isMobile.value && v) sheetHeight.value = PEEK_H()
+  },
+)
+
+// 整张卡片在「未拉满」前任意位置可上滑撑高/下拉收矮（区别于仅中间白线可拖）：
+// 用窗口级 pointer 监听；拉满后内容区改由内部滚动接管（见内容区 touch-action）。
+// allowAtMax=true 表示手势来自顶部把手区域：即使已拉满，也可继续收矮/关闭卡片。
+function onSheetDown(e: PointerEvent, allowAtMax = false) {
+  if (!isMobile.value || !props.visible) return
+  if (sheetAtMax.value && !allowAtMax) return
   dragStartY = e.clientY
   dragStartHeight = sheetHeight.value
   dragActive.value = false
@@ -77,7 +96,7 @@ function onSheetMove(e: PointerEvent) {
   if (!dragActive.value && Math.abs(dy) < 8) return
   dragActive.value = true
   const next = dragStartHeight - dy
-  sheetHeight.value = Math.max(0, Math.min(MAX_H(), next))
+  sheetHeight.value = Math.max(0, Math.min(FULL_H(), next))
 }
 
 function onSheetUp() {
@@ -93,7 +112,7 @@ function onSheetUp() {
     props.onClose?.()
   } else {
     sheetHeight.value =
-      sheetHeight.value >= (PEEK + MAX_H()) / 2 ? MAX_H() : PEEK
+      sheetHeight.value >= (PEEK + FULL_H()) / 2 ? FULL_H() : PEEK
   }
 }
 
@@ -419,7 +438,6 @@ const onAlbumClick = (albumId: number) => {
       'absolute inset-y-0 right-0 z-30 w-80 border-l border-black/10 dark:border-white/10': !isMobile,
       'inspector-glass': true,
     }"
-    @pointerdown="onSheetDown"
   >
     <!-- afilmory 内发光层 -->
     <div class="pointer-events-none absolute inset-0 inspector-glass-glow" />
@@ -432,10 +450,13 @@ const onAlbumClick = (albumId: number) => {
       <div class="h-1.5 w-10 rounded-full" style="background: rgb(var(--cm-text-faint))" />
     </div>
 
-    <!-- afilmory Header：左标题 + 仅移动端的右上角关闭按钮 -->
+    <!-- afilmory Header：左标题 + 仅移动端的右上角关闭按钮。
+         移动端该区始终作为「把手」：满卡后下拉仍可收矮/关闭卡片 -->
     <div
       class="relative z-10 mb-3 flex shrink-0 items-center justify-between px-3.5"
       :class="isMobile ? 'mt-0.5' : 'mt-3.5'"
+      :style="isMobile ? { touchAction: 'none' } : {}"
+      @pointerdown="(e) => onSheetDown(e as PointerEvent, true)"
     >
       <h3 :class="isMobile ? 'text-base' : 'text-sm'" class="font-medium" style="color: rgb(var(--cm-text-muted))">
         {{ $t('exif.sections.info') }}
@@ -451,13 +472,20 @@ const onAlbumClick = (albumId: number) => {
       </button>
     </div>
 
-    <!-- 内容区域 -->
+    <!-- 内容区域：移动端「拉满前」锁定并由整卡手势拉伸；「拉满后」切换为内部滚动
+         可继续查看底部信息（含地理位置小地图）。桌面端始终常规滚动 -->
     <div
       class="min-h-0 flex-1 px-4 pb-4 content-fade"
       :class="[
         props.visible ? 'content-fade-in' : '',
-        isMobile ? 'overflow-hidden' : 'overflow-y-auto pb-8',
+        isMobile
+          ? sheetAtMax
+            ? 'overflow-y-auto sheet-scroll'
+            : 'overflow-hidden'
+          : 'overflow-y-auto pb-8',
       ]"
+      :style="isMobile ? { touchAction: sheetAtMax ? 'pan-y' : 'none' } : {}"
+      @pointerdown="(e) => onSheetDown(e as PointerEvent, false)"
     >
       <!-- 基本信息 -->
       <div>
@@ -481,56 +509,42 @@ const onAlbumClick = (albumId: number) => {
           <PhotoInfoRow v-if="exifData?.software" :label="$t('exif.software')" :value="exifData?.software" />
         </div>
 
-        <!-- 拍摄参数 chips -->
+        <!-- 拍摄参数 chips（afilmory 风格：磨砂玻璃 pill，更大字号、更宽松间距，
+             背景/文字随 --cm-* 令牌自动适配浅色/深色，浅色下同样带高斯模糊透明） -->
         <div
           v-if="shutterSpeed || iso || aperture || exposureBias || focalLength35mm"
         >
-          <h4 class="my-2 text-sm font-medium text-neutral-600 dark:text-neutral-400">
+          <h4 class="mb-3 mt-4 text-sm font-medium text-neutral-600 dark:text-neutral-400">
             {{ $t('exif.sections.shooting.parameters') }}
           </h4>
-          <div class="grid grid-cols-2 gap-2">
-            <div
-              v-if="focalLength35mm"
-              class="flex h-6 items-center gap-2 rounded-md border border-neutral-300 bg-white/70 px-2 dark:border-white/10 dark:bg-white/10"
-            >
-              <Icon name="tabler:focus" class="text-sm text-neutral-500 dark:text-neutral-400" />
-              <span class="text-xs">{{ focalLength35mm }}mm</span>
+          <div class="grid grid-cols-2 gap-2.5">
+            <div v-if="focalLength35mm" class="shooting-pill">
+              <Icon name="tabler:focus" class="shooting-pill-icon" />
+              <span>{{ focalLength35mm }}mm</span>
             </div>
-            <div
-              v-if="aperture"
-              class="flex h-6 items-center gap-2 rounded-md border border-neutral-300 bg-white/70 px-2 dark:border-white/10 dark:bg-white/10"
-            >
-              <Icon name="tabler:aperture" class="text-sm text-neutral-500 dark:text-neutral-400" />
-              <span class="text-xs">{{ aperture }}</span>
+            <div v-if="aperture" class="shooting-pill">
+              <Icon name="tabler:aperture" class="shooting-pill-icon" />
+              <span>{{ aperture }}</span>
             </div>
-            <div
-              v-if="shutterSpeed"
-              class="flex h-6 items-center gap-2 rounded-md border border-neutral-300 bg-white/70 px-2 dark:border-white/10 dark:bg-white/10"
-            >
-              <Icon name="tabler:clock" class="text-sm text-neutral-500 dark:text-neutral-400" />
-              <span class="text-xs">{{ shutterSpeed }}</span>
+            <div v-if="shutterSpeed" class="shooting-pill">
+              <Icon name="tabler:clock" class="shooting-pill-icon" />
+              <span>{{ shutterSpeed }}</span>
             </div>
-            <div
-              v-if="iso"
-              class="flex h-6 items-center gap-2 rounded-md border border-neutral-300 bg-white/70 px-2 dark:border-white/10 dark:bg-white/10"
-            >
-              <Icon name="tabler:sun-electricity" class="text-sm text-neutral-500 dark:text-neutral-400" />
-              <span class="text-xs">ISO{{ iso }}</span>
+            <div v-if="iso" class="shooting-pill">
+              <Icon name="tabler:sun-electricity" class="shooting-pill-icon" />
+              <span>ISO{{ iso }}</span>
             </div>
-            <div
-              v-if="exposureBias"
-              class="flex h-6 items-center gap-2 rounded-md border border-neutral-300 bg-white/70 px-2 dark:border-white/10 dark:bg-white/10"
-            >
-              <Icon name="tabler:exposure" class="text-sm text-neutral-500 dark:text-neutral-400" />
-              <span class="text-xs">{{ exposureBias }}</span>
+            <div v-if="exposureBias" class="shooting-pill">
+              <Icon name="tabler:exposure" class="shooting-pill-icon" />
+              <span>{{ exposureBias }}</span>
             </div>
           </div>
         </div>
 
-        <!-- 标签 -->
-        <div v-if="currentPhoto.tags && currentPhoto.tags.length > 0" class="mt-3 mb-3">
+        <!-- 标签（每行 2 个，与更下方影像分析保持间距） -->
+        <div v-if="currentPhoto.tags && currentPhoto.tags.length > 0" class="mt-2 mb-3">
           <h4 class="mb-2 text-sm font-medium text-neutral-600 dark:text-neutral-400">{{ $t('exif.sections.tags') }}</h4>
-          <div class="flex flex-wrap gap-1.5">
+          <div class="grid grid-cols-2 gap-2">
             <button
               v-for="tag in currentPhoto.tags"
               :key="tag"
@@ -546,9 +560,9 @@ const onAlbumClick = (albumId: number) => {
 
       <!-- 影调分析 -->
       <div v-if="toneAnalysis">
-        <h4 class="mb-2 text-sm font-medium text-neutral-600 dark:text-neutral-400">{{ $t('exif.tone.analysis') }}</h4>
+        <h4 class="mb-2 mt-5 text-sm font-medium text-neutral-600 dark:text-neutral-400">{{ $t('exif.tone.analysis') }}</h4>
         <PhotoInfoRow :label="$t('exif.tone.toneType')" :value="toneTypeText" />
-        <div class="mt-1 mb-3 grid grid-cols-2 gap-x-2 gap-y-1 text-sm">
+        <div class="mt-1 mb-3 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
           <PhotoInfoRow :label="$t('exif.tone.brightness')" :value="`${toneAnalysis.brightness}%`" />
           <PhotoInfoRow :label="$t('exif.tone.contrast')" :value="`${toneAnalysis.contrast}%`" />
           <PhotoInfoRow :label="$t('exif.tone.shadowRatio')" :value="`${Math.round(toneAnalysis.shadowRatio * 100)}%`" />
@@ -706,6 +720,36 @@ const onAlbumClick = (albumId: number) => {
 .sheet-close:hover {
   background-color: color-mix(in srgb, rgb(var(--cm-accent)) 12%, transparent);
   color: rgb(var(--cm-text));
+}
+
+/* 拍摄参数 pill：afilmory 风格磨砂玻璃。
+   背景用 --cm-chip（含 alpha、随 .dark 翻转）、描边 --cm-border，配合 backdrop-blur 高斯模糊透明，
+   浅色/深色下都呈现一致的玻璃质感；较原先更大、间距更宽松 */
+.shooting-pill {
+  display: flex;
+  min-height: 2.25rem;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 0.625rem;
+  padding: 0 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: rgb(var(--cm-text));
+  background-color: rgb(var(--cm-chip));
+  border: 1px solid rgb(var(--cm-border));
+  backdrop-filter: blur(12px) saturate(1.25);
+  -webkit-backdrop-filter: blur(12px) saturate(1.25);
+}
+.shooting-pill-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+  color: rgb(var(--cm-text-muted));
+}
+
+/* 移动端满卡后的内部滚动区：阻止触点到达边缘时把整页一起带跑（overscroll 回流） */
+.sheet-scroll {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .overflow-y-auto::-webkit-scrollbar {

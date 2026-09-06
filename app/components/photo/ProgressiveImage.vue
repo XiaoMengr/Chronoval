@@ -81,42 +81,6 @@ const currentSrc = ref<string | null>()
 // 收到引擎「加载完成（首帧已绘制）」前保持图层隐藏，就绪后再淡入，避免进入查看器时黑屏闪烁。
 const webglReady = ref(false)
 
-// 「构建纹理」细节指示：从 0.3 过渡到 0.9（近清晰），随后淡出，不显示终值 x1.0，
-// 贴合图片左上角自适应显示，让切换照片时的模糊→清晰过渡有实时数值反馈
-const detailLevel = ref(0.3)
-const showDetail = ref(false)
-let sharpenTimer: ReturnType<typeof setInterval> | null = null
-let sharpening = false
-const startSharpen = () => {
-  if (sharpenTimer) clearInterval(sharpenTimer)
-  detailLevel.value = 0.3
-  showDetail.value = true
-  if (sharpening) return
-  sharpening = true
-  let d = 0.3
-  // 从模糊到清晰：数值到 0.9 即视为接近清晰，随后淡出，不显示终值 x1.0
-  const MAX = 0.9
-  sharpenTimer = setInterval(() => {
-    d = Math.min(MAX, d + 0.06)
-    detailLevel.value = Math.round(d * 10) / 10
-    if (d >= MAX) {
-      if (sharpenTimer) clearInterval(sharpenTimer)
-      sharpenTimer = null
-      sharpening = false
-      setTimeout(() => {
-        showDetail.value = false
-      }, 200)
-    }
-  }, 34)
-}
-const stopSharpenTimer = () => {
-  if (sharpenTimer) {
-    clearInterval(sharpenTimer)
-    sharpenTimer = null
-  }
-  sharpening = false
-}
-
 const { loggedIn } = useUserSession()
 const webglImageViewerDebug = useSettingRef('system:webglImageViewerDebug')
 const isDev = computed(() => import.meta.env.DEV)
@@ -225,7 +189,6 @@ const handleWebGLState = (
   if (!isLoading) {
     webglReady.value = true
     props.onTextureReady?.()
-    startSharpen()
   }
 }
 
@@ -238,7 +201,6 @@ watch(
     if (rendered && showWebGLViewer.value && !webglReady.value) {
       webglReady.value = true
       props.onTextureReady?.()
-      startSharpen()
     }
   },
 )
@@ -255,7 +217,6 @@ const handleZoomChange = (originalScale: number, relativeScale: number) => {
 onUnmounted(() => {
   loaderManagerRef.value?.cleanup()
   loaderManagerRef.value = null
-  stopSharpenTimer()
 })
 </script>
 
@@ -276,21 +237,6 @@ onUnmounted(() => {
       thumbhash-class="opacity-50"
       image-contain
     />
-
-    <!-- 「构建纹理」细节指示：模糊→清晰期间在舞台左下角显示 0.3→0.9（纯文本读数，无胶囊背景，
-          贴合图片，仅加轻微投影保证任何背景下都可读），随后淡出（无终值 x1.0） -->
-    <Transition name="detail-pop">
-      <div
-        v-if="showDetail && !isLivePhoto"
-        class="detail-indicator pointer-events-none absolute z-20"
-      >
-        <span
-          class="font-mono text-sm tabular-nums text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.85)]"
-        >
-          x{{ detailLevel.toFixed(1) }}
-        </span>
-      </div>
-    </Transition>
 
     <!-- WebGL 图片查看器 (首帧就绪后淡入且从模糊到清晰，避免黑屏) -->
     <div
@@ -366,33 +312,6 @@ onUnmounted(() => {
   }
   to {
     filter: blur(0px);
-  }
-}
-
-/* 细节指示器淡入/淡出 */
-.detail-pop-enter-active,
-.detail-pop-leave-active {
-  transition:
-    opacity 0.24s ease,
-    transform 0.24s ease;
-}
-
-.detail-pop-enter-from,
-.detail-pop-leave-to {
-  opacity: 0;
-  transform: scale(0.94);
-}
-
-/* 指示器定位：首页画廊 / 相簿 / 扫描查看器共用同一 ProgressiveImage，样式一致。
-   固定在舞台左下角内侧（与首页一致）；移动端自适应抬高，避开底部进度条/控件区与安全区 */
-.detail-indicator {
-  left: 16px;
-  bottom: 24px;
-}
-
-@media (max-width: 767px) {
-  .detail-indicator {
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 72px);
   }
 }
 </style>

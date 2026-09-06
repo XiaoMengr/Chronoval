@@ -926,7 +926,7 @@ onUnmounted(() => {
                         class="absolute bottom-4 left-4 z-20 bg-black/40 backdrop-blur-3xl rounded-xl border border-white/10 px-4 py-2 shadow-2xl"
                       >
                         <span class="text-white font-medium"
-                          >{{ zoomLevel }}x</span
+                          >{{ Number(zoomLevel).toFixed(1) }}x</span
                         >
                       </motion.div>
                     </AnimatePresence>
@@ -1147,15 +1147,19 @@ onUnmounted(() => {
                 </div>
               </div>
 
-            <!-- 缩略图导航：放大图片时自动隐藏（复用组件自带的上滑/下滑动画） -->
-            <AnimatePresence>
-              <GalleryThumbnail
-                v-if="!isImageZoomed"
-                :current-index="currentIndex"
-                :photos="photos"
-                @index-change="emit('indexChange', $event)"
-              />
-            </AnimatePresence>
+            <!-- 缩略图导航：绝对定位悬浮于底部，放大时隐藏且不改变图片舞台布局（消除“被拉一下”的跳变）。
+             保留组件自带的上滑/下滑动画；外层 pointer-events-none，仅缩略图本体可点击 -->
+            <div class="pointer-events-none absolute inset-x-0 bottom-0 z-20">
+              <AnimatePresence>
+                <GalleryThumbnail
+                  v-if="!isImageZoomed"
+                  class="pointer-events-auto"
+                  :current-index="currentIndex"
+                  :photos="photos"
+                  @index-change="emit('indexChange', $event)"
+                />
+              </AnimatePresence>
+            </div>
           </div>
         </div>
 

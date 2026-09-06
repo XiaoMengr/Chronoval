@@ -51,6 +51,10 @@ export const APP_SETTINGS_UI: Record<string, FieldUIConfig> = {
     ],
     help: 'settings.app.appearance.theme.help',
   },
+  'appearance.themeToggle': {
+    type: 'toggle',
+    help: 'settings.app.appearance.themeToggle.help',
+  },
 }
 
 export const MAP_SETTINGS_UI: Record<string, FieldUIConfig> = {

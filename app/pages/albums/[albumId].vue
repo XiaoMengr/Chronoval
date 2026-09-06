@@ -353,10 +353,10 @@ onBeforeMount(() => {
       </div>
     </template>
 
-    <!-- Back to Top Button -->
+    <!-- Back to Top Button（仅桌面端显示，移动端右下角隐藏） -->
     <motion.div
       v-if="showFloatingActions"
-      class="fixed bottom-6 right-6 z-50"
+      class="hidden md:block fixed bottom-6 right-6 z-50"
       :initial="{ opacity: 0, scale: 0.8 }"
       :animate="{ opacity: 1, scale: 1 }"
       :exit="{ opacity: 0, scale: 0.8 }"

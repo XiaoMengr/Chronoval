@@ -12,6 +12,12 @@ const isDark = computed({
   },
 })
 
+// 是否在顶栏显示主题切换按钮：由后台设置 app:appearance.themeToggle 控制，
+// 默认关闭（取消画廊首页顶栏的浅色/深色切换）。开启后才显示给访客。
+const themeToggleEnabled = computed(
+  () => !!useSettingRef('app:appearance.themeToggle').value,
+)
+
 const handleOpenLogin = () => {
   router.push('/signin')
 }
@@ -41,46 +47,41 @@ const avatarUrl = computed(
 const siteTitle = computed(() => (getSetting('app:title') as string) || '')
 const photoCount = computed(() => photos.value?.length ?? 0)
 
-// LinearBlur 渐变模糊遮罩：合并为 2 层 backdrop-filter（兼顾渐变观感与帧开销）。
-// 固定吸顶在滚动时会对下方经过的整段照片墙逐帧重采样模糊，层数越少开销越低，
-// 故在保留"顶部强模糊→底部自然淡出"的前提下收敛为 2 层并降低最大半径。
-const blurLayers = [
-  { blur: '24px', from: 0, to: 52 },
-  { blur: '8px', from: 52, to: 100 },
-] as const
+// 顶栏玻璃：改为「单一高斯模糊层」，避免原先「tint 层 + 两层 blur」叠加造成的
+// 「底层又一层透明层 / 分层 / 悬浮灰面板」观感。
+// - 浅色：柔和浅灰 frosted，与浅色画廊融为一体；
+// - 深色：沉浸暗玻璃。
+// mask 让玻璃在顶部完整、向下自然淡出，避免出现硬底边，滚动时照片顺畅从玻璃后穿过。
+const glassStyle = computed(() =>
+  isDark.value
+    ? {
+        background: 'rgba(18, 18, 24, 0.45)',
+        backdropFilter: 'blur(26px) saturate(1.3)',
+        WebkitBackdropFilter: 'blur(26px) saturate(1.3)',
+        mask: 'linear-gradient(to bottom, black 0%, black 60%, transparent 100%)',
+        WebkitMask:
+          'linear-gradient(to bottom, black 0%, black 60%, transparent 100%)',
+      }
+    : {
+        background: 'rgba(248, 248, 250, 0.38)',
+        backdropFilter: 'blur(22px) saturate(1.5)',
+        WebkitBackdropFilter: 'blur(22px) saturate(1.5)',
+        mask: 'linear-gradient(to bottom, black 0%, black 60%, transparent 100%)',
+        WebkitMask:
+          'linear-gradient(to bottom, black 0%, black 60%, transparent 100%)',
+      },
+)
 </script>
 
 <template>
   <header class="fixed top-0 right-0 left-0 z-[100]">
-    <!-- LinearBlur 渐变模糊遮罩（Afilmory 1:1：h-15，纯模糊 + 页面底色 tint，顶部向底部淡出） -->
+    <!-- 顶栏玻璃：单一高斯模糊层（跟随主题：浅色=柔和浅灰 frosted、深色=沉浸暗玻璃；
+         单层避免多层叠加造成"底层又一层透明层/分层"观感；mask 顶部完整、向下自然淡出 -->
     <div
       class="pointer-events-none absolute inset-x-0 top-0 z-[-1] h-15"
       aria-hidden="true"
     >
-      <div class="absolute inset-0">
-        <!-- 玻璃底色 tint（跟随主题：浅色=浅色毛玻璃、深色=沉浸暗玻璃；对应 Afilmory
-             LinearBlur tint，顶部向底部淡出，不落地为白条/黑条） -->
-        <div
-          class="absolute inset-0 opacity-40"
-          :style="{
-            background: 'var(--glass-bg)',
-            mask: 'linear-gradient(to bottom, black 0%, transparent 100%)',
-            WebkitMask: 'linear-gradient(to bottom, black 0%, transparent 100%)',
-          }"
-        />
-
-        <div
-          v-for="(layer, index) in blurLayers"
-          :key="index"
-          class="absolute inset-0"
-          :style="{
-            mask: `linear-gradient(to bottom, rgba(0,0,0,0.25) ${layer.from}%, rgba(0,0,0,0.25) ${layer.to}%, rgba(0,0,0,0) ${layer.to}%)`,
-            WebkitMask: `linear-gradient(to bottom, rgba(0,0,0,0.25) ${layer.from}%, rgba(0,0,0,0.25) ${layer.to}%, rgba(0,0,0,0) ${layer.to}%)`,
-            backdropFilter: `blur(${layer.blur})`,
-            WebkitBackdropFilter: `blur(${layer.blur})`,
-          }"
-        />
-      </div>
+      <div class="absolute inset-0" :style="glassStyle" />
     </div>
 
     <!-- 内容条：h-11，仅有 LinearBlur 模糊，无背景色块、无分割线（Afilmory 1:1） -->
@@ -104,8 +105,8 @@ const blurLayers = [
       <AuthState>
         <template #default="{ loggedIn, clear }">
           <div class="flex items-center gap-1.5 lg:gap-2">
-            <!-- 主操作胶囊（跟随主题） -->
-            <div class="bg-(--glass-chip) flex items-center gap-1 rounded-lg">
+            <!-- 主操作按钮组：Afilmory 圆形幽灵按钮，无胶囊底色（浅色下不出现“透明卡片”） -->
+            <div class="flex items-center gap-1">
               <UTooltip :text="$t('ui.action.globe.tooltip')">
                 <UButton
                   variant="ghost"
@@ -200,9 +201,10 @@ const blurLayers = [
                   </UCard>
                 </template>
               </UPopover>
-              <!-- 主题切换：isDark 依赖 colorMode，SSR 首次渲染与客户端水合结果可能不同，
+              <!-- 主题切换：默认不显示，后台「顶栏显示主题切换按钮」开启后才出现。
+                   isDark 依赖 colorMode，SSR 首次渲染与客户端水合结果可能不同，
                    用 ClientOnly 包裹以避免 VNode 水合 class 不匹配告警 -->
-              <ClientOnly>
+              <ClientOnly v-if="themeToggleEnabled">
                 <UTooltip :text="$t('ui.action.theme.tooltip')">
                   <UButton
                     variant="ghost"
@@ -216,8 +218,8 @@ const blurLayers = [
               </ClientOnly>
             </div>
 
-            <!-- 认证胶囊（跟随主题） -->
-            <div class="bg-(--glass-chip) flex items-center gap-1 rounded-lg">
+            <!-- 认证按钮组：Afilmory 圆形幽灵按钮，无胶囊底色（浅色下不出现“透明卡片”） -->
+            <div class="flex items-center gap-1">
               <UTooltip
                 v-if="!loggedIn"
                 :text="$t('auth.form.signin.title')"
