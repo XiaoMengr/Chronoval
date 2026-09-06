@@ -1134,12 +1134,15 @@ onUnmounted(() => {
                 </div>
               </div>
 
-            <!-- 缩略图导航 -->
-            <GalleryThumbnail
-              :current-index="currentIndex"
-              :photos="photos"
-              @index-change="emit('indexChange', $event)"
-            />
+            <!-- 缩略图导航：放大图片时自动隐藏（复用组件自带的上滑/下滑动画） -->
+            <AnimatePresence>
+              <GalleryThumbnail
+                v-if="!isImageZoomed"
+                :current-index="currentIndex"
+                :photos="photos"
+                @index-change="emit('indexChange', $event)"
+              />
+            </AnimatePresence>
           </div>
         </div>
 
