@@ -624,7 +624,6 @@ onUnmounted(() => {
 const entryDone = ref(false)
 let entryTimer: ReturnType<typeof setTimeout> | null = null
 const chromeVisible = computed(() => props.isOpen && entryDone.value)
-const showEntryCatchup = computed(() => props.isOpen && !entryDone.value)
 watch(
   () => props.isOpen,
   (open) => {
@@ -776,27 +775,8 @@ onUnmounted(() => {
                   paddingRight: stagePadRight,
                 }"
               >
-                <!-- 入场 catchup 层：入场动画期间用 thumbhash+缩略图兜底，避免 WebGL 首帧/黑屏闪断 -->
-                <div
-                  v-if="showEntryCatchup"
-                  class="pointer-events-none absolute inset-0 z-10 flex items-center justify-center transition-opacity duration-150"
-                  data-photo-viewer-entry-catchup="true"
-                >
-                  <div class="relative h-full w-full">
-                    <ThumbHash
-                      v-if="currentPhoto?.thumbnailHash"
-                      :thumbhash="currentPhoto.thumbnailHash"
-                      class="pointer-events-none absolute inset-0 h-full w-full"
-                    />
-                    <img
-                      v-if="currentPhoto?.thumbnailUrl"
-                      :src="currentPhoto.thumbnailUrl"
-                      alt=""
-                      class="absolute inset-0 h-full w-full object-contain"
-                      draggable="false"
-                    />
-                  </div>
-                </div>
+                <!-- 主图区域：图像加载仅保留 ProgressiveImage 自身「构建纹理」从模糊到清晰，
+                     不再叠加外层缩略图兜底层，避免双重模糊 -->
 
               <!-- Swiper 容器 -->
               <Swiper
@@ -863,6 +843,7 @@ onUnmounted(() => {
                       :src="photo.originalUrl!"
                       :thumbnail-src="photo.thumbnailUrl!"
                       :thumbhash="photo.thumbnailHash"
+                      :show-thumb-placeholder="isMobile"
                       :alt="photo.title || ''"
                       :width="
                         index === currentIndex

@@ -7,6 +7,9 @@ interface Props {
   src: string
   thumbnailSrc?: string
   thumbhash?: string | null
+  /** 是否渲染"缩略图占位"（其自带的 blur(8px)→清晰 会与 WebGL 构建纹理的 blur→清晰叠加成两次模糊）。
+   * 桌面端关闭该占位，只保留 WebGL 构建纹理这一次从模糊到清晰；移动端保留占位作加载兜底 */
+  showThumbPlaceholder?: boolean
   alt?: string
   width?: number
   height?: number
@@ -33,6 +36,7 @@ const props = withDefaults(defineProps<Props>(), {
   isCurrentImage: true,
   thumbnailSrc: '',
   thumbhash: null,
+  showThumbPlaceholder: true,
   alt: 'Image',
   width: undefined,
   height: undefined,
@@ -243,13 +247,6 @@ const handleZoomChange = (originalScale: number, relativeScale: number) => {
 }
 
 // 组件卸载时清理
-
-// 指示器定位：与首页画廊「构建纹理」加载指示一致，固定在舞台左下角内侧
-const indicatorStyle = computed(() => ({
-  left: '16px',
-  bottom: '24px',
-}))
-
 onUnmounted(() => {
   loaderManagerRef.value?.cleanup()
   loaderManagerRef.value = null
@@ -262,9 +259,10 @@ onUnmounted(() => {
     ref="containerRef"
     class="relative w-full h-full flex items-center justify-center"
   >
-    <!-- 缩略图 (占位, 高清图渲染后淡出) -->
+    <!-- 缩略图占位 (高清图渲染后淡出)。桌面端经 showThumbPlaceholder=false 关闭，
+          避免其 blur(8px)→清晰 与 WebGL 构建纹理 blur→清晰 叠加成两次模糊 -->
     <ThumbImage
-      v-if="props.thumbnailSrc"
+      v-if="props.showThumbPlaceholder && props.thumbnailSrc"
       :src="thumbnailSrc"
       :thumbhash="thumbhash"
       :alt="alt || $t('ui.photo.altFallback')"
@@ -278,8 +276,7 @@ onUnmounted(() => {
     <Transition name="detail-pop">
       <div
         v-if="showDetail && !isLivePhoto"
-        class="pointer-events-none absolute z-20"
-        :style="indicatorStyle"
+        class="detail-indicator pointer-events-none absolute z-20"
       >
         <span
           class="rounded-full bg-black/45 px-3.5 py-1.5 font-mono text-sm tabular-nums text-white/95 shadow-lg backdrop-blur-md"
@@ -378,5 +375,18 @@ onUnmounted(() => {
 .detail-pop-leave-to {
   opacity: 0;
   transform: scale(0.94);
+}
+
+/* 指示器定位：首页画廊 / 相簿 / 扫描查看器共用同一 ProgressiveImage，样式一致。
+   固定在舞台左下角内侧（与首页一致）；移动端自适应抬高，避开底部进度条/控件区与安全区 */
+.detail-indicator {
+  left: 16px;
+  bottom: 24px;
+}
+
+@media (max-width: 767px) {
+  .detail-indicator {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 72px);
+  }
 }
 </style>

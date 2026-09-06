@@ -200,16 +200,20 @@ const blurLayers = [
                   </UCard>
                 </template>
               </UPopover>
-              <UTooltip :text="$t('ui.action.theme.tooltip')">
-                <UButton
-                  variant="ghost"
-                  color="neutral"
-                  class="cursor-pointer rounded bg-transparent text-(--glass-muted) hover:bg-(--glass-hover) hover:text-(--glass-text)"
-                  :icon="isDark ? 'tabler:sun' : 'tabler:moon'"
-                  size="sm"
-                  @click="isDark = !isDark"
-                />
-              </UTooltip>
+              <!-- 主题切换：isDark 依赖 colorMode，SSR 首次渲染与客户端水合结果可能不同，
+                   用 ClientOnly 包裹以避免 VNode 水合 class 不匹配告警 -->
+              <ClientOnly>
+                <UTooltip :text="$t('ui.action.theme.tooltip')">
+                  <UButton
+                    variant="ghost"
+                    color="neutral"
+                    class="cursor-pointer rounded bg-transparent text-(--glass-muted) hover:bg-(--glass-hover) hover:text-(--glass-text)"
+                    :icon="isDark ? 'tabler:sun' : 'tabler:moon'"
+                    size="sm"
+                    @click="isDark = !isDark"
+                  />
+                </UTooltip>
+              </ClientOnly>
             </div>
 
             <!-- 认证胶囊（跟随主题） -->
