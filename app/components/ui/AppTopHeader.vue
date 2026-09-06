@@ -65,12 +65,12 @@ const glassStyle = computed(() =>
       }
     : {
         background:
-          'linear-gradient(to bottom, rgba(255,255,255,0.66) 0%, rgba(255,255,255,0.42) 40%, rgba(255,255,255,0.04) 100%)',
-        backdropFilter: 'blur(30px) saturate(1.25)',
-        WebkitBackdropFilter: 'blur(30px) saturate(1.25)',
-        mask: 'linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 60%, transparent 100%)',
+          'linear-gradient(to bottom, rgba(255,255,255,0.82) 0%, rgba(255,255,255,0.6) 55%, rgba(255,255,255,0.16) 100%)',
+        backdropFilter: 'blur(26px) saturate(1.3)',
+        WebkitBackdropFilter: 'blur(26px) saturate(1.3)',
+        mask: 'linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.55) 60%, transparent 100%)',
         WebkitMask:
-          'linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 60%, transparent 100%)',
+          'linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.55) 60%, transparent 100%)',
       },
 )
 </script>

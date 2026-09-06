@@ -515,6 +515,9 @@
         "photos": "張相片",
         "livePhotos": "張實況相片"
       },
+      "pagination": {
+        "showing": "顯示第 {start}–{end} 條，共 {total} 條"
+      },
       "table": {
         "columns": {
           "thumbnail": {

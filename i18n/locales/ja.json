@@ -515,6 +515,9 @@
         "photos": "枚の写真",
         "livePhotos": "枚のライブフォト"
       },
+      "pagination": {
+        "showing": "{start}–{end} / 全{total}件を表示"
+      },
       "table": {
         "columns": {
           "thumbnail": {

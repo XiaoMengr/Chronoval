@@ -1,29 +1,11 @@
 <script lang="ts" setup>
-import type { FormSubmitEvent, TableColumn } from '@nuxt/ui'
+import type { FormSubmitEvent } from '@nuxt/ui'
 import type { Photo, PipelineQueueItem } from '~~/server/utils/db'
-import { h, resolveComponent } from 'vue'
+import { resolveComponent } from 'vue'
 import { Icon, UBadge } from '#components'
 import ThumbImage from '~/components/ui/ThumbImage.vue'
 
-const UCheckbox = resolveComponent('UCheckbox')
 const Rating = resolveComponent('Rating')
-
-// 列名显示映射
-const columnNameMap = computed<Record<string, string>>(() => ({
-  thumbnailUrl: $t('dashboard.photos.table.columns.thumbnail.title'),
-  id: $t('dashboard.photos.table.columns.id'),
-  title: $t('dashboard.photos.table.columns.title'),
-  tags: $t('dashboard.photos.table.columns.tags'),
-  rating: $t('dashboard.photos.table.columns.rating'),
-  isLivePhoto: $t('dashboard.photos.table.columns.isLivePhoto'),
-  location: $t('dashboard.photos.table.columns.location'),
-  dateTaken: $t('dashboard.photos.table.columns.dateTaken'),
-  lastModified: $t('dashboard.photos.table.columns.lastModified'),
-  fileSize: $t('dashboard.photos.table.columns.fileSize'),
-  colorSpace: $t('dashboard.photos.table.columns.colorSpace'),
-  reactions: $t('dashboard.photos.table.columns.reactions'),
-  actions: $t('dashboard.photos.table.columns.actions'),
-}))
 
 definePageMeta({
   layout: 'dashboard',
@@ -598,35 +580,26 @@ watch(isEditModalOpen, (open) => {
   }
 })
 
-// 表格多选状态
-const rowSelection = ref({})
-const table: any = useTemplateRef('table')
-
-// 列可见性状态
-const columnVisibility = ref({
-  thumbnailUrl: true,
-  id: true,
-  actions: true,
-  title: true,
-  tags: true,
-  rating: true,
-  isLivePhoto: true,
-  location: true,
-  dateTaken: true,
-  lastModified: true,
-  fileSize: true,
-  colorSpace: true,
-  reactions: true,
-})
-
-const selectedRowsCount = computed((): number => {
-  return table.value?.tableApi?.getFilteredSelectedRowModel().rows.length || 0
-})
-
-const totalRowsCount = computed((): number => {
-  return table.value?.tableApi?.getFilteredRowModel().rows.length || 0
-})
-
+// 瀑布流多选状态：用独立 Set 管理选中照片（替代原表格 rowSelection + tableApi）
+const selectedPhotoIds = ref<Set<string>>(new Set())
+const hasSelection = computed(() => selectedPhotoIds.value.size > 0)
+const selectedRowsCount = computed(() => selectedPhotoIds.value.size)
+const isPhotoSelected = (id: string) => selectedPhotoIds.value.has(id)
+const togglePhotoSelection = (photo: Photo) => {
+  const next = new Set(selectedPhotoIds.value)
+  if (next.has(photo.id)) next.delete(photo.id)
+  else next.add(photo.id)
+  selectedPhotoIds.value = next
+}
+const clearSelection = () => {
+  selectedPhotoIds.value = new Set()
+}
+// 选中全部可见照片
+const selectAllVisiblePhotos = () => {
+  const ids = new Set(selectedPhotoIds.value)
+  filteredData.value.forEach((p) => ids.add(p.id))
+  selectedPhotoIds.value = ids
+}
 const livePhotoStats = computed(() => {
   if (!filteredPhotos.value) return { total: 0, livePhotos: 0, staticPhotos: 0 }
 
@@ -644,14 +617,89 @@ const photoFilter = ref<'all' | 'livephoto' | 'static'>('all')
 const filteredData = computed(() => {
   if (!filteredPhotos.value) return []
 
+  let list: Photo[]
   switch (photoFilter.value) {
     case 'livephoto':
-      return filteredPhotos.value.filter((photo: Photo) => photo.isLivePhoto)
+      list = filteredPhotos.value.filter((photo: Photo) => photo.isLivePhoto)
+      break
     case 'static':
-      return filteredPhotos.value.filter((photo: Photo) => !photo.isLivePhoto)
+      list = filteredPhotos.value.filter((photo: Photo) => !photo.isLivePhoto)
+      break
     default:
-      return filteredPhotos.value
+      list = filteredPhotos.value
   }
+
+  // 管理视图排序：「最新上传在前」。优先按 createdAt（入库/上传时间）降序，
+  // 其次按拍摄时间 dateTaken 降序，保证新上传的照片排在最前面。
+  return [...list].sort((a, b) => {
+    const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0
+    const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0
+    if (ta !== tb) return tb - ta
+    return (
+      new Date(b.dateTaken || 0).getTime() - new Date(a.dateTaken || 0).getTime()
+    )
+  })
+})
+
+const selectedPhotosList = computed(() =>
+  filteredData.value.filter((p) => selectedPhotoIds.value.has(p.id)),
+)
+const totalRowsCount = computed(() => filteredData.value.length)
+
+// 管理瀑布流每张砖的固有比例：优先用已入库的 CSS 长宽比（width/height），
+// 其次按宽高推算，缺失时兜底 3:4，供 MasonryWall 正确分摊列高、避免排版跳动。
+const aspectStyle = (p: Photo) => {
+  let ratio = p.aspectRatio
+  if (!ratio && p.width && p.height) ratio = p.width / p.height
+  return { aspectRatio: ratio ? String(ratio) : '3 / 4' }
+}
+
+// 瀑布流增量渲染：首屏只挂载有限数量，滚动到底部哨兵再追加，避免大水库一次铺满全部 DOM
+const MASONRY_STEP = 60
+const masonryRenderedCount = ref(0)
+const masonryScrollContainerRef = ref<HTMLElement>()
+const masonrySentinelRef = ref<HTMLElement>()
+const masonryObserver = ref<IntersectionObserver | null>(null)
+const masonryItems = computed(() =>
+  filteredData.value.slice(0, masonryRenderedCount.value).map((photo, i) => ({
+    id: photo.id,
+    photo,
+    originalIndex: i,
+  })),
+)
+watch(
+  () => filteredData.value,
+  () => {
+    masonryRenderedCount.value = filteredData.value.length
+      ? Math.min(60, filteredData.value.length)
+      : 0
+  },
+  { immediate: true },
+)
+const appendMasonryBatch = () => {
+  const total = filteredData.value?.length ?? 0
+  if (masonryRenderedCount.value >= total) return
+  masonryRenderedCount.value = Math.min(
+    masonryRenderedCount.value + MASONRY_STEP,
+    total,
+  )
+}
+onMounted(() => {
+  if (masonrySentinelRef.value) {
+    // 以内部滚动容器为根：瀑布流在受高度约束的面板内滚动，哨兵据此判断何时追加下一批
+    const root = masonryScrollContainerRef.value || null
+    masonryObserver.value = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) appendMasonryBatch()
+      },
+      { root, rootMargin: '1200px 0px 0px 0px', threshold: 0 },
+    )
+    masonryObserver.value.observe(masonrySentinelRef.value)
+  }
+})
+onUnmounted(() => {
+  masonryObserver.value?.disconnect()
+  masonryObserver.value = null
 })
 
 // 监听过滤后的照片变化，自动获取表态数据（300ms 防抖，合并连续筛选动作）
@@ -846,276 +894,6 @@ const clearAllUploads = () => {
   }
 }
 
-const columns = computed<TableColumn<Photo>[]>(() => [
-  {
-    id: 'select',
-    header: ({ table }) =>
-      h(UCheckbox, {
-        modelValue: table.getIsSomePageRowsSelected()
-          ? 'indeterminate'
-          : table.getIsAllPageRowsSelected(),
-        'onUpdate:modelValue': (value: boolean | 'indeterminate') =>
-          table.toggleAllPageRowsSelected(!!value),
-        'aria-label': $t('dashboard.photos.table.selectAllAria'),
-      }),
-    cell: ({ row }) =>
-      h(UCheckbox, {
-        modelValue: row.getIsSelected(),
-        'onUpdate:modelValue': (value: boolean | 'indeterminate') =>
-          row.toggleSelected(!!value),
-        'aria-label': $t('dashboard.photos.table.selectRowAria'),
-      }),
-    enableHiding: false,
-  },
-  {
-    id: 'thumbnailUrl',
-    accessorKey: 'thumbnailUrl',
-    header: $t('dashboard.photos.table.columns.thumbnail.title'),
-    cell: ({ row }) => {
-      const url = row.original.thumbnailUrl
-      return h(ThumbImage, {
-        src: url || row.original.originalUrl || '',
-        alt: row.original.title || $t('dashboard.photos.table.thumbnailAlt'),
-        key: row.original.id,
-        thumbhash: row.original.thumbnailHash || '',
-        class: 'size-16 min-w-[100px] object-cover rounded-md shadow',
-        onClick: () => openImagePreview(row.original),
-        style: { cursor: url ? 'pointer' : 'default' },
-      })
-    },
-    enableHiding: false,
-  },
-  {
-    id: 'id',
-    accessorKey: 'id',
-    header: $t('dashboard.photos.table.columns.id'),
-    enableHiding: false,
-  },
-  {
-    accessorKey: 'title',
-    header: $t('dashboard.photos.table.columns.title'),
-  },
-  {
-    accessorKey: 'tags',
-    header: $t('dashboard.photos.table.columns.tags'),
-    cell: ({ row }) => {
-      const tags = row.original.tags
-      return h('div', { class: 'flex items-center gap-1' }, [
-        tags && tags.length
-          ? tags.map((tag) =>
-              h(
-                UBadge,
-                {
-                  size: 'sm',
-                  variant: 'soft',
-                  color: 'neutral',
-                },
-                () => tag,
-              ),
-            )
-          : h(
-              'span',
-              { class: 'text-neutral-400 text-xs' },
-              $t('dashboard.photos.table.cells.noTags'),
-            ),
-      ])
-    },
-  },
-  {
-    accessorKey: 'rating',
-    header: $t('dashboard.photos.table.columns.rating'),
-    cell: ({ row }) => {
-      const rating = row.original.exif?.Rating
-      return h('div', { class: 'flex items-center' }, [
-        rating !== undefined && rating !== null
-          ? h(Rating, {
-              modelValue: rating,
-              readonly: true,
-              size: 'xs',
-            })
-          : h(
-              'span',
-              { class: 'text-neutral-400 text-xs' },
-              $t('dashboard.photos.table.cells.noRating'),
-            ),
-      ])
-    },
-  },
-  {
-    accessorKey: 'isLivePhoto',
-    header: $t('dashboard.photos.table.columns.isLivePhoto'),
-    cell: ({ row }) => {
-      const isLivePhoto = row.original.isLivePhoto
-      return h('div', { class: 'flex items-center gap-2' }, [
-        isLivePhoto
-          ? h('div', { class: 'flex items-center gap-1' }, [
-              h(Icon, {
-                name: 'tabler:live-photo',
-                class: 'size-4 text-yellow-600 dark:text-yellow-400',
-              }),
-              h(
-                'span',
-                {
-                  class:
-                    'text-yellow-600 dark:text-yellow-400 text-xs font-medium',
-                },
-                $t('ui.livePhoto'),
-              ),
-            ])
-          : h(
-              'span',
-              {
-                class: 'text-neutral-400 text-xs',
-              },
-              $t('dashboard.photos.table.cells.staticPhoto'),
-            ),
-      ])
-    },
-    sortingFn: (rowA, rowB) => {
-      const valueA = rowA.original.isLivePhoto ? 1 : 0
-      const valueB = rowB.original.isLivePhoto ? 1 : 0
-      return valueB - valueA // LivePhoto 优先排序
-    },
-  },
-  {
-    accessorKey: 'location',
-    header: $t('dashboard.photos.table.columns.location'),
-    cell: ({ row }) => {
-      const { exif, city, country } = row.original
-
-      if (!exif?.GPSLongitude && !exif?.GPSLatitude) {
-        return h(
-          'span',
-          { class: 'text-neutral-400 text-xs' },
-          $t('dashboard.photos.table.cells.noGps'),
-        )
-      }
-
-      const location = [city, country].filter(Boolean).join(', ')
-      return h(
-        'span',
-        {
-          class: location ? 'text-xs' : 'text-neutral-400 text-xs',
-        },
-        location || $t('dashboard.photos.table.cells.unknown'),
-      )
-    },
-  },
-  {
-    accessorKey: 'dateTaken',
-    header: $t('dashboard.photos.table.columns.dateTaken'),
-    cell: (info) => {
-      const date = info.getValue() as string
-      return h(
-        'span',
-        { class: 'font-mono text-xs' },
-        date
-          ? dayjs(date).tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
-          : $t('dashboard.photos.table.cells.unknown'),
-      )
-    },
-  },
-  {
-    accessorKey: 'lastModified',
-    header: $t('dashboard.photos.table.columns.lastModified'),
-    cell: (info) => {
-      const date = info.getValue() as string
-      return h(
-        'span',
-        { class: 'font-mono text-xs' },
-        date
-          ? dayjs(date).tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
-          : $t('dashboard.photos.table.cells.unknown'),
-      )
-    },
-  },
-  {
-    accessorKey: 'fileSize',
-    header: $t('dashboard.photos.table.columns.fileSize'),
-    cell: (info) => formatBytes(info.getValue() as number),
-  },
-  {
-    id: 'colorSpace',
-    accessorFn: (row) => row.exif?.ColorSpace,
-    header: $t('dashboard.photos.table.columns.colorSpace'),
-  },
-  {
-    accessorKey: 'reactions',
-    header: $t('dashboard.photos.table.columns.reactions'),
-    cell: ({ row }) => {
-      const photoId = row.original.id
-      const reactions = reactionsData.value[photoId] || {}
-      const totalReactions = Object.values(reactions).reduce(
-        (sum: number, count) => sum + (count as number),
-        0,
-      )
-
-      if (totalReactions === 0) {
-        return h(
-          'span',
-          { class: 'text-neutral-400 text-xs' },
-          $t('dashboard.photos.table.cells.noReactions'),
-        )
-      }
-
-      const reactionIcons: Record<string, string> = {
-        like: 'fluent-emoji-flat:thumbs-up',
-        love: 'fluent-emoji-flat:red-heart',
-        amazing: 'fluent-emoji-flat:smiling-face-with-heart-eyes',
-        funny: 'fluent-emoji-flat:face-with-tears-of-joy',
-        wow: 'fluent-emoji-flat:face-with-open-mouth',
-        sad: 'fluent-emoji-flat:crying-face',
-        fire: 'fluent-emoji-flat:fire',
-        sparkle: 'fluent-emoji-flat:sparkles',
-      }
-
-      // 显示前3个有数据的表态
-      const topReactions = Object.entries(reactions)
-        .filter(([_, count]) => (count as number) > 0)
-        .sort((a, b) => (b[1] as number) - (a[1] as number))
-        .slice(0, 3)
-
-      return h(
-        'div',
-        { class: 'flex items-center gap-2' },
-        [
-          ...topReactions.map(([type, count]) =>
-            h('div', { class: 'flex items-center gap-0.5' }, [
-              h(Icon, {
-                name:
-                  reactionIcons[type] ||
-                  'fluent-emoji-flat:face-with-tears-of-joy',
-                class: 'size-4',
-                mode: 'svg',
-              }),
-              h(
-                'span',
-                {
-                  class:
-                    'text-xs font-medium text-neutral-700 dark:text-neutral-300',
-                },
-                count,
-              ),
-            ]),
-          ),
-          totalReactions > topReactions.length
-            ? h(
-                'span',
-                { class: 'text-xs text-neutral-400' },
-                `+${totalReactions - topReactions.reduce((sum, [_, count]) => sum + (count as number), 0)}`,
-              )
-            : null,
-        ].filter(Boolean),
-      )
-    },
-  },
-  {
-    id: 'actions',
-    accessorKey: 'actions',
-    header: $t('dashboard.photos.table.columns.actions'),
-    enableHiding: false,
-  },
-])
 
 // 文件验证函数
 const validateFile = (
@@ -1725,9 +1503,7 @@ const handleSingleDeleteRequest = (photo: Photo) => {
 
 // 批量删除功能
 const handleBatchDelete = () => {
-  const selectedRowModel = table.value?.tableApi?.getFilteredSelectedRowModel()
-  const selectedPhotos =
-    selectedRowModel?.rows.map((row: any) => row.original) || []
+  const selectedPhotos = selectedPhotosList.value
 
   if (selectedPhotos.length === 0) {
     toast.add({
@@ -1777,7 +1553,7 @@ const confirmDelete = async () => {
         color: 'success',
       })
 
-      rowSelection.value = {}
+      clearSelection()
     } else {
       const photo = targetPhotos[0]
       if (!photo) {
@@ -1822,9 +1598,7 @@ const confirmDelete = async () => {
 
 // 批量重新处理照片功能
 const handleBatchReprocess = async () => {
-  const selectedRowModel = table.value?.tableApi?.getFilteredSelectedRowModel()
-  const selectedPhotos =
-    selectedRowModel?.rows.map((row: any) => row.original) || []
+  const selectedPhotos = selectedPhotosList.value
 
   if (selectedPhotos.length === 0) {
     toast.add({
@@ -1888,7 +1662,7 @@ const handleBatchReprocess = async () => {
     }
 
     // 清空选中状态
-    rowSelection.value = {}
+    clearSelection()
   } catch (error: any) {
     console.error('批量处理失败:', error)
     toast.add({
@@ -1901,9 +1675,7 @@ const handleBatchReprocess = async () => {
 
 // 批量抹除位置信息
 const handleBatchEraseLocation = async () => {
-  const selectedRowModel = table.value?.tableApi?.getFilteredSelectedRowModel()
-  const selectedPhotos =
-    selectedRowModel?.rows.map((row: any) => row.original) || []
+  const selectedPhotos = selectedPhotosList.value
 
   if (selectedPhotos.length === 0) {
     toast.add({
@@ -1954,7 +1726,7 @@ const handleBatchEraseLocation = async () => {
         description: '',
         color: 'success',
       })
-      rowSelection.value = {}
+      clearSelection()
     } else {
       toast.add({
         title: $t('dashboard.photos.messages.batchEraseLocationFailed'),
@@ -1986,9 +1758,7 @@ const handleBatchEraseLocation = async () => {
 
 // 批量下载照片
 const handleBatchDownload = async () => {
-  const selectedRowModel = table.value?.tableApi?.getFilteredSelectedRowModel()
-  const selectedPhotos =
-    selectedRowModel?.rows.map((row: any) => row.original) || []
+  const selectedPhotos = selectedPhotosList.value
 
   if (selectedPhotos.length === 0) {
     toast.add({
@@ -2513,110 +2283,114 @@ onUnmounted(() => {
               }}</span>
             </UButton>
 
-            <!-- 列可见性按钮 -->
-            <UDropdownMenu
-              :items="
-                table?.tableApi
-                  ?.getAllColumns()
-                  .filter((column: any) => column.getCanHide())
-                  .map((column: any) => ({
-                    label: columnNameMap[column.id] || column.id,
-                    type: 'checkbox' as const,
-                    checked: column.getIsVisible(),
-                    disabled:
-                      !column.getCanHide() ||
-                      column.id === 'thumbnailUrl' ||
-                      column.id === 'id' ||
-                      column.id === 'actions',
-                    onUpdateChecked(checked: boolean) {
-                      table?.tableApi
-                        ?.getColumn(column.id)
-                        ?.toggleVisibility(!!checked)
-                    },
-                    onSelect(e: Event) {
-                      e.preventDefault()
-                    },
-                  }))
-              "
-              :content="{ align: 'end' }"
+            <!-- 全选当前筛选列表 -->
+            <UButton
+              variant="soft"
+              color="neutral"
+              size="sm"
+              icon="tabler:select"
+              :disabled="filteredData.length === 0"
+              @click="selectAllVisiblePhotos()"
             >
-              <UButton
-                label=""
-                color="neutral"
-                variant="outline"
-                size="sm"
-                icon="tabler:columns-3"
-                :title="
-                  $t('dashboard.photos.table.columnVisibility.description')
-                "
-              >
-                <span class="hidden sm:inline">{{
-                  $t('dashboard.photos.table.columnVisibility.button')
-                }}</span>
-              </UButton>
-            </UDropdownMenu>
+              <span class="hidden sm:inline">{{
+                $t('dashboard.photos.table.selectAllAria')
+              }}</span>
+            </UButton>
           </div>
         </div>
 
-        <!-- 照片列表 -->
-        <div class="relative flex-1 min-h-0 flex flex-col">
-          <UTable
-            ref="table"
-            v-model:row-selection="rowSelection"
-            v-model:column-visibility="columnVisibility"
-            :column-pinning="{
-              right: ['actions'],
-            }"
-            :data="filteredData as Photo[]"
-            :columns="columns"
-            :loading="status === 'pending'"
-            sticky
-            class="h-full flex-1"
-            :ui="{
-              wrapper: 'relative scroll-smooth h-full overflow-auto',
-              base: 'min-w-full table-fixed',
-              divide:
-                'divide-y divide-(--ui-border)',
-              thead:
-                'bg-(--ui-bg-muted) backdrop-blur-md sticky top-0 z-10 whitespace-nowrap',
-              tbody:
-                'divide-y divide-(--ui-border) bg-transparent',
-              tr: {
-                  base: 'hover:bg-(--ui-bg-muted) transition-colors',
-                  selected: 'bg-primary-50/50 dark:bg-primary-900/20',
-                },
-              th: {
-                base: 'text-left rtl:text-right ',
-                padding: 'px-4 py-3.5',
-                color: 'text-neutral-500 dark:text-neutral-400',
-                font: 'font-medium text-sm',
-              },
-              td: {
-                padding: 'px-4 py-3',
-                color: 'text-neutral-700 dark:text-neutral-300 text-sm',
-              },
-              separator: 'bg-(--ui-border)',
-            }"
+        <!-- 照片列表：高度受面板约束，内部滚动 -->
+        <div
+          ref="masonryScrollContainerRef"
+          class="relative flex-1 min-h-0 overflow-y-auto overscroll-contain scroll-smooth"
+        >
+          <MasonryWall
+            :items="masonryItems"
+            :column-width="236"
+            :gap="10"
+            :min-columns="2"
+            :max-columns="8"
+            :ssr-columns="2"
+            :key-mapper="
+              (_item, _column, _row, index) =>
+                masonryItems[index]?.originalIndex ?? index
+            "
+            class="p-2 sm:p-3"
           >
-            <template #actions-cell="{ row }">
-              <div class="flex justify-end">
-                <UDropdownMenu
-                  size="sm"
-                  :content="{
-                    align: 'end',
-                  }"
-                  :items="getRowActions(row.original)"
+            <template #default="{ item }">
+              <div
+                v-if="item.photo"
+                :key="item.photo.id"
+                class="group relative overflow-hidden rounded-xl border border-(--ui-border) bg-(--ui-bg-elevated) shadow-sm cursor-pointer"
+                @click="openImagePreview(item.photo)"
+              >
+                <ThumbImage
+                  :src="item.photo.thumbnailUrl || item.photo.originalUrl || ''"
+                  :alt="item.photo.title || ''"
+                  :thumbhash="item.photo.thumbnailHash || ''"
+                  class="block w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                  :style="aspectStyle(item.photo)"
+                />
+
+                <!-- 选中标记 -->
+                <button
+                  type="button"
+                  class="absolute left-2 top-2 flex size-6 items-center justify-center rounded-lg border backdrop-blur-md transition-colors"
+                  :class="
+                    isPhotoSelected(item.photo.id)
+                      ? 'border-primary bg-primary/90 text-white'
+                      : 'border-(--ui-border-accented) bg-black/35 text-white hover:bg-black/55'
+                  "
+                  :aria-label="$t('dashboard.photos.table.selectRowAria')"
+                  @click.stop="togglePhotoSelection(item.photo)"
                 >
-                  <UButton
-                    variant="outline"
-                    color="neutral"
-                    size="sm"
-                    icon="tabler:dots-vertical"
+                  <Icon
+                    v-if="isPhotoSelected(item.photo.id)"
+                    name="tabler:check"
+                    class="size-4"
                   />
-                </UDropdownMenu>
+                </button>
+
+                <!-- 鼠标悬停操作菜单（编辑 / 重新处理 / 定位 / 预览 / 删除） -->
+                <div
+                  class="absolute right-2 top-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                >
+                  <UDropdownMenu
+                    size="sm"
+                    :content="{ align: 'end' }"
+                    :items="getRowActions(item.photo)"
+                  >
+                    <UButton
+                      variant="solid"
+                      color="neutral"
+                      size="sm"
+                      icon="tabler:dots-vertical"
+                      @click.stop
+                    />
+                  </UDropdownMenu>
+                </div>
+
+                <!-- LivePhoto 标记 -->
+                <div
+                  v-if="item.photo.isLivePhoto"
+                  class="absolute bottom-2 left-2 flex items-center gap-1 rounded-full bg-black/45 backdrop-blur-md px-1.5 py-0.5"
+                >
+                  <Icon
+                    name="tabler:live-photo"
+                    class="size-3.5 text-yellow-300"
+                  />
+                </div>
               </div>
             </template>
-          </UTable>
+          </MasonryWall>
+
+          <!-- 增量渲染哨兵：滚动接近底部时追加下一批照片 -->
+          <div
+            v-if="masonryRenderedCount < (filteredData?.length ?? 0)"
+            ref="masonrySentinelRef"
+            class="h-px w-full"
+            aria-hidden="true"
+          />
 
           <!-- 悬浮版批量操作菜单 -->
           <transition

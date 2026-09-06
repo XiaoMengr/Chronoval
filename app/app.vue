@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { NuxtApp } from 'nuxt/app'
 import dayjsLocale_zhCN from 'dayjs/locale/zh-cn'
 import dayjsLocale_zhTW from 'dayjs/locale/zh-tw'
 import dayjsLocale_zhHK from 'dayjs/locale/zh-hk'
@@ -60,8 +61,48 @@ const apiEndpoint = computed(() => {
   // 登录走 /api/photos?gallery=1，均已排除相簿扫描库）。
   return loggedIn.value ? '/api/photos?gallery=1' : '/api/photos/visible'
 })
-const { data, refresh, status } = await useFetch(() => apiEndpoint.value, {
+// 全局照片池的客户端 TTL 缓存：
+// 后台管理 / 画廊切换时 apiEndpoint 会变，`/api/photos`（或 /visible）首次进入要全量拉取含完整 EXIF 的大 JSON，
+// 这是"每次进入 dashboard/photos 都很慢"的主要来源之一。这里在客户端按端点缓存一份，TTL 内导航复用，避免重复请求。
+// 语义：
+// - 命中未过期缓存 → 直接返回（不触发网络），watch 见同一引用 → 不续期，TTL 稳定。
+// - 无缓存首访 → 回落到 SSR payload（默认行为），避免水合时重复请求；该次不写缓存。
+// - 缓存过期 → 返回 undefined 强制走一次网络刷新，并把新数据写回。
+// 仅客户端启用；SSR 每次仍按需拉取，保证首屏新鲜。上传 / 编辑等操作后已有 refresh() 会强制刷新并写回缓存。
+const PHOTO_CACHE_TTL = 60_000
+const photoEndpointCache = new Map<string, { data: Photo[]; at: number }>()
+let lastServedPayloadKey: string | null = null
+const getCachedPhotoData = (key: string, nuxtApp: NuxtApp): Photo[] | undefined => {
+  if (!import.meta.client) return undefined
+  const hit = photoEndpointCache.get(key)
+  if (hit) {
+    if (Date.now() - hit.at < PHOTO_CACHE_TTL) return hit.data
+    photoEndpointCache.delete(key)
+    // 缓存过期 → 强制刷新
+    return undefined
+  }
+  // 未命中（首访）：回落到 SSR payload，避免水合重复拉取
+  lastServedPayloadKey = key
+  return nuxtApp.payload.data?.[key] as Photo[] | undefined
+}
+
+const { data, refresh, status } = await useFetch<Photo[]>(() => apiEndpoint.value, {
   watch: [apiEndpoint],
+  getCachedData: getCachedPhotoData,
+})
+// 仅把"真正来自网络"的新数据写回缓存：
+// - 命中缓存（同引用）→ 跳过、不续期；
+// - 回落 payload 首次渲染 → 跳过（lastServedPayloadKey 标记），保证 TTL 语义。
+watch(data, (val) => {
+  if (!import.meta.client || !val) return
+  const key = apiEndpoint.value
+  if (lastServedPayloadKey === key) {
+    lastServedPayloadKey = null
+    return
+  }
+  const existing = photoEndpointCache.get(key)
+  if (existing && existing.data === val) return
+  photoEndpointCache.set(key, { data: val, at: Date.now() })
 })
 
 const photos = computed(() => (data.value as Photo[]) || [])

@@ -214,31 +214,10 @@ const handleLogin = () => {
     </UDashboardSidebar>
 
     <NuxtPage v-slot="{ Component }">
-      <Transition name="dash-page" mode="out-in">
-        <component :is="Component" :key="route.path" />
-      </Transition>
+      <!-- 页面根节点多为 <UDashboardPanel>（内部是 fragment），<Transition> 无法为 fragment
+           根节点执行进入/离开动画，mode="out-in" 时进入态会卡在 opacity:0 导致内容区黑屏。
+           因此这里不做自定义过渡，由 Nuxt 原生完成路由切换，避免黑屏。 -->
+      <component :is="Component" :key="route.path" />
     </NuxtPage>
   </UDashboardGroup>
 </template>
-
-<style scoped>
-/* 苹果式页面切换：浮入淡出（仅后台路由，配合 v-slot Transition） */
-.dash-page-enter-active {
-  transition:
-    opacity 0.3s cubic-bezier(0.32, 0.72, 0.24, 1),
-    transform 0.3s cubic-bezier(0.32, 0.72, 0.24, 1);
-}
-.dash-page-enter-from {
-  opacity: 0;
-  transform: translateY(10px) scale(0.992);
-}
-.dash-page-leave-active {
-  transition:
-    opacity 0.16s ease-out,
-    transform 0.16s ease-out;
-}
-.dash-page-leave-to {
-  opacity: 0;
-  transform: translateY(-6px);
-}
-</style>

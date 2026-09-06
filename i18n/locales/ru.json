@@ -588,6 +588,9 @@
         "photos": "фотографии",
         "livePhotos": "Live Photo"
       },
+      "pagination": {
+        "showing": "Показано {start}–{end} из {total}"
+      },
       "table": {
         "columns": {
           "thumbnail": {

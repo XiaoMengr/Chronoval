@@ -646,6 +646,9 @@
         "photos": "照片",
         "livePhotos": "Live Photo"
       },
+      "pagination": {
+        "showing": "显示第 {start}–{end} 条，共 {total} 条"
+      },
       "table": {
         "columns": {
           "thumbnail": {

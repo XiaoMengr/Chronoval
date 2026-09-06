@@ -646,6 +646,9 @@
         "photos": "photos",
         "livePhotos": "Live Photos"
       },
+      "pagination": {
+        "showing": "Showing {start}–{end} of {total}"
+      },
       "table": {
         "columns": {
           "thumbnail": {
