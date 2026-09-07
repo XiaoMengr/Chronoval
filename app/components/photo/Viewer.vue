@@ -830,9 +830,6 @@ onUnmounted(() => window.removeEventListener('resize', handleWindowResizeRefit))
                 </div>
               </motion.div>
 
-              <!-- 加载指示器 -->
-              <LoadingIndicator ref="loadingIndicatorRef" />
-
               <!-- 图片舞台（afilmory：入场 catchup 纹理层 + Swiper）
                    阶段重排（信息面板折叠/展开改宽度）期间隐藏照片层，避免 WebGL 陈旧帧
                    被拉伸成叠影；重排完成后再淡入 -->
@@ -846,6 +843,15 @@ onUnmounted(() => window.removeEventListener('resize', handleWindowResizeRefit))
                   paddingBottom: thumbBarBottomPad,
                 }"
               >
+                <!-- 加载指示器：置于舞台内容区内（与照片/缩放/表态同一坐标系），
+                     定位在图片内部右下角，与左下角「1.0x」缩放提示左右对齐（一个左一个右）。
+                     包装层用 right/bottom 扣除舞台 padding，保证加载中按钮与表态按钮位置重合 -->
+                <div
+                  class="pointer-events-none absolute left-0 top-0 z-40"
+                  :style="{ right: stagePadRight, bottom: thumbBarBottomPad }"
+                >
+                  <LoadingIndicator ref="loadingIndicatorRef" />
+                </div>
                 <!-- 主图区域：图像加载仅保留 ProgressiveImage 自身「构建纹理」从模糊到清晰，
                      不再叠加外层缩略图兜底层，避免双重模糊 -->
 

@@ -513,6 +513,18 @@ onUnmounted(() => { if (copyResetTimer) clearTimeout(copyResetTimer) })
   }
 }
 
+/* 电脑端：去掉分享卡片内的滑动指示标（滚动条指示），保留滚动能力；
+   移动端保留原生指示器，方便手指滑动时定位 */
+@media (min-width: 768px) {
+  .share-surface {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* 旧版 Edge */
+  }
+  .share-surface::-webkit-scrollbar {
+    display: none; /* Chromium / Safari / Edge */
+  }
+}
+
 /* 浅色模式覆写：35% 白太透 + 描边太淡，在浅色/彩色背景下会发白发灰、文字沉不下去。
    改用更实的高透白底 + 清晰描边，保证可读性又保留玻璃质感 */
 :global(html:not(.dark)) .share-surface {
