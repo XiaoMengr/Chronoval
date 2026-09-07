@@ -1196,22 +1196,25 @@ export class WebGLImageViewerEngine {
         isFinite(prevScale) &&
         prevScale > 0
       ) {
-        const viewportCenterImageX =
-          (prevCanvasWidth / 2 - this.transform.translateX) / prevScale
-        const viewportCenterImageY =
-          (prevCanvasHeight / 2 - this.transform.translateY) / prevScale
-
         const newInitialScale = this.getFitScale()
         const relativeZoomLevel =
           oldInitialScale > 0 ? prevScale / oldInitialScale : 1
-        const nextScale = this.clampScale(newInitialScale * relativeZoomLevel)
 
+        // 先更新适配基准，再基于新的适配缩放做 clamp：
+        // 窗口/信息面板收缩时，新的适配缩放（newInitialScale）变小，若仍以旧的
+        // （更大的）initialScale 作为 clamp 下界，图片尺寸将无法回到新的适配值，
+        // 保持偏大后经 constrainToBounds 推移 translateY，导致图片"跑出"视口。
         this.initialScale = newInitialScale
+        const nextScale = this.clampScale(newInitialScale * relativeZoomLevel)
         this.transform.scale = nextScale
-        this.transform.translateX =
-          this.canvas.width / 2 - viewportCenterImageX * nextScale
-        this.transform.translateY =
-          this.canvas.height / 2 - viewportCenterImageY * nextScale
+
+        // 尺寸变化时以"适配 + 居中"为基准重建平移，而非沿用旧的视口中心：
+        // 旧的视口中心在连续 resize 后会漂移，图片随之偏出舞台。重新以图片在
+        // 新舞台中的实际缩放宽高居中，保证图片始终围绕新视口中心、不会丢失。
+        const scaledW = (this.image?.width ?? 0) * nextScale
+        const scaledH = (this.image?.height ?? 0) * nextScale
+        this.transform.translateX = (this.canvas.width - scaledW) / 2
+        this.transform.translateY = (this.canvas.height - scaledH) / 2
       }
 
       this.constrainToBounds()
