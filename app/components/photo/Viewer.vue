@@ -595,11 +595,27 @@ const stageInlinePaddingRight = computed(() =>
 // 这样无论图片开合快慢，拉伸的陈旧帧都不可见，叠影被彻底消除。
 const stageResizing = ref(false)
 let resizeGuardTimer: ReturnType<typeof setTimeout> | null = null
+
+// 容器宽度变化后（信息面板折叠/展开、窗口缩放），令 Swiper 按当前索引重新铺排并
+// 重锚 wrapper 位移到视口内。
+// 仅调用 swiper.update() 只会重算滑块尺寸，不会把当前照片重新放到新宽度下的视野中央：
+// 虚拟滑块会沿用旧的偏移，当前照片被整体滑出视口（表现为"图片飘走 / 全屏高斯模糊"）。
+// 因此需要再强制 virtual.update(true) 把虚拟滑块窗口整窗重排，重置每个滑块内联偏移
+// （Virtual 模块没有 render() 方法，只有 update(force) 能强制以新宽度重建滑块），
+// 最后 slideTo(active) 以 0 速度把当前照片重锚回视野中央。
+const refitSwiper = () => {
+  const swiper = swiperRef.value
+  if (!swiper) return
+  swiper.update()
+  swiper.virtual?.update(true)
+  swiper.slideTo(swiper.activeIndex, 0, false)
+}
+
 const restoreStage = () => {
   stageResizing.value = false
   nextTick(() => {
     imageRefitKey.value++
-    swiperRef.value?.update()
+    refitSwiper()
   })
 }
 watch(isDesktopInspectorVisible, () => {
@@ -656,7 +672,7 @@ onUnmounted(() => {
 // 画布随之变为新尺寸 → 引擎 ResizeObserver 触发 resize() → getFitScale 重新居中。
 const handleWindowResizeRefit = () => {
   requestAnimationFrame(() => {
-    swiperRef.value?.update()
+    refitSwiper()
   })
 }
 onMounted(() => window.addEventListener('resize', handleWindowResizeRefit))
