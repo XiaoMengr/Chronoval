@@ -434,7 +434,7 @@ const onAlbumClick = (albumId: number) => {
     :style="sheetStyle"
     :class="{
       'pointer-events-none': !props.visible,
-      'fixed inset-x-0 bottom-0 z-10 w-full rounded-t-2xl overflow-hidden cursor-grab active:cursor-grabbing': isMobile,
+      'fixed inset-x-0 bottom-0 z-30 w-full rounded-t-2xl overflow-hidden cursor-grab active:cursor-grabbing': isMobile,
       'absolute inset-y-0 right-0 z-30 w-80 border-l border-black/10 dark:border-white/10': !isMobile,
       'inspector-glass': true,
     }"
