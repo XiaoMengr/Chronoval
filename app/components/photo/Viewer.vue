@@ -96,6 +96,14 @@ const { convertMovToMp4, getProcessingState } = useLivePhotoProcessor()
 const currentPhoto = computed(() => props.photos[props.currentIndex])
 const isMobile = useMediaQuery('(max-width: 768px)')
 
+// 桌面端底部缩略图栏高度（lg：64px 缩略图 + 16px×2 内边距 + 1px 顶边框 ≈ 97px）。
+// 非放大状态让图片显示区域在底栏上方收口，避免照片下缘“钻到”底栏下一层被盖住；
+// 进入放大（平移/缩放，底栏隐藏）时释放这块底部空间，保证全高可用。
+const THUMBNAIL_BAR_HEIGHT = '97px'
+const thumbBarBottomPad = computed(() =>
+  !isMobile.value && !isImageZoomed.value ? THUMBNAIL_BAR_HEIGHT : '0px',
+)
+
 // 背景模糊图就绪门控：切换图片时先隐藏，@load 后再平滑淡入，避免"黑屏闪断"
 const blurReady = ref(false)
 watch(
@@ -267,6 +275,24 @@ const handleBlobSrcChange = (blobSrc: string | null) => {
 
 const handleImageLoaded = () => {
   // 图片加载完成时显示缩放倍率 2 秒
+  showZoomLevel.value = true
+  if (zoomLevelTimer.value) {
+    clearTimeout(zoomLevelTimer.value)
+  }
+  zoomLevelTimer.value = setTimeout(() => {
+    showZoomLevel.value = false
+    zoomLevelTimer.value = null
+  }, 2000)
+}
+
+// 纹理（WebGL）构建完成后照旧短暂显示缩放倍率指示 2 秒。
+// 纹理构建是异步的，比 @load 晚完成，若不在此展示指示器会在构建期间白白消失。
+// 无倍率值时以适配值 1.0x 兜底，保证每次切换/构建后都有倍率标识浮现。
+const handleTextureReady = () => {
+  currentTextureReady.value = true
+  if (!zoomLevel.value) {
+    zoomLevel.value = 1
+  }
   showZoomLevel.value = true
   if (zoomLevelTimer.value) {
     clearTimeout(zoomLevelTimer.value)
@@ -808,6 +834,7 @@ onUnmounted(() => window.removeEventListener('resize', handleWindowResizeRefit))
                 :style="{
                   touchAction: isMobile ? 'pan-x pinch-zoom' : 'pan-y',
                   paddingRight: stagePadRight,
+                  paddingBottom: thumbBarBottomPad,
                 }"
               >
                 <!-- 主图区域：图像加载仅保留 ProgressiveImage 自身「构建纹理」从模糊到清晰，
@@ -907,7 +934,7 @@ onUnmounted(() => window.removeEventListener('resize', handleWindowResizeRefit))
                       "
                       :on-texture-ready="
                         index === currentIndex
-                          ? () => (currentTextureReady = true)
+                          ? handleTextureReady
                           : undefined
                       "
                       :is-live-photo="photo.isLivePhoto === 1"
