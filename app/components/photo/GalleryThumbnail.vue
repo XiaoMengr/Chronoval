@@ -21,9 +21,9 @@ const isMobile = useMediaQuery('(max-width: 768px)')
 
 // 缩略图配置
 const THUMBNAIL_CONFIG = {
-  size: { sm: 48, lg: 64 },
-  gap: { sm: 8, lg: 12 },
-  padding: { sm: 12, lg: 16 },
+  size: { sm: 48, lg: 48 },
+  gap: { sm: 8, lg: 10 },
+  padding: { sm: 12, lg: 12 },
 } as const
 
 // 计算当前设备的样式配置

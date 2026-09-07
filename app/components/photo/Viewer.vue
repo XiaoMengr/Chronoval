@@ -96,12 +96,20 @@ const { convertMovToMp4, getProcessingState } = useLivePhotoProcessor()
 const currentPhoto = computed(() => props.photos[props.currentIndex])
 const isMobile = useMediaQuery('(max-width: 768px)')
 
-// 桌面端底部缩略图栏高度（lg：64px 缩略图 + 16px×2 内边距 + 1px 顶边框 ≈ 97px）。
-// 非放大状态让图片显示区域在底栏上方收口，避免照片下缘“钻到”底栏下一层被盖住；
-// 进入放大（平移/缩放，底栏隐藏）时释放这块底部空间，保证全高可用。
-const THUMBNAIL_BAR_HEIGHT = '97px'
+// 桌面端底部缩略图导航栏高度（lg：48px 缩略图 + 12px×2 内边距 + 1px 顶边框 = 73px）。
+// 非隐藏状态给图片舞台预留该底部空间，让主图显示区域在底栏上方收口，
+// 清晰照片不会延伸到透明模糊底栏的下一层。
+const THUMBNAIL_BAR_HEIGHT = '73px'
+
+// 桌面端底部导航栏隐藏条件：进入放大（平移/缩放，底栏随 @zoom 隐藏）或
+// 信息侧栏展开时会话自动收起，同时释放预留的底部空间让图片可用全高。
+const isBottomNavHidden = computed(
+  () =>
+    !isMobile.value &&
+    (isImageZoomed.value || isDesktopInspectorVisible.value),
+)
 const thumbBarBottomPad = computed(() =>
-  !isMobile.value && !isImageZoomed.value ? THUMBNAIL_BAR_HEIGHT : '0px',
+  isBottomNavHidden.value ? '0px' : THUMBNAIL_BAR_HEIGHT,
 )
 
 // 背景模糊图就绪门控：切换图片时先隐藏，@load 后再平滑淡入，避免"黑屏闪断"
@@ -1215,7 +1223,7 @@ onUnmounted(() => window.removeEventListener('resize', handleWindowResizeRefit))
             <div class="pointer-events-none absolute inset-x-0 bottom-0 z-20">
               <AnimatePresence>
                 <GalleryThumbnail
-                  v-if="!isImageZoomed"
+                  v-if="!isImageZoomed && !isBottomNavHidden"
                   class="pointer-events-auto"
                   :current-index="currentIndex"
                   :photos="photos"
