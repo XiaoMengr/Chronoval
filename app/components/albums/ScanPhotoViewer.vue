@@ -35,15 +35,19 @@ const zoomLevelTimer = ref<NodeJS.Timeout | null>(null)
 
 const currentPhoto = computed(() => props.photos[props.currentIndex])
 
-// 背景模糊图就绪门控：切换图片时先置为未就绪，待新模糊图 @load 后再淡入，
-// 避免打开/切换时"黑屏闪断"
+// 背景模糊图：切换图片时新图需重新加载，若直接隐藏背景会露出 #0a0a0e 底色造成「黑屏闪烁」。
+// 因此用双层交叉淡化 —— persistentBlur 保留「上一张已加载」的模糊图作为持续底图，
+// 待新模糊图 @load 就绪后再淡入覆盖，切换全程背景不为空。
 const blurReady = ref(false)
-watch(
-  () => currentPhoto.value?.thumbnailUrl,
-  () => {
-    blurReady.value = false
-  },
-)
+const persistentBlur = ref<string | null>(null)
+const currentBlur = computed(() => props.photos[props.currentIndex]?.thumbnailUrl ?? null)
+watch(currentBlur, () => {
+  blurReady.value = false
+})
+const handleBlurLoad = () => {
+  blurReady.value = true
+  persistentBlur.value = currentBlur.value
+}
 
 // 拍摄时间格式化，与首页查看器工具栏一致
 const dayjs = useDayjs()
@@ -186,22 +190,31 @@ const swiperModules = [Navigation, Keyboard, Virtual]
         :transition="{ duration: 0.3 }"
         class="fixed inset-0 z-[120] overflow-hidden bg-[#0a0a0e]"
       >
-        <!-- 模糊图片本体：object-cover 铺满整屏并略放大，颜色随当前图变化；打开/切换时
-             先隐藏，@load 就绪后平滑淡入 -->
+        <!-- 持续底图：上一张已加载成功的模糊图，切换新图时保持显示，杜绝露出 #0a0a0e 底色 -->
         <img
-          v-if="currentPhoto?.thumbnailUrl"
-          :key="currentPhoto?.id ?? 'empty'"
-          :src="currentPhoto.thumbnailUrl"
+          v-if="persistentBlur && persistentBlur !== currentBlur"
+          :src="persistentBlur"
           alt=""
           aria-hidden="true"
           draggable="false"
-          class="absolute inset-0 h-full w-full scale-[1.25] object-cover transition-opacity duration-700"
+          class="absolute inset-0 h-full w-full scale-[1.25] object-cover"
+          style="filter: blur(56px) saturate(1.3) brightness(1.15)"
+        />
+        <!-- 当前模糊图：@load 就绪后淡入覆盖底图；无缩略图时兜底深色 -->
+        <img
+          v-if="currentBlur"
+          :key="currentBlur"
+          :src="currentBlur"
+          alt=""
+          aria-hidden="true"
+          draggable="false"
+          class="absolute inset-0 h-full w-full scale-[1.25] object-cover transition-opacity duration-500"
           :class="blurReady ? 'opacity-100' : 'opacity-0'"
           style="filter: blur(56px) saturate(1.3) brightness(1.15)"
-          @load="blurReady = true"
+          @load="handleBlurLoad"
         />
         <!-- 无缩略图时的兜底深色 -->
-        <div v-else class="absolute inset-0 h-full w-full bg-[#0a0a0e]" />
+        <div v-if="!currentBlur" class="absolute inset-0 h-full w-full bg-[#0a0a0e]" />
       </motion.div>
     </AnimatePresence>
 
