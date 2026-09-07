@@ -1166,7 +1166,12 @@ onUnmounted(() => window.removeEventListener('resize', handleWindowResizeRefit))
                   <button
                     v-if="currentIndex < photos.length - 1"
                     type="button"
-                    class="absolute top-1/2 right-4 z-20 flex size-8 -translate-y-1/2 items-center justify-center rounded-full text-white opacity-0 backdrop-blur-sm duration-200 bg-black/30 hover:bg-black/40 group-hover/photo-viewer:opacity-100"
+                    class="absolute top-1/2 z-20 flex size-8 -translate-y-1/2 items-center justify-center rounded-full text-white opacity-0 backdrop-blur-sm duration-200 bg-black/30 hover:bg-black/40 group-hover/photo-viewer:opacity-100 transition-[right]"
+                    :class="
+                      !isMobile && isDesktopInspectorVisible
+                        ? 'right-[336px]'
+                        : 'right-4'
+                    "
                     @click="handleNext"
                   >
                     <Icon
