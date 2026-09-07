@@ -33,6 +33,12 @@ const refreshData = async () => {
 
 // 后台主页轮询：30s 一次，页面隐藏时暂停、回到前台立即刷新（减少无效请求）
 const REFRESH_MS = 30000
+
+// 正式发布页展示的拉取镜像地址（内网容器注册表，版本随构建同步）
+const imageAddress = computed(
+  () =>
+    `172.16.0.1:322/xiaomengr/chronoval:${config.public.VERSION}`,
+)
 let refreshInterval: ReturnType<typeof setInterval> | undefined
 
 const stopPolling = () => {
@@ -223,14 +229,17 @@ const onShareSite = () => {
               <p class="text-sm text-neutral-500 dark:text-neutral-400">
                 {{ $t('dashboard.overview.section.runtimeInfo.version') }}
               </p>
-              <NuxtLink
-                class="text-lg font-bold hover:text-primary"
-                target="_blank"
-                external
-                :to="`https://github.com/HoshinoSuzumi/chronoframe/releases/tag/v${$config.public.VERSION}`"
-              >
+              <p class="text-lg font-bold">
                 v{{ $config.public.VERSION }}
-              </NuxtLink>
+              </p>
+            </div>
+            <div>
+              <p class="text-sm text-neutral-500 dark:text-neutral-400">
+                {{ $t('dashboard.overview.section.runtimeInfo.image') }}
+              </p>
+              <code
+                class="block max-w-[220px] break-all text-xs font-mono text-neutral-200"
+              >{{ imageAddress }}</code>
             </div>
             <div>
               <p class="text-sm text-neutral-500 dark:text-neutral-400">

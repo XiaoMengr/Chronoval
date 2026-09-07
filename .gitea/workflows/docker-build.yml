@@ -123,6 +123,8 @@ jobs:
             TAG_REF="latest"
           else
             TAG_REF="${GITHUB_REF##*/}"
+            # 发布稳定版本：git tag 用 v1.0.0.2，镜像 tag 用裸版本 1.0.0.2
+            TAG_REF="${TAG_REF#v}"
           fi
           TAGS="${SRV}/${OWNER_L}/chronoval:${TAG_REF}"
           echo "tags=${TAGS}" >> "$GITHUB_OUTPUT"
@@ -164,8 +166,13 @@ jobs:
       - name: Show pull usage
         run: |
           SRV="${GITEA_SERVER_URL#*://}"; SRV="${SRV%%/*}"
+          if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            IMG_TAG="latest"
+          else
+            IMG_TAG="${GITHUB_REF##*/}"; IMG_TAG="${IMG_TAG#v}"
+          fi
           echo "构建完成（最终以 docker job 结论为准）。"
-          echo "镜像地址：${GITEA_SERVER_URL}/${OWNER}/chronoval:latest"
+          echo "镜像地址：${SRV}/${OWNER}/chronoval:${IMG_TAG}"
           echo "拉取（若注册表为 http 需配置 insecure-registry）："
-          echo "  docker pull ${SRV}/${OWNER}/chronoval:latest"
+          echo "  docker pull ${SRV}/${OWNER}/chronoval:${IMG_TAG}"
           echo "离线资源见仓库 Release 附件（版本下载）。"

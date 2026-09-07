@@ -873,6 +873,7 @@
         "runtimeInfo": {
           "title": "運行信息",
           "version": "運行版本",
+          "image": "鏡像地址",
           "uptime": "運行時間",
           "environment": "運行環境",
           "lastUpdate": "最後更新",

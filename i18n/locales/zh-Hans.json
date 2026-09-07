@@ -1004,6 +1004,7 @@
         "runtimeInfo": {
           "title": "运行信息",
           "version": "运行版本",
+          "image": "镜像地址",
           "uptime": "运行时间",
           "environment": "运行环境",
           "lastUpdate": "最后更新",

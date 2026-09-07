@@ -1004,6 +1004,7 @@
         "runtimeInfo": {
           "title": "Runtime Information",
           "version": "Version",
+          "image": "Docker Image",
           "uptime": "Uptime",
           "environment": "Environment",
           "lastUpdate": "Last Updated",
