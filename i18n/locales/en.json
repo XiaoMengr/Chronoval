@@ -1155,6 +1155,7 @@
       "noAccess": "Sorry, you do not have access to this page."
     },
     "nav": {
+      "home": "Back to Home",
       "documentation": "Documentation"
     }
   },

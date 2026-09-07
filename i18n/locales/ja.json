@@ -1023,7 +1023,8 @@
       "noAccess": "申し訳ありませんが、このページにアクセスする権限がありません。"
     },
     "nav": {
-      "documentation": "ドキュメント"
+      "documentation": "ドキュメント",
+      "home": "ホームに戻る"
     }
   },
   "settings": {

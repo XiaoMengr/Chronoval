@@ -111,12 +111,34 @@
     4px 0 30px -20px rgba(0, 0, 0, 0.6);
 }
 
-/* 顶部导航：横向通栏毛玻璃（无底部边框，与下方融为一体） */
+/* ---- 顶栏：Afilmory 式悬浮磨砂玻璃 ----
+   面板内让 header 悬浮于滚动内容之上，内容滚动时从玻璃下穿过被模糊；
+   浅色用暖象牙半透、深色用墨黑半透（--ui-bg 随主题自动切换），保留发丝底边 */
+.dashboard-root .ui-dashboard-panel {
+  position: relative;
+}
 .dashboard-root .ui-dashboard-navbar {
-  background: color-mix(in srgb, var(--ui-bg) 48%, transparent);
-  -webkit-backdrop-filter: blur(30px) saturate(1.4);
-  backdrop-filter: blur(30px) saturate(1.4);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  background: color-mix(in srgb, var(--ui-bg) 62%, transparent);
+  -webkit-backdrop-filter: blur(30px) saturate(1.5);
+  backdrop-filter: blur(30px) saturate(1.5);
   border-bottom: 1px solid var(--ui-border-muted);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--ui-bg-inverted) 6%, transparent),
+    0 12px 32px -26px rgba(20, 20, 24, 0.3);
+}
+.dark .dashboard-root .ui-dashboard-navbar {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 16px 40px -28px rgba(0, 0, 0, 0.7);
+}
+/* 顶栏悬浮后，滚动内容从其下方穿过：给 body 预留头部高度，避免首个内容被玻璃条遮挡 */
+.dashboard-root .ui-dashboard-panel [data-slot='body'] {
+  padding-top: calc(var(--ui-header-height) + 0.25rem);
 }
 
 /* ---- 圆角标尺：让后台所有组件（按钮/输入框/徽章等）整体更圆润 ---- */

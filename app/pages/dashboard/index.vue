@@ -230,7 +230,7 @@ const onShareSite = () => {
                 {{ $t('dashboard.overview.section.runtimeInfo.version') }}
               </p>
               <p class="text-lg font-bold">
-                v{{ $config.public.VERSION }}
+                {{ $config.public.VERSION }}
               </p>
             </div>
             <div>

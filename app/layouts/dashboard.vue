@@ -78,6 +78,11 @@ const navItems = computed<NavigationMenuItem[][]>(() => [
   ],
   [
     {
+      label: $t('dashboard.nav.home'),
+      icon: 'tabler:home',
+      to: '/',
+    },
+    {
       label: 'GitHub',
       icon: 'tabler:brand-github',
       to: 'https://github.com/HoshinoSuzumi/chronoframe',

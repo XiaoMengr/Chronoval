@@ -1024,7 +1024,8 @@
       "noAccess": "抱歉，您沒有存取此頁面的權限。"
     },
     "nav": {
-      "documentation": "文件"
+      "documentation": "文件",
+      "home": "返回首頁"
     }
   },
   "settings": {
