@@ -585,6 +585,21 @@ const selectedPhotoIds = ref<Set<string>>(new Set())
 const hasSelection = computed(() => selectedPhotoIds.value.size > 0)
 const selectedRowsCount = computed(() => selectedPhotoIds.value.size)
 const isPhotoSelected = (id: string) => selectedPhotoIds.value.has(id)
+// 选择模式：默认关闭，点击工具栏按钮后才进入，此时才显示照片上的方形选择框
+const isSelectionMode = ref(false)
+const selectModeLabel = computed(() =>
+  $t(
+    isSelectionMode.value
+      ? 'dashboard.photos.selection.exitSelectMode'
+      : 'dashboard.photos.selection.enterSelectMode',
+  ),
+)
+const toggleSelectionMode = () => {
+  isSelectionMode.value = !isSelectionMode.value
+  if (!isSelectionMode.value) {
+    clearSelection()
+  }
+}
 const togglePhotoSelection = (photo: Photo) => {
   const next = new Set(selectedPhotoIds.value)
   if (next.has(photo.id)) next.delete(photo.id)
@@ -2283,13 +2298,24 @@ onUnmounted(() => {
               }}</span>
             </UButton>
 
+            <!-- 选择模式：进入后才显示照片上的方形选择框 -->
+            <UButton
+              :variant="isSelectionMode ? 'solid' : 'soft'"
+              :color="isSelectionMode ? 'primary' : 'neutral'"
+              size="sm"
+              :icon="isSelectionMode ? 'tabler:x' : 'tabler:checkbox'"
+              @click="toggleSelectionMode"
+            >
+              <span class="hidden sm:inline">{{ selectModeLabel }}</span>
+            </UButton>
+
             <!-- 全选当前筛选列表 -->
             <UButton
               variant="soft"
               color="neutral"
               size="sm"
               icon="tabler:select"
-              :disabled="filteredData.length === 0"
+              :disabled="!isSelectionMode || filteredData.length === 0"
               @click="selectAllVisiblePhotos()"
             >
               <span class="hidden sm:inline">{{
@@ -2322,7 +2348,11 @@ onUnmounted(() => {
                 v-if="item.photo"
                 :key="item.photo.id"
                 class="group relative overflow-hidden rounded-xl border border-(--ui-border) bg-(--ui-bg-elevated) shadow-sm cursor-pointer"
-                @click="openImagePreview(item.photo)"
+                @click="
+                  isSelectionMode
+                    ? togglePhotoSelection(item.photo)
+                    : openImagePreview(item.photo)
+                "
               >
                 <ThumbImage
                   :src="item.photo.thumbnailUrl || item.photo.originalUrl || ''"
@@ -2332,8 +2362,9 @@ onUnmounted(() => {
                   :style="aspectStyle(item.photo)"
                 />
 
-                <!-- 选中标记 -->
+                <!-- 选中标记：仅在选择模式下显示 -->
                 <button
+                  v-if="isSelectionMode"
                   type="button"
                   class="absolute left-2 top-2 flex size-6 items-center justify-center rounded-lg border backdrop-blur-md transition-colors"
                   :class="
@@ -2402,7 +2433,7 @@ onUnmounted(() => {
             leave-to-class="translate-y-8 opacity-0 scale-95"
           >
             <div
-              v-if="selectedRowsCount > 0"
+              v-if="isSelectionMode && selectedRowsCount > 0"
               class="fixed bottom-8 left-1/2 -translate-x-1/2 px-2 py-1.5 bg-(--ui-bg-elevated) backdrop-blur-xl shadow-xl rounded-full border border-(--ui-border-accented) z-60 flex items-center gap-3 sm:gap-6 shadow-black/5 dark:shadow-black/20"
             >
               <div

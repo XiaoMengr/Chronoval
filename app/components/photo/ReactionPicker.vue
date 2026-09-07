@@ -83,7 +83,7 @@ const handleSelect = (id: string) => {
       @click.stop
     >
       <div
-        class="bg-white/95 dark:bg-neutral-800/90 backdrop-blur-xl rounded-2xl border border-neutral-300/60 dark:border-white/10 shadow-2xl shadow-black/10 dark:shadow-black/30 p-3"
+        class="bg-white/70 dark:bg-neutral-900/55 backdrop-blur-2xl backdrop-saturate-150 rounded-2xl border border-white/40 dark:border-white/10 shadow-2xl shadow-black/10 dark:shadow-black/40 p-3"
       >
         <!-- 表态网格 -->
         <div class="grid grid-cols-4 gap-2 min-w-55">

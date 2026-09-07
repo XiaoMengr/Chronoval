@@ -19,6 +19,15 @@ const appearanceFields = computed(() =>
   fields.value.filter((f) => f.key.startsWith('appearance.')),
 )
 
+// 按 visibleIf 隐藏条件字段：例如圆角开关关闭时，不显示圆角数值输入
+const visibleAppearanceFields = computed(() =>
+  appearanceFields.value.filter((f) => {
+    const cond = f.ui.visibleIf
+    if (!cond) return true
+    return sameValue(state[cond.fieldKey], cond.value)
+  }),
+)
+
 const sameValue = (left: any, right: any) =>
   JSON.stringify(left ?? null) === JSON.stringify(right ?? null)
 
@@ -178,7 +187,7 @@ const handleAppearanceSettingsSubmit = async () => {
             @submit="handleAppearanceSettingsSubmit"
           >
             <SettingField
-              v-for="field in appearanceFields"
+              v-for="field in visibleAppearanceFields"
               :key="field.key"
               :field="field"
               :model-value="state[field.key]"

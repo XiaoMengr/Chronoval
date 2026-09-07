@@ -55,6 +55,17 @@ export const APP_SETTINGS_UI: Record<string, FieldUIConfig> = {
     type: 'toggle',
     help: 'settings.app.appearance.themeToggle.help',
   },
+  'appearance.cardCornerRadius': {
+    type: 'toggle',
+    help: 'settings.app.appearance.cardCornerRadius.help',
+  },
+  'appearance.cardCornerRadiusValue': {
+    type: 'number',
+    help: 'settings.app.appearance.cardCornerRadiusValue.help',
+    min: 0,
+    max: 64,
+    visibleIf: { fieldKey: 'appearance.cardCornerRadius', value: true },
+  },
 }
 
 export const MAP_SETTINGS_UI: Record<string, FieldUIConfig> = {

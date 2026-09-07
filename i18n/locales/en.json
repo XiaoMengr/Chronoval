@@ -697,7 +697,9 @@
         "batchReprocess": "Reprocess",
         "batchEraseLocation": "Erase location info",
         "batchDownload": "Download",
-        "batchDelete": "Batch Delete"
+        "batchDelete": "Batch Delete",
+        "enterSelectMode": "Select photos",
+        "exitSelectMode": "Exit selection"
       },
       "slideover": {
         "title": "Upload Photos",
@@ -1192,6 +1194,16 @@
           "label": "Show theme switch in header",
           "description": "Show the light/dark toggle button in the gallery header",
           "help": "When enabled, visitors can switch theme in the header; when disabled, visitors use the theme set above"
+        },
+        "cardCornerRadius": {
+          "label": "Photo card corner radius",
+          "description": "Enable rounded corners for gallery photo cards",
+          "help": "Disabled by default (sharp corners). When enabled, uses the radius set below"
+        },
+        "cardCornerRadiusValue": {
+          "label": "Corner radius size",
+          "description": "Radius of gallery photo card corners (pixels)",
+          "help": "Range 0 - 64 px, 0 means sharp corners"
         }
       },
       "upload": {

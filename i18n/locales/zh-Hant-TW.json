@@ -566,7 +566,9 @@
         "batchReprocess": "批量重新處理",
         "batchEraseLocation": "抹除位置資訊",
         "batchDownload": "批量下載",
-        "batchDelete": "批量刪除"
+        "batchDelete": "批量刪除",
+        "enterSelectMode": "選擇相片",
+        "exitSelectMode": "退出選擇"
       },
       "slideover": {
         "title": "上傳照片",
@@ -1061,6 +1063,16 @@
           "label": "頂欄顯示主題切換按鈕",
           "description": "在畫廊首頁頂欄顯示淺色/深色切換按鈕",
           "help": "開啟後訪客可在頂欄切換主題；關閉後訪客預設使用上面設定的主題"
+        },
+        "cardCornerRadius": {
+          "label": "照片卡片圓角",
+          "description": "為畫廊照片卡片啟用圓角效果",
+          "help": "預設關閉（直角）。開啟後依下方「圓角大小」顯示"
+        },
+        "cardCornerRadiusValue": {
+          "label": "圓角大小",
+          "description": "畫廊照片卡片圓角的半徑（像素）",
+          "help": "範圍 0 - 64 像素，0 表示直角"
         }
       },
       "upload": {

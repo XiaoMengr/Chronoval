@@ -28,6 +28,11 @@ const swiperRef = ref<SwiperType>()
 const loadingIndicatorRef = ref<LoadingIndicatorRef>()
 const isZoomed = ref(false)
 
+// 缩放倍率指示（与首页查看器一致）：缩放变化或纹理构建完成后短暂显示「1.0x」，2 秒后隐藏
+const showZoomLevel = ref(false)
+const zoomLevel = ref(0)
+const zoomLevelTimer = ref<NodeJS.Timeout | null>(null)
+
 const currentPhoto = computed(() => props.photos[props.currentIndex])
 
 // 背景模糊图就绪门控：切换图片时先置为未就绪，待新模糊图 @load 后再淡入，
@@ -53,7 +58,15 @@ watch(
   (open) => {
     if (!import.meta.client) return
     document.body.style.overflow = open ? 'hidden' : ''
-    if (!open) isZoomed.value = false
+    if (!open) {
+      isZoomed.value = false
+      if (zoomLevelTimer.value) {
+        clearTimeout(zoomLevelTimer.value)
+        zoomLevelTimer.value = null
+      }
+      zoomLevel.value = 0
+      showZoomLevel.value = false
+    }
   },
   { immediate: true },
 )
@@ -96,13 +109,48 @@ const handleNext = () => {
 watch(isZoomed, (zoomed) => {
   if (swiperRef.value) swiperRef.value.allowTouchMove = !zoomed
 })
-const handleZoomChange = (zoomed: boolean) => {
-  isZoomed.value = zoomed
+const handleZoomChange = (isZoom: boolean, level?: number) => {
+  isZoomed.value = isZoom
+  if (level !== undefined) {
+    zoomLevel.value = level
+    showZoomLevel.value = true
+    if (zoomLevelTimer.value) {
+      clearTimeout(zoomLevelTimer.value)
+    }
+    zoomLevelTimer.value = setTimeout(() => {
+      showZoomLevel.value = false
+      zoomLevelTimer.value = null
+    }, 2000)
+  }
 }
 
-// 当前图片在 WebGL/高清图加载完成后触发的回调：
-// 扫描相簿查看器以"模糊图就绪"为主门控淡入，此处仅作为加载完成信号保留即可
-const handleImageLoaded = () => {}
+// 当前图片在 WebGL/高清图加载完成后的回调：
+// 与首页查看器一致，在图片加载/纹理构建完成时短暂显示缩放倍率指示（兜底 1.0x）
+const handleImageLoaded = () => {
+  showZoomLevel.value = true
+  if (zoomLevelTimer.value) {
+    clearTimeout(zoomLevelTimer.value)
+  }
+  zoomLevelTimer.value = setTimeout(() => {
+    showZoomLevel.value = false
+    zoomLevelTimer.value = null
+  }, 2000)
+}
+
+// 纹理（WebGL）构建完成后短暂显示缩放倍率指示 2 秒；无倍率时以 1.0x 兜底
+const handleTextureReady = () => {
+  if (!zoomLevel.value) {
+    zoomLevel.value = 1
+  }
+  showZoomLevel.value = true
+  if (zoomLevelTimer.value) {
+    clearTimeout(zoomLevelTimer.value)
+  }
+  zoomLevelTimer.value = setTimeout(() => {
+    showZoomLevel.value = false
+    zoomLevelTimer.value = null
+  }, 2000)
+}
 
 // 键盘：Esc 关闭；左右方向键前后切换
 const onKeydown = (e: KeyboardEvent) => {
@@ -115,6 +163,10 @@ onMounted(() => window.addEventListener('keydown', onKeydown))
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeydown)
   document.body.style.overflow = ''
+  if (zoomLevelTimer.value) {
+    clearTimeout(zoomLevelTimer.value)
+    zoomLevelTimer.value = null
+  }
 })
 
 const swiperModules = [Navigation, Keyboard, Virtual]
@@ -157,7 +209,7 @@ const swiperModules = [Navigation, Keyboard, Virtual]
     <AnimatePresence>
       <motion.div
         v-if="props.isOpen"
-        :initial="{ opacity: 0 }"
+        :initial="{ opacity: 1 }"
         :animate="{ opacity: 1 }"
         :exit="{ opacity: 0 }"
         :transition="{ duration: 0.3 }"
@@ -202,6 +254,20 @@ const swiperModules = [Navigation, Keyboard, Virtual]
 
         <LoadingIndicator ref="loadingIndicatorRef" />
 
+        <!-- 缩放倍率提示（与首页查看器一致）：缩放或纹理构建后短暂显示 -->
+        <AnimatePresence>
+          <motion.div
+            v-if="showZoomLevel && zoomLevel > 0"
+            :initial="{ opacity: 0, y: 10 }"
+            :animate="{ opacity: 1, y: 0 }"
+            :exit="{ opacity: 0, y: 10 }"
+            :transition="{ duration: 0.2 }"
+            class="absolute bottom-4 left-4 z-20 bg-black/40 backdrop-blur-3xl rounded-xl border border-white/10 px-4 py-2 shadow-2xl"
+          >
+            <span class="text-white font-medium">{{ Number(zoomLevel).toFixed(1) }}x</span>
+          </motion.div>
+        </AnimatePresence>
+
         <!-- Swiper：可左右滑动切换 -->
         <Swiper
           :modules="swiperModules"
@@ -225,7 +291,7 @@ const swiperModules = [Navigation, Keyboard, Virtual]
             class="flex items-center justify-center"
           >
             <motion.div
-              :initial="{ opacity: 0.5, scale: 0.95 }"
+              :initial="{ opacity: 1, scale: 1 }"
               :animate="{ opacity: 1, scale: 1 }"
               :exit="{ opacity: 0, scale: 0.95 }"
               :transition="{ type: 'spring', duration: 0.4, bounce: 0 }"
@@ -244,10 +310,13 @@ const swiperModules = [Navigation, Keyboard, Virtual]
                 :on-image-loaded="
                   index === props.currentIndex ? handleImageLoaded : undefined
                 "
+                :on-texture-ready="
+                  index === props.currentIndex ? handleTextureReady : undefined
+                "
                 :enable-pan="index === props.currentIndex"
                 :enable-zoom="index === props.currentIndex"
                 :on-zoom-change="
-                  index === props.currentIndex ? (z) => handleZoomChange(!!z) : undefined
+                  index === props.currentIndex ? handleZoomChange : undefined
                 "
               />
             </motion.div>

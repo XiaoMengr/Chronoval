@@ -38,6 +38,14 @@ const longPressTimer = ref<NodeJS.Timeout | null>(null)
 const initialTouchPos = ref<{ x: number; y: number } | null>(null)
 const isMobile = useMediaQuery('(max-width: 768px)')
 
+// 画廊照片卡片圆角：由后台「外观」设置控制，默认关闭（圆角 0），开启后按设定值生效
+const cardCornerEnabled = useSettingRef('app:appearance.cardCornerRadius')
+const cardCornerValue = useSettingRef('app:appearance.cardCornerRadiusValue')
+const cardRadius = computed(() => {
+  if (!cardCornerEnabled.value) return '0px'
+  return `${Number(cardCornerValue.value) || 0}px`
+})
+
 const intersectionObserverRef = ref<IntersectionObserver | null>(null)
 
 const processingState = getProcessingState(props.photo.id)
@@ -498,7 +506,7 @@ onUnmounted(() => {
   <div
     ref="photoRef"
     class="photo-card w-full transition-transform duration-300 cursor-pointer select-none"
-    :style="{ 'contain-intrinsic-size': `auto ${intrinsicSize}px` }"
+    :style="{ 'contain-intrinsic-size': `auto ${intrinsicSize}px`, borderRadius: cardRadius }"
     @click="handleClick"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
@@ -508,7 +516,10 @@ onUnmounted(() => {
     @touchcancel="handleTouchEnd"
     @contextmenu.prevent=""
   >
-    <div class="relative group overflow-hidden bg-neutral-900 transition-transform duration-300">
+    <div
+      class="relative group overflow-hidden bg-neutral-900 transition-transform duration-300"
+      :style="{ borderRadius: cardRadius }"
+    >
       <!-- Container with fixed aspect ratio -->
       <div
         class="w-full relative"

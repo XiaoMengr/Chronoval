@@ -697,7 +697,9 @@
         "batchReprocess": "重新处理",
         "batchEraseLocation": "抹除位置信息",
         "batchDownload": "批量下载",
-        "batchDelete": "批量删除"
+        "batchDelete": "批量删除",
+        "enterSelectMode": "选择照片",
+        "exitSelectMode": "退出选择"
       },
       "slideover": {
         "title": "上传照片",
@@ -1192,6 +1194,16 @@
           "label": "顶栏显示主题切换按钮",
           "description": "在画廊首页顶栏显示浅色/深色切换按钮",
           "help": "开启后访客可在顶栏切换主题；关闭后访客默认使用上面设置的主题"
+        },
+        "cardCornerRadius": {
+          "label": "照片卡片圆角",
+          "description": "为画廊照片卡片启用圆角效果",
+          "help": "默认关闭（直角）。开启后按下方“圆角大小”显示"
+        },
+        "cardCornerRadiusValue": {
+          "label": "圆角大小",
+          "description": "画廊照片卡片圆角的半径（像素）",
+          "help": "范围 0 - 64 像素，0 表示直角"
         }
       },
       "upload": {

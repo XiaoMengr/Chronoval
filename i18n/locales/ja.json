@@ -566,7 +566,9 @@
         "batchReprocess": "一括再処理",
         "batchEraseLocation": "位置情報を抹消",
         "batchDownload": "一括ダウンロード",
-        "batchDelete": "一括削除"
+        "batchDelete": "一括削除",
+        "enterSelectMode": "写真を選択",
+        "exitSelectMode": "選択を終了"
       },
       "slideover": {
         "title": "写真をアップロード",
@@ -1058,8 +1060,18 @@
         },
         "themeToggle": {
           "label": "ヘッダーにテーマ切替ボタンを表示",
-          "description": "ギャラリーのヘッダーにライト/ダーク切替ボタンを表示",
+          "description": "ギャラリーヘッダーにライト/ダーク切替ボタンを表示",
           "help": "有効にすると訪問者がヘッダーでテーマを切替えられます。無効にすると上記のテーマ設定をデフォルトとして使用します"
+        },
+        "cardCornerRadius": {
+          "label": "写真カードの角丸",
+          "description": "ギャラリーの写真カードで角丸を使用する",
+          "help": "初期状態では無効（直角）。有効にすると下の「角丸サイズ」で表示します"
+        },
+        "cardCornerRadiusValue": {
+          "label": "角丸サイズ",
+          "description": "ギャラリーの写真カードの角丸の半径（ピクセル）",
+          "help": "範囲 0 - 64 px、0 は直角"
         }
       },
       "upload": {
