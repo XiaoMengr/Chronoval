@@ -101,12 +101,14 @@ const isMobile = useMediaQuery('(max-width: 768px)')
 // 清晰照片不会延伸到透明模糊底栏的下一层。
 const THUMBNAIL_BAR_HEIGHT = '73px'
 
-// 桌面端底部导航栏隐藏条件：进入放大（平移/缩放，底栏随 @zoom 隐藏）或
-// 信息侧栏展开时会话自动收起，同时释放预留的底部空间让图片可用全高。
+// 底部导航栏隐藏条件：桌面端进入放大（平移/缩放）或信息侧栏展开时自动收起；
+// 移动端打开图片信息卡片(showExifPanel 底部弹层)时同样自动收起。隐藏的同时
+// 释放预留的底部空间，让图片可用全高。
 const isBottomNavHidden = computed(
   () =>
-    !isMobile.value &&
-    (isImageZoomed.value || isDesktopInspectorVisible.value),
+    (isMobile.value && showExifPanel.value) ||
+    (!isMobile.value &&
+      (isImageZoomed.value || isDesktopInspectorVisible.value)),
 )
 const thumbBarBottomPad = computed(() =>
   isBottomNavHidden.value ? '0px' : THUMBNAIL_BAR_HEIGHT,
