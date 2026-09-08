@@ -5,16 +5,28 @@ const viewState = useViewerState()
 const { isPanoramaViewerOpen, panoramaPhoto } = storeToRefs(viewState)
 const { closePanoramaViewer } = viewState
 
+// 照片信息卡片（复用普通照片查看器的 InfoPanel）
+const infoOpen = ref(false)
+
+// 切换照片时关闭信息卡片
+watch(panoramaPhoto, () => {
+  infoOpen.value = false
+})
+
 // 全景原图地址：优先大图，确保球面分辨率足够
 const panoramaSrc = computed(() => {
   const p = panoramaPhoto.value
   return p?.originalUrl || ''
 })
 
-// Esc 关闭
+// Esc：先关信息卡片，再关闭全景查看器
 function onKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape' && isPanoramaViewerOpen.value) {
-    closePanoramaViewer()
+    if (infoOpen.value) {
+      infoOpen.value = false
+    } else {
+      closePanoramaViewer()
+    }
   }
 }
 
@@ -46,12 +58,33 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 
           <button
             type="button"
+            class="absolute left-5 top-5 z-20 flex size-11 items-center justify-center rounded-full border border-white/15 text-white/90 shadow-xl backdrop-blur-xl transition hover:bg-black/60"
+            :class="infoOpen ? 'bg-black/60' : 'bg-black/40'"
+            aria-label="info"
+            @click="infoOpen = !infoOpen"
+          >
+            <Icon name="tabler:info-circle" class="size-5" />
+          </button>
+
+          <button
+            type="button"
             class="absolute right-5 top-5 z-20 flex size-11 items-center justify-center rounded-full border border-white/15 bg-black/40 text-white/90 shadow-xl backdrop-blur-xl transition hover:bg-black/60"
             aria-label="close"
             @click="closePanoramaViewer"
           >
             <Icon name="tabler:x" class="size-5" />
           </button>
+
+          <!-- 照片信息卡片：与普通照片查看器一致（桌面右侧抽屉 / 移动端底部弹层） -->
+          <PhotoInfoPanel
+            v-if="isPanoramaViewerOpen && panoramaPhoto"
+            :key="panoramaPhoto.id"
+            :current-photo="panoramaPhoto"
+            :exif-data="panoramaPhoto.exif"
+            :visible="infoOpen"
+            :on-close="() => (infoOpen = false)"
+            class="z-30"
+          />
 
           <div class="pointer-events-none absolute inset-x-0 bottom-6 z-20 flex justify-center">
             <div
