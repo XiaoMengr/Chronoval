@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { motion, useDomRef } from 'motion-v'
+import { isPanorama } from '~/utils/panorama'
 
 interface Props {
   photo: Photo
@@ -578,14 +579,19 @@ onUnmounted(() => {
         class="pointer-events-none absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
       />
 
-      <!-- Live Photo indicator -->
-      <PhotoLivePhotoIndicator
-        v-if="photo.isLivePhoto"
-        class="absolute top-2 left-2"
-        :photo="photo"
-        :is-video-playing="isVideoPlaying"
-        :processing-state="processingState || null"
-      />
+      <!-- 左上角角标区：全景 / 实况照片，纵向排列 -->
+      <div class="pointer-events-none absolute top-2 left-2 flex flex-col items-start gap-1">
+        <PanoramaBadge
+          v-if="isPanorama(photo)"
+          :photo="photo"
+        />
+        <PhotoLivePhotoIndicator
+          v-if="photo.isLivePhoto"
+          :photo="photo"
+          :is-video-playing="isVideoPlaying"
+          :processing-state="processingState || null"
+        />
+      </div>
 
       <!-- 图片信息与 EXIF 叠加层（Afilmory 精确复刻） -->
       <div

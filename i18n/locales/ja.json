@@ -1601,5 +1601,12 @@
     "image": {
       "loadError": "画像の読み込み失敗"
     }
+  },
+  "panorama": {
+    "previewTitle": "360° パノラマ",
+    "dragHintShort": "ドラッグして見回す",
+    "dragHint": "ドラッグで見回す",
+    "zoomHint": "スクロール / ピンチでズーム",
+    "resetHint": "ダブルクリックでリセット"
   }
 }

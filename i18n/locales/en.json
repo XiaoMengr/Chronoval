@@ -1768,5 +1768,12 @@
     "image": {
       "loadError": "Failed to load image"
     }
+  },
+  "panorama": {
+    "previewTitle": "360° Panorama",
+    "dragHintShort": "Drag to look around",
+    "dragHint": "Drag to look",
+    "zoomHint": "Scroll / pinch to zoom",
+    "resetHint": "Double-click to reset"
   }
 }

@@ -1768,5 +1768,12 @@
     "image": {
       "loadError": "图片加载失败"
     }
+  },
+  "panorama": {
+    "previewTitle": "360° 全景预览",
+    "dragHintShort": "拖动查看四周",
+    "dragHint": "拖拽环视",
+    "zoomHint": "滚轮 / 捏合缩放",
+    "resetHint": "双击复位"
   }
 }

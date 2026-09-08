@@ -1602,5 +1602,12 @@
     "image": {
       "loadError": "圖片載入失敗"
     }
+  },
+  "panorama": {
+    "previewTitle": "360° 全景預覽",
+    "dragHintShort": "拖曳查看四周",
+    "dragHint": "拖曳環視",
+    "zoomHint": "滾輪 / 捏合縮放",
+    "resetHint": "雙擊復位"
   }
 }
