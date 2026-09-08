@@ -27,6 +27,8 @@ const bodySchema = z.object({
     ])
     .optional(),
   rating: z.union([z.number().int().min(0).max(5), z.null()]).optional(),
+  // 360 全景手动标记：null=自动；1=强制全景；0=强制非全景
+  isPanorama: z.union([z.literal(1), z.literal(0), z.literal(null)]).optional(),
 })
 
 const normalizeTags = (tags: string[] | undefined) => {
@@ -56,7 +58,8 @@ export default eventHandler(async (event) => {
     payload.description === undefined &&
     payload.tags === undefined &&
     payload.location === undefined &&
-    payload.rating === undefined
+    payload.rating === undefined &&
+    payload.isPanorama === undefined
   ) {
     throw createError({
       statusCode: 400,
@@ -76,6 +79,35 @@ export default eventHandler(async (event) => {
       statusCode: 404,
       statusMessage: t('dashboard.photos.messages.photoNotFound'),
     })
+  }
+
+  // 仅修改 360 全景标记时，不需要重写源文件（标志位不写入图片 EXIF）
+  if (payload.isPanorama !== undefined) {
+    // 判空：除 isPanorama 外没有其他改动，直接更新数据库并返回
+    const onlyFlagChanged =
+      payload.title === undefined &&
+      payload.description === undefined &&
+      payload.tags === undefined &&
+      payload.location === undefined &&
+      payload.rating === undefined
+
+    if (onlyFlagChanged) {
+      await db
+        .update(tables.photos)
+        .set({ isPanorama: payload.isPanorama })
+        .where(eq(tables.photos.id, photoId))
+
+      const updatedPhoto = await db
+        .select()
+        .from(tables.photos)
+        .where(eq(tables.photos.id, photoId))
+        .get()
+
+      return {
+        success: true,
+        photo: updatedPhoto,
+      }
+    }
   }
 
   if (!photo.storageKey) {
@@ -195,6 +227,10 @@ export default eventHandler(async (event) => {
 
     if (normalizedTags !== undefined) {
       updateData.tags = normalizedTags
+    }
+
+    if (payload.isPanorama !== undefined) {
+      updateData.isPanorama = payload.isPanorama
     }
 
     if (payload.location !== undefined) {

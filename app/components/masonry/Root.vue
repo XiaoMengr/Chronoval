@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { motion } from 'motion-v'
+import { isPanorama } from '~/utils/panorama'
 interface Props {
   photos: Photo[]
   columns?: number | 'auto'
@@ -20,6 +21,7 @@ const displayPhotos = computed(() => {
 })
 
 const { currentPhotoIndex, isViewerOpen } = storeToRefs(useViewerState())
+const { openPanoramaViewer } = useViewerState()
 
 const FIRST_SCREEN_ITEMS_COUNT = 50
 const MASONRY_GAP = 4
@@ -269,7 +271,13 @@ onUnmounted(() => {
 })
 
 const handleOpenViewer = (index: number) => {
-  router.push(`/${displayPhotos.value[index]?.id}`)
+  const photo = displayPhotos.value[index]
+  // 360° 全景照片走独立球面查看器，不进入普通照片查看器
+  if (photo && isPanorama(photo)) {
+    openPanoramaViewer(photo)
+    return
+  }
+  router.push(`/${photo?.id}`)
 }
 
 const scrollToPhoto = (photoIndex: number) => {

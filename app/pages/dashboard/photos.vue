@@ -4,6 +4,7 @@ import type { Photo, PipelineQueueItem } from '~~/server/utils/db'
 import { resolveComponent } from 'vue'
 import { Icon, UBadge } from '#components'
 import ThumbImage from '~/components/ui/ThumbImage.vue'
+import { isPanorama } from '~/utils/panorama'
 
 const Rating = resolveComponent('Rating')
 
@@ -128,6 +129,7 @@ interface EditFormState {
   description: string
   tags: string[]
   rating: number | null
+  isPanorama: number | null
 }
 
 const editingPhoto = ref<Photo | null>(null)
@@ -139,6 +141,7 @@ const editFormState = reactive<EditFormState>({
   description: '',
   tags: [],
   rating: null,
+  isPanorama: null,
 })
 
 const originalMetadata = ref<{
@@ -147,12 +150,14 @@ const originalMetadata = ref<{
   tags: string[]
   location: { latitude: number; longitude: number } | null
   rating: number | null
+  isPanorama: number | null
 }>({
   title: '',
   description: '',
   tags: [],
   location: null,
   rating: null,
+  isPanorama: null,
 })
 
 const locationSelection = ref<{ latitude: number; longitude: number } | null>(
@@ -229,13 +234,18 @@ const ratingChanged = computed(
   () => editFormState.rating !== originalMetadata.value.rating,
 )
 
+const isPanoramaChanged = computed(
+  () => editFormState.isPanorama !== originalMetadata.value.isPanorama,
+)
+
 const isMetadataDirty = computed(
   () =>
     titleChanged.value ||
     descriptionChanged.value ||
     tagsChanged.value ||
     locationChanged.value ||
-    ratingChanged.value,
+    ratingChanged.value ||
+    isPanoramaChanged.value,
 )
 
 const formattedCoordinates = computed(() => {
@@ -568,12 +578,14 @@ watch(isEditModalOpen, (open) => {
     editFormState.description = ''
     editFormState.tags = []
     editFormState.rating = null
+    editFormState.isPanorama = null
     originalMetadata.value = {
       title: '',
       description: '',
       tags: [],
       location: null,
       rating: null,
+      isPanorama: null,
     }
     locationSelection.value = null
     locationTouched.value = false
@@ -1118,6 +1130,8 @@ const openMetadataEditor = (photo: Photo) => {
   editFormState.rating =
     typeof photo.exif?.Rating === 'number' ? photo.exif.Rating : null
 
+  editFormState.isPanorama = photo.isPanorama ?? null
+
   const initialLocation = hasCoordinates
     ? {
         latitude: photo.latitude as number,
@@ -1131,6 +1145,7 @@ const openMetadataEditor = (photo: Photo) => {
     tags: [...initialTags],
     location: initialLocation ? { ...initialLocation } : null,
     rating: typeof photo.exif?.Rating === 'number' ? photo.exif.Rating : null,
+    isPanorama: photo.isPanorama ?? null,
   }
 
   locationSelection.value = initialLocation ? { ...initialLocation } : null
@@ -1187,6 +1202,7 @@ const saveMetadataChanges = async () => {
       tags?: string[]
       location?: { latitude: number; longitude: number } | null
       rating?: number | null
+      isPanorama?: number | null
     } = {}
 
     if (titleChanged.value) {
@@ -1199,6 +1215,10 @@ const saveMetadataChanges = async () => {
 
     if (tagsChanged.value) {
       payload.tags = [...editFormState.tags]
+    }
+
+    if (isPanoramaChanged.value) {
+      payload.isPanorama = editFormState.isPanorama
     }
 
     const shouldQueueLocationErase =
@@ -1490,6 +1510,11 @@ const previewingPhoto = ref<Photo | null>(null)
 
 const openImagePreview = (photo: Photo) => {
   if (photo) {
+    // 360° 全景照片在后台也走独立球面查看器
+    if (isPanorama(photo)) {
+      useViewerState().openPanoramaViewer(photo)
+      return
+    }
     previewingPhoto.value = photo
     isImagePreviewOpen.value = true
   }
@@ -2411,6 +2436,17 @@ onUnmounted(() => {
                     class="size-3.5 text-yellow-300"
                   />
                 </div>
+
+                <!-- 360° 全景角标：与普通照片一致，仅全景照片显示 -->
+                <div
+                  v-if="isPanorama(item.photo)"
+                  class="pointer-events-none absolute top-2 left-2 z-10"
+                >
+                  <div class="flex items-center gap-0.5 rounded-full bg-black/45 backdrop-blur-md py-1 pl-1.5 pr-1.5 text-[13px] font-bold leading-none text-white saturate-150">
+                    <Icon name="tabler:rotate-360" class="size-[17px]" />
+                    <span>360°</span>
+                  </div>
+                </div>
               </div>
             </template>
           </MasonryWall>
@@ -2601,6 +2637,49 @@ onUnmounted(() => {
                       @update:model-value="
                         editFormState.rating = $event || null
                       "
+                    />
+                  </div>
+                </div>
+
+                <!-- 360 全景标记 -->
+                <div class="space-y-2">
+                  <div class="flex items-center justify-between">
+                    <label
+                      class="text-sm font-medium text-neutral-700 dark:text-neutral-200"
+                    >
+                      {{ $t('dashboard.photos.editModal.fields.panoramaTitle') }}
+                    </label>
+                    <UButton
+                      v-if="editFormState.isPanorama !== null"
+                      variant="ghost"
+                      color="neutral"
+                      size="xs"
+                      icon="tabler:rotate-2"
+                      @click.prevent="editFormState.isPanorama = null"
+                    >
+                      {{
+                        $t(
+                          'dashboard.photos.editModal.fields.panoramaAuto',
+                        )
+                      }}
+                    </UButton>
+                  </div>
+                  <div class="flex items-center justify-between gap-3">
+                    <p class="text-xs text-neutral-500 dark:text-neutral-400">
+                      {{
+                        $t(
+                          'dashboard.photos.editModal.fields.panoramaHint',
+                        )
+                      }}
+                    </p>
+                    <UToggle
+                      :model-value="
+                        editFormState.isPanorama === 1
+                      "
+                      color="primary"
+                      @update:model-value="(val: boolean) => {
+                        editFormState.isPanorama = val ? 1 : 0
+                      }"
                     />
                   </div>
                 </div>

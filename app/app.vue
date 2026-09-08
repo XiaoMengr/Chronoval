@@ -201,6 +201,7 @@ provide(
           @close="handleClose"
           @index-change="handleIndexChange"
         />
+        <PhotoPanoramaOverlay />
       </ClientOnly>
     </PhotosProvider>
   </UApp>

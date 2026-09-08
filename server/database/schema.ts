@@ -67,6 +67,8 @@ export const photos = sqliteTable('photos', {
   isLivePhoto: integer('is_live_photo').default(0).notNull(),
   livePhotoVideoUrl: text('live_photo_video_url'),
   livePhotoVideoKey: text('live_photo_video_key'),
+  // 360 全景手动标记：null=自动判定；1=强制全景；0=强制非全景
+  isPanorama: integer('is_panorama'),
   // 媒体类型：image 图片 / video 视频
   type: text('type', { enum: ['image', 'video'] })
     .default('image')

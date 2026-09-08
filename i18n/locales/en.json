@@ -852,7 +852,10 @@
           "noLocation": "No location selected",
           "rating": "Rating",
           "ratingHint": "Click on the stars to set the photo rating (0-5 stars).",
-          "noRating": "No rating"
+          "noRating": "No rating",
+          "panoramaTitle": "360° Panorama",
+          "panoramaHint": "For photos that can't be auto-detected as 360, force-enable spherical viewing.",
+          "panoramaAuto": "Auto"
         },
         "actions": {
           "cancel": "Cancel",

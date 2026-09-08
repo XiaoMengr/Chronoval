@@ -5,10 +5,6 @@ useHead({
 
 const { photos } = usePhotos()
 
-const route = useRoute()
-// 360° 全景预览入口：仅在首页（/）展示
-const showPanoPreview = computed(() => route.path === '/')
-
 // 照片风骨架屏：进入画廊时的加载画面品牌名（跟随站点标题，兜底 Chronoval）
 const appTitle = useSettingRef('app:title')
 const loaderTitle = computed(() => appTitle.value || 'Chronoval')
@@ -63,7 +59,6 @@ const loaderTiles = [1, 2, 3, 4, 5, 6]
           </div>
         </template>
       </ClientOnly>
-      <PanoramaHomePreview v-if="showPanoPreview" />
       <slot />
     </div>
   </div>

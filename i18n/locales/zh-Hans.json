@@ -852,7 +852,10 @@
           "noLocation": "未选择位置",
           "rating": "评分",
           "ratingHint": "点击星星为照片设置评分（0-5 星）。",
-          "noRating": "未评分"
+          "noRating": "未评分",
+          "panoramaTitle": "360° 全景",
+          "panoramaHint": "无法自动识别为 360 时，可手动开启球面全景查看。",
+          "panoramaAuto": "自动"
         },
         "actions": {
           "cancel": "取消",
