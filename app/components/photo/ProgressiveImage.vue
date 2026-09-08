@@ -7,9 +7,15 @@ interface Props {
   src: string
   thumbnailSrc?: string
   thumbhash?: string | null
-  /** 是否渲染"缩略图占位"（其自带的 blur(8px)→清晰 会与 WebGL 构建纹理的 blur→清晰叠加成两次模糊）。
+  /** 是否渲染"缩略图占位"（其自带的 blur(8px)→清晰 会与 WebGL 构建纹理的 blur→清晰 叠加成两次模糊）。
    * 桌面端关闭该占位，只保留 WebGL 构建纹理这一次从模糊到清晰；移动端保留占位作加载兜底 */
   showThumbPlaceholder?: boolean
+  /**
+   * 相簿等场景：让缩略图占位保持不透明、持续压住背景模糊层，直到 WebGL 画布真正浮现（webglReady）
+   * 才淡出让位于清晰图。避免"高清帧已渲染但画布因就绪事件未触发而隐藏"时占位被提前淡出，
+   * 导致照片区域变透明、露出背后的高斯模糊层（照片像是躲在模糊层下一层）。默认关闭，不影响首页。
+   */
+  holdThumbPlaceholderUntilWebGLReady?: boolean
   alt?: string
   width?: number
   height?: number
@@ -39,6 +45,7 @@ const props = withDefaults(defineProps<Props>(), {
   thumbnailSrc: '',
   thumbhash: null,
   showThumbPlaceholder: true,
+  holdThumbPlaceholderUntilWebGLReady: false,
   alt: 'Image',
   width: undefined,
   height: undefined,
@@ -96,9 +103,14 @@ const showDebugInfo = computed(() => {
 const webglViewerRef = ref()
 const loaderManagerRef = ref<ImageLoaderManager | null>(null)
 
-// 当高清图已在 WebGL 中渲染时，将占位缩略图淡出（置灰且不拦截交互）
+// 当高清图已在 WebGL 中渲染时，将占位缩略图淡出（置灰且不拦截交互）。
+// 若开启 holdThumbPlaceholderUntilWebGLReady（相簿场景），则还需等 WebGL 画布真正浮现
+// （webglReady）才淡出，否则占位提前消失而画布又不可见会露出背后的高斯模糊层。
 const thumbnailDimmed = computed(() => {
-  return props.thumbnailSrc && highResRendered.value && !hasError.value
+  if (!props.thumbnailSrc || !highResRendered.value || hasError.value) return false
+  return props.holdThumbPlaceholderUntilWebGLReady
+    ? webglReady.value
+    : true
 })
 
 const showWebGLViewer = computed(() => {

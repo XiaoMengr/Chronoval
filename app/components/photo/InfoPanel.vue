@@ -122,11 +122,22 @@ onBeforeUnmount(() => {
   window.removeEventListener('pointercancel', onSheetUp)
 })
 
-// 面板显隐由 visible 驱动（常驻挂载预热数据，仅切换可见性/位置）
+// 面板显隐由 visible 驱动（常驻挂载预热数据，仅切换可见性/位置）。
+// iOS 式出现动画：translate + 轻微 scale（0.98→1）淡入，形成「推开卡片」的层次与柔感；
+// 弹簧带轻微回弹（欠阻尼）起步快、收尾顺滑。
+const SHEET_SPRING = {
+  type: 'spring',
+  stiffness: 430,
+  damping: 36,
+  mass: 1,
+} as const
+
 const motionPanel = computed(() => {
   if (!props.visible)
-    return isMobile.value ? { opacity: 0, y: '110%' } : { opacity: 0, x: '100%' }
-  return { opacity: 1, x: 0, y: 0 }
+    return isMobile.value
+      ? { opacity: 0, y: '106%', scale: 0.98 }
+      : { opacity: 0, x: '72%', scale: 0.96 }
+  return { opacity: 1, x: 0, y: 0, scale: 1 }
 })
 
 // ===== 格式化辅助（与 afilmory formatExifData 对齐） =====
@@ -429,7 +440,7 @@ const onAlbumClick = (albumId: number) => {
   <motion.div
     :initial="false"
     :animate="motionPanel"
-    :transition="{ type: 'spring', duration: 0.45, bounce: 0 }"
+    :transition="SHEET_SPRING"
     class="flex flex-col"
     :style="sheetStyle"
     :class="{
@@ -693,9 +704,10 @@ const onAlbumClick = (albumId: number) => {
   );
 }
 
-/* 打开面板时文字平滑渐入（每次 visible 变 true 触发一次） */
+/* 打开面板时文字平滑渐入（每次 visible 变 true 触发一次）——
+   ease-out-expo 视觉曲线，起步快、收尾柔和，更贴合 iOS 手感 */
 .content-fade-in {
-  animation: contentFadeIn 0.36s ease-out both;
+  animation: contentFadeIn 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 @keyframes contentFadeIn {
   from {

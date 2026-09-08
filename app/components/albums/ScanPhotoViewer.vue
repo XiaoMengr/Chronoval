@@ -163,9 +163,30 @@ const onKeydown = (e: KeyboardEvent) => {
   else if (e.key === 'ArrowLeft') handlePrevious()
   else if (e.key === 'ArrowRight') handleNext()
 }
-onMounted(() => window.addEventListener('keydown', onKeydown))
+
+// 窗口尺寸变化 → 图片位置偏移修复（与首页查看器一致）：
+// swiper 不自动跟随容器宽度变化，若缩放窗口后不重排滑块，滑块宽度（即 WebGL 画布宽度）
+// 保持旧值，引擎 getBoundingClientRect 不变 → resize() 提前 return → 图片停留在旧尺寸/旧位置，
+// 相对新的舞台偏移到一侧，看起来"看不到图片"。因此在窗口 resize 时用 rAF 合并帧调用
+// swiper.update() + virtual.update(true) + slideTo(active) 把照片按新宽度重新铺排并重锚回中央，
+// 画布随之变为新尺寸 → 引擎 ResizeObserver 触发 resize → getFitScale 重新居中。
+const handleWindowResizeRefit = () => {
+  requestAnimationFrame(() => {
+    const swiper = swiperRef.value
+    if (!swiper) return
+    swiper.update()
+    swiper.virtual?.update(true)
+    swiper.slideTo(swiper.activeIndex, 0, false)
+  })
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', onKeydown)
+  window.addEventListener('resize', handleWindowResizeRefit)
+})
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeydown)
+  window.removeEventListener('resize', handleWindowResizeRefit)
   document.body.style.overflow = ''
   if (zoomLevelTimer.value) {
     clearTimeout(zoomLevelTimer.value)
@@ -320,6 +341,7 @@ const swiperModules = [Navigation, Keyboard, Virtual]
                 :src="photo.originalUrl || ''"
                 :thumbnail-src="photo.thumbnailUrl || ''"
                 :thumbhash="photo.thumbnailHash"
+                :hold-thumb-placeholder-until-webgl-ready="true"
                 :on-image-loaded="
                   index === props.currentIndex ? handleImageLoaded : undefined
                 "
