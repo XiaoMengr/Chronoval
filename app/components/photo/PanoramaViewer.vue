@@ -6,13 +6,16 @@ interface Props {
   src: string
   /** 交互开关（默认开启） */
   interactive?: boolean
-  /** 初始 FOV（默认 60°，越小初始放大越近） */
+  /** 初始 FOV（默认 115°=最宽的缩小视角，整张全景一进入就清晰完整；此后只能手动放大） */
   initialFov?: number
+  /** 是否聚焦按钮提示（由父级展示后再触发 ready，避免首帧闪黑） */
+  parentFocused?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   interactive: true,
-  initialFov: 60,
+  initialFov: 115,
+  parentFocused: true,
 })
 
 const emit = defineEmits<{
@@ -54,7 +57,9 @@ let t0 = 0
 
 function setFov(next: number) {
   if (!camera) return
-  fov = THREE.MathUtils.clamp(next, 25, 115)
+  // 进入即是最宽的缩小视角（initialFov=115°，整图清晰完整）。
+  // 把缩小上限卡在 initialFov：开局即为最宽，只能继续放大（fov 减小），不允许再缩小（fov 增大）。
+  fov = THREE.MathUtils.clamp(next, 25, props.initialFov)
   camera.fov = fov
   camera.updateProjectionMatrix()
   emit('interacting', dragging, fov < 100)
@@ -67,6 +72,7 @@ function frame(time: number) {
   const dt = Math.min(1, (time - t0) / 1000)
   t0 = time
 
+  // ===== 沉浸式环视模式 =====
   if (dragging) {
     velLon *= 0.92
     velLat *= 0.92
@@ -75,8 +81,8 @@ function frame(time: number) {
   } else {
     lon += velLon
     lat += velLat
-    velLon *= 0.94
-    velLat *= 0.94
+    velLon *= 0.9
+    velLat *= 0.9
     if (Math.abs(velLon) < 0.002 && Math.abs(velLat) < 0.002) {
       velLon = 0
       velLat = 0
@@ -110,8 +116,9 @@ function setPointerMove(x: number, y: number) {
   const dy = y - prevY
   prevX = x
   prevY = y
-  velLon = dx * 0.25
-  velLat = dy * 0.25
+  // 拖动灵敏度偏低，跟随手指但明显更稳、不快
+  velLon = dx * 0.12
+  velLat = dy * 0.12
   lon += velLon
   lat += velLat
 }
@@ -198,7 +205,7 @@ const onDblClick = (e: MouseEvent) => {
   e.preventDefault()
   lon = 0
   lat = 0
-  setFov(60)
+  setFov(props.initialFov)
   emit('interacting', false, false)
 }
 

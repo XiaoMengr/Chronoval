@@ -58,12 +58,21 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 
           <button
             type="button"
+            :aria-label="
+              infoOpen ? 'collapse info' : 'expand info'
+            "
             class="absolute left-5 top-5 z-20 flex size-11 items-center justify-center rounded-full border border-white/15 text-white/90 shadow-xl backdrop-blur-xl transition hover:bg-black/60"
             :class="infoOpen ? 'bg-black/60' : 'bg-black/40'"
-            aria-label="info"
             @click="infoOpen = !infoOpen"
           >
-            <Icon name="tabler:info-circle" class="size-5" />
+            <Icon
+              :name="
+                infoOpen
+                  ? 'tabler:layout-sidebar-right-collapse'
+                  : 'tabler:layout-sidebar-right-expand'
+              "
+              class="size-5"
+            />
           </button>
 
           <button

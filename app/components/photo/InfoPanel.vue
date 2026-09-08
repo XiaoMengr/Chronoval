@@ -473,7 +473,7 @@ const onAlbumClick = (albumId: number) => {
         {{ $t('exif.sections.info') }}
       </h3>
       <button
-        v-if="onClose"
+        v-if="isMobile && onClose"
         type="button"
         aria-label="close"
         class="sheet-close flex size-8 shrink-0 items-center justify-center rounded-full"
