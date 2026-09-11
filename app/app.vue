@@ -184,7 +184,6 @@ provide(
 
 <template>
   <UApp>
-    <NuxtLoadingIndicator />
     <PhotosProvider
       :photos="photos"
       :refresh="refresh"

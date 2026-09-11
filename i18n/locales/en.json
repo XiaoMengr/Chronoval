@@ -1189,6 +1189,17 @@
         "description": "Link to the owner's avatar image",
         "help": "The avatar is displayed on the loading page and homepage"
       },
+      "loader": {
+        "images": {
+          "label": "Loading screen card images",
+          "description": "Customize the three images shown on the loading cards while the gallery loads",
+          "help": "Leave empty to use the default liquid glass cards. You can also upload your own images, which are embedded directly and won't be served as separate files.",
+          "liquid": "Liquid cards (default)",
+          "preset": "Use built-in sample photos",
+          "upload": "Upload",
+          "slotLabel": "Card {n}"
+        }
+      },
       "appearance": {
         "theme": {
           "label": "Theme",

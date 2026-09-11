@@ -126,13 +126,19 @@ const handleAppearanceSettingsSubmit = async () => {
             class="space-y-5 px-5 py-5"
             @submit="handleAppSettingsSubmit"
           >
-            <SettingField
-              v-for="field in appFields"
-              :key="field.key"
-              :field="field"
-              :model-value="state[field.key]"
-              @update:model-value="(val) => (state[field.key] = val)"
-            />
+            <template v-for="field in appFields" :key="field.key">
+              <LoaderImagesSetting
+                v-if="field.key === 'loader.images'"
+                :model-value="state[field.key]"
+                @update:model-value="(val) => (state[field.key] = val)"
+              />
+              <SettingField
+                v-else
+                :field="field"
+                :model-value="state[field.key]"
+                @update:model-value="(val) => (state[field.key] = val)"
+              />
+            </template>
           </UForm>
 
           <footer class="border-t border-neutral-200 px-5 py-4 dark:border-neutral-800">

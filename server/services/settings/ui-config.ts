@@ -66,6 +66,9 @@ export const APP_SETTINGS_UI: Record<string, FieldUIConfig> = {
     max: 64,
     visibleIf: { fieldKey: 'appearance.cardCornerRadius', value: true },
   },
+  'loader.images': {
+    type: 'custom',
+  },
 }
 
 export const MAP_SETTINGS_UI: Record<string, FieldUIConfig> = {

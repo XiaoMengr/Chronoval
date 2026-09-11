@@ -97,22 +97,22 @@ const loadingVariants = {
           class="text-lg animate-spin"
         />
         <div class="flex flex-col min-w-0 gap-0.5">
-          <template v-if="loadingState.isError">
-            <p class="text-xs font-medium text-red-400">
-              {{
-                loadingState.errorMessage || $t('viewer.photoload.loadError')
-              }}
-            </p>
-            <p class="text-xs text-white/70">
-              {{ $t('viewer.photoload.loading') }}
-            </p>
-          </template>
+            <template v-if="loadingState.isError">
+              <p class="text-xs font-medium text-red-400">
+                {{
+                  loadingState.errorMessage || $t('viewer.photoload.loadError')
+                }}
+              </p>
+              <p class="text-xs text-white/70">
+                {{ $t('viewer.photoload.loading') }}
+              </p>
+            </template>
 
-          <template v-else-if="loadingState.isConverting">
-            <p class="text-xs font-medium text-white tabular-nums">
-              {{ loadingState.message || $t('viewer.photoload.converting') }}
-            </p>
-          </template>
+            <template v-else-if="loadingState.isConverting">
+              <p class="text-xs font-medium text-white tabular-nums">
+                {{ loadingState.message || $t('viewer.photoload.converting') }}
+              </p>
+            </template>
 
           <template v-else-if="loadingState.isWebGLLoading">
             <div class="flex items-center gap-2">

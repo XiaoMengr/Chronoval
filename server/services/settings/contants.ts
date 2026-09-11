@@ -92,6 +92,16 @@ export const DEFAULT_SETTINGS = [
     isPublic: true,
   },
   {
+    namespace: 'app',
+    key: 'loader.images',
+    type: 'json',
+    value: [],
+    defaultValue: [],
+    label: 'settings.app.loader.images.label',
+    description: 'settings.app.loader.images.description',
+    isPublic: true,
+  },
+  {
     namespace: 'system',
     key: 'upload.maxFileSize',
     type: 'number',
