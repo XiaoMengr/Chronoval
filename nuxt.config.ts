@@ -156,6 +156,8 @@ export default defineNuxtConfig({
       websocket: true,
       tasks: true,
     },
+    // 沙箱内存受限，关闭 Nitro 打包阶段压缩，降低构建峰值内存
+    minify: false,
   },
 
   vite: {

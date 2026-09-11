@@ -69,6 +69,9 @@ export const photos = sqliteTable('photos', {
   livePhotoVideoKey: text('live_photo_video_key'),
   // 360 全景手动标记：null=自动判定；1=强制全景；0=强制非全景
   isPanorama: integer('is_panorama'),
+  // 360 全景固定初始视角（度）：null=不固定；前台打开全景时按该视角进入
+  panoYaw: real('pano_yaw'),
+  panoPitch: real('pano_pitch'),
   // 媒体类型：image 图片 / video 视频
   type: text('type', { enum: ['image', 'video'] })
     .default('image')

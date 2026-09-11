@@ -8,6 +8,10 @@ interface Props {
   interactive?: boolean
   /** 初始 FOV（默认 115°=最宽的缩小视角，整张全景一进入就清晰完整；此后只能手动放大） */
   initialFov?: number
+  /** 初始水平朝向（度，对应后台固定视角 yaw）；默认 0 */
+  initialYaw?: number
+  /** 初始垂直俯仰（度，对应后台固定视角 pitch）；默认 0 */
+  initialPitch?: number
   /** 是否聚焦按钮提示（由父级展示后再触发 ready，避免首帧闪黑） */
   parentFocused?: boolean
 }
@@ -15,6 +19,8 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   interactive: true,
   initialFov: 115,
+  initialYaw: 0,
+  initialPitch: 0,
   parentFocused: true,
 })
 
@@ -35,9 +41,9 @@ let texture: THREE.Texture | null = null
 let rafId = 0
 let disposed = false
 
-// 视角状态（度）
-let lon = 0
-let lat = 0
+// 视角状态（度）；初始即用固定视角，避免首帧闪回默认朝向
+let lon = props.initialYaw
+let lat = props.initialPitch
 // 惯性速度
 let velLon = 0
 let velLat = 0
@@ -203,8 +209,8 @@ const onWheel = (e: WheelEvent) => {
 const onDblClick = (e: MouseEvent) => {
   if (!props.interactive) return
   e.preventDefault()
-  lon = 0
-  lat = 0
+  lon = props.initialYaw
+  lat = props.initialPitch
   setFov(props.initialFov)
   emit('interacting', false, false)
 }
@@ -277,10 +283,10 @@ function geoScaleFallback() {
   }
 }
 
-// 初始朝向：让 lon=0 正对相机前方
+// 初始朝向：一律回到「固定视角」{initialYaw, initialPitch}；未设置时为 0,0 正面
 function TweenSafeReset() {
-  lon = 0
-  lat = 0
+  lon = props.initialYaw
+  lat = props.initialPitch
   velLon = 0
   velLat = 0
   fov = props.initialFov

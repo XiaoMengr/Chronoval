@@ -113,6 +113,13 @@
       "when": 1788858172482,
       "tag": "0015_photo-is-panorama",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "6",
+      "when": 1788869095288,
+      "tag": "0016_charming_grim_reaper",
+      "breakpoints": true
     }
   ]
 }

@@ -130,6 +130,8 @@ interface EditFormState {
   tags: string[]
   rating: number | null
   isPanorama: number | null
+  panoYaw: number | null
+  panoPitch: number | null
 }
 
 const editingPhoto = ref<Photo | null>(null)
@@ -142,6 +144,8 @@ const editFormState = reactive<EditFormState>({
   tags: [],
   rating: null,
   isPanorama: null,
+  panoYaw: null,
+  panoPitch: null,
 })
 
 const originalMetadata = ref<{
@@ -151,6 +155,8 @@ const originalMetadata = ref<{
   location: { latitude: number; longitude: number } | null
   rating: number | null
   isPanorama: number | null
+  panoYaw: number | null
+  panoPitch: number | null
 }>({
   title: '',
   description: '',
@@ -158,6 +164,8 @@ const originalMetadata = ref<{
   location: null,
   rating: null,
   isPanorama: null,
+  panoYaw: null,
+  panoPitch: null,
 })
 
 const locationSelection = ref<{ latitude: number; longitude: number } | null>(
@@ -238,6 +246,18 @@ const isPanoramaChanged = computed(
   () => editFormState.isPanorama !== originalMetadata.value.isPanorama,
 )
 
+const panoYawChanged = computed(
+  () => editFormState.panoYaw !== originalMetadata.value.panoYaw,
+)
+
+const panoPitchChanged = computed(
+  () => editFormState.panoPitch !== originalMetadata.value.panoPitch,
+)
+
+const panoViewChanged = computed(
+  () => panoYawChanged.value || panoPitchChanged.value,
+)
+
 const isMetadataDirty = computed(
   () =>
     titleChanged.value ||
@@ -245,8 +265,46 @@ const isMetadataDirty = computed(
     tagsChanged.value ||
     locationChanged.value ||
     ratingChanged.value ||
-    isPanoramaChanged.value,
+    isPanoramaChanged.value ||
+    panoViewChanged.value,
 )
+
+/** 当前编辑照片是否为全景（用于展示固定视角控件） */
+const effectiveIsPanorama = computed(
+  () =>
+    editFormState.isPanorama === 1 ||
+    (editFormState.isPanorama === null &&
+      isPanorama(editingPhoto.value)),
+)
+
+// 固定视角数值输入（字符串↔number 转换，便于把 null 显示为空）
+const panoYawInput = computed({
+  get: () =>
+    editFormState.panoYaw === null ? '' : String(editFormState.panoYaw),
+  set: (v: string) => {
+    if (v.trim() === '') {
+      editFormState.panoYaw = null
+      return
+    }
+    const n = Number(v)
+    if (Number.isNaN(n)) return
+    editFormState.panoYaw = Math.max(-180, Math.min(180, n))
+  },
+})
+
+const panoPitchInput = computed({
+  get: () =>
+    editFormState.panoPitch === null ? '' : String(editFormState.panoPitch),
+  set: (v: string) => {
+    if (v.trim() === '') {
+      editFormState.panoPitch = null
+      return
+    }
+    const n = Number(v)
+    if (Number.isNaN(n)) return
+    editFormState.panoPitch = Math.max(-89, Math.min(89, n))
+  },
+})
 
 const formattedCoordinates = computed(() => {
   if (!locationSelection.value) {
@@ -579,6 +637,8 @@ watch(isEditModalOpen, (open) => {
     editFormState.tags = []
     editFormState.rating = null
     editFormState.isPanorama = null
+    editFormState.panoYaw = null
+    editFormState.panoPitch = null
     originalMetadata.value = {
       title: '',
       description: '',
@@ -586,6 +646,8 @@ watch(isEditModalOpen, (open) => {
       location: null,
       rating: null,
       isPanorama: null,
+      panoYaw: null,
+      panoPitch: null,
     }
     locationSelection.value = null
     locationTouched.value = false
@@ -1131,6 +1193,8 @@ const openMetadataEditor = (photo: Photo) => {
     typeof photo.exif?.Rating === 'number' ? photo.exif.Rating : null
 
   editFormState.isPanorama = photo.isPanorama ?? null
+  editFormState.panoYaw = photo.panoYaw ?? null
+  editFormState.panoPitch = photo.panoPitch ?? null
 
   const initialLocation = hasCoordinates
     ? {
@@ -1146,6 +1210,8 @@ const openMetadataEditor = (photo: Photo) => {
     location: initialLocation ? { ...initialLocation } : null,
     rating: typeof photo.exif?.Rating === 'number' ? photo.exif.Rating : null,
     isPanorama: photo.isPanorama ?? null,
+    panoYaw: photo.panoYaw ?? null,
+    panoPitch: photo.panoPitch ?? null,
   }
 
   locationSelection.value = initialLocation ? { ...initialLocation } : null
@@ -1203,6 +1269,8 @@ const saveMetadataChanges = async () => {
       location?: { latitude: number; longitude: number } | null
       rating?: number | null
       isPanorama?: number | null
+      panoYaw?: number | null
+      panoPitch?: number | null
     } = {}
 
     if (titleChanged.value) {
@@ -1219,6 +1287,14 @@ const saveMetadataChanges = async () => {
 
     if (isPanoramaChanged.value) {
       payload.isPanorama = editFormState.isPanorama
+    }
+
+    if (panoYawChanged.value) {
+      payload.panoYaw = editFormState.panoYaw
+    }
+
+    if (panoPitchChanged.value) {
+      payload.panoPitch = editFormState.panoPitch
     }
 
     const shouldQueueLocationErase =
@@ -2681,6 +2757,82 @@ onUnmounted(() => {
                         editFormState.isPanorama = val ? 1 : 0
                       }"
                     />
+                  </div>
+                </div>
+
+                <!-- 360 全景固定初始视角 -->
+                <div v-if="effectiveIsPanorama" class="space-y-2">
+                  <div class="flex items-center justify-between">
+                    <label
+                      class="text-sm font-medium text-neutral-700 dark:text-neutral-200"
+                    >
+                      {{
+                        $t(
+                          'dashboard.photos.editModal.fields.panoViewTitle',
+                        )
+                      }}
+                    </label>
+                    <UButton
+                      v-if="
+                        editFormState.panoYaw !== null ||
+                        editFormState.panoPitch !== null
+                      "
+                      variant="ghost"
+                      color="neutral"
+                      size="xs"
+                      icon="tabler:rotate-2"
+                      @click.prevent="
+                        editFormState.panoYaw = null;
+                        editFormState.panoPitch = null
+                      "
+                    >
+                      {{
+                        $t(
+                          'dashboard.photos.editModal.fields.panoViewClear',
+                        )
+                      }}
+                    </UButton>
+                  </div>
+                  <p class="text-xs text-neutral-500 dark:text-neutral-400">
+                    {{
+                      $t(
+                        'dashboard.photos.editModal.fields.panoViewHint',
+                      )
+                    }}
+                  </p>
+                  <div class="grid grid-cols-2 gap-3">
+                    <div class="space-y-1.5">
+                      <label
+                        class="text-xs text-neutral-500 dark:text-neutral-400"
+                      >
+                        {{ $t('dashboard.photos.editModal.fields.panoYaw') }}
+                      </label>
+                      <UInput
+                        v-model="panoYawInput"
+                        type="number"
+                        step="1"
+                        min="-180"
+                        max="180"
+                        inputmode="numeric"
+                        class="w-full"
+                      />
+                    </div>
+                    <div class="space-y-1.5">
+                      <label
+                        class="text-xs text-neutral-500 dark:text-neutral-400"
+                      >
+                        {{ $t('dashboard.photos.editModal.fields.panoPitch') }}
+                      </label>
+                      <UInput
+                        v-model="panoPitchInput"
+                        type="number"
+                        step="1"
+                        min="-89"
+                        max="89"
+                        inputmode="numeric"
+                        class="w-full"
+                      />
+                    </div>
                   </div>
                 </div>
 

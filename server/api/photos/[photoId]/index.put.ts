@@ -29,6 +29,9 @@ const bodySchema = z.object({
   rating: z.union([z.number().int().min(0).max(5), z.null()]).optional(),
   // 360 全景手动标记：null=自动；1=强制全景；0=强制非全景
   isPanorama: z.union([z.literal(1), z.literal(0), z.literal(null)]).optional(),
+  // 360 全景固定初始视角（度）；null=清除
+  panoYaw: z.union([z.number().min(-360).max(360), z.null()]).optional(),
+  panoPitch: z.union([z.number().min(-89).max(89), z.null()]).optional(),
 })
 
 const normalizeTags = (tags: string[] | undefined) => {
@@ -59,7 +62,9 @@ export default eventHandler(async (event) => {
     payload.tags === undefined &&
     payload.location === undefined &&
     payload.rating === undefined &&
-    payload.isPanorama === undefined
+    payload.isPanorama === undefined &&
+    payload.panoYaw === undefined &&
+    payload.panoPitch === undefined
   ) {
     throw createError({
       statusCode: 400,
@@ -81,20 +86,25 @@ export default eventHandler(async (event) => {
     })
   }
 
-  // 仅修改 360 全景标记时，不需要重写源文件（标志位不写入图片 EXIF）
-  if (payload.isPanorama !== undefined) {
-    // 判空：除 isPanorama 外没有其他改动，直接更新数据库并返回
-    const onlyFlagChanged =
-      payload.title === undefined &&
-      payload.description === undefined &&
-      payload.tags === undefined &&
-      payload.location === undefined &&
-      payload.rating === undefined
+  // 仅修改「元数据类字段」（无 EXIF 对应、不需重写源文件）时：isPanorama / panoYaw / panoPitch
+  // 直接更新数据库即可，避免重写源文件（全景图可能很大）。
+  const hasFileEdit =
+    payload.title !== undefined ||
+    payload.description !== undefined ||
+    payload.tags !== undefined ||
+    payload.location !== undefined ||
+    payload.rating !== undefined
 
-    if (onlyFlagChanged) {
+  if (!hasFileEdit) {
+    const dbSet: Record<string, number | null> = {}
+    if (payload.isPanorama !== undefined) dbSet.isPanorama = payload.isPanorama
+    if (payload.panoYaw !== undefined) dbSet.panoYaw = payload.panoYaw
+    if (payload.panoPitch !== undefined) dbSet.panoPitch = payload.panoPitch
+
+    if (Object.keys(dbSet).length > 0) {
       await db
         .update(tables.photos)
-        .set({ isPanorama: payload.isPanorama })
+        .set(dbSet)
         .where(eq(tables.photos.id, photoId))
 
       const updatedPhoto = await db
@@ -231,6 +241,14 @@ export default eventHandler(async (event) => {
 
     if (payload.isPanorama !== undefined) {
       updateData.isPanorama = payload.isPanorama
+    }
+
+    if (payload.panoYaw !== undefined) {
+      updateData.panoYaw = payload.panoYaw
+    }
+
+    if (payload.panoPitch !== undefined) {
+      updateData.panoPitch = payload.panoPitch
     }
 
     if (payload.location !== undefined) {

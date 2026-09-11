@@ -51,7 +51,10 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
         <div class="relative z-10 flex h-svh w-full flex-col">
           <client-only>
             <PhotoPanoramaViewer
+              :key="panoramaPhoto?.id"
               :src="panoramaSrc"
+              :initial-yaw="panoramaPhoto?.panoYaw ?? 0"
+              :initial-pitch="panoramaPhoto?.panoPitch ?? 0"
               class="h-full w-full"
             />
           </client-only>

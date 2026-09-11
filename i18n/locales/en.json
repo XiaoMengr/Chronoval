@@ -855,7 +855,12 @@
           "noRating": "No rating",
           "panoramaTitle": "360° Panorama",
           "panoramaHint": "For photos that can't be auto-detected as 360, force-enable spherical viewing.",
-          "panoramaAuto": "Auto"
+          "panoramaAuto": "Auto",
+          "panoViewTitle": "Fixed Initial View",
+          "panoViewHint": "Open the panorama pointing at this view. Leave empty to use the default.",
+          "panoViewClear": "Clear fixed view",
+          "panoYaw": "Yaw (°)",
+          "panoPitch": "Pitch (°)"
         },
         "actions": {
           "cancel": "Cancel",
