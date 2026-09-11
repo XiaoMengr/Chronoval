@@ -443,6 +443,7 @@
     "albums": "相簿",
     "siteAdministration": "站点设置",
     "generalSettings": "基本设置",
+    "loaderSettings": "加载配置",
     "appearanceSettings": "外观设置",
     "storageSettings": "存储设置",
     "privacySettings": "隐私设置",
@@ -1197,7 +1198,24 @@
           "liquid": "液态卡片（默认）",
           "preset": "使用内置示例照片",
           "upload": "上传",
+          "useUrl": "使用URL",
+          "urlPlaceholder": "粘贴图片 URL…",
+          "urlEmpty": "请输入图片 URL",
           "slotLabel": "第 {n} 张"
+        },
+        "cardStyle": {
+          "label": "卡片样式",
+          "description": "选择加载动画卡片的视觉样式",
+          "help": "液态玻璃：通透的玻璃卡片；拟物化：像真实相框一样的印刷照片质感卡片。",
+          "liquid": "液态玻璃（默认）",
+          "skeuo": "拟物化卡片"
+        },
+        "animation": {
+          "label": "动画样式",
+          "description": "选择加载动画的播放方式",
+          "help": "叠放轮回：三张卡片左右交错叠放；扇形展开：像翻开手牌一样扇形摊开。",
+          "stack": "叠放轮回（默认）",
+          "fan": "扇形展开"
         }
       },
       "appearance": {
@@ -1627,6 +1645,9 @@
     },
     "general": {
       "description": "管理站点基础信息与展示外观。更改会立即影响控制台和前台展示。"
+    },
+    "loader": {
+      "description": "自定义进入画廊时，加载动画中三张卡片所使用的图片。默认使用内置示例图，可点击上方按钮恢复默认。"
     },
     "form": {
       "loadFailed": "加载设置失败",

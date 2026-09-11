@@ -445,6 +445,7 @@
     "siteAdministration": "Site settings",
     "location": "Location services",
     "generalSettings": "General Settings",
+    "loaderSettings": "Loader Settings",
     "appearanceSettings": "Appearance Settings",
     "privacySettings": "Privacy Settings",
     "mapAndLocation": "Map & Location",
@@ -1197,7 +1198,24 @@
           "liquid": "Liquid cards (default)",
           "preset": "Use built-in sample photos",
           "upload": "Upload",
+          "useUrl": "Use URL",
+          "urlPlaceholder": "Paste image URL…",
+          "urlEmpty": "Please enter an image URL",
           "slotLabel": "Card {n}"
+        },
+        "cardStyle": {
+          "label": "Card style",
+          "description": "Choose the visual style of the loading cards",
+          "help": "Liquid glass: translucent glass cards. Skeuomorphic: printed-photo cards that look like real framed photos.",
+          "liquid": "Liquid glass (default)",
+          "skeuo": "Skeuomorphic cards"
+        },
+        "animation": {
+          "label": "Animation style",
+          "description": "Choose how the loading animation plays",
+          "help": "Stack: cards overlap and cycle side to side. Fan: cards fan out like a dealt hand.",
+          "stack": "Stack (default)",
+          "fan": "Fan spread"
         }
       },
       "appearance": {
@@ -1627,6 +1645,9 @@
     },
     "general": {
       "description": "Manage the site's basic information and display appearance. Changes will immediately affect the dashboard and public-facing display."
+    },
+    "loader": {
+      "description": "Customize the three card images used in the loading animation when entering the gallery. Defaults to built-in sample images; you can restore defaults at any time."
     },
     "form": {
       "loadFailed": "Failed to load settings",

@@ -10,7 +10,7 @@ const appTitle = useSettingRef('app:title')
 const loaderTitle = computed(() => appTitle.value || 'Chronoval')
 
 // 后台可自定义的三张加载卡片图片（app:loader.images，string[]）
-// 为空时回退到默认的液态 SVG 卡片（不带照片）
+// 为空时回退到卡片样式（液态玻璃 / 拟物化）的内置图形
 const loaderImagesSetting = useSettingRef('app:loader.images')
 const loaderPhotoUrls = computed(() => {
   const raw = loaderImagesSetting.value
@@ -22,6 +22,23 @@ const loaderPhotoUrls = computed(() => {
     .filter((x: any): x is string => typeof x === 'string' && x.trim().length > 0)
     .slice(0, 3)
 })
+
+// 卡片样式：liquid（液态玻璃，默认） / skeuo（拟物化）
+const loaderCardStyle = useSettingRef('app:loader.cardStyle')
+const isSkeuo = computed(() => loaderCardStyle.value === 'skeuo')
+
+// 动画样式：stack（叠放轮回，默认） / fan（扇形展开）
+const loaderAnimation = useSettingRef('app:loader.animation')
+const isFan = computed(() => loaderAnimation.value === 'fan')
+
+// 拟物化内置图形：三张卡片各自固定一个拟物插画（山河 / 草原 / 大海）
+const SKEUO_ARTWORKS = ['skeuo-mountain', 'skeuo-meadow', 'skeuo-sea']
+
+// 是否使用自定义图片
+const usePhotoAt = (i: number) => !!loaderPhotoUrls.value[i]
+// 卡片图源：自定义图片 URL（拟物化样式的内置插画在 SkeuoScene 内按 scene 渲染）
+const cardSrcAt = (i: number) =>
+  usePhotoAt(i) ? loaderPhotoUrls.value[i] : SKEUO_ARTWORKS[i]
 </script>
 
 <template>
@@ -58,32 +75,47 @@ const loaderPhotoUrls = computed(() => {
             </div>
 
             <!-- 三张长方形相框：左右错开，轮流叠到对方上面，像收发照片一样轮回 -->
-            <div class="loader-cards" aria-hidden="true">
+            <div class="loader-cards" :class="{ 'loader-cards--fan': isFan, 'loader-cards--skeuo': isSkeuo }" aria-hidden="true">
               <span class="loader-card loader-card--a">
                 <img
-                  v-if="loaderPhotoUrls[0]"
+                  v-if="usePhotoAt(0)"
                   class="loader-photo"
                   :src="loaderPhotoUrls[0]"
                   alt=""
                   aria-hidden="true"
                 />
+                <SkeuoScene
+                  v-else-if="isSkeuo"
+                  :scene="cardSrcAt(0)"
+                  class="loader-photo"
+                />
               </span>
               <span class="loader-card loader-card--b">
                 <img
-                  v-if="loaderPhotoUrls[1]"
+                  v-if="usePhotoAt(1)"
                   class="loader-photo"
                   :src="loaderPhotoUrls[1]"
                   alt=""
                   aria-hidden="true"
                 />
+                <SkeuoScene
+                  v-else-if="isSkeuo"
+                  :scene="cardSrcAt(1)"
+                  class="loader-photo"
+                />
               </span>
               <span class="loader-card loader-card--c">
                 <img
-                  v-if="loaderPhotoUrls[2]"
+                  v-if="usePhotoAt(2)"
                   class="loader-photo"
                   :src="loaderPhotoUrls[2]"
                   alt=""
                   aria-hidden="true"
+                />
+                <SkeuoScene
+                  v-else-if="isSkeuo"
+                  :scene="cardSrcAt(2)"
+                  class="loader-photo"
                 />
               </span>
             </div>
@@ -422,14 +454,129 @@ const loaderPhotoUrls = computed(() => {
   }
 }
 
+/* ===== 拟物化卡片样式（skeuo）：带触光立体边框 + 真实印刷照片质感 ===== */
+.loader-cards--skeuo .loader-card {
+  /* 纸质/印刷外壳：不透明底 + 圆角厚框，替代透明液态玻璃 */
+  background: linear-gradient(160deg, #eceff3 0%, #d7dce2 40%, #c3cad2 100%);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  /* 底光 + 顶部翻边：像真实相框压膜 */
+  box-shadow:
+    0 46px 100px -34px rgba(10, 18, 30, 0.5),
+    0 18px 40px -18px rgba(10, 18, 30, 0.35),
+    inset 0 2px 1px rgba(255, 255, 255, 0.85),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+}
+
+/* 拟物相框的压边内衬 */
+.loader-cards--skeuo .loader-card::before {
+  background:
+    radial-gradient(
+      92% 48% at 26% -6%,
+      rgba(255, 255, 255, 0.55),
+      rgba(255, 255, 255, 0) 58%
+    );
+}
+
+/* 拟物化时去掉液态流动高光带，改为照片表面轻微光泽 */
+.loader-cards--skeuo .loader-card::after {
+  background: linear-gradient(
+    115deg,
+    transparent 34%,
+    rgba(255, 255, 255, 0.14) 46%,
+    rgba(255, 255, 255, 0.26) 52%,
+    rgba(255, 255, 255, 0.08) 60%,
+    transparent 74%
+  );
+  mix-blend-mode: normal;
+  animation: loader-card-skeuo-gloss 4.2s ease-in-out infinite;
+}
+
+@keyframes loader-card-skeuo-gloss {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* 拟物化样式下，印刷照片多一层四角暗角，更像真实冲印照片 */
+.loader-cards--skeuo .loader-photo {
+  inset: 8px;
+  width: calc(100% - 16px);
+  height: calc(100% - 16px);
+  border-radius: 10px;
+  filter: saturate(1.02) contrast(1.05) brightness(0.97);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+
+/* ===== 扇形展开动画（fan）：三张卡片像翻开手牌般扇形摊开并交错起伏 ===== */
+.loader-cards--fan {
+  /* 侧面透视，营造立体感 */
+  perspective: 1100px;
+}
+
+.loader-cards--fan .loader-card {
+  transform-origin: 50% 100%;
+  animation: loader-card-fan 5.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.loader-cards--fan .loader-card--a {
+  animation-delay: 0s;
+}
+
+.loader-cards--fan .loader-card--b {
+  animation-delay: -1.733s;
+}
+
+.loader-cards--fan .loader-card--c {
+  animation-delay: -3.467s;
+}
+
+@keyframes loader-card-fan {
+  /* 扇形展开：前层立起 → 向两侧摊开 → 起伏轮换，像纸牌在手心翻动 */
+  0% {
+    transform: translateX(0) rotateY(-26deg) rotate(-6deg) scale(0.94);
+    z-index: 1;
+  }
+  18% {
+    transform: translateX(0) rotateY(0deg) rotate(0deg) scale(1);
+    z-index: 3;
+  }
+  34% {
+    transform: translateX(30px) rotateY(20deg) rotate(8deg) scale(0.92);
+    z-index: 2;
+  }
+  56% {
+    transform: translateX(30px) rotateY(24deg) rotate(11deg) scale(0.88);
+    z-index: 1;
+  }
+  74% {
+    transform: translateX(-30px) rotateY(-24deg) rotate(-11deg) scale(0.88);
+    z-index: 2;
+  }
+  90% {
+    transform: translateX(-6px) rotateY(-4deg) rotate(-2deg) scale(0.96);
+    z-index: 3;
+  }
+  100% {
+    transform: translateX(0) rotateY(-26deg) rotate(-6deg) scale(0.94);
+    z-index: 1;
+  }
+}
+
 /* 尊重系统的减少动效偏好 */
 @media (prefers-reduced-motion: reduce) {
   .loader-halo,
   .loader-brand,
   .loader-brand-text,
   .loader-card,
+  .loader-cards--fan .loader-card,
   .loader-card::before,
   .loader-card::after,
+  .loader-cards--skeuo .loader-card::after,
   .loader-bar-fill {
     animation: none;
   }

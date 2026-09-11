@@ -69,6 +69,36 @@ export const APP_SETTINGS_UI: Record<string, FieldUIConfig> = {
   'loader.images': {
     type: 'custom',
   },
+  'loader.cardStyle': {
+    type: 'tabs',
+    options: [
+      {
+        label: 'settings.app.loader.cardStyle.liquid',
+        value: 'liquid',
+        icon: 'tabler:droplet',
+      },
+      {
+        label: 'settings.app.loader.cardStyle.skeuo',
+        value: 'skeuo',
+        icon: 'tabler:circle-dot',
+      },
+    ],
+  },
+  'loader.animation': {
+    type: 'tabs',
+    options: [
+      {
+        label: 'settings.app.loader.animation.stack',
+        value: 'stack',
+        icon: 'tabler:layers-intersect',
+      },
+      {
+        label: 'settings.app.loader.animation.fan',
+        value: 'fan',
+        icon: 'tabler:columns-3',
+      },
+    ],
+  },
 }
 
 export const MAP_SETTINGS_UI: Record<string, FieldUIConfig> = {

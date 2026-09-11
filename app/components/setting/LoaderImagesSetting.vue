@@ -2,13 +2,12 @@
 import { onMounted } from 'vue'
 
 /**
- * 首页加载动画的三张卡片图片配置项。
+ * 首页加载动画配置项。
  *
- * 数据模型：`string[]`（每项为图片 URL 或 base64 data URI）。
- * - 空数组（默认）= 使用液态 SVG 卡片（不带照片）。
- * - 1~3 项 = 依次显示为三张卡的封面。
- *
- * 提供给内置的「使用示例照片」预设，避免每次手动粘贴 URL。
+ * 三个关联配置：
+ * - images (string[])：三张卡片图片 URL / data URI，留空则用卡片样式内置图形。
+ * - cardStyle ('liquid' | 'skeuo')：卡片样式。liquid=液态玻璃，skeuo=拟物化卡片。
+ * - animation ('stack' | 'fan')：卡片动画样式。
  */
 const BUILTIN_PRESETS = [
   '/loader/mountains_sm.jpg',
@@ -16,19 +15,28 @@ const BUILTIN_PRESETS = [
   '/loader/sea_sm.jpg',
 ]
 
+const CARD_STYLES = ['liquid', 'skeuo'] as const
+const ANIM_STYLES = ['stack', 'fan'] as const
+
 interface Props {
   modelValue?: string[] | null
+  cardStyle?: 'liquid' | 'skeuo' | null
+  animation?: 'stack' | 'fan' | null
 }
 
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
   'update:modelValue': [value: string[]]
+  'update:cardStyle': [value: 'liquid' | 'skeuo']
+  'update:animation': [value: 'stack' | 'fan']
 }>()
 
 const { t } = useI18n()
+const toast = useToast()
 
 const items = ref<string[]>(['', '', ''])
+const urlDrafts = ref<string[]>(['', '', ''])
 
 const normalize = (raw: string[] | null | undefined): string[] => {
   const list = Array.isArray(raw) ? raw : []
@@ -43,13 +51,21 @@ const normalize = (raw: string[] | null | undefined): string[] => {
 watch(
   () => props.modelValue,
   (val) => {
-    items.value = normalize(val)
+    const normalized = normalize(val)
+    items.value = normalized
+    urlDrafts.value = normalized.map((it) =>
+      it.startsWith('data:') ? '' : it,
+    )
   },
   { deep: true },
 )
 
 onMounted(() => {
-  items.value = normalize(props.modelValue)
+  const normalized = normalize(props.modelValue)
+  items.value = normalized
+  urlDrafts.value = normalized.map((it) =>
+    it.startsWith('data:') ? '' : it,
+  )
 })
 
 const hasPhotos = computed(() => items.value.some((it) => !!it.trim()))
@@ -60,23 +76,35 @@ const emitChange = () => {
 
 const applyPreset = () => {
   items.value = [...BUILTIN_PRESETS]
+  urlDrafts.value = [...BUILTIN_PRESETS]
   emitChange()
 }
 
 const clearAll = () => {
   items.value = ['', '', '']
+  urlDrafts.value = ['', '', '']
   emitChange()
 }
 
 const removeAt = (index: number) => {
   items.value[index] = ''
+  urlDrafts.value[index] = ''
   emitChange()
 }
 
-/**
- * 将选择的图片压缩为较小的 data URI（canvas 重绘），
- * 保证即便内联到设置里也不会拖慢前端。
- */
+const applyUrlAt = (index: number) => {
+  const url = (urlDrafts.value[index] || '').trim()
+  if (!url) {
+    toast.add({
+      title: t('settings.app.loader.images.urlEmpty'),
+      color: 'error',
+    })
+    return
+  }
+  items.value[index] = url
+  emitChange()
+}
+
 const onFilePicked = (index: number, input: HTMLInputElement) => {
   const file = input.files?.[0]
   input.value = ''
@@ -96,16 +124,25 @@ const onFilePicked = (index: number, input: HTMLInputElement) => {
       const ctx = canvas.getContext('2d')
       if (!ctx) {
         items.value[index] = reader.result as string
+        urlDrafts.value[index] = ''
         emitChange()
         return
       }
       ctx.drawImage(img, 0, 0, w, h)
       items.value[index] = canvas.toDataURL('image/jpeg', 0.72)
+      urlDrafts.value[index] = ''
       emitChange()
     }
     img.src = reader.result as string
   }
   reader.readAsDataURL(file)
+}
+
+const setCardStyle = (style: 'liquid' | 'skeuo') => {
+  emit('update:cardStyle', style)
+}
+const setAnimation = (style: 'stack' | 'fan') => {
+  emit('update:animation', style)
 }
 
 const slotLabel = (index: number) =>
@@ -125,7 +162,53 @@ const slotLabel = (index: number) =>
       </p>
     </div>
 
-    <div class="mt-4 flex flex-wrap items-center gap-2">
+    <!-- 卡片样式：液态玻璃（默认） / 拟物化卡片 -->
+    <div class="mt-4 space-y-1.5">
+      <p class="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+        {{ $t('settings.app.loader.cardStyle.label') }}
+      </p>
+      <div class="flex flex-wrap items-center gap-2">
+        <UButton
+          v-for="style in CARD_STYLES"
+          :key="style"
+          size="sm"
+          color="neutral"
+          :variant="props.cardStyle === style ? 'solid' : 'soft'"
+          :icon="style === 'skeuo' ? 'tabler:circle-dot' : 'tabler:droplet'"
+          @click="setCardStyle(style)"
+        >
+          {{ $t(`settings.app.loader.cardStyle.${style}`) }}
+        </UButton>
+      </div>
+      <p class="text-xs text-neutral-500 dark:text-neutral-500">
+        {{ $t('settings.app.loader.cardStyle.help') }}
+      </p>
+    </div>
+
+    <!-- 动画样式：叠放轮回 / 扇形展开 -->
+    <div class="mt-4 space-y-1.5">
+      <p class="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+        {{ $t('settings.app.loader.animation.label') }}
+      </p>
+      <div class="flex flex-wrap items-center gap-2">
+        <UButton
+          v-for="style in ANIM_STYLES"
+          :key="style"
+          size="sm"
+          color="neutral"
+          :variant="props.animation === style ? 'solid' : 'soft'"
+          :icon="style === 'fan' ? 'tabler:columns-3' : 'tabler:layers-intersect'"
+          @click="setAnimation(style)"
+        >
+          {{ $t(`settings.app.loader.animation.${style}`) }}
+        </UButton>
+      </div>
+      <p class="text-xs text-neutral-500 dark:text-neutral-500">
+        {{ $t('settings.app.loader.animation.help') }}
+      </p>
+    </div>
+
+    <div class="mt-5 flex flex-wrap items-center gap-2 border-t border-neutral-200 pt-4 dark:border-neutral-800">
       <UButton
         size="sm"
         color="neutral"
@@ -150,54 +233,77 @@ const slotLabel = (index: number) =>
       </p>
     </div>
 
-    <!-- 三张卡片槽位 -->
-    <div class="mt-4 grid grid-cols-3 gap-3">
+    <!-- 三张卡片槽位：每张支持上传或填写 URL -->
+    <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
       <div
         v-for="(it, i) in items"
         :key="i"
-        class="group relative aspect-[3/4] overflow-hidden rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700"
+        class="space-y-2"
       >
-        <img
-          v-if="it"
-          :src="it"
-          :alt="slotLabel(i)"
-          class="h-full w-full object-cover"
-        />
         <div
-          v-else
-          class="flex h-full w-full items-center justify-center bg-gradient-to-br from-indigo-500/30 via-sky-400/30 to-fuchsia-400/30"
+          class="group relative aspect-[3/4] overflow-hidden rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700"
         >
-          <span class="text-xs text-neutral-400 dark:text-neutral-500">
-            {{ slotLabel(i) }}
-          </span>
+          <img
+            v-if="it"
+            :src="it"
+            :alt="slotLabel(i)"
+            class="h-full w-full object-cover"
+          />
+          <div
+            v-else
+            class="flex h-full w-full items-center justify-center bg-gradient-to-br from-indigo-500/30 via-sky-400/30 to-fuchsia-400/30"
+          >
+            <span class="px-2 text-center text-xs text-neutral-400 dark:text-neutral-500">
+              {{ slotLabel(i) }} · {{ $t('settings.app.loader.images.upload') }}
+            </span>
+          </div>
+
+          <label
+            class="absolute inset-x-0 bottom-0 flex cursor-pointer items-center justify-center gap-1 bg-black/55 py-2 text-xs font-medium text-white backdrop-blur-sm transition hover:bg-black/70"
+          >
+            <Icon name="tabler:upload" class="text-sm" />
+            <span>{{ $t('settings.app.loader.images.upload') }}</span>
+            <input
+              type="file"
+              accept="image/*"
+              class="hidden"
+              @change="onFilePicked(i, ($event.target as HTMLInputElement))"
+            />
+          </label>
+
+          <UButton
+            v-if="it"
+            color="neutral"
+            variant="solid"
+            size="2xs"
+            square
+            icon="tabler:x"
+            class="absolute right-1.5 top-1.5"
+            :aria-label="$t('common.actions.remove')"
+            @click.stop="removeAt(i)"
+          />
         </div>
 
-        <label
-          class="absolute inset-0 flex cursor-pointer items-center justify-center bg-black/0 text-white/0 transition group-hover:bg-black/40 group-hover:text-white"
-        >
-          <span class="flex flex-col items-center gap-1 text-xs">
-            <Icon name="tabler:upload" class="text-base" />
-            <span>{{ $t('settings.app.loader.images.upload') }}</span>
-          </span>
-          <input
-            type="file"
-            accept="image/*"
-            class="hidden"
-            @change="onFilePicked(i, ($event.target as HTMLInputElement))"
+        <div class="flex gap-1.5">
+          <UInput
+            v-model="urlDrafts[i]"
+            size="sm"
+            :placeholder="$t('settings.app.loader.images.urlPlaceholder')"
+            class="min-w-0 flex-1"
+            :aria-label="$t('settings.app.loader.images.useUrl')"
+            @keyup.enter="applyUrlAt(i)"
           />
-        </label>
-
-        <UButton
-          v-if="it"
-          color="neutral"
-          variant="solid"
-          size="2xs"
-          square
-          icon="tabler:x"
-          class="absolute right-1.5 top-1.5 opacity-0 transition group-hover:opacity-100"
-          :aria-label="$t('common.actions.remove')"
-          @click.stop="removeAt(i)"
-        />
+          <UButton
+            size="sm"
+            color="neutral"
+            variant="outline"
+            icon="tabler:link"
+            :aria-label="$t('settings.app.loader.images.useUrl')"
+            @click="applyUrlAt(i)"
+          >
+            {{ $t('settings.app.loader.images.useUrl') }}
+          </UButton>
+        </div>
       </div>
     </div>
 
