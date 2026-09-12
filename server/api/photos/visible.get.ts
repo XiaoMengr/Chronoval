@@ -1,4 +1,10 @@
-import { asc, desc, notInArray } from 'drizzle-orm'
+import {
+  and,
+  asc,
+  desc,
+  isNull,
+  notInArray,
+} from 'drizzle-orm'
 import { getAlbumScanMountSet } from '~~/server/services/scan-library/manager'
 
 export default eventHandler(async (_event) => {
@@ -17,18 +23,24 @@ export default eventHandler(async (_event) => {
   const hiddenPhotoIds = hiddenAlbumPhotos.map((row) => row.photoId)
 
   let rows: Array<typeof tables.photos.$inferSelect>
-  // 查询所有照片，排除隐藏相册中的照片
+  // 查询所有照片（排除软删除回收站中的照片），并排除隐藏相册中的照片
   if (hiddenPhotoIds.length > 0) {
     rows = db
       .select()
       .from(tables.photos)
-      .where(notInArray(tables.photos.id, hiddenPhotoIds))
+      .where(
+        and(
+          isNull(tables.photos.deletedAt),
+          notInArray(tables.photos.id, hiddenPhotoIds),
+        ),
+      )
       .orderBy(desc(tables.photos.dateTaken), asc(tables.photos.id))
       .all()
   } else {
     rows = db
       .select()
       .from(tables.photos)
+      .where(isNull(tables.photos.deletedAt))
       .orderBy(desc(tables.photos.dateTaken), asc(tables.photos.id))
       .all()
   }

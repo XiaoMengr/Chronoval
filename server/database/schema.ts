@@ -83,6 +83,8 @@ export const photos = sqliteTable('photos', {
   // 本地库文件：映射目录 + 目录内相对路径
   libraryMount: text('library_mount'),
   libraryPath: text('library_path'),
+  // 回收站软删除标记：null=正常；非 null=已移入回收站（该时间戳即删除时刻）
+  deletedAt: integer('deleted_at', { mode: 'timestamp' }),
 })
 
 export const pipelineQueue = sqliteTable('pipeline_queue', {

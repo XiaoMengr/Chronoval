@@ -1,13 +1,15 @@
-import { asc, desc } from 'drizzle-orm'
+import { asc, desc, isNull } from 'drizzle-orm'
 import { getAlbumScanMountSet } from '~~/server/services/scan-library/manager'
 
 export default eventHandler(async (event) => {
   // 确定性排序：先按拍摄时间倒序，再按 id 升序兜底。
   // 同一拍摄时间出现平手时，数据库返回顺序不保证稳定，会导致
   // 两次拉取/返回画廊时照片顺序抖动。显式按 id 排序后首次进入与返回完全一致。
+  // 同时过滤掉已移入回收站（软删除）的照片。
   const rows = useDB()
     .select()
     .from(tables.photos)
+    .where(isNull(tables.photos.deletedAt))
     .orderBy(desc(tables.photos.dateTaken), asc(tables.photos.id))
     .all()
 

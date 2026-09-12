@@ -1,4 +1,4 @@
-import { asc, getTableColumns } from 'drizzle-orm'
+import { and, asc, getTableColumns, isNull } from 'drizzle-orm'
 import z from 'zod'
 
 export default eventHandler(async (event) => {
@@ -38,7 +38,7 @@ export default eventHandler(async (event) => {
     }
   }
 
-  // 获取相册中的照片
+  // 获取相册中的照片（排除已移入回收站的软删除照片）
   const photos = await db
     // all fields from tables.photos
     .select({
@@ -49,7 +49,12 @@ export default eventHandler(async (event) => {
       tables.albumPhotos,
       eq(tables.photos.id, tables.albumPhotos.photoId),
     )
-    .where(eq(tables.albumPhotos.albumId, albumId))
+    .where(
+      and(
+        eq(tables.albumPhotos.albumId, albumId),
+        isNull(tables.photos.deletedAt),
+      ),
+    )
     .orderBy(asc(tables.albumPhotos.position))
     .all()
 

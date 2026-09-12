@@ -1,3 +1,7 @@
+/**
+ * 从回收站恢复照片：清除软删除标记，照片重新出现在画廊 / 相册 / 后台。
+ * 仅管理员可访问。
+ */
 export default eventHandler(async (event) => {
   await requireUserSession(event)
   const photoId = getRouterParam(event, 'photoId')
@@ -22,28 +26,23 @@ export default eventHandler(async (event) => {
     })
   }
 
-  if (photo.deletedAt) {
+  if (!photo.deletedAt) {
     return createError({
       statusCode: 409,
-      statusMessage: 'Photo is already in the trash',
+      statusMessage: 'Photo is not in the trash',
     })
   }
 
-  logger.image.info(`Moving photo to trash ${photo.title || photo.id || photoId}`)
-
-  // 软删除：仅标记删除时间，不删除任何文件、不删除数据库记录。
-  // 原图 / 缩略图 / 实况视频保留在原地，照片从相册/画廊/后台全部隐去，
-  // 可在回收站（/dashboard/trash）恢复或彻底删除。
   useDB()
     .update(tables.photos)
-    .set({ deletedAt: new Date() })
+    .set({ deletedAt: null })
     .where(eq(tables.photos.id, photoId))
     .run()
 
-  logger.image.success(`Photo ${photoId} moved to trash`)
+  logger.image.success(`Photo ${photoId} restored from trash`)
 
   return {
     statusCode: 200,
-    statusMessage: 'Photo moved to trash',
+    statusMessage: 'Photo restored',
   }
 })

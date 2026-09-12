@@ -1,0 +1,1 @@
+ALTER TABLE `photos` ADD `deleted_at` integer;

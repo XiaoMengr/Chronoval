@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { count, eq } from 'drizzle-orm'
+import { and, count, eq, isNull } from 'drizzle-orm'
 import { z } from 'zod'
 import { useDB, tables } from '~~/server/utils/db'
 import { scanLibraries } from '~~/server/database/schema'
@@ -386,7 +386,12 @@ export const listScanAlbumRoots = async (): Promise<ScanAlbumNode[]> => {
     const photos = db
       .select()
       .from(tables.photos)
-      .where(eq(tables.photos.libraryMount, scanMountName(row.id)))
+      .where(
+        and(
+          eq(tables.photos.libraryMount, scanMountName(row.id)),
+          isNull(tables.photos.deletedAt),
+        ),
+      )
       .all()
     out.push(buildScanAlbumNode(row, '', photos))
   }
@@ -427,7 +432,12 @@ export const getScanAlbumDetail = async (
   const photos = db
     .select()
     .from(tables.photos)
-    .where(eq(tables.photos.libraryMount, mount))
+    .where(
+      and(
+        eq(tables.photos.libraryMount, mount),
+        isNull(tables.photos.deletedAt),
+      ),
+    )
     .all()
 
   const node = buildScanAlbumNode(lib, normalized, photos)

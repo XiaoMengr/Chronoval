@@ -1,4 +1,4 @@
-import { sql, gte } from 'drizzle-orm'
+import { sql, gte, isNull } from 'drizzle-orm'
 import * as si from 'systeminformation'
 import { readFileSync } from 'node:fs'
 
@@ -129,10 +129,11 @@ export default eventHandler(async (event) => {
     return statsCache.data
   }
 
-  // 获取基础统计
+  // 获取基础统计（仅统计未删除的照片）
   const totalPhotos = await useDB()
     .select({ count: sql<number>`count(*)` })
     .from(tables.photos)
+    .where(isNull(tables.photos.deletedAt))
     .get()
 
   // 获取今日新增照片数量
@@ -170,7 +171,7 @@ export default eventHandler(async (event) => {
     .where(gte(tables.photos.dateTaken, monthStartISO))
     .get()
 
-  // 获取存储统计（估算）
+  // 获取存储统计（估算，仅统计未删除的照片）
   const storageStats = await useDB()
     .select({
       totalSize: sql<number>`COALESCE(sum(file_size), 0)`,
@@ -178,6 +179,7 @@ export default eventHandler(async (event) => {
       maxSize: sql<number>`COALESCE(max(file_size), 0)`,
     })
     .from(tables.photos)
+    .where(isNull(tables.photos.deletedAt))
     .get()
 
   // 获取最近7天的上传趋势

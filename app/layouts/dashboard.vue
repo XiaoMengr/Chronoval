@@ -24,6 +24,11 @@ const navItems = computed<NavigationMenuItem[][]>(() => [
       to: '/dashboard/photos',
     },
     {
+      label: $t('title.trash'),
+      icon: 'tabler:trash',
+      to: '/dashboard/trash',
+    },
+    {
       label: $t('title.albums'),
       icon: 'tabler:album',
       to: '/dashboard/albums',

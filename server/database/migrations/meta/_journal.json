@@ -120,6 +120,13 @@
       "when": 1788869095288,
       "tag": "0016_charming_grim_reaper",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1789223314212,
+      "tag": "0017_striped_ted_forrester",
+      "breakpoints": true
     }
   ]
 }

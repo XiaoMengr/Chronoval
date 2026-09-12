@@ -437,6 +437,7 @@
     },
     "dashboard": "Dashboard",
     "photos": "Photos",
+    "trash": "Trash",
     "locations": "Locations",
     "globe": "Photo Globe",
     "queue": "Queue Management",
@@ -749,10 +750,53 @@
           "title": "Batch Delete Photos",
           "message": "Are you sure you want to delete {count} selected photos?"
         },
-        "warning": "Deleting the photo will remove the original, thumbnail and live photo video, and cannot be undone.",
+        "warning": "Deleted photos are moved to the trash. You can restore them or permanently delete them later.",
         "buttons": {
           "cancel": "Cancel",
           "confirm": "Confirm Delete"
+        }
+      },
+      "trash": {
+        "title": "Photo Trash",
+        "subtitle": "Deleted photos are temporarily moved here. You can restore them or permanently delete them.",
+        "version": "Open trash",
+        "empty": "Trash is empty",
+        "emptyHint": "Photos you delete will appear here.",
+        "deletedAtColumn": "Deleted At",
+        "originalInLibrary": "Library Photo",
+        "actions": {
+          "restore": "Restore",
+          "restoreAll": "Restore All",
+          "empty": "Empty Trash",
+          "deleteForever": "Delete Forever",
+          "deleteForeverAll": "Delete All Forever"
+        },
+        "confirm": {
+          "restore": {
+            "title": "Restore Photo",
+            "message": "Are you sure you want to restore this photo? It will return to its original location."
+          },
+          "restoreAll": {
+            "title": "Restore All",
+            "message": "Restore all {count} photos in the trash?"
+          },
+          "deleteForever": {
+            "title": "Delete Forever",
+            "message": "This permanently deletes the original, thumbnail and live photo video. This cannot be undone. Continue?"
+          },
+          "deleteForeverAll": {
+            "title": "Empty Trash",
+            "message": "This will permanently delete all {count} photos and their files. This cannot be undone. Continue?"
+          }
+        },
+        "messages": {
+          "restoreSuccess": "Photo restored",
+          "restoreAllSuccess": "Restored {count} photos",
+          "deleteForeverSuccess": "Photo permanently deleted",
+          "deleteForeverAllSuccess": "Trash emptied",
+          "empty": "Trash emptied",
+          "confirm": "Confirm",
+          "cancel": "Cancel"
         }
       },
       "livePhotoModal": {

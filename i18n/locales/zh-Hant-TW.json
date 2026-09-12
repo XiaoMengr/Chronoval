@@ -398,6 +398,7 @@
     },
     "locations": "位置管理",
     "photos": "相片庫",
+    "trash": "資源回收筒",
     "gallery": "相片集",
     "globe": "照片地球儀",
     "queue": "佇列管理",
@@ -611,7 +612,7 @@
           "title": "批量刪除照片",
           "message": "確定要刪除已選擇的 {count} 張照片嗎？"
         },
-        "warning": "刪除照片會移除原始檔案、縮圖和原況照片影片，無法復原。",
+        "warning": "刪除後照片會移入資源回收筒，您仍可找回或徹底刪除。",
         "buttons": {
           "cancel": "取消",
           "confirm": "確認刪除"
@@ -779,7 +780,50 @@
           "goToQueue": "佇列管理"
         }
       },
-      "previewTitle": "照片預覽"
+      "previewTitle": "照片預覽",
+      "trash": {
+        "title": "照片回收筒",
+        "subtitle": "已刪除的照片會暫時移到這裡，您可以復原它們或徹底刪除。",
+        "version": "移入回收筒",
+        "empty": "回收筒為空",
+        "emptyHint": "刪除照片後，它們會出現在這裡。",
+        "deletedAtColumn": "刪除時間",
+        "originalInLibrary": "掃描庫照片",
+        "actions": {
+          "restore": "復原",
+          "restoreAll": "全部復原",
+          "empty": "清空回收筒",
+          "deleteForever": "徹底刪除",
+          "deleteForeverAll": "徹底刪除全部"
+        },
+        "confirm": {
+          "restore": {
+            "title": "復原照片",
+            "message": "確定要復原這張照片嗎？它將被放回原來的位置。"
+          },
+          "restoreAll": {
+            "title": "全部復原",
+            "message": "確定要復原回收筒中的全部 {count} 張照片嗎？"
+          },
+          "deleteForever": {
+            "title": "徹底刪除",
+            "message": "此操作會永久刪除原圖、縮圖和原況影片，無法復原。確定要繼續嗎？"
+          },
+          "deleteForeverAll": {
+            "title": "清空回收筒",
+            "message": "將永久刪除回收筒中的全部 {count} 張照片及其檔案，無法復原。確定要繼續嗎？"
+          }
+        },
+        "messages": {
+          "restoreSuccess": "照片已復原",
+          "restoreAllSuccess": "已復原 {count} 張照片",
+          "deleteForeverSuccess": "照片已徹底刪除",
+          "deleteForeverAllSuccess": "回收筒已清空",
+          "empty": "回收筒已清空",
+          "confirm": "確定",
+          "cancel": "取消"
+        }
+      }
     },
     "albums": {
       "title": "相簿管理",

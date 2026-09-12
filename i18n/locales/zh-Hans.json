@@ -437,6 +437,7 @@
     "gallery": "相册",
     "locations": "位置管理",
     "photos": "照片库",
+    "trash": "回收站",
     "globe": "照片地球仪",
     "queue": "队列管理",
     "logs": "系统日志",
@@ -749,10 +750,53 @@
           "title": "批量删除照片",
           "message": "确定要删除选中的 {count} 张照片吗？"
         },
-        "warning": "删除操作会同时移除原图、缩略图和实况视频，且无法恢复。",
+        "warning": "删除后照片会移入回收站，您仍可在回收站中找回或彻底删除。",
         "buttons": {
           "cancel": "取消",
           "confirm": "确认删除"
+        }
+      },
+      "trash": {
+        "title": "照片回收站",
+        "subtitle": "已删除的照片会暂时移到这里，您可以恢复它们或彻底删除。",
+        "version": "进入回收站",
+        "empty": "回收站为空",
+        "emptyHint": "删除照片后，它们会出现在这里。",
+        "deletedAtColumn": "删除时间",
+        "originalInLibrary": "扫描库照片",
+        "actions": {
+          "restore": "恢复",
+          "restoreAll": "全部恢复",
+          "empty": "清空回收站",
+          "deleteForever": "彻底删除",
+          "deleteForeverAll": "彻底删除全部"
+        },
+        "confirm": {
+          "restore": {
+            "title": "恢复照片",
+            "message": "确定要恢复这张照片吗？它将被放回原来的位置。"
+          },
+          "restoreAll": {
+            "title": "全部恢复",
+            "message": "确定要恢复回收站中的全部 {count} 张照片吗？"
+          },
+          "deleteForever": {
+            "title": "彻底删除",
+            "message": "此操作会永久删除原图、缩略图和实况视频，无法恢复。确定要继续吗？"
+          },
+          "deleteForeverAll": {
+            "title": "清空回收站",
+            "message": "将永久删除回收站中的全部 {count} 张照片及其文件，无法恢复。确定要继续吗？"
+          }
+        },
+        "messages": {
+          "restoreSuccess": "照片已恢复",
+          "restoreAllSuccess": "已恢复 {count} 张照片",
+          "deleteForeverSuccess": "照片已彻底删除",
+          "deleteForeverAllSuccess": "回收站已清空",
+          "empty": "回收站已清空",
+          "confirm": "确定",
+          "cancel": "取消"
         }
       },
       "livePhotoModal": {

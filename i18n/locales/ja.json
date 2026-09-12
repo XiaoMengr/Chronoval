@@ -398,6 +398,7 @@
     },
     "dashboard": "ダッシュボード",
     "photos": "写真",
+    "trash": "ゴミ箱",
     "locations": "場所",
     "globe": "写真グローブ",
     "queue": "キュー管理",
@@ -611,7 +612,7 @@
           "title": "写真を一括削除",
           "message": "選択された{count}枚の写真を削除してもよろしいですか？"
         },
-        "warning": "写真を削除すると、元のファイル、サムネイル、およびライブフォトビデオが削除され、元に戻すことはできません。",
+        "warning": "削除した写真はゴミ箱に移動します。後で復元または完全削除できます。",
         "buttons": {
           "cancel": "キャンセル",
           "confirm": "削除を確認"
@@ -779,7 +780,50 @@
           "goToQueue": "キュー管理"
         }
       },
-      "previewTitle": "写真プレビュー"
+      "previewTitle": "写真プレビュー",
+      "trash": {
+        "title": "写真ゴミ箱",
+        "subtitle": "削除した写真はここに一時的に移されます。復元するか完全に削除できます。",
+        "version": "ゴミ箱に入れる",
+        "empty": "ゴミ箱は空です",
+        "emptyHint": "写真を削除すると、ここに表示されます。",
+        "deletedAtColumn": "削除日時",
+        "originalInLibrary": "スキャンライブラリ写真",
+        "actions": {
+          "restore": "復元",
+          "restoreAll": "すべて復元",
+          "empty": "ゴミ箱を空にする",
+          "deleteForever": "完全に削除",
+          "deleteForeverAll": "すべて完全に削除"
+        },
+        "confirm": {
+          "restore": {
+            "title": "写真を復元",
+            "message": "この写真を復元しますか？元の場所に戻されます。"
+          },
+          "restoreAll": {
+            "title": "すべて復元",
+            "message": "ゴミ箱内の全 {count} 枚の写真を復元しますか？"
+          },
+          "deleteForever": {
+            "title": "完全に削除",
+            "message": "元画像・サムネイル・Live Photo 動画が永久に削除され、元に戻せません。続行しますか？"
+          },
+          "deleteForeverAll": {
+            "title": "ゴミ箱を空にする",
+            "message": "ゴミ箱内の全 {count} 枚の写真とファイルが永久に削除され、元に戻せません。続行しますか？"
+          }
+        },
+        "messages": {
+          "restoreSuccess": "写真を復元しました",
+          "restoreAllSuccess": "{count} 枚の写真を復元しました",
+          "deleteForeverSuccess": "写真を完全に削除しました",
+          "deleteForeverAllSuccess": "ゴミ箱を空にしました",
+          "empty": "ゴミ箱を空にしました",
+          "confirm": "確定",
+          "cancel": "キャンセル"
+        }
+      }
     },
     "albums": {
       "title": "アルバム管理",

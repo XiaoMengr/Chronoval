@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { eq, isNull } from 'drizzle-orm'
 import { getAlbumScanMountSet } from '~~/server/services/scan-library/manager'
 
 /**
@@ -28,7 +28,7 @@ export default eventHandler(async (event) => {
     hiddenPhotoIds = new Set(hidden.map((r) => r.photoId))
   }
 
-  // 只取 id / 挂载 / 拍摄时间，不加载大字段
+  // 只取 id / 挂载 / 拍摄时间，不加载大字段；排除已移入回收站的软删除照片
   const rows = db
     .select({
       id: tables.photos.id,
@@ -36,6 +36,7 @@ export default eventHandler(async (event) => {
       dateTaken: tables.photos.dateTaken,
     })
     .from(tables.photos)
+    .where(isNull(tables.photos.deletedAt))
     .all()
 
   let count = 0
