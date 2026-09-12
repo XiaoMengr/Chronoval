@@ -74,15 +74,6 @@ const intrinsicSize = computed(() => {
   return Math.max(height, 100)
 })
 
-// 存在实际 EXIF 数据才考虑展示拍摄参数
-const hasExif = computed(
-  () =>
-    Boolean(props.photo.exif?.FocalLengthIn35mmFormat) ||
-    Boolean(props.photo.exif?.FNumber) ||
-    Boolean(props.photo.exif?.ExposureTime) ||
-    Boolean(props.photo.exif?.ISO),
-)
-
 // EXIF 项定义（保证顺序：焦距 · 光圈 · 快门 · ISO）
 const exifItems = computed<{ icon: string; text: string }[]>(() => {
   const items: { icon: string; text: string }[] = []
@@ -105,26 +96,37 @@ const exifItems = computed<{ icon: string; text: string }[]>(() => {
   return items
 })
 
-// ===== 拍摄参数（EXIF）显示策略：全有或全无（不做“只显示两项”的截断）=====
-// 仅当卡片能“完整放下全部拍摄参数”时才整体展示；任一放不下则整块隐藏，
-// 避免尺寸不足（尤其横向矮图）的照片上被挤压或切行。
-// 拍摄参数网格固定 2 列 → 项数决定行数；每行 chip 约 32px、底部留白 16px，上方预留标题基线约 28px。
-const exifRows = computed(() => {
+// ===== 拍摄参数（EXIF）显示策略：按卡片高矮/长图形状分级=====
+// 长图（渲染高度 > 宽度，即竖向）且足够高 → 显示全部 4 个；横向/矮图最多只显示 2 个；
+// 两者放不下则降一档（4→2→0）。拍摄参数网格固定 2 列 →
+// 每行 chip 约 32px、行距 8px、底部留白 16px，上方预留标题基线约 28px。
+const exifBlockHeight = (count: number) => {
+  const rows = Math.ceil(count / 2)
+  return rows * 32 + (rows - 1) * 8 + 16
+}
+
+// 返回实际可显示的数量：长图优先 4→2→0，横向图 2→0
+const visibleExifCount = computed(() => {
   const n = exifItems.value.length
   if (n === 0) return 0
-  return Math.ceil(n / 2)
+  // 列宽太窄：2 列表格会让“焦距/ISO”等标签被压缩，直接整块隐藏
+  if ((props.columnWidth || 250) < 220) return 0
+  // 长图（渲染高度 > 列宽）才有资格显示全部 4 个；横向/矮图最多 2 个
+  const isTall = intrinsicSize.value > (props.columnWidth || 250)
+  const tiers = isTall ? [4, 2] : [2]
+  for (const k of tiers) {
+    if (k > n) continue
+    // 卡片高度足以容纳“标题基线 + 对应项的拍摄参数块”才显示该档，否则降到下一档
+    if (intrinsicSize.value >= exifBlockHeight(k) + 28) {
+      return k
+    }
+  }
+  return 0
 })
 
-const exifBlockHeight = computed(() => exifRows.value * 32 + 16)
-
-const showExifGrid = computed(() => {
-  if (!hasExif.value) return false
-  if (exifItems.value.length === 0) return false
-  // 列宽太窄：2 列表格会让“焦距/ISO”等标签被压缩，直接整块隐藏
-  if ((props.columnWidth || 250) < 220) return false
-  // 卡片高度不足以容纳“标题基线 + 全部拍摄参数块”→ 整块隐藏
-  if (intrinsicSize.value < exifBlockHeight.value + 28) return false
-  return true
+const visibleExifItems = computed(() => {
+  const n = visibleExifCount.value
+  return n > 0 ? exifItems.value.slice(0, n) : []
 })
 
 // Show info overlay only when not playing video or video has finished
@@ -636,15 +638,15 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <!-- 拍摄参数（EXIF）网格：全有或全无，常驻显示 + 悬停高斯模糊；
-             卡片放得下“全部”拍摄参数才显示，放不下任意一项则整块隐藏 -->
+        <!-- 拍摄参数（EXIF）网格：按卡片高度分级（4 → 2 → 0），常驻显示 + 悬停高斯模糊；
+             卡片够高放得下拍摄参数才显示，越矮显示的项数越少，放不下则整块隐藏 -->
         <div
-          v-if="showExifGrid"
+          v-if="visibleExifItems.length > 0"
           class="grid grid-cols-2 gap-2 pb-4 text-xs"
         >
           <div
-            v-for="(item, i) in exifItems"
-            :key="i"
+            v-for="item in visibleExifItems"
+            :key="item.text"
             class="flex items-center gap-1.5 rounded-md bg-white/10 px-2 py-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-hover:backdrop-blur-sm"
           >
             <Icon :name="item.icon" class="shrink-0 text-white/70" />

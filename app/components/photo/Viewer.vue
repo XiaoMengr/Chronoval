@@ -794,13 +794,7 @@ onUnmounted(() => window.removeEventListener('resize', handleWindowResizeRefit))
                     <Icon name="tabler:info-circle" class="size-5" />
                   </button>
 
-                  <!-- 照片标题 - 桌面端显示 -->
-                  <span
-                    v-if="!isMobile && currentPhoto?.title"
-                    class="truncate rounded-full bg-black/35 px-3 py-1 text-sm font-medium text-white backdrop-blur-sm"
-                  >
-                    {{ currentPhoto.title }}
-                  </span>
+                  <!-- 照片标题：不再在左上角显示（避免放大图被标题胶囊遮挡/显示文件名字） -->
 
                   <!-- LivePhoto 标志 -->
                   <PhotoLivePhotoIndicator

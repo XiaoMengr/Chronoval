@@ -1,4 +1,8 @@
 <script lang="ts" setup>
+definePageMeta({
+  middleware: 'guest',
+})
+
 useHead({
   title: () => $t('auth.form.signin.title'),
 })
