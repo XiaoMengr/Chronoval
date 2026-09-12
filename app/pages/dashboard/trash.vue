@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import type { Photo } from '~~/server/utils/db'
 import ThumbImage from '~/components/ui/ThumbImage.vue'
+import { isPanorama } from '~/utils/panorama'
 
 definePageMeta({
   layout: 'dashboard',
@@ -12,19 +13,70 @@ useHead({
 
 const dayjs = useDayjs()
 
-const { data, refresh, status } = await useFetch<Photo[]>('/api/trash', {
+const { data, refresh } = await useFetch<Photo[]>('/api/trash', {
   default: () => [],
 })
 
 const trashPhotos = computed(() => data.value || [])
 
-// 打开预览弹窗
-const isPreviewOpen = ref(false)
-const previewPhoto = ref<Photo | null>(null)
-const openPreview = (photo: Photo) => {
-  previewPhoto.value = photo
-  isPreviewOpen.value = true
+// ---- 瀑布流布局（与 dashboard/photos 一致）----
+
+// 砖内固有比例：优先已入库的 CSS 长宽比，其次按宽高推算，缺失时兜底 3:4
+const aspectStyle = (p: Photo) => {
+  let ratio = p.aspectRatio
+  if (!ratio && p.width && p.height) ratio = p.width / p.height
+  return { aspectRatio: ratio ? String(ratio) : '3 / 4' }
 }
+
+// 增量渲染：首屏只挂载有限数量，滚动到底部哨兵再追加
+const MASONRY_STEP = 60
+const masonryRenderedCount = ref(0)
+const masonryScrollContainerRef = ref<HTMLElement>()
+const masonrySentinelRef = ref<HTMLElement>()
+const masonryObserver = ref<IntersectionObserver | null>(null)
+const masonryItems = computed(() =>
+  trashPhotos.value.slice(0, masonryRenderedCount.value).map((photo, i) => ({
+    id: photo.id,
+    photo,
+    originalIndex: i,
+  })),
+)
+
+watch(
+  () => trashPhotos.value,
+  () => {
+    masonryRenderedCount.value = trashPhotos.value.length
+      ? Math.min(MASONRY_STEP, trashPhotos.value.length)
+      : 0
+  },
+  { immediate: true },
+)
+
+const appendMasonryBatch = () => {
+  const total = trashPhotos.value?.length ?? 0
+  if (masonryRenderedCount.value >= total) return
+  masonryRenderedCount.value = Math.min(
+    masonryRenderedCount.value + MASONRY_STEP,
+    total,
+  )
+}
+
+onMounted(() => {
+  if (masonrySentinelRef.value) {
+    const root = masonryScrollContainerRef.value || null
+    masonryObserver.value = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) appendMasonryBatch()
+      },
+      { root },
+    )
+    masonryObserver.value.observe(masonrySentinelRef.value)
+  }
+})
+
+onBeforeUnmount(() => {
+  masonryObserver.value?.disconnect()
+})
 
 // 恢复单张
 const restoringId = ref<string | null>(null)
@@ -72,6 +124,14 @@ const restoreAll = async () => {
   } finally {
     isRestoringAll.value = false
   }
+}
+
+// 打开预览弹窗
+const isPreviewOpen = ref(false)
+const previewPhoto = ref<Photo | null>(null)
+const openPreview = (photo: Photo) => {
+  previewPhoto.value = photo
+  isPreviewOpen.value = true
 }
 
 // 彻底删除单张
@@ -191,104 +251,121 @@ const confirmEmptyTrash = async () => {
           </p>
         </div>
 
-        <!-- 回收站照片网格 -->
-        <UTable
+        <!-- 回收站瀑布流：高度受面板约束，内部滚动 -->
+        <div
           v-else
-          :columns="[
-            { key: 'thumbnail', label: '' },
-            { key: 'title', label: $t('dashboard.photos.table.columns.title') },
-            { key: 'source', label: $t('dashboard.photos.actions.delete') },
-            {
-              key: 'deletedAt',
-              label: $t('dashboard.photos.trash.deletedAtColumn'),
-            },
-            { key: 'actions', label: '', class: 'w-[160px]' },
-          ]"
-          :rows="trashPhotos"
-          :loading="status === 'pending'"
-          class="min-h-0"
+          ref="masonryScrollContainerRef"
+          class="relative flex-1 min-h-0 overflow-y-auto overscroll-contain scroll-smooth"
         >
-          <template #thumbnail-data="{ row }">
-            <div class="flex items-center gap-3">
-              <button
-                type="button"
-                class="size-12 shrink-0 overflow-hidden rounded-lg cursor-pointer ring-1 ring-(--ui-border)"
-                @click="openPreview(row)"
+          <MasonryWall
+            :items="masonryItems"
+            :column-width="236"
+            :gap="10"
+            :min-columns="2"
+            :max-columns="8"
+            :ssr-columns="2"
+            :key-mapper="
+              (_item, _column, _row, index) =>
+                masonryItems[index]?.originalIndex ?? index
+            "
+            class="p-2"
+          >
+            <template #default="{ item }">
+              <div
+                v-if="item.photo"
+                :key="item.photo.id"
+                class="group relative overflow-hidden rounded-xl border border-(--ui-border) bg-(--ui-bg-elevated) shadow-sm cursor-pointer"
+                @click="openPreview(item.photo)"
               >
                 <ThumbImage
-                  :src="row.thumbnailUrl || row.originalUrl || ''"
-                  :alt="row.title || row.id"
-                  :thumbhash="row.thumbnailHash"
-                  lazy
-                  class="size-12"
+                  :src="item.photo.thumbnailUrl || item.photo.originalUrl || ''"
+                  :alt="item.photo.title || ''"
+                  :thumbhash="item.photo.thumbnailHash || ''"
+                  class="block w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                  :style="aspectStyle(item.photo)"
                 />
-              </button>
-            </div>
-          </template>
 
-          <template #title-data="{ row }">
-            <div class="max-w-56 truncate">
-              <button
-                type="button"
-                class="cursor-pointer hover:underline"
-                @click="openPreview(row)"
-              >
-                {{ row.title || row.id }}
-              </button>
-            </div>
-          </template>
+                <!-- 悬停操作菜单：恢复 / 彻底删除 -->
+                <div
+                  class="absolute right-2 top-2 flex gap-1 rounded-lg bg-black/35 p-1 opacity-0 backdrop-blur-md transition-opacity duration-200 group-hover:opacity-100"
+                >
+                  <UTooltip
+                    :text="$t('dashboard.photos.trash.actions.restore')"
+                  >
+                    <UButton
+                      icon="tabler:device-floppy"
+                      variant="ghost"
+                      color="white"
+                      size="xs"
+                      :loading="restoringId === item.photo.id"
+                      @click.stop="restorePhoto(item.photo)"
+                    />
+                  </UTooltip>
+                  <UTooltip
+                    :text="$t('dashboard.photos.trash.actions.deleteForever')"
+                  >
+                    <UButton
+                      icon="tabler:trash-off"
+                      variant="ghost"
+                      color="white"
+                      size="xs"
+                      @click.stop="requestDeleteForever(item.photo)"
+                    />
+                  </UTooltip>
+                </div>
 
-          <template #source-data="{ row }">
-            <UBadge
-              :color="row.source === 'library' ? 'primary' : 'neutral'"
-              variant="soft"
-            >
-              {{
-                row.source === 'library'
-                  ? $t('dashboard.photos.trash.originalInLibrary')
-                  : $t('dashboard.photos.photoFilter.static')
-              }}
-            </UBadge>
-          </template>
+                <!-- LivePhoto 标记 -->
+                <div
+                  v-if="item.photo.isLivePhoto"
+                  class="pointer-events-none absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-black/45 px-1.5 py-0.5 backdrop-blur-md"
+                >
+                  <Icon
+                    name="tabler:live-photo"
+                    class="size-3.5 text-yellow-300"
+                  />
+                </div>
 
-          <template #deletedAt-data="{ row }">
-            <span class="text-sm text-(--ui-text-muted)">
-              {{
-                row.deletedAt
-                  ? dayjs(row.deletedAt).format('YYYY-MM-DD HH:mm')
-                  : ''
-              }}
-            </span>
-          </template>
+                <!-- 360° 全景角标 -->
+                <div
+                  v-if="isPanorama(item.photo)"
+                  class="pointer-events-none absolute top-2 left-2 z-10"
+                >
+                  <div
+                    class="flex items-center gap-0.5 rounded-full bg-black/45 py-1 pl-1.5 pr-1.5 text-[13px] font-bold leading-none text-white backdrop-blur-md saturate-150"
+                  >
+                    <Icon name="tabler:rotate-360" class="size-[17px]" />
+                    <span>360°</span>
+                  </div>
+                </div>
 
-          <template #actions-data="{ row }">
-            <div class="flex items-center justify-end gap-1">
-              <UTooltip
-                :text="$t('dashboard.photos.trash.actions.restore')"
-              >
-                <UButton
-                  icon="tabler:device-floppy"
-                  variant="ghost"
-                  color="success"
-                  size="sm"
-                  :loading="restoringId === row.id"
-                  @click="restorePhoto(row)"
-                />
-              </UTooltip>
-              <UTooltip
-                :text="$t('dashboard.photos.trash.actions.deleteForever')"
-              >
-                <UButton
-                  icon="tabler:trash-off"
-                  variant="ghost"
-                  color="error"
-                  size="sm"
-                  @click="requestDeleteForever(row)"
-                />
-              </UTooltip>
-            </div>
-          </template>
-        </UTable>
+                <!-- 删除时间角标 -->
+                <div
+                  class="pointer-events-none absolute bottom-2 left-2 flex items-center gap-1 rounded-full bg-black/45 px-1.5 py-0.5 backdrop-blur-md"
+                >
+                  <Icon
+                    name="tabler:clock"
+                    class="size-3.5 text-white/80"
+                  />
+                  <span class="text-[11px] font-medium text-white/90">
+                    {{
+                      item.photo.deletedAt
+                        ? dayjs(item.photo.deletedAt).format('MM-DD HH:mm')
+                        : ''
+                    }}
+                  </span>
+                </div>
+              </div>
+            </template>
+          </MasonryWall>
+
+          <!-- 增量渲染哨兵：滚动接近底部时追加下一批照片 -->
+          <div
+            v-if="masonryRenderedCount < (trashPhotos?.length ?? 0)"
+            ref="masonrySentinelRef"
+            class="h-px w-full"
+            aria-hidden="true"
+          />
+        </div>
       </div>
     </template>
   </UDashboardPanel>
