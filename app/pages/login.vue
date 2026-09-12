@@ -15,7 +15,10 @@ const appLogo = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
   </svg>
 `)
 
+// 注：移动端采用弹性布局 + 基于视口高度的响应式间距（clamp）自适应任意尺寸，
+// 不使用容器/整页 transform 缩放——实测 transform 与 zoom 都会让 backdrop-filter 毛玻璃失效。
 const { fetch: fetchUserSession } = useUserSession()
+
 const config = useRuntimeConfig()
 const settingsStore = useSettingsStore()
 const toast = useToast()
@@ -23,6 +26,9 @@ const route = useRoute()
 const router = useRouter()
 
 const isLoading = ref(false)
+
+// AuthForm 实例引用：登录接口失败时也复用它的顶部浮动通知卡片
+const authFormRef = ref<{ showNotice: (text: string) => void } | null>(null)
 
 const githubOauthEnabled = computed(() => {
   const settingsValue = settingsStore.getSetting('system:auth.github.enabled')
@@ -45,10 +51,13 @@ const onAuthSubmit = async (event: any) => {
     })
     .catch((error) => {
       console.error('Login error:', error)
+      const message = error?.data?.message || $t('auth.messages.loginFailed.description')
+      // 顶部浮动通知卡片：与 AuthForm 内校验失败同一套反馈
+      authFormRef.value?.showNotice($t('auth.messages.loginFailed.title') + (message ? '：' + message : ''))
       toast.add({
         color: 'error',
         title: $t('auth.messages.loginFailed.title'),
-        description: error?.data?.message || $t('auth.messages.loginFailed.description'),
+        description: message,
       })
     })
     .finally(() => {
@@ -58,7 +67,7 @@ const onAuthSubmit = async (event: any) => {
 </script>
 
 <template>
-  <main class="relative flex min-h-svh w-full flex-col overflow-hidden lg:flex-row">
+  <main class="relative flex h-svh w-full flex-col overflow-hidden lg:h-svh lg:flex-row">
 
     <!-- ===== 统一全屏森林背景层：桌面 + 移动共用，铺满整页 ===== -->
     <div class="absolute inset-0" aria-hidden="true">
@@ -84,6 +93,19 @@ const onAuthSubmit = async (event: any) => {
       <div class="absolute inset-0 bg-neutral-950/35 lg:hidden" />
     </div>
 
+    <!-- ===== 移动端品牌顶栏（仅移动端）：占位式高斯模糊渐入，仿首页顶栏；占据顶部空间，卡片在其下方不再被遮挡/挤压 ===== -->
+    <div class="relative z-30 w-full shrink-0 lg:hidden">
+      <!-- 毛玻璃层 + 向下渐隐遮罩：顶部实、向下淡出，与首页顶栏观感一致 -->
+      <div class="absolute inset-0 -z-10 bg-neutral-950/30 backdrop-blur-2xl [mask-image:linear-gradient(to_bottom,black_0%,black_55%,transparent_100%)]" />
+      <!-- 品牌内容（logo + CHRONOVAL） -->
+      <div class="relative flex items-center gap-2.5 px-5 pb-6 pt-[max(1rem,env(safe-area-inset-top))] lg:pb-6 lg:pt-6">
+        <img :src="appLogo" alt="Chronoval" class="size-8 shrink-0 rounded-lg" />
+        <span class="text-[0.72rem] font-semibold uppercase tracking-[0.32em] text-white/95">
+          Chronoval
+        </span>
+      </div>
+    </div>
+
     <!-- ===== 桌面端：左栏放大字标题（仅桌面，占左半） ===== -->
     <aside class="relative z-10 hidden w-full flex-col justify-between p-12 lg:flex lg:w-1/2 xl:p-16">
       <div class="flex items-center gap-3">
@@ -105,17 +127,10 @@ const onAuthSubmit = async (event: any) => {
     </aside>
 
     <!-- ===== 登录卡片：桌面偏右占右半，移动居中浮于全屏森林上 ===== -->
-    <section class="relative z-20 flex w-full flex-1 items-center justify-center px-6 py-10 lg:w-1/2 lg:py-0 lg:pr-14 xl:pr-20">
-      <!-- 移动端顶部品牌（仅移动） -->
-      <div class="absolute left-6 top-6 flex items-center gap-3 lg:hidden">
-        <img :src="appLogo" alt="Chronoval" class="h-8 w-8" />
-        <span class="text-[0.7rem] font-semibold uppercase tracking-[0.4em] text-white/85">
-          Chronoval
-        </span>
-      </div>
-
-      <div class="auth-glass w-full max-w-md rounded-[2rem] px-8 py-10 sm:px-10">
+    <section class="relative z-20 flex w-full flex-1 items-center justify-center px-4 py-[clamp(0.5rem,3svh,3rem)] min-h-0 lg:w-1/2 lg:min-h-auto lg:py-0 lg:px-0 lg:pr-14 xl:pr-20">
+      <div class="auth-glass w-full max-w-[24rem] rounded-[2rem] px-[clamp(1.25rem,4vw,2rem)] py-[clamp(1rem,5svh,2.25rem)] sm:px-10 max-h-[80svh] overflow-y-auto lg:max-w-md sm:max-h-none sm:overflow-visible">
         <AuthForm
+          ref="authFormRef"
           :title="$t('auth.form.signin.title')"
           :subtitle="$t('auth.form.signin.subtitle', [config.public.app.title])"
           :loading="isLoading"
