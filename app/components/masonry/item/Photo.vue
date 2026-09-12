@@ -74,34 +74,7 @@ const intrinsicSize = computed(() => {
   return Math.max(height, 100)
 })
 
-// Afilmory 式悬浮详情：格式 · 尺寸 · 大小
-const format = computed(() => {
-  const url = props.photo.originalUrl || ''
-  const match = url.match(/\.([a-zA-Z0-9]{2,4})(?:\?|$)/)
-  return match ? match[1].toUpperCase() : undefined
-})
-
-const sizeText = computed(() => {
-  const bytes = props.photo.fileSize
-  if (!bytes) return undefined
-  return `${(bytes / 1024 / 1024).toFixed(1)}MB`
-})
-
-const hasDimensions = computed(() => {
-  return Boolean(props.photo.width && props.photo.height)
-})
-
-const specsText = computed(() => {
-  const parts: string[] = []
-  if (format.value) parts.push(format.value)
-  if (props.photo.width && props.photo.height) {
-    parts.push(`${props.photo.width} × ${props.photo.height}`)
-  }
-  if (sizeText.value) parts.push(sizeText.value)
-  return parts.join('  ·  ')
-})
-
-// 卡片足够高时才展示 EXIF 网格（Afilmory 阈值 ~200px），且需存在实际 EXIF 数据
+// 存在实际 EXIF 数据才考虑展示拍摄参数
 const hasExif = computed(
   () =>
     Boolean(props.photo.exif?.FocalLengthIn35mmFormat) ||
@@ -110,10 +83,48 @@ const hasExif = computed(
     Boolean(props.photo.exif?.ISO),
 )
 
-// 相机参数标签：只要存在真实 EXIF 数据即显示（不限卡片高度，避免宽幅照片标签被隐藏）
+// EXIF 项定义（保证顺序：焦距 · 光圈 · 快门 · ISO）
+const exifItems = computed<{ icon: string; text: string }[]>(() => {
+  const items: { icon: string; text: string }[] = []
+  const exif = props.photo.exif
+  if (exif?.FocalLengthIn35mmFormat) {
+    items.push({
+      icon: 'streamline:image-accessories-lenses-photos-camera-shutter-picture-photography-pictures-photo-lens',
+      text: String(exif.FocalLengthIn35mmFormat),
+    })
+  }
+  if (exif?.FNumber) {
+    items.push({ icon: 'tabler:aperture', text: `f/${exif.FNumber}` })
+  }
+  if (exif?.ExposureTime) {
+    items.push({ icon: 'material-symbols:shutter-speed', text: formatExposureTime(exif.ExposureTime) })
+  }
+  if (exif?.ISO) {
+    items.push({ icon: 'carbon:iso-outline', text: `ISO ${exif.ISO}` })
+  }
+  return items
+})
+
+// ===== 拍摄参数（EXIF）显示策略：全有或全无（不做“只显示两项”的截断）=====
+// 仅当卡片能“完整放下全部拍摄参数”时才整体展示；任一放不下则整块隐藏，
+// 避免尺寸不足（尤其横向矮图）的照片上被挤压或切行。
+// 拍摄参数网格固定 2 列 → 项数决定行数；每行 chip 约 32px、底部留白 16px，上方预留标题基线约 28px。
+const exifRows = computed(() => {
+  const n = exifItems.value.length
+  if (n === 0) return 0
+  return Math.ceil(n / 2)
+})
+
+const exifBlockHeight = computed(() => exifRows.value * 32 + 16)
+
 const showExifGrid = computed(() => {
   if (!hasExif.value) return false
-  return Boolean(specsText.value)
+  if (exifItems.value.length === 0) return false
+  // 列宽太窄：2 列表格会让“焦距/ISO”等标签被压缩，直接整块隐藏
+  if ((props.columnWidth || 250) < 220) return false
+  // 卡片高度不足以容纳“标题基线 + 全部拍摄参数块”→ 整块隐藏
+  if (intrinsicSize.value < exifBlockHeight.value + 28) return false
+  return true
 })
 
 // Show info overlay only when not playing video or video has finished
@@ -613,19 +624,6 @@ onUnmounted(() => {
             {{ photo.description }}
           </p>
 
-          <!-- 基本信息：格式 • 宽 × 高 • 大小 -->
-          <div
-            class="mb-2 flex flex-wrap items-center gap-2 text-xs text-white/80 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-          >
-            <span v-if="format">{{ format }}</span>
-            <span v-if="format && hasDimensions">•</span>
-            <span v-if="hasDimensions" class="whitespace-nowrap">
-              {{ photo.width }} × {{ photo.height }}
-            </span>
-            <span v-if="hasDimensions && sizeText">•</span>
-            <span v-if="sizeText" class="whitespace-nowrap">{{ sizeText }}</span>
-          </div>
-
           <!-- Tags -->
           <div v-if="photo.tags?.length" class="flex flex-wrap gap-1.5">
             <span
@@ -638,41 +636,19 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <!-- EXIF 相机参数网格（常驻显示、恒定高斯模糊，不随悬停隐藏） -->
+        <!-- 拍摄参数（EXIF）网格：全有或全无，常驻显示 + 悬停高斯模糊；
+             卡片放得下“全部”拍摄参数才显示，放不下任意一项则整块隐藏 -->
         <div
           v-if="showExifGrid"
           class="grid grid-cols-2 gap-2 pb-4 text-xs"
         >
           <div
-            v-if="photo.exif?.FocalLengthIn35mmFormat"
+            v-for="(item, i) in exifItems"
+            :key="i"
             class="flex items-center gap-1.5 rounded-md bg-white/10 px-2 py-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-hover:backdrop-blur-sm"
           >
-            <Icon
-              name="streamline:image-accessories-lenses-photos-camera-shutter-picture-photography-pictures-photo-lens"
-              class="shrink-0 text-white/70"
-            />
-            <span class="text-white/90">{{ photo.exif.FocalLengthIn35mmFormat }}</span>
-          </div>
-          <div
-            v-if="photo.exif?.FNumber"
-            class="flex items-center gap-1.5 rounded-md bg-white/10 px-2 py-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-hover:backdrop-blur-sm"
-          >
-            <Icon name="tabler:aperture" class="shrink-0 text-white/70" />
-            <span class="text-white/90">f/{{ photo.exif.FNumber }}</span>
-          </div>
-          <div
-            v-if="photo.exif?.ExposureTime"
-            class="flex items-center gap-1.5 rounded-md bg-white/10 px-2 py-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-hover:backdrop-blur-sm"
-          >
-            <Icon name="material-symbols:shutter-speed" class="shrink-0 text-white/70" />
-            <span class="text-white/90">{{ formatExposureTime(photo.exif.ExposureTime) }}</span>
-          </div>
-          <div
-            v-if="photo.exif?.ISO"
-            class="flex items-center gap-1.5 rounded-md bg-white/10 px-2 py-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-hover:backdrop-blur-sm"
-          >
-            <Icon name="carbon:iso-outline" class="shrink-0 text-white/70" />
-            <span class="text-white/90">ISO {{ photo.exif.ISO }}</span>
+            <Icon :name="item.icon" class="shrink-0 text-white/70" />
+            <span class="whitespace-nowrap text-white/90">{{ item.text }}</span>
           </div>
         </div>
       </div>

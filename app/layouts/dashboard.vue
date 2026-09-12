@@ -118,7 +118,7 @@ onBeforeUnmount(() => {
 
 const handleLogin = () => {
   router.push({
-    path: '/signin',
+    path: '/login',
     query: { redirect: route.fullPath },
   })
 }

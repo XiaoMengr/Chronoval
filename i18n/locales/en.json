@@ -495,6 +495,12 @@
         "title": "Login Failed",
         "description": "An unexpected error occurred. Please try again."
       }
+    },
+    "poster": {
+      "title": "Every frame of light worth keeping"
+    },
+    "footer": {
+      "hint": "Your private collection · step into your gallery"
     }
   },
   "common": {

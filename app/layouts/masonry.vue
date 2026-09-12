@@ -62,7 +62,7 @@ const cardSrcAt = (i: number) =>
         <template #fallback>
           <!-- 照片风骨架屏：品牌胶囊 + 两张长方形玻璃相框层层叠叠 -->
           <div
-            class="fixed inset-0 flex flex-col items-center justify-center gallery-loader"
+            class="gallery-loader pointer-events-none fixed inset-0 flex flex-col items-center justify-center"
             role="status"
             aria-label="loading gallery"
           >

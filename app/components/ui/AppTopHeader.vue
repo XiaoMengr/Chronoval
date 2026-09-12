@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 /** Afilmory 风格固定顶部导航栏：fixed top · 玻璃模糊背景 · LinearBlur 渐变遮罩（浅/深双主题自适应） */
-const router = useRouter()
 const colorMode = useColorMode()
 
 const isDark = computed({
@@ -17,10 +16,6 @@ const isDark = computed({
 const themeToggleEnabled = computed(
   () => !!useSettingRef('app:appearance.themeToggle').value,
 )
-
-const handleOpenLogin = () => {
-  router.push('/signin')
-}
 
 const { hasActiveFilters, selectedCounts } = usePhotoFilters()
 
@@ -232,7 +227,7 @@ const glassStyle = computed(() =>
                   variant="ghost"
                   class="cursor-pointer rounded bg-transparent text-(--glass-muted) hover:bg-(--glass-hover) hover:text-(--glass-text)"
                   icon="tabler:cloud"
-                  @click="handleOpenLogin"
+                  :to="{ path: '/login' }"
                 />
               </UTooltip>
               <template v-else>
