@@ -789,6 +789,7 @@
         "emptyHint": "写真を削除すると、ここに表示されます。",
         "deletedAtColumn": "削除日時",
         "originalInLibrary": "スキャンライブラリ写真",
+        "countTooltip": "ゴミ箱内の写真の数",
         "actions": {
           "restore": "復元",
           "restoreAll": "すべて復元",

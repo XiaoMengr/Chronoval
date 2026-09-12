@@ -789,6 +789,7 @@
         "emptyHint": "刪除相片後，它們會出現在這裡。",
         "deletedAtColumn": "刪除時間",
         "originalInLibrary": "掃描庫相片",
+        "countTooltip": "目前回收站中的相片數量",
         "actions": {
           "restore": "復原",
           "restoreAll": "全部復原",

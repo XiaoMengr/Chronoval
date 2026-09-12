@@ -174,7 +174,7 @@ const isEmptyTrashOpen = ref(false)
 const isClearing = ref(false)
 
 const requestEmptyTrash = () => {
-  // 关闭单张彻底删除弹窗，仅保留清空回收站确认，避免同一时刻出现两个删除弹窗
+  // 关闭单张彻底删除弹窗，仅保留清空回收站确认，避免同时弹出
   isDeleteForeverOpen.value = false
   deleteForeverTarget.value = null
   isEmptyTrashOpen.value = true
@@ -215,7 +215,7 @@ const confirmEmptyTrash = async () => {
               v-if="trashPhotos.length > 0"
               variant="soft"
               color="success"
-              icon="tabler:device-floppy"
+              icon="tabler:arrow-back-up"
               :loading="isRestoringAll"
               :disabled="isRestoringAll"
               @click="restoreAll"
@@ -238,9 +238,21 @@ const confirmEmptyTrash = async () => {
 
     <template #body>
       <div class="flex flex-col gap-4 flex-1 min-h-0 p-4">
-        <p class="text-sm text-(--ui-text-muted)">
-          {{ $t('dashboard.photos.trash.subtitle') }}
-        </p>
+        <div class="flex items-center justify-between gap-3">
+          <p class="text-sm text-(--ui-text-muted)">
+            {{ $t('dashboard.photos.trash.subtitle') }}
+          </p>
+          <UTooltip
+            v-if="trashPhotos.length > 0"
+            :text="$t('dashboard.photos.trash.countTooltip')"
+          >
+            <span
+              class="shrink-0 rounded-full bg-(--ui-bg-elevated) px-2.5 py-1 text-xs font-medium text-(--ui-text-muted) ring-1 ring-(--ui-border)"
+            >
+              {{ trashPhotos.length }}
+            </span>
+          </UTooltip>
+        </div>
 
         <!-- 空状态 -->
         <div
@@ -290,50 +302,36 @@ const confirmEmptyTrash = async () => {
                   :style="aspectStyle(item.photo)"
                 />
 
-                <!-- 悬停操作菜单：恢复 / 彻底删除 -->
+                <!-- 悬停操作：恢复 / 彻底删除（有效颜色令牌） -->
                 <div
-                  class="absolute right-2 top-2 flex gap-1 rounded-lg bg-black/35 p-1 opacity-0 backdrop-blur-md transition-opacity duration-200 group-hover:opacity-100"
+                  class="absolute right-2 top-2 flex gap-1.5 rounded-xl bg-black/50 p-1.5 opacity-0 backdrop-blur-xl transition-opacity duration-200 group-hover:opacity-100"
                 >
-                  <UTooltip
-                    :text="$t('dashboard.photos.trash.actions.restore')"
-                  >
-                    <UButton
-                      icon="tabler:device-floppy"
-                      variant="ghost"
-                      color="white"
-                      size="xs"
-                      :loading="restoringId === item.photo.id"
-                      @click.stop="restorePhoto(item.photo)"
-                    />
-                  </UTooltip>
-                  <UTooltip
-                    :text="$t('dashboard.photos.trash.actions.deleteForever')"
-                  >
-                    <UButton
-                      icon="tabler:trash-off"
-                      variant="ghost"
-                      color="white"
-                      size="xs"
-                      @click.stop="requestDeleteForever(item.photo)"
-                    />
-                  </UTooltip>
-                </div>
-
-                <!-- LivePhoto 标记 -->
-                <div
-                  v-if="item.photo.isLivePhoto"
-                  class="pointer-events-none absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-black/45 px-1.5 py-0.5 backdrop-blur-md"
-                >
-                  <Icon
-                    name="tabler:live-photo"
-                    class="size-3.5 text-yellow-300"
+                  <UButton
+                    icon="tabler:arrow-back-up"
+                    variant="soft"
+                    color="success"
+                    size="xs"
+                    square
+                    :loading="restoringId === item.photo.id"
+                    :disabled="restoringId !== null && restoringId !== item.photo.id"
+                    :aria-label="$t('dashboard.photos.trash.actions.restore')"
+                    @click.stop="restorePhoto(item.photo)"
+                  />
+                  <UButton
+                    icon="tabler:trash-off"
+                    variant="soft"
+                    color="error"
+                    size="xs"
+                    square
+                    :aria-label="$t('dashboard.photos.trash.actions.deleteForever')"
+                    @click.stop="requestDeleteForever(item.photo)"
                   />
                 </div>
 
                 <!-- 360° 全景角标 -->
                 <div
                   v-if="isPanorama(item.photo)"
-                  class="pointer-events-none absolute top-2 left-2 z-10"
+                  class="pointer-events-none absolute left-2 top-2 z-10"
                 >
                   <div
                     class="flex items-center gap-0.5 rounded-full bg-black/45 py-1 pl-1.5 pr-1.5 text-[13px] font-bold leading-none text-white backdrop-blur-md saturate-150"
@@ -343,27 +341,29 @@ const confirmEmptyTrash = async () => {
                   </div>
                 </div>
 
-                <!-- 删除时间角标 -->
+                <!-- 底部信息栏：删除时间 + 来源 + LivePhoto -->
                 <div
-                  class="pointer-events-none absolute bottom-2 left-2 flex items-center gap-1 rounded-full bg-black/45 px-1.5 py-0.5 backdrop-blur-md"
+                  class="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 rounded-b-xl bg-gradient-to-t from-black/70 to-transparent px-2 pb-2 pt-8"
                 >
-                  <Icon
-                    name="tabler:clock"
-                    class="size-3.5 text-white/80"
-                  />
-                  <span class="text-[11px] font-medium text-white/90">
+                  <span class="flex items-center gap-1 text-[11px] font-medium text-white/90">
+                    <Icon name="tabler:clock" class="size-3.5 text-white/70" />
                     {{
                       item.photo.deletedAt
-                        ? dayjs(item.photo.deletedAt).format('MM-DD HH:mm')
+                        ? dayjs(item.photo.deletedAt).format('YYYY-MM-DD HH:mm')
                         : ''
                     }}
                   </span>
+                  <Icon
+                    v-if="item.photo.isLivePhoto"
+                    name="tabler:live-photo"
+                    class="size-4 text-yellow-300"
+                  />
                 </div>
               </div>
             </template>
           </MasonryWall>
 
-          <!-- 增量渲染哨兵：滚动接近底部时追加下一批照片 -->
+          <!-- 增量渲染哨兵 -->
           <div
             v-if="masonryRenderedCount < (trashPhotos?.length ?? 0)"
             ref="masonrySentinelRef"

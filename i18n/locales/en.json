@@ -764,6 +764,7 @@
         "emptyHint": "Photos you delete will appear here.",
         "deletedAtColumn": "Deleted At",
         "originalInLibrary": "Library Photo",
+        "countTooltip": "Number of photos in the trash",
         "actions": {
           "restore": "Restore",
           "restoreAll": "Restore All",

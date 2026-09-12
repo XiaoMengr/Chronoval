@@ -764,6 +764,7 @@
         "emptyHint": "删除照片后，它们会出现在这里。",
         "deletedAtColumn": "删除时间",
         "originalInLibrary": "扫描库照片",
+        "countTooltip": "当前回收站中的照片数量",
         "actions": {
           "restore": "恢复",
           "restoreAll": "全部恢复",
