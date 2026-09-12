@@ -435,7 +435,17 @@ export const getScanAlbumDetail = async (
     .filter(
       (p) => dirOfScanPath(p.libraryPath || '') === normalized,
     )
-    .sort((a, b) => (a.dateTaken || '').localeCompare(b.dateTaken || ''))
+    .sort((a, b) => {
+      // 优先按拍摄时间升序；无拍摄时间（扫描照片常缺 EXIF 日期）时回退按文件名升序，
+      // 避免落到数据库的任意顺序而显得"排序乱掉了"。
+      const ta = a.dateTaken ?? ''
+      const tb = b.dateTaken ?? ''
+      if (ta || tb) {
+        const byDate = ta.localeCompare(tb)
+        if (byDate !== 0) return byDate
+      }
+      return (a.title ?? a.libraryPath ?? '').localeCompare(b.title ?? b.libraryPath ?? '')
+    })
     .map((p) => ({
       id: p.id,
       title: p.title,

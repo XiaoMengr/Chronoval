@@ -682,6 +682,7 @@ const onAlbumClick = (albumId: number) => {
    配色随 .dark 用 --cm-* 全局变量自动翻转（浅色：近白玻璃+深字；暗色：深灰玻璃+白字） */
 .inspector-glass {
   color: rgb(var(--cm-text));
+  font-family: 'Geist Sans', 'Geist', ui-sans-serif, system-ui, sans-serif;
   background-image: linear-gradient(
     to bottom right,
     rgba(var(--cm-material-medium)),
@@ -744,8 +745,8 @@ const onAlbumClick = (albumId: number) => {
   gap: 0.5rem;
   border-radius: 0.625rem;
   padding: 0 0.75rem;
-  font-size: 0.8125rem;
-  font-weight: 500;
+  font-size: 0.75rem; /* 12px，对齐参考站拍摄参数 chip */
+  font-weight: 400;
   color: rgb(var(--cm-text));
   background-color: rgb(var(--cm-chip));
   border: 1px solid rgb(var(--cm-border));

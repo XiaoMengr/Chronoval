@@ -27,6 +27,17 @@ if (error.value) {
 
 const albumData = computed(() => album.value)
 
+// 相册照片统一按拍摄时间倒序展示（与首页画廊默认排序一致），
+// 避免依赖 albumPhotos.position（按配置时的加入顺序、非拍摄时间）导致相册内排序"看起来很乱"。
+const sortedAlbumPhotos = computed<Photo[]>(() => {
+  const raw = (albumData.value?.photos as Photo[]) ?? []
+  return [...raw].sort((a, b) => {
+    const ta = a.dateTaken ? new Date(a.dateTaken).getTime() : 0
+    const tb = b.dateTaken ? new Date(b.dateTaken).getTime() : 0
+    return tb - ta
+  })
+})
+
 const albumStats = computed(() => {
   if (!albumData.value) return null
 
@@ -76,7 +87,7 @@ const dateRangeText = computed(() => {
 // 用于 MasonryWall 的照片数据
 const masonryItems = computed(() => {
   return (
-    albumData.value?.photos?.map((photo: any, index: number) => ({
+    sortedAlbumPhotos.value?.map((photo: any, index: number) => ({
       id: photo.id,
       photo,
       originalIndex: index,
@@ -92,12 +103,12 @@ const minColumns = computed(() => (isMobile.value ? 2 : 2))
 const MASONRY_GAP = 4
 
 const handleOpenViewer = (index: number) => {
-  const photos = albumData.value?.photos
+  const photos = sortedAlbumPhotos.value
   if (photos && photos[index]) {
     const { openViewer } = useViewerState()
     const albumRoute = `/albums/${albumId.value}`
-    // Scope the viewer to the album's photos so prev/next stays within this album.
-    // The fetched photos are serialized rows of the same shape as Photo.
+    // Scope the viewer to the album's photos so prev/next stays within this album
+    // and follows the same chronological order as the rendered masonry.
     openViewer(index, albumRoute, photos as Photo[])
     router.push(`/${photos[index].id}`)
   }
@@ -109,12 +120,12 @@ const coverPhoto = computed(() => {
 
   // coverPhotoId first
   if (album.coverPhotoId) {
-    const cover = album.photos.find((p: any) => p.id === album.coverPhotoId)
+    const cover = sortedAlbumPhotos.value.find((p: any) => p.id === album.coverPhotoId)
     if (cover) return cover
   }
 
-  // otherwise first photo
-  return album.photos[0] || null
+  // otherwise first photo (in chronological order)
+  return sortedAlbumPhotos.value[0] || null
 })
 
 const scrollToTop = () => {

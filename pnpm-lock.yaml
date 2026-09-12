@@ -20,6 +20,9 @@ importers:
       '@chronoframe/webgl-image':
         specifier: workspace:*
         version: link:packages/webgl-image
+      '@fontsource/geist-sans':
+        specifier: ^5.3.0
+        version: 5.3.0
       '@iconify/vue':
         specifier: 5.0.1
         version: 5.0.1(vue@3.5.35(typescript@5.9.3))
@@ -1310,6 +1313,9 @@ packages:
 
   '@floating-ui/vue@1.1.9':
     resolution: {integrity: sha512-BfNqNW6KA83Nexspgb9DZuz578R7HT8MZw1CfK9I6Ah4QReNWEJsXWHN+SdmOVLNGmTPDi+fDT535Df5PzMLbQ==}
+
+  '@fontsource/geist-sans@5.3.0':
+    resolution: {integrity: sha512-AmG7cE1AvE4NHROPaOl1sN+a02cB5xy6pA/ZV76HXqWTCsJTV2SCBc9DTFHfJqnVOODm7HhXIYtUIb75NP5QXQ==}
 
   '@hapi/address@5.1.1':
     resolution: {integrity: sha512-A+po2d/dVoY7cYajycYI43ZbYMXukuopIsqCjh5QzsBCipDtdofHntljDlpccMjIfTy6UOkg+5KPriwYch2bXA==}
@@ -9763,6 +9769,8 @@ snapshots:
     transitivePeerDependencies:
       - '@vue/composition-api'
       - vue
+
+  '@fontsource/geist-sans@5.3.0': {}
 
   '@hapi/address@5.1.1':
     dependencies:

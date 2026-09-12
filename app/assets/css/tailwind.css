@@ -1,6 +1,11 @@
 @import 'tailwindcss';
 @import '@nuxt/ui';
 
+/* 参考站 afilmory 侧栏字体：自托管 Geist（OFL 许可），字重 300 常规 / 400 / 500 */
+@import '@fontsource/geist-sans/300.css';
+@import '@fontsource/geist-sans/400.css';
+@import '@fontsource/geist-sans/500.css';
+
 :root {
   /* New text-autospace property */
   /* see docs: https://developer.mozilla.org/en-US/docs/Web/CSS/text-autospace */
