@@ -87,7 +87,7 @@ const actionStyle = (angle: number) => {
           class="inline-flex"
         >
           <Icon
-            :name="isOpen ? 'tabler:x' : 'tabler:settings-3'"
+            :name="isOpen ? 'tabler:x' : 'tabler:settings-2'"
             class="size-6"
           />
         </motion.span>
