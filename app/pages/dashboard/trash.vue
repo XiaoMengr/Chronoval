@@ -140,6 +140,8 @@ const deleteForeverTarget = ref<Photo | null>(null)
 const isDeletingForever = ref(false)
 
 const requestDeleteForever = (photo: Photo) => {
+  // 保证一次只弹出一个删除确认弹窗（单张彻底删除 / 清空回收站互斥）
+  isEmptyTrashOpen.value = false
   deleteForeverTarget.value = photo
   isDeleteForeverOpen.value = true
 }
@@ -172,6 +174,9 @@ const isEmptyTrashOpen = ref(false)
 const isClearing = ref(false)
 
 const requestEmptyTrash = () => {
+  // 关闭单张彻底删除弹窗，仅保留清空回收站确认，避免同一时刻出现两个删除弹窗
+  isDeleteForeverOpen.value = false
+  deleteForeverTarget.value = null
   isEmptyTrashOpen.value = true
 }
 
