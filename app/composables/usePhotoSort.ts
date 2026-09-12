@@ -74,6 +74,12 @@ export function usePhotoSort() {
     )
   })
 
+  // 稳定排序的兜底二级键：当主排序值相同（例如 dateTaken 缺失/相同）时，
+  // 统一按 id 升序排列，保证画廊在这两次拉取/返回间顺序完全一致，
+  // 避免依赖数据库返回的顺序，导致"查看一张图片返回后排序变了"。
+  const compareIds = (a: Photo, b: Photo) =>
+    a.id < b.id ? -1 : a.id > b.id ? 1 : 0
+
   // 排序后的照片
   const sortedPhotos = computed(() => {
     const option = currentSortOption.value
@@ -84,26 +90,31 @@ export function usePhotoSort() {
       const valueB = option.value(b)
 
       // 处理 null/undefined 值
-      if (valueA == null && valueB == null) return 0
+      if (valueA == null && valueB == null) return compareIds(a, b)
       if (valueA == null) return 1
       if (valueB == null) return -1
 
       // 数值比较
       if (typeof valueA === 'number' && typeof valueB === 'number') {
-        return option.order === 'asc' ? valueA - valueB : valueB - valueA
+        const diff = valueA - valueB
+        return option.order === 'asc'
+          ? diff || compareIds(a, b)
+          : -diff || compareIds(a, b)
       }
 
       // 字符串比较
       if (typeof valueA === 'string' && typeof valueB === 'string') {
         const comparison = valueA.localeCompare(valueB)
-        return option.order === 'asc' ? comparison : -comparison
+        const ordered = option.order === 'asc' ? comparison : -comparison
+        return ordered || compareIds(a, b)
       }
 
       // 其他类型转字符串比较
       const strA = String(valueA)
       const strB = String(valueB)
       const comparison = strA.localeCompare(strB)
-      return option.order === 'asc' ? comparison : -comparison
+      const ordered = option.order === 'asc' ? comparison : -comparison
+      return ordered || compareIds(a, b)
     })
 
     return sorted

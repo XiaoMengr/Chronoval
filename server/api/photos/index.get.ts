@@ -1,11 +1,14 @@
-import { desc } from 'drizzle-orm'
+import { asc, desc } from 'drizzle-orm'
 import { getAlbumScanMountSet } from '~~/server/services/scan-library/manager'
 
 export default eventHandler(async (event) => {
+  // 确定性排序：先按拍摄时间倒序，再按 id 升序兜底。
+  // 同一拍摄时间出现平手时，数据库返回顺序不保证稳定，会导致
+  // 两次拉取/返回画廊时照片顺序抖动。显式按 id 排序后首次进入与返回完全一致。
   const rows = useDB()
     .select()
     .from(tables.photos)
-    .orderBy(desc(tables.photos.dateTaken))
+    .orderBy(desc(tables.photos.dateTaken), asc(tables.photos.id))
     .all()
 
   // 首页画廊数据源（?gallery=1）：即使管理员登录，也不返回「已转为相簿」的扫描库照片，

@@ -164,3 +164,11 @@ html.dark .glass-surface {
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: var(--ui-border, rgba(255, 255, 255, 0.2));
 }
+
+/* 稳定滚动条槽位：照片查看器打开时会给 body 加 overflow:hidden，
+   这会把竖向滚动条去掉 → 画廊容器变宽 → 瀑布流列数/排布变化，
+   导致"查看一张照片返回后图片位置移动"。始终预留滚动条槽位，
+   保证打开/关闭查看器前后画廊宽度与列布局完全一致。 */
+html {
+  scrollbar-gutter: stable;
+}

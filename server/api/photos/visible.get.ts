@@ -1,4 +1,4 @@
-import { desc, notInArray } from 'drizzle-orm'
+import { asc, desc, notInArray } from 'drizzle-orm'
 import { getAlbumScanMountSet } from '~~/server/services/scan-library/manager'
 
 export default eventHandler(async (_event) => {
@@ -23,13 +23,13 @@ export default eventHandler(async (_event) => {
       .select()
       .from(tables.photos)
       .where(notInArray(tables.photos.id, hiddenPhotoIds))
-      .orderBy(desc(tables.photos.dateTaken))
+      .orderBy(desc(tables.photos.dateTaken), asc(tables.photos.id))
       .all()
   } else {
     rows = db
       .select()
       .from(tables.photos)
-      .orderBy(desc(tables.photos.dateTaken))
+      .orderBy(desc(tables.photos.dateTaken), asc(tables.photos.id))
       .all()
   }
 

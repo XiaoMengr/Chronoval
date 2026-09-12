@@ -107,6 +107,52 @@ watch(data, (val) => {
 
 const photos = computed(() => (data.value as Photo[]) || [])
 
+// ===== 后台上传 → 画廊无刷新实时更新 =====
+// 后台（可能在同一浏览器的另一个标签页）上传/删除照片时，当前已打开的画廊不会自动知道。
+// 这里在客户端做轻量轮询：只请求不含 EXIF 的"指纹"(可见数量+最新拍摄时间)，
+// 只有当指纹变化时才触发一次完整 refresh()，既实现"无需刷新浏览器就出现新照片"，
+// 又不高频拉取全量 EXIF 大 JSON。后台 /dashboard 自带刷新机制，这里跳过避免重复。
+const FEED_POLL_MS = 8000
+if (import.meta.client) {
+  let lastFeedSignature = ''
+  let feeding = false
+  let feedTimer: ReturnType<typeof setInterval> | null = null
+
+  const pollFeed = async () => {
+    if (feeding) return
+    if (route.path.startsWith('/dashboard')) return
+    if (typeof document !== 'undefined' && document.hidden) return
+    feeding = true
+    try {
+      const sig = await $fetch<{ count: number; maxDateTaken: string | null }>(
+        '/api/photos/feed-status',
+      ).then((r) => `${r.count}|${r.maxDateTaken || 'null'}`)
+      if (lastFeedSignature === '') {
+        // 首轮仅建立基线，不触发刷新（首屏数据在 SSR/首次拉取时已就绪）
+        lastFeedSignature = sig
+        return
+      }
+      if (sig !== lastFeedSignature) {
+        lastFeedSignature = sig
+        await refresh()
+      }
+    } catch {
+      // 网络抖动或尚未就绪，忽略，下一轮再试
+    } finally {
+      feeding = false
+    }
+  }
+
+  onMounted(() => {
+    feedTimer = setInterval(pollFeed, FEED_POLL_MS)
+    document.addEventListener('visibilitychange', pollFeed)
+  })
+  onUnmounted(() => {
+    if (feedTimer) clearInterval(feedTimer)
+    document.removeEventListener('visibilitychange', pollFeed)
+  })
+}
+
 const { switchToIndex, closeViewer, clearReturnRoute } = useViewerState()
 const {
   currentPhotoIndex,
