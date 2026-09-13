@@ -215,21 +215,32 @@ const filteredLogs = computed(() => {
   return filtered
 })
 
-const availableTags = computed(() => {
+// Tag 列表：日志高频到达时若逐批重建（O(n)）会拖慢渲染，改为防抖 ~300ms 重建一次。
+const availableTags = ref<{ label: string; value: string }[]>([])
+let tagBuildTimer: ReturnType<typeof setTimeout> | undefined
+const rebuildTags = () => {
   const tags = new Set<string>()
   for (const log of logs.value) {
     if (log.tag) {
       tags.add(log.tag)
     }
   }
-
-  return Array.from(tags)
+  availableTags.value = Array.from(tags)
     .sort((a, b) => a.localeCompare(b))
     .map((tag) => ({
       label: tag,
       value: tag,
     }))
-})
+}
+watch(
+  () => logs.value.length,
+  () => {
+    if (tagBuildTimer) clearTimeout(tagBuildTimer)
+    tagBuildTimer = setTimeout(rebuildTags, 300)
+  },
+  { flush: 'sync' },
+)
+rebuildTags()
 
 const totalVirtualHeight = computed(
   () => filteredLogs.value.length * ROW_HEIGHT + VIRTUAL_BOTTOM_PADDING,
@@ -264,28 +275,28 @@ const statusDotClass = computed(() => {
   return 'bg-amber-400'
 })
 
-// 终端行配色：error→红 warn→黄 info→青 success→绿 debug→灰
+// 终端行配色（终端始终黑底，直接用亮色，不依赖全局 dark 变体）
 const tRowClass = (log: LogEntry) => {
   const logType = log.type || getLevelType(log.level)
   const map: Record<string, string> = {
-    error: 'hover:bg-black/[0.04] dark:hover:bg-white/[0.05] text-red-600 dark:text-red-400',
-    warn: 'hover:bg-black/[0.04] dark:hover:bg-white/[0.05] text-amber-600 dark:text-yellow-300',
-    info: 'hover:bg-black/[0.04] dark:hover:bg-white/[0.05] text-zinc-800 dark:text-zinc-300',
-    success: 'hover:bg-black/[0.04] dark:hover:bg-white/[0.05] text-emerald-600 dark:text-emerald-400',
-    debug: 'hover:bg-black/[0.04] dark:hover:bg-white/[0.05] text-zinc-500',
+    error: 'hover:bg-white/[0.05] text-red-400',
+    warn: 'hover:bg-white/[0.05] text-amber-300',
+    info: 'hover:bg-white/[0.05] text-zinc-100',
+    success: 'hover:bg-white/[0.05] text-emerald-300',
+    debug: 'hover:bg-white/[0.05] text-zinc-400',
   }
   return map[logType] || map.info
 }
 
-// 级别徽标配色
+// 级别徽标配色（黑底终端用半透明底 + 亮色前景）
 const tLevelClass = (log: LogEntry) => {
   const logType = log.type || getLevelType(log.level)
   const map: Record<string, string> = {
-    error: 'bg-red-500/15 text-red-600 dark:text-red-400',
-    warn: 'bg-yellow-500/15 text-amber-600 dark:text-yellow-300',
-    info: 'bg-sky-500/15 text-sky-600 dark:text-sky-400',
-    success: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
-    debug: 'bg-zinc-500/15 text-zinc-600 dark:text-zinc-500',
+    error: 'bg-red-500/20 text-red-300',
+    warn: 'bg-amber-500/20 text-amber-200',
+    info: 'bg-sky-500/20 text-sky-200',
+    success: 'bg-emerald-500/20 text-emerald-200',
+    debug: 'bg-zinc-500/20 text-zinc-400',
   }
   return map[logType] || map.info
 }
@@ -480,6 +491,7 @@ onUnmounted(() => {
     scrollRaf = null
   }
   if (searchDebounceTimer) clearTimeout(searchDebounceTimer)
+  if (tagBuildTimer) clearTimeout(tagBuildTimer)
   if (eventSource) {
     eventSource.close()
   }
@@ -519,13 +531,19 @@ onUnmounted(() => {
     </template>
 
     <template #body>
-      <div class="flex h-full flex-col flex-1 min-h-0">
-        <!-- 筛选栏 -->
-        <div
-          class="shrink-0 border-b border-neutral-200/80 px-4 py-3 dark:border-neutral-800"
-        >
-          <!-- 搜索 + 自动滚动 -->
-          <div class="flex items-center gap-2.5">
+      <!-- 黑色 macOS 风格终端：.dark 令其内部 --ui-* 变暗，两个全局主题下都是黑底 -->
+      <div class="dark terminal-shell flex min-h-0 flex-1 flex-col">
+        <!-- 工具栏（含 macOS 红绿灯装饰） -->
+        <div class="terminal-bar shrink-0 px-3 py-2.5">
+          <div class="flex flex-wrap items-center gap-2">
+            <div class="mr-1 flex shrink-0 items-center gap-1.5">
+              <span class="t-dot bg-[#ff5f57]"></span>
+              <span class="t-dot bg-[#febc2e]"></span>
+              <span class="t-dot bg-[#28c840]"></span>
+              <span class="ml-1 hidden select-none font-mono text-[11px] text-zinc-500 sm:inline">
+                app.log
+              </span>
+            </div>
             <UInput
               v-model="searchQuery"
               :placeholder="$t('dashboard.logs.search.placeholder')"
@@ -576,25 +594,25 @@ onUnmounted(() => {
               @click="toggleLevel(lvl)"
             >{{ lvl }}</UButton>
 
-            <div class="ms-auto max-w-[10rem] min-w-0 sm:max-w-full">
+            <div class="ms-auto max-w-[9.5rem] min-w-0 sm:max-w-full">
               <USelectMenu
                 v-model="selectedTags"
                 :items="availableTags"
                 multiple
                 size="sm"
                 :placeholder="$t('dashboard.logs.filter.tagPlaceholder')"
-                class="w-full sm:w-48"
+                class="w-full sm:w-44"
               />
             </div>
           </div>
         </div>
 
         <!-- 日志主体 -->
-        <div class="relative min-h-0 flex-1 font-mono text-[13px]">
+        <div class="terminal-viewport relative min-h-0 flex-1 font-mono text-[13px]">
+          <!-- 直接定位滚动（无 smooth 动画），避免高频追加时滚动追尾卡顿 -->
           <div
             ref="logContainer"
-            class="log-scroll absolute inset-0 overflow-y-auto overflow-x-hidden"
-            :class="{ 'scroll-smooth': autoScroll }"
+            class="absolute inset-0 overflow-y-auto overflow-x-hidden"
             @scroll="handleScroll"
           >
             <div :style="{ height: `${totalVirtualHeight}px`, position: 'relative' }">
@@ -605,7 +623,7 @@ onUnmounted(() => {
                 <div
                   v-for="(log, index) in visibleLogs"
                   :key="`${virtualStart + index}-${log.raw}`"
-                  class="log-row flex items-center gap-3 border-b border-neutral-100/80 px-4 dark:border-neutral-800/60"
+                  class="log-row flex items-center gap-3 border-b border-white/[0.04] px-4"
                   :class="tRowClass(log)"
                   :style="{ height: `${ROW_HEIGHT}px` }"
                 >
@@ -638,7 +656,7 @@ onUnmounted(() => {
             </div>
             <div
               v-if="filteredLogs.length === 0"
-              class="absolute inset-0 flex items-center justify-center text-neutral-400 dark:text-neutral-500"
+              class="absolute inset-0 flex items-center justify-center text-zinc-500"
             >
               <div v-if="logs.length === 0">{{ $t('dashboard.logs.empty.waiting') }}</div>
               <div v-else>{{ $t('dashboard.logs.empty.noMatch') }}</div>
@@ -656,13 +674,13 @@ onUnmounted(() => {
           >
             <div
               v-if="!historyFullyLoaded && !isInitialLoading"
-              class="absolute left-1/2 top-3 z-20 flex max-w-[92%] -translate-x-1/2 items-center gap-2 rounded-full border border-neutral-200/80 bg-white/80 px-3 py-1.5 shadow-md backdrop-blur-sm dark:border-neutral-800 dark:bg-neutral-900/80"
+              class="absolute left-1/2 top-3 z-20 flex max-w-[92%] -translate-x-1/2 items-center gap-2 rounded-full border border-white/10 bg-[#161a22]/90 px-3 py-1.5 shadow-lg backdrop-blur-md"
             >
               <UIcon
                 name="tabler:history"
-                class="size-3.5 shrink-0 text-neutral-400"
+                class="size-3.5 shrink-0 text-zinc-400"
               />
-              <span class="truncate whitespace-nowrap text-xs text-neutral-500 dark:text-neutral-400">
+              <span class="truncate whitespace-nowrap text-xs text-zinc-300">
                 {{ $t('dashboard.logs.historyHint', { count: INITIAL_LOG_LINES }) }}
               </span>
               <UButton
@@ -682,18 +700,18 @@ onUnmounted(() => {
           <!-- 初始加载遮罩 -->
           <div
             v-if="isInitialLoading"
-            class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-neutral-50/80 backdrop-blur-sm dark:bg-neutral-950/70"
+            class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-black/70 backdrop-blur-sm"
           >
             <UIcon
               name="tabler:loader-2"
-              class="h-7 w-7 animate-spin text-sky-500"
+              class="h-7 w-7 animate-spin text-emerald-400"
             />
-            <div class="text-xs text-neutral-400 dark:text-neutral-500">
+            <div class="text-xs text-zinc-400">
               {{ $t('dashboard.logs.connectionStatus.loadingHistory') }}
             </div>
-            <div class="h-1 w-56 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">
+            <div class="h-1 w-56 overflow-hidden rounded-full bg-white/10">
               <div
-                class="h-full rounded-full bg-sky-400 transition-all duration-300 ease-out"
+                class="h-full rounded-full bg-emerald-400 transition-all duration-300 ease-out"
                 :style="{ width: `${loadingProgress}%` }"
               ></div>
             </div>
@@ -702,7 +720,7 @@ onUnmounted(() => {
 
         <!-- 状态栏 -->
         <div
-          class="flex h-8 shrink-0 items-center gap-3 border-t border-neutral-200/80 px-4 text-[11px] text-neutral-400 dark:border-neutral-800 dark:text-neutral-500"
+          class="terminal-status flex h-8 shrink-0 items-center gap-3 border-t border-white/[0.06] px-3 text-[11px] text-zinc-500"
         >
           <UIcon name="tabler:terminal-2" class="size-3.5 shrink-0" />
           <span class="truncate">
@@ -721,37 +739,76 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-/* 日志视图：随全局浅色/深色主题显示，保持清爽克制的观感 */
-.log-time {
-  color: var(--ui-text-muted);
+/* 黑色 macOS 终端：.dark 包裹使内部 Nuxt UI 控件变量变暗，
+   这里再用硬编码色值兜底，确保浅色全局主题下也是纯黑终端观感 */
+.terminal-shell {
+  --ts-bg: #0b0d12;
+  --ts-bg2: #0f131a;
+  --ts-border: rgba(255, 255, 255, 0.06);
+  --ts-text: #d4d7dd;
+  --ts-dim: #6b7280;
+  background: var(--ts-bg);
+  color: var(--ts-text);
+  border: 1px solid var(--ts-border);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 14px 34px -14px rgba(0, 0, 0, 0.55);
 }
 
+.terminal-bar {
+  background: var(--ts-bg2);
+  border-bottom: 1px solid var(--ts-border);
+}
+.terminal-status {
+  background: var(--ts-bg2);
+}
+
+/* macOS 红绿灯圆点 */
+.t-dot {
+  width: 0.72rem;
+  height: 0.72rem;
+  border-radius: 9999px;
+}
+
+.log-time {
+  color: var(--ts-dim);
+}
 .log-tag {
-  color: var(--ui-text-muted);
+  color: var(--ts-dim);
 }
 
 /* 滚动条 */
-.log-scroll::-webkit-scrollbar {
+.terminal-viewport::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
-.log-scroll::-webkit-scrollbar-thumb {
-  background: var(--ui-text-dimmed);
+.terminal-viewport::-webkit-scrollbar-thumb {
+  background: #2b2f38;
   border-radius: 4px;
-  opacity: 0.6;
 }
-.log-scroll::-webkit-scrollbar-thumb:hover {
-  background: var(--ui-text-muted);
+.terminal-viewport::-webkit-scrollbar-thumb:hover {
+  background: #3a3f4a;
 }
-.log-scroll::-webkit-scrollbar-track {
+.terminal-viewport::-webkit-scrollbar-track {
   background: transparent;
 }
 
 /* 搜索高亮 */
-.log-scroll :deep(mark) {
+.terminal-viewport :deep(mark) {
   background: #f4bf3f;
   color: #0c0c10;
   border-radius: 2px;
   padding: 0 2px;
+}
+
+/* 终端内输入框 & 下拉触发兜底为深色，避免浅色主题漏色 */
+.terminal-shell :deep(input),
+.terminal-shell :deep([data-slot='trigger']) {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: var(--ts-text) !important;
+}
+.terminal-shell :deep(input::placeholder) {
+  color: var(--ts-dim) !important;
 }
 </style>
