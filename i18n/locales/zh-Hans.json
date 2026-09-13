@@ -1152,11 +1152,14 @@
         "recentUploads": {
           "title": "最近上传",
           "empty": "暂无照片",
-          "viewAll": "查看全部"
+          "viewAll": "查看全部",
+          "previewTitle": "照片预览"
         },
         "mediaTypes": {
           "title": "类型与来源",
           "empty": "暂无数据",
+          "typeLabel": "类型",
+          "sourceLabel": "来源",
           "image": "图片",
           "video": "视频",
           "upload": "上传",

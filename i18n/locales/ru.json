@@ -1066,11 +1066,14 @@
         "recentUploads": {
           "title": "Недавние загрузки",
           "empty": "Пока нет фото",
-          "viewAll": "Все"
+          "viewAll": "Все",
+          "previewTitle": "Предпросмотр фото"
         },
         "mediaTypes": {
           "title": "Тип и источник",
           "empty": "Нет данных",
+          "typeLabel": "Тип",
+          "sourceLabel": "Источник",
           "image": "Изображение",
           "video": "Видео",
           "upload": "Загрузка",

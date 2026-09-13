@@ -987,11 +987,14 @@
         "recentUploads": {
           "title": "最近のアップロード",
           "empty": "写真はありません",
-          "viewAll": "すべて見る"
+          "viewAll": "すべて見る",
+          "previewTitle": "写真プレビュー"
         },
         "mediaTypes": {
           "title": "タイプとソース",
           "empty": "データなし",
+          "typeLabel": "タイプ",
+          "sourceLabel": "ソース",
           "image": "画像",
           "video": "動画",
           "upload": "アップロード",

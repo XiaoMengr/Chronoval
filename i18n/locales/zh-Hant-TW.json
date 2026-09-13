@@ -988,11 +988,14 @@
         "recentUploads": {
           "title": "最近上傳",
           "empty": "暫無照片",
-          "viewAll": "查看全部"
+          "viewAll": "查看全部",
+          "previewTitle": "照片預覽"
         },
         "mediaTypes": {
           "title": "類型與來源",
           "empty": "暫無資料",
+          "typeLabel": "類型",
+          "sourceLabel": "來源",
           "image": "圖片",
           "video": "影片",
           "upload": "上傳",

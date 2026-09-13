@@ -1154,11 +1154,14 @@
         "recentUploads": {
           "title": "Recent uploads",
           "empty": "No photos yet",
-          "viewAll": "View all"
+          "viewAll": "View all",
+          "previewTitle": "Photo preview"
         },
         "mediaTypes": {
           "title": "Content & source",
           "empty": "No data",
+          "typeLabel": "Type",
+          "sourceLabel": "Source",
           "image": "Image",
           "video": "Video",
           "upload": "Upload",

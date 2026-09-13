@@ -225,8 +225,7 @@ const mediaTypePercent = (key: 'image' | 'video') => {
   return Math.round((mediaStats.value[key] / mediaStats.value.total) * 100)
 }
 
-// 环形图几何：半径 32 的圆周长（SVG donut，轻量、无图表依赖）
-const RING_CIRC = 2 * Math.PI * 32
+
 
 // 缩略图地址纠错：thumbnailKey 存在时走 /thumb 代理，防止明文 token 泄漏
 const thumbSrc = (photo: Photo): string | null => {
@@ -236,13 +235,16 @@ const thumbSrc = (photo: Photo): string | null => {
     : photo.thumbnailUrl
 }
 
-// 最近上传全屏画廊预览：复用前台照片查看器（PhotoViewer），点击缩略图打开
-const isRecentPreviewOpen = ref(false)
-const recentPreviewIndex = ref(0)
+// 最近上传小窗口预览：与照片管理一致（UModal + MasonryItemPhoto 单图），点击缩略图弹出
+const previewingPhoto = ref<Photo | null>(null)
+const isPreviewOpen = ref(false)
 const openRecentPreview = (index: number) => {
-  recentPreviewIndex.value = index
-  isRecentPreviewOpen.value = true
+  previewingPhoto.value = recentUploads.value[index] ?? null
+  if (previewingPhoto.value) isPreviewOpen.value = true
 }
+watch(isPreviewOpen, (open) => {
+  if (!open) previewingPhoto.value = null
+})
 
 const onShareSite = () => {
   const discussionParams = new URLSearchParams({
@@ -539,49 +541,34 @@ const onShareSite = () => {
                 </h3>
               </template>
 
-              <div v-if="mediaStats.total" class="flex items-center gap-5">
-                <!-- SVG 环形图：图片 / 视频两段弧，中心显示图片占比 -->
-                <div class="relative size-20 shrink-0">
-                  <svg viewBox="0 0 80 80" class="size-20 -rotate-90" role="img">
-                    <title>{{ $t('dashboard.overview.section.mediaTypes.title') }}</title>
-                    <!-- 打底圆环 -->
-                    <circle
-                      cx="40" cy="40" r="32" fill="none"
-                      stroke="var(--color-neutral-100)"
-                      class="dark:stroke-[var(--color-neutral-800)]"
-                      stroke-width="11"
-                    />
-                    <!-- 视频段（紫） -->
-                    <circle
-                      v-if="mediaStats.video"
-                      cx="40" cy="40" r="32" fill="none"
-                      stroke="var(--color-violet-500)"
-                      stroke-width="11" stroke-linecap="round"
-                      :stroke-dasharray="`${(RING_CIRC * mediaTypePercent('video')) / 100} ${RING_CIRC}`"
-                    />
-                    <!-- 图片段（蓝），在视频段之后接续 -->
-                    <circle
-                      v-if="mediaStats.image"
-                      cx="40" cy="40" r="32" fill="none"
-                      stroke="var(--color-sky-500)"
-                      stroke-width="11" stroke-linecap="round"
-                      :stroke-dasharray="`${(RING_CIRC * mediaTypePercent('image')) / 100} ${RING_CIRC}`"
-                      :stroke-dashoffset="-(RING_CIRC * mediaTypePercent('video')) / 100"
-                    />
-                  </svg>
-                  <div class="absolute inset-0 flex flex-col items-center justify-center">
-                    <span class="text-base font-bold leading-none tabular-nums">
-                      {{ mediaTypePercent('image') }}%
-                    </span>
-                    <span class="mt-0.5 text-[10px] text-neutral-400">
-                      {{ $t('dashboard.overview.section.mediaTypes.image') }}
-                    </span>
-                  </div>
-                </div>
+              <div v-if="mediaStats.total" class="flex items-center gap-6">
+                <!-- Canvas 环形图：图片/视频两段渐变弧，中心显示图片占比。
+                 key 绑定实时数值：数据异步到位时强制重建确保重绘，避免刷新后偶发空白 -->
+                <DashboardRingGauge
+                  :key="`rg-${mediaStats.image}-${mediaStats.video}`"
+                  :size="128"
+                  :stroke="14"
+                  :gap-deg="0"
+                  :segments="[
+                    { value: mediaStats.image, from: '#38bdf8', to: '#4f46e5' },
+                    { value: mediaStats.video, from: '#a78bfa', to: '#ec4899' },
+                  ]"
+                >
+                  <span class="text-2xl font-extrabold tracking-tight">
+                    <span class="tabular-nums">{{ mediaTypePercent('image') }}</span
+                    ><span class="text-sm font-semibold">%</span>
+                  </span>
+                  <span class="mt-1.5 text-xs font-medium tracking-wide text-neutral-400">
+                    {{ $t('dashboard.overview.section.mediaTypes.image') }}
+                  </span>
+                </DashboardRingGauge>
 
-                <!-- 类型 + 来源明细 -->
-                <div class="min-w-0 flex-1 space-y-2.5">
-                  <div>
+                <!-- 类型 + 来源明细：左右两列，让环形图居中更突出 -->
+                <div class="min-w-0 flex-1 grid grid-cols-2 gap-x-6 gap-y-3">
+                  <div class="space-y-2">
+                    <p class="text-[11px] font-semibold tracking-wider text-neutral-400 uppercase">
+                      {{ $t('dashboard.overview.section.mediaTypes.typeLabel') }}
+                    </p>
                     <div class="flex justify-between text-xs">
                       <span class="flex items-center gap-1.5 text-neutral-600 dark:text-neutral-300">
                         <span class="size-2 rounded-full bg-[var(--color-sky-500)]"></span>
@@ -599,8 +586,10 @@ const onShareSite = () => {
                       <span class="tabular-nums text-neutral-500">{{ mediaStats.video }}</span>
                     </div>
                   </div>
-                  <div class="h-px bg-neutral-100 dark:bg-neutral-800"></div>
-                  <div class="space-y-1.5">
+                  <div class="space-y-1.5 border-l border-neutral-100 pl-6 dark:border-neutral-800">
+                    <p class="text-[11px] font-semibold tracking-wider text-neutral-400 uppercase">
+                      {{ $t('dashboard.overview.section.mediaTypes.sourceLabel') }}
+                    </p>
                     <div class="flex items-center justify-between text-xs">
                       <span class="text-neutral-500">
                         {{ $t('dashboard.overview.section.mediaTypes.upload') }}
@@ -616,7 +605,7 @@ const onShareSite = () => {
                       color="success"
                       size="xs"
                     />
-                    <div class="flex items-center justify-between text-xs pt-1.5">
+                    <div class="flex items-center justify-between text-xs pt-1">
                       <span class="text-neutral-500">
                         {{ $t('dashboard.overview.section.mediaTypes.library') }}
                       </span>
@@ -893,17 +882,29 @@ const onShareSite = () => {
     </template>
   </UDashboardPanel>
 
-  <!-- 最近上传全屏画廊预览（与前台照片查看器一致）。
-       仅客户端渲染：查看器在 SSR setup 阶段即触发 immediate watch 访问 document（不可服务端呈现） -->
-  <ClientOnly>
-    <PhotoViewer
-      :photos="recentUploads"
-      :current-index="recentPreviewIndex"
-      :is-open="isRecentPreviewOpen"
-      @close="isRecentPreviewOpen = false"
-      @index-change="recentPreviewIndex = $event"
-    />
-  </ClientOnly>
+  <!-- 最近上传小窗口预览：与照片管理一致的小弹窗，不进入全屏查看器 -->
+  <UModal
+    v-model:open="isPreviewOpen"
+    :title="$t('dashboard.overview.section.recentUploads.previewTitle')"
+    :description="previewingPhoto?.description || ''"
+  >
+    <template #body>
+      <div
+        class="flex w-full items-center justify-center"
+        style="max-height: calc(100vh - 12rem)"
+      >
+        <div class="max-w-2xl w-full overflow-hidden rounded-lg">
+          <MasonryItemPhoto
+            v-if="previewingPhoto"
+            :photo="previewingPhoto"
+            :index="0"
+            @visibility-change="() => {}"
+            @open-viewer="window.open(`/${previewingPhoto.id}`, '_blank')"
+          />
+        </div>
+      </div>
+    </template>
+  </UModal>
 </template>
 
 <style>
