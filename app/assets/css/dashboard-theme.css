@@ -285,23 +285,35 @@ html.dark body.dashboard-active {
   --ui-primary-inverted: #141417;
 }
 
-/* ---- 后台整屏背景：细腻氛围底纹（非 AI 渐变）----
-   浅色：暖象牙基底 + 一两处极淡的冷色/暖色光晕，仅作氛围、不抢前景；
-   深色：炭黑基底 + 微弱的星光噪点，克制地增加纵深。
-   叠加超细粒噪点纹理，让大面积纯色不再死板。 */
+/* ---- 后台整屏背景：细腻的 "纸张" 质感（非 AI 渐变）----
+   浅色：暖象牙基底 + 极淡冷/暖光晕 + 细密点阵纹理，层次克制、不抢前景；
+   深色：炭黑基底 + 微弱光晕 + 更隐蔽的点阵，保留纵深。整体像一张有织理的
+   高级哑光纸，而非一片纯色，规避"廉价感"。 */
 html body.dashboard-active {
   background-color: #f3f2f0;
   background-image:
-    radial-gradient(52rem 32rem at 12% -8%, rgba(79, 138, 176, 0.06), transparent 60%),
-    radial-gradient(46rem 30rem at 88% 0%, rgba(176, 148, 79, 0.05), transparent 55%),
-    radial-gradient(60rem 40rem at 50% 120%, rgba(112, 123, 176, 0.05), transparent 55%);
+    radial-gradient(1px 1px at 50% 50%, rgba(20, 20, 24, 0.055), transparent 100%),
+    radial-gradient(56rem 34rem at 8% -12%, rgba(79, 138, 176, 0.055), transparent 60%),
+    radial-gradient(50rem 32rem at 100% -8%, rgba(176, 148, 79, 0.045), transparent 55%),
+    radial-gradient(64rem 44rem at 50% 120%, rgba(112, 123, 176, 0.05), transparent 58%);
+  background-size:
+    26px 26px,
+    auto,
+    auto,
+    auto;
 }
 html.dark body.dashboard-active {
   background-color: #0f0f12;
   background-image:
-    radial-gradient(52rem 32rem at 12% -8%, rgba(79, 138, 176, 0.09), transparent 60%),
-    radial-gradient(46rem 30rem at 88% 0%, rgba(176, 148, 79, 0.06), transparent 55%),
-    radial-gradient(60rem 40rem at 50% 120%, rgba(112, 123, 176, 0.08), transparent 55%);
+    radial-gradient(1px 1px at 50% 50%, rgba(255, 255, 255, 0.045), transparent 100%),
+    radial-gradient(56rem 34rem at 8% -12%, rgba(79, 138, 176, 0.08), transparent 60%),
+    radial-gradient(50rem 32rem at 100% -8%, rgba(176, 148, 79, 0.05), transparent 55%),
+    radial-gradient(64rem 44rem at 50% 120%, rgba(112, 123, 176, 0.08), transparent 58%);
+  background-size:
+    26px 26px,
+    auto,
+    auto,
+    auto;
 }
 
 /* 覆盖层容器：苹果磨砂玻璃 */

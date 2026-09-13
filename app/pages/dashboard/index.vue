@@ -289,8 +289,8 @@ const onShareSite = () => {
     </template>
 
     <template #body>
-      <div class="flex flex-col gap-6">
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="mx-auto flex w-full max-w-[1480px] flex-col gap-6 pb-8">
+        <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <DashboardIndicator
             :title="$t('dashboard.overview.indicator.totalPhotos')"
             icon="tabler:photo"
@@ -568,85 +568,108 @@ const onShareSite = () => {
                 </h3>
               </template>
 
-              <div v-if="mediaStats.total" class="flex items-center gap-6">
-                <!-- Canvas 环形图：图片/视频两段渐变弧，中心显示图片占比。
-                 key 绑定实时数值：数据异步到位时强制重建确保重绘，避免刷新后偶发空白 -->
+              <div
+                v-if="mediaStats.total"
+                class="flex flex-col items-center gap-6 sm:flex-row sm:items-center"
+              >
+                <!-- Canvas 环形图：图片/视频两段纯色弧，中心显示图片占比。
+                     key 绑定实时数值：数据异步到位时强制重建确保重绘，避免刷新后偶发空白 -->
                 <DashboardRingGauge
                   :key="`rg-${mediaStats.image}-${mediaStats.video}`"
-                  :size="128"
-                  :stroke="14"
+                  :size="132"
+                  :stroke="15"
                   :gap-deg="0"
                   :segments="[
-                    { value: mediaStats.image, from: '#38bdf8', to: '#4f46e5' },
-                    { value: mediaStats.video, from: '#a78bfa', to: '#ec4899' },
+                    { value: mediaStats.image, color: '#0ea5e9' },
+                    { value: mediaStats.video, color: '#8b5cf6' },
                   ]"
                 >
-                  <span class="text-2xl font-extrabold tracking-tight">
+                  <span class="text-3xl font-extrabold tracking-tight text-(--ui-text)">
                     <span class="tabular-nums">{{ mediaTypePercent('image') }}</span
-                    ><span class="text-sm font-semibold">%</span>
+                    ><span class="text-base font-semibold text-(--ui-text-muted)">%</span>
                   </span>
-                  <span class="mt-1.5 text-xs font-medium tracking-wide text-neutral-400">
+                  <span class="mt-1 text-xs font-medium tracking-wide text-(--ui-text-dimmed)">
                     {{ $t('dashboard.overview.section.mediaTypes.image') }}
                   </span>
                 </DashboardRingGauge>
 
-                <!-- 类型 + 来源明细：左右两列，让环形图居中更突出 -->
-                <div class="min-w-0 flex-1 grid grid-cols-2 gap-x-6 gap-y-3">
-                  <div class="space-y-2">
-                    <p class="text-[11px] font-semibold tracking-wider text-(--ui-text-dimmed) uppercase">
+                <!-- 类型 + 来源明细：等宽两列，字段用细分隔线纵向排列，更规整 -->
+                <div class="grid min-w-0 flex-1 grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
+                  <div class="space-y-0">
+                    <p class="pb-2 text-[11px] font-semibold uppercase tracking-wider text-(--ui-text-dimmed)">
                       {{ $t('dashboard.overview.section.mediaTypes.typeLabel') }}
                     </p>
-                    <div class="flex justify-between text-xs">
-                      <span class="flex items-center gap-1.5 text-(--ui-text-toned)">
-                        <span class="size-2 rounded-full bg-[var(--color-sky-500)]"></span>
-                        {{ $t('dashboard.overview.section.mediaTypes.image') }}
-                        <span class="text-(--ui-text-dimmed)">({{ mediaTypePercent('image') }}%)</span>
-                      </span>
-                      <span class="tabular-nums text-(--ui-text-muted)">{{ mediaStats.image }}</span>
-                    </div>
-                    <div class="mt-1 flex justify-between text-xs">
-                      <span class="flex items-center gap-1.5 text-(--ui-text-toned)">
-                        <span class="size-2 rounded-full bg-[var(--color-violet-500)]"></span>
-                        {{ $t('dashboard.overview.section.mediaTypes.video') }}
-                        <span class="text-(--ui-text-dimmed)">({{ mediaTypePercent('video') }}%)</span>
-                      </span>
-                      <span class="tabular-nums text-(--ui-text-muted)">{{ mediaStats.video }}</span>
+                    <div class="space-y-2.5">
+                      <div class="flex items-center justify-between gap-4 text-xs">
+                        <span class="flex items-center gap-2 text-(--ui-text-toned)">
+                          <span class="size-2 rounded-full bg-[var(--color-sky-500)]"></span>
+                          {{ $t('dashboard.overview.section.mediaTypes.image') }}
+                          <span class="tabular-nums text-(--ui-text-dimmed)">{{ mediaStats.image }}</span>
+                        </span>
+                        <span class="text-xs font-semibold tabular-nums text-(--ui-text)">
+                          {{ mediaTypePercent('image') }}%
+                        </span>
+                      </div>
+                      <div class="flex items-center justify-between gap-4 text-xs">
+                        <span class="flex items-center gap-2 text-(--ui-text-toned)">
+                          <span class="size-2 rounded-full bg-[var(--color-violet-500)]"></span>
+                          {{ $t('dashboard.overview.section.mediaTypes.video') }}
+                          <span class="tabular-nums text-(--ui-text-dimmed)">{{ mediaStats.video }}</span>
+                        </span>
+                        <span
+                          class="text-xs font-semibold tabular-nums"
+                          :class="mediaStats.video > 0 ? 'text-(--ui-text)' : 'text-(--ui-text-dimmed)'"
+                        >
+                          {{ mediaTypePercent('video') }}%
+                        </span>
+                      </div>
                     </div>
                   </div>
-                  <div class="space-y-1.5 border-l border-(--ui-border-muted) pl-6">
-                    <p class="text-[11px] font-semibold tracking-wider text-(--ui-text-dimmed) uppercase">
+
+                  <div
+                    class="space-y-2.5 border-(--ui-border-muted) pt-1 sm:border-l sm:pl-8"
+                  >
+                    <p class="pb-1 text-[11px] font-semibold uppercase tracking-wider text-(--ui-text-dimmed)">
                       {{ $t('dashboard.overview.section.mediaTypes.sourceLabel') }}
                     </p>
-                    <div class="flex items-center justify-between text-xs">
-                      <span class="text-(--ui-text-muted)">
-                        {{ $t('dashboard.overview.section.mediaTypes.upload') }}
-                      </span>
-                      <span class="tabular-nums text-(--ui-text-muted)">{{ mediaStats.upload }}</span>
+                    <div>
+                      <div class="flex items-center justify-between text-xs">
+                        <span class="text-(--ui-text-toned)">
+                          {{ $t('dashboard.overview.section.mediaTypes.upload') }}
+                        </span>
+                        <span class="tabular-nums text-(--ui-text-muted)">{{ mediaStats.upload }}</span>
+                      </div>
+                      <div class="mt-1.5">
+                        <UProgress
+                          :model-value="
+                            mediaStats.total
+                              ? Math.round((mediaStats.upload / mediaStats.total) * 100)
+                              : 0
+                          "
+                          color="success"
+                          size="xs"
+                        />
+                      </div>
                     </div>
-                    <UProgress
-                      :model-value="
-                        mediaStats.total
-                          ? Math.round((mediaStats.upload / mediaStats.total) * 100)
-                          : 0
-                      "
-                      color="success"
-                      size="xs"
-                    />
-                    <div class="flex items-center justify-between text-xs pt-1">
-                      <span class="text-(--ui-text-muted)">
-                        {{ $t('dashboard.overview.section.mediaTypes.library') }}
-                      </span>
-                      <span class="tabular-nums text-(--ui-text-muted)">{{ mediaStats.library }}</span>
+                    <div>
+                      <div class="flex items-center justify-between text-xs">
+                        <span class="text-(--ui-text-toned)">
+                          {{ $t('dashboard.overview.section.mediaTypes.library') }}
+                        </span>
+                        <span class="tabular-nums text-(--ui-text-muted)">{{ mediaStats.library }}</span>
+                      </div>
+                      <div class="mt-1.5">
+                        <UProgress
+                          :model-value="
+                            mediaStats.total
+                              ? Math.round((mediaStats.library / mediaStats.total) * 100)
+                              : 0
+                          "
+                          color="info"
+                          size="xs"
+                        />
+                      </div>
                     </div>
-                    <UProgress
-                      :model-value="
-                        mediaStats.total
-                          ? Math.round((mediaStats.library / mediaStats.total) * 100)
-                          : 0
-                      "
-                      color="info"
-                      size="xs"
-                    />
                   </div>
                 </div>
               </div>

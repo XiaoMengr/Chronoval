@@ -1,8 +1,7 @@
 <script setup lang="ts">
 interface Segment {
   value: number
-  from: string
-  to: string
+  color: string
 }
 
 const props = withDefaults(
@@ -68,7 +67,7 @@ function draw(progress: number) {
     if (toA <= fromA) continue
 
     ctx.lineWidth = stroke
-    ctx.strokeStyle = seg.from
+    ctx.strokeStyle = seg.color
     ctx.beginPath()
     ctx.arc(cx, cy, rMid, fromA, toA)
     ctx.stroke()
