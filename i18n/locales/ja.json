@@ -983,6 +983,19 @@
           "totalProcessed": "処理",
           "totalFailed": "障害カウント",
           "avgSuccessRate": "成功率"
+        },
+        "recentUploads": {
+          "title": "最近のアップロード",
+          "empty": "写真はありません",
+          "viewAll": "すべて見る"
+        },
+        "mediaTypes": {
+          "title": "タイプとソース",
+          "empty": "データなし",
+          "image": "画像",
+          "video": "動画",
+          "upload": "アップロード",
+          "library": "ライブラリ"
         }
       },
       "shareSite": {

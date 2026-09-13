@@ -1150,6 +1150,19 @@
           "totalProcessed": "Processed",
           "totalFailed": "Failure count",
           "avgSuccessRate": "Success rate"
+        },
+        "recentUploads": {
+          "title": "Recent uploads",
+          "empty": "No photos yet",
+          "viewAll": "View all"
+        },
+        "mediaTypes": {
+          "title": "Content & source",
+          "empty": "No data",
+          "image": "Image",
+          "video": "Video",
+          "upload": "Upload",
+          "library": "Library"
         }
       },
       "shareSite": {

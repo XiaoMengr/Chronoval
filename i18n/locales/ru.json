@@ -1062,6 +1062,19 @@
           "totalProcessed": "Обработано",
           "totalFailed": "Ошибок",
           "avgSuccessRate": "Доля успешных задач"
+        },
+        "recentUploads": {
+          "title": "Недавние загрузки",
+          "empty": "Пока нет фото",
+          "viewAll": "Все"
+        },
+        "mediaTypes": {
+          "title": "Тип и источник",
+          "empty": "Нет данных",
+          "image": "Изображение",
+          "video": "Видео",
+          "upload": "Загрузка",
+          "library": "Библиотека"
         }
       },
       "shareSite": {

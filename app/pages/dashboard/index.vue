@@ -190,6 +190,49 @@ const yearOptions = computed(() => {
   return options
 })
 
+// 最近上传：按拍摄时间倒序取前 8 张（用于缩略图横条）
+const RECENT_UPLOADS_LIMIT = 8
+const recentUploads = computed<Photo[]>(() =>
+  photos.value
+    .filter((p) => p.thumbnailUrl)
+    .toSorted((a, b) => {
+      const ta = a.dateTaken ? new Date(a.dateTaken).getTime() : 0
+      const tb = b.dateTaken ? new Date(b.dateTaken).getTime() : 0
+      return tb - ta
+    })
+    .slice(0, RECENT_UPLOADS_LIMIT),
+)
+
+// 媒体类型 / 来源分布（图片|视频 × 上传|库映射）
+const mediaStats = computed(() => {
+  const stats = {
+    image: 0,
+    video: 0,
+    upload: 0,
+    library: 0,
+    total: photos.value.length,
+  }
+  for (const p of photos.value) {
+    if (p.type === 'video') stats.video += 1
+    else stats.image += 1
+    if (p.source === 'upload') stats.upload += 1
+    else if (p.source === 'library') stats.library += 1
+  }
+  return stats
+})
+const mediaTypePercent = (key: 'image' | 'video') => {
+  if (!mediaStats.value.total) return 0
+  return Math.round((mediaStats.value[key] / mediaStats.value.total) * 100)
+}
+
+// 缩略图地址纠错：thumbnailKey 存在时走 /thumb 代理，防止明文 token 泄漏
+const thumbSrc = (photo: Photo): string | null => {
+  if (!photo.thumbnailUrl) return null
+  return photo.thumbnailKey
+    ? `/thumb/${encodeURIComponent(photo.thumbnailUrl)}`
+    : photo.thumbnailUrl
+}
+
 const onShareSite = () => {
   const discussionParams = new URLSearchParams({
     category: 'showcases',
@@ -404,6 +447,161 @@ const onShareSite = () => {
                     </div>
                   </template>
                 </ClientOnly>
+              </div>
+            </UCard>
+
+            <!-- 最近上传缩略图横条 -->
+            <UCard>
+              <template #header>
+                <div class="flex items-center justify-between pb-1.5">
+                  <h3 class="font-semibold">
+                    {{ $t('dashboard.overview.section.recentUploads.title') }}
+                  </h3>
+                  <UButton
+                    color="neutral"
+                    variant="ghost"
+                    size="xs"
+                    icon="tabler:arrow-right"
+                    :label="$t('dashboard.overview.section.recentUploads.viewAll')"
+                    @click="$router.push('/dashboard/photos')"
+                  />
+                </div>
+              </template>
+
+              <ClientOnly>
+                <div v-if="recentUploads.length" class="grid grid-cols-4 gap-2 sm:grid-cols-8">
+                  <button
+                    v-for="photo in recentUploads"
+                    :key="photo.id"
+                    class="group relative aspect-square w-full overflow-hidden rounded-lg ring-1 ring-black/5 dark:ring-white/10"
+                    type="button"
+                    @click="$router.push('/dashboard/photos')"
+                  >
+                    <img
+                      v-if="thumbSrc(photo)"
+                      :src="thumbSrc(photo)!"
+                      :alt="photo.title || ''"
+                      loading="lazy"
+                      class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+                    />
+                    <div
+                      v-else
+                      class="flex h-full w-full items-center justify-center bg-neutral-100 dark:bg-neutral-800"
+                    >
+                      <Icon name="tabler:photo" class="size-5 text-neutral-400" />
+                    </div>
+                    <div
+                      class="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-opacity duration-200 group-hover:bg-black/20 group-hover:opacity-100"
+                    >
+                      <Icon name="tabler:eye" class="size-4 text-white" />
+                    </div>
+                    <Icon
+                      v-if="photo.type === 'video'"
+                      name="tabler:player-play-filled"
+                      class="absolute left-1.5 top-1.5 size-3.5 text-white/90 drop-shadow"
+                    />
+                  </button>
+                </div>
+                <div
+                  v-else
+                  class="flex items-center justify-center rounded-lg border border-dashed border-neutral-200 py-8 text-xs text-neutral-400 dark:border-neutral-800"
+                >
+                  {{ $t('dashboard.overview.section.recentUploads.empty') }}
+                </div>
+                <template #placeholder>
+                  <div class="grid grid-cols-4 gap-2 sm:grid-cols-8">
+                    <div
+                      v-for="n in 8"
+                      :key="n"
+                      class="aspect-square w-full animate-pulse rounded-lg bg-neutral-100 dark:bg-neutral-800"
+                    ></div>
+                  </div>
+                </template>
+              </ClientOnly>
+            </UCard>
+
+            <!-- 类型与来源分布 -->
+            <UCard>
+              <template #header>
+                <h3 class="font-semibold pb-1.5">
+                  {{ $t('dashboard.overview.section.mediaTypes.title') }}
+                </h3>
+              </template>
+
+              <div v-if="mediaStats.total" class="flex items-center gap-5">
+                <!-- 类型环图 -->
+                <div
+                  class="relative size-20 shrink-0 rounded-full"
+                  :style="{
+                    background: `conic-gradient(var(--ui-primary) 0 ${mediaTypePercent('image')}%, var(--ui-primary-soft) ${mediaTypePercent('image')}% 100%)`,
+                  }"
+                >
+                  <div
+                    class="absolute inset-[10px] flex flex-col items-center justify-center rounded-full bg-background dark:bg-neutral-900"
+                  >
+                    <span class="text-base font-bold leading-none">{{ mediaStats.total }}</span>
+                    <span class="mt-0.5 text-[10px] text-neutral-400">张</span>
+                  </div>
+                </div>
+
+                <!-- 类型 + 来源明细 -->
+                <div class="min-w-0 flex-1 space-y-2.5">
+                  <div>
+                    <div class="flex justify-between text-xs">
+                      <span class="flex items-center gap-1.5 text-neutral-600 dark:text-neutral-300">
+                        <span class="size-2 rounded-full bg-[var(--ui-primary)]"></span>
+                        {{ $t('dashboard.overview.section.mediaTypes.image') }}
+                      </span>
+                      <span class="tabular-nums text-neutral-500">{{ mediaStats.image }}</span>
+                    </div>
+                    <div class="mt-1 flex justify-between text-xs">
+                      <span class="flex items-center gap-1.5 text-neutral-600 dark:text-neutral-300">
+                        <span class="size-2 rounded-full bg-[var(--ui-primary-soft)]"></span>
+                        {{ $t('dashboard.overview.section.mediaTypes.video') }}
+                      </span>
+                      <span class="tabular-nums text-neutral-500">{{ mediaStats.video }}</span>
+                    </div>
+                  </div>
+                  <div class="h-px bg-neutral-100 dark:bg-neutral-800"></div>
+                  <div class="space-y-1.5">
+                    <div class="flex items-center justify-between text-xs">
+                      <span class="text-neutral-500">
+                        {{ $t('dashboard.overview.section.mediaTypes.upload') }}
+                      </span>
+                      <span class="tabular-nums text-neutral-500">{{ mediaStats.upload }}</span>
+                    </div>
+                    <UProgress
+                      :model-value="
+                        mediaStats.total
+                          ? Math.round((mediaStats.upload / mediaStats.total) * 100)
+                          : 0
+                      "
+                      color="success"
+                      size="xs"
+                    />
+                    <div class="flex items-center justify-between text-xs pt-1.5">
+                      <span class="text-neutral-500">
+                        {{ $t('dashboard.overview.section.mediaTypes.library') }}
+                      </span>
+                      <span class="tabular-nums text-neutral-500">{{ mediaStats.library }}</span>
+                    </div>
+                    <UProgress
+                      :model-value="
+                        mediaStats.total
+                          ? Math.round((mediaStats.library / mediaStats.total) * 100)
+                          : 0
+                      "
+                      color="info"
+                      size="xs"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div
+                v-else
+                class="rounded-lg border border-dashed border-neutral-200 py-8 text-center text-xs text-neutral-400 dark:border-neutral-800"
+              >
+                {{ $t('dashboard.overview.section.mediaTypes.empty') }}
               </div>
             </UCard>
           </div>

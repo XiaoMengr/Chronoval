@@ -1148,6 +1148,19 @@
           "totalProcessed": "已处理",
           "totalFailed": "失败计数",
           "avgSuccessRate": "成功率"
+        },
+        "recentUploads": {
+          "title": "最近上传",
+          "empty": "暂无照片",
+          "viewAll": "查看全部"
+        },
+        "mediaTypes": {
+          "title": "类型与来源",
+          "empty": "暂无数据",
+          "image": "图片",
+          "video": "视频",
+          "upload": "上传",
+          "library": "库映射"
         }
       },
       "shareSite": {
