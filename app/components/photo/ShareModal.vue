@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { motion, AnimatePresence } from 'motion-v'
+import { useSettingRef } from '~/stores/settings'
 
 interface Props {
   isOpen: boolean
@@ -21,9 +22,18 @@ const { gtag } = useGtag()
 // OG 预览图比例 1200:628（与原版一致）
 const OG_ASPECT = 1200 / 628
 
-const resolvedBaseUrl = computed(() =>
-  typeof window !== 'undefined' ? window.location.origin : '',
-)
+// 分享基础地址：优先使用基础设置中的“站点地址（app.siteUrl）”，
+// 这样即使在内网/IP 环境下访问，分享链接与 OG 预览图也能固定指向规范域名。
+// 未配置时回退到当前访问域名（与原逻辑一致）。用响应式引用以在设置加载后自动更新。
+const configuredSiteUrl = useSettingRef('app:siteUrl')
+const resolvedBaseUrl = computed(() => {
+  const canonical =
+    typeof configuredSiteUrl.value === 'string'
+      ? configuredSiteUrl.value.trim().replace(/\/+$/, '')
+      : ''
+  if (canonical) return canonical
+  return typeof window !== 'undefined' ? window.location.origin : ''
+})
 
 const shareUrl = computed(() => {
   const base = resolvedBaseUrl.value || ''

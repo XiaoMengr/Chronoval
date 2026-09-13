@@ -406,6 +406,7 @@
     "albums": "アルバム",
     "siteAdministration": "サイト設定",
     "generalSettings": "一般設定",
+    "interfaceSettings": "インターフェース設定",
     "appearanceSettings": "外観設定",
     "privacySettings": "プライバシー設定",
     "mapAndLocation": "地図と場所",
@@ -1134,6 +1135,16 @@
         "description": "オーナーのアバター画像へのリンク",
         "help": "アバターはローディングページとホームページに表示されます"
       },
+      "siteUrl": {
+        "label": "サイト URL（OG / 共有）",
+        "description": "共有リンクと OG プレビュー画像に使う正規の公開アドレス",
+        "help": "空欄の場合は現在のアクセスドメインに従います。LAN/IP 運用や共有リンクを特定ドメインに固定したい場合は、例: https://dev.1xc.top のように設定してください"
+      },
+      "allowedHosts": {
+        "label": "許可するホスト（Host ホワイトリスト）",
+        "description": "許可するホストのカンマ区切りリスト。ドメインまたは LAN IP を指定",
+        "help": "許可する送信元ホストのカンマ区切りリスト。ドメインまたは LAN IP を指定し、保存後すぐに反映されます（再起動不要）。*.example.com のようなワイルドカードに対応。* を指定すると任意のホストを許可（LAN/複数ドメイン運用で便利）。LAN/IP デプロイの場合は * または LAN IP を指定しないと、OG 画像やサイトがブロックされることがあります"
+      },
       "appearance": {
         "theme": {
           "label": "テーマ",
@@ -1452,6 +1463,9 @@
     },
     "general": {
       "description": "サイトの基本情報と表示外観を管理します。変更はダッシュボードと公開側の表示に即時反映されます。"
+    },
+    "interface": {
+      "description": "インターフェース表示に関する設定を管理します：外観テーマとギャラリー入場時の読み込み設定。"
     },
     "form": {
       "loadFailed": "設定の読み込みに失敗しました",

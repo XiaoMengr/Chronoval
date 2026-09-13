@@ -444,6 +444,7 @@
     "albums": "相簿",
     "siteAdministration": "站点设置",
     "generalSettings": "基本设置",
+    "interfaceSettings": "界面设置",
     "loaderSettings": "加载配置",
     "appearanceSettings": "外观设置",
     "storageSettings": "存储设置",
@@ -1299,6 +1300,16 @@
         "description": "所有者头像的图片链接",
         "help": "头像显示加载页面和首页头像中"
       },
+      "siteUrl": {
+        "label": "站点地址（OG/分享）",
+        "description": "对外访问的规范地址，用于生成分享链接与 OG 预览图",
+        "help": "留空则跟随当前访问域名；内网/IP 部署或希望分享链接固定到某个域名时填写，如 https://dev.1xc.top"
+      },
+      "allowedHosts": {
+        "label": "允许访问的主机（Host 白名单）",
+        "description": "允许访问的主机列表，逗号分隔，可填域名或内网 IP",
+        "help": "允许访问的来源主机列表，逗号分隔，可填域名或内网 IP；保存后立即生效，无需重启。可用通配符如 *.example.com，填 * 表示允许任意来源（内网/多域名部署常用）。内网/IP 部署时建议填 * 或把内网 IP 写入，否则可能被拦截导致 OG 图/站点无法访问"
+      },
       "loader": {
         "images": {
           "label": "加载页卡片图片",
@@ -1751,6 +1762,9 @@
     },
     "general": {
       "description": "管理站点基础信息与展示外观。更改会立即影响控制台和前台展示。"
+    },
+    "interface": {
+      "description": "管理界面展示相关的设置：外观主题与进入画廊时的加载配置。"
     },
     "loader": {
       "description": "自定义进入画廊时，加载动画中三张卡片所使用的图片。默认使用内置示例图，可点击上方按钮恢复默认。"

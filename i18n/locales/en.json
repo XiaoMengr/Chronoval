@@ -446,6 +446,7 @@
     "siteAdministration": "Site settings",
     "location": "Location services",
     "generalSettings": "General Settings",
+    "interfaceSettings": "Interface Settings",
     "loaderSettings": "Loader Settings",
     "appearanceSettings": "Appearance Settings",
     "privacySettings": "Privacy Settings",
@@ -1301,6 +1302,16 @@
         "description": "Link to the owner's avatar image",
         "help": "The avatar is displayed on the loading page and homepage"
       },
+      "siteUrl": {
+        "label": "Site URL (OG / Share)",
+        "description": "Canonical public address used for share links and OG preview images",
+        "help": "Leave empty to follow the current access domain. For LAN/IP deployments, or to pin share links to a specific domain, set it here, e.g. https://dev.1xc.top"
+      },
+      "allowedHosts": {
+        "label": "Allowed hosts (Host allowlist)",
+        "description": "Comma-separated list of allowed hosts, domains or LAN IPs",
+        "help": "Comma-separated list of allowed source hosts, domains or LAN IPs; applies immediately on save, no restart needed. Supports wildcards like *.example.com. Use * to allow any host (common for LAN/multi-domain setups). For LAN/IP deploys, use * or add your LAN IP here, otherwise the OG image/site may be blocked"
+      },
       "loader": {
         "images": {
           "label": "Loading screen card images",
@@ -1753,6 +1764,9 @@
     },
     "general": {
       "description": "Manage the site's basic information and display appearance. Changes will immediately affect the dashboard and public-facing display."
+    },
+    "interface": {
+      "description": "Manage settings related to interface display: appearance theme and the loading configuration when entering the gallery."
     },
     "loader": {
       "description": "Customize the three card images used in the loading animation when entering the gallery. Defaults to built-in sample images; you can restore defaults at any time."

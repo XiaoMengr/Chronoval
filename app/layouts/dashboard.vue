@@ -56,6 +56,12 @@ const navItems = computed<NavigationMenuItem[][]>(() => [
           class: '[&_.iconify]:!text-blue-500',
         },
         {
+          label: $t('title.interfaceSettings'),
+          icon: 'tabler:palette',
+          to: '/dashboard/settings/interface',
+          class: '[&_.iconify]:!text-fuchsia-500',
+        },
+        {
           label: $t('title.storageSettings'),
           icon: 'tabler:database',
           to: '/dashboard/settings/storage',

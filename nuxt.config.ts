@@ -2,6 +2,54 @@ import pkg from './package.json'
 import type { AnalyticsConfig } from './shared/types/config'
 import i18n, { dayjsLocales } from './i18n/i18n.options'
 
+/**
+ * 解析环境变量 NUXT_ALLOWED_HOSTS：逗号分隔的主机白名单（可含通配符 *.domain）。
+ * 支持特殊值 `*`，或设置 NUXT_ALLOW_ALL_HOSTS=true 以允许任意来源
+ * （内网/多域名/反代/CDN 场景常用，访问控制交给反代处理）。
+ */
+function resolveAllowedHosts(defaults: string[]): {
+  hosts: string[]
+  allowAll: boolean
+} {
+  const fromEnv =
+    process.env.NUXT_ALLOWED_HOSTS?.split(',')
+      .map((s) => s.trim())
+      .filter(Boolean) || []
+  const allowAll =
+    fromEnv.includes('*') || process.env.NUXT_ALLOW_ALL_HOSTS === 'true'
+  if (allowAll) {
+    return { hosts: ['*'], allowAll: true }
+  }
+  const merged = [...defaults]
+  for (const host of fromEnv) {
+    if (!merged.includes(host)) merged.push(host)
+  }
+  return { hosts: merged, allowAll: false }
+}
+
+// 站点规范地址：NUXT_PUBLIC_SITE_URL 优先，其次从 NUXT_PUBLIC_SITE_URL/固定值。
+// 用于 OG 分享图/分享链接以及派生允许主机白名单。
+const SITE_URL = process.env.NUXT_PUBLIC_SITE_URL || ''
+const SITE_HOST = (() => {
+  if (!SITE_URL) return ''
+  try {
+    return new URL(SITE_URL).hostname
+  } catch {
+    return SITE_URL
+  }
+})()
+
+// 默认放行的主机（保留原 frp + caddy 反代场景），叠加站点地址与 env 配置。
+const DEFAULT_ALLOWED_HOSTS = [
+  'localhost',
+  '127.0.0.1',
+  '[::1]',
+  'dev.1xc.top',
+  '.1xc.top',
+  ...(SITE_HOST ? [SITE_HOST] : []),
+] as const
+const ALLOWED_HOSTS = resolveAllowedHosts([...DEFAULT_ALLOWED_HOSTS])
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
@@ -29,9 +77,13 @@ export default defineNuxtConfig({
     '~/assets/css/dashboard-theme.css',
   ],
 
-  // 允许通过 dev.1xc.top 访问（frp 穿透 + caddy 反代的 Host）
+  // Host 白名单控制策略：
+  // - transport 层对 Host 全部放行（内网/IP/多域名/反代场景不再被 403 拦截）；
+  // - 真正的白名单校验交给运行时中间件 server/middleware/host-guard.ts，
+  //   它优先读取基础设置 app.allowedHosts（保存即生效，无需重启），
+  //   再回退到环境变量 NUXT_ALLOWED_HOSTS / NUXT_ALLOW_ALL_HOSTS。
   server: {
-    allowedHosts: ['dev.1xc.top', '.1xc.top'],
+    allowedHosts: true,
   },
 
   components: [{ path: '~/components/ui', pathPrefix: false }, '~/components'],
@@ -46,6 +98,9 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       VERSION: pkg.version,
+      // 站点规范地址与允许主机白名单：从设置（DB）读取后在 server 插件中覆盖，客户端用于分享/OG 地址
+      siteUrl: '',
+      allowedHosts: '',
       mapbox: {
         accessToken: '',
       },
@@ -163,7 +218,7 @@ export default defineNuxtConfig({
   vite: {
     server: {
       host: true,
-      allowedHosts: ['dev.1xc.top', '.1xc.top', 'localhost'],
+      allowedHosts: ALLOWED_HOSTS.allowAll ? true : ALLOWED_HOSTS.hosts,
     },
     optimizeDeps: {
       include: [
@@ -261,10 +316,31 @@ export default defineNuxtConfig({
     storageKey: 'cframe-color-mode',
   },
 
+  // ===== 字体全离线化 =====
+  // @nuxt/fonts 默认的 google/bunny/fontshare/adobe 等 provider 会在运行时
+  // 从 fonts.google.com / CDN 拉取字体与字体元数据（无法联网的离线/IP 部署会报
+  // "Could not fetch from https://fonts.google.com/..." 并导致首次访问卡顿）。
+  // 这里统一禁用远程 provider，只保留本地解析（@fontsource 本地包 + 系统字体栈）。
+  fonts: {
+    providers: {
+      google: false,
+      // Google Material 图标字体的内建 provider（unifont `googleicons`），
+      // 会在启动时强制请求 fonts.google.com/metadata/icons?key=material_symbols，
+      // 必须一并禁用才能完全离线。
+      googleicons: false,
+      bunny: false,
+      fontshare: false,
+      adobe: false,
+      npm: false,
+    },
+  },
+
   icon: {
     clientBundle: {
       scan: true,
     },
+    // 只使用本地已安装的 iconify 集合（@iconify-json/*），绝不回退到 Iconify API 联网拉取
+    fallbackToApi: false,
   },
 
   dayjs: {

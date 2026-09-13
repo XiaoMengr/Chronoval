@@ -91,6 +91,29 @@ export const DEFAULT_SETTINGS = [
     description: 'settings.app.appearance.cardCornerRadiusValue.description',
     isPublic: true,
   },
+  // 站点对外访问的规范地址（用于 OG 分享图/分享链接）。留空则跟随当前访问域名；
+  // 内网/IP 部署、或希望分享链接固定到某个域名时在此填写，如 https://dev.1xc.top
+  {
+    namespace: 'app',
+    key: 'siteUrl',
+    type: 'string',
+    defaultValue: process.env.NUXT_PUBLIC_SITE_URL || '',
+    label: 'settings.app.siteUrl.label',
+    description: 'settings.app.siteUrl.description',
+    isPublic: true,
+  },
+  // 允许访问的主机白名单（Host 头），逗号分隔，可填域名或内网 IP；
+  // 配置 `*` 表示允许任意来源（内网/多域名/反代场景常用）。
+  // 服务启动时生效，修改后需重启；对应启动环境变量 NUXT_ALLOWED_HOSTS
+  {
+    namespace: 'app',
+    key: 'allowedHosts',
+    type: 'string',
+    defaultValue: process.env.NUXT_ALLOWED_HOSTS || '',
+    label: 'settings.app.allowedHosts.label',
+    description: 'settings.app.allowedHosts.description',
+    isPublic: true,
+  },
   // 回收站保留策略：移入回收站的照片在「多少天」后自动彻底删除；never=永不自动删除
   {
     namespace: 'app',

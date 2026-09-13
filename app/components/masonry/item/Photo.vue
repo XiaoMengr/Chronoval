@@ -88,7 +88,7 @@ const exifItems = computed<{ icon: string; text: string }[]>(() => {
     items.push({ icon: 'tabler:aperture', text: `f/${exif.FNumber}` })
   }
   if (exif?.ExposureTime) {
-    items.push({ icon: 'material-symbols:shutter-speed', text: formatExposureTime(exif.ExposureTime) })
+    items.push({ icon: 'carbon:time', text: formatExposureTime(exif.ExposureTime) })
   }
   if (exif?.ISO) {
     items.push({ icon: 'carbon:iso-outline', text: `ISO ${exif.ISO}` })

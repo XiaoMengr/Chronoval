@@ -406,6 +406,7 @@
     "albums": "相簿",
     "siteAdministration": "站點設置",
     "generalSettings": "基本設置",
+    "interfaceSettings": "介面設置",
     "appearanceSettings": "外觀設置",
     "privacySettings": "隱私設置",
     "mapAndLocation": "地圖和位置",
@@ -1135,6 +1136,16 @@
         "description": "所有者頭像的圖片連結",
         "help": "頭像顯示加載頁面和首頁頭像中"
       },
+      "siteUrl": {
+        "label": "站點位址（OG／分享）",
+        "description": "對外存取的正式位址，用於產生分享連結與 OG 預覽圖",
+        "help": "留空則跟隨目前存取網域；內網/IP 部署或希望分享連結固定到某個網域時填寫，如 https://dev.1xc.top"
+      },
+      "allowedHosts": {
+        "label": "允許存取的主機（Host 白名單）",
+        "description": "允許存取的主機清單，以逗號分隔，可填網域或內網 IP",
+        "help": "允許存取的來源主機清單，以逗號分隔，可填網域或內網 IP；儲存後立即生效，無需重新啟動。可使用萬用字元如 *.example.com，填 * 表示允許任何來源（內網/多網域部署常用）。內網/IP 部署時建議填 * 或把內網 IP 寫入，否則可能被攔截導致 OG 圖/站點無法存取"
+      },
       "appearance": {
         "theme": {
           "label": "主題",
@@ -1453,6 +1464,9 @@
     },
     "general": {
       "description": "管理站點基礎資訊與展示外觀。更改會立即影響控制台和前台展示。"
+    },
+    "interface": {
+      "description": "管理介面展示相關的設定：外觀主題與進入畫廊時的載入配置。"
     },
     "form": {
       "loadFailed": "載入設定失敗",

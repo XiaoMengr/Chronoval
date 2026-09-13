@@ -59,6 +59,17 @@ export const APP_SETTINGS_UI: Record<string, FieldUIConfig> = {
     type: 'toggle',
     help: 'settings.app.appearance.cardCornerRadius.help',
   },
+  siteUrl: {
+    type: 'url',
+    placeholder: 'https://dev.1xc.top',
+    help: 'settings.app.siteUrl.help',
+  },
+  allowedHosts: {
+    type: 'textarea',
+    rows: 2,
+    placeholder: 'dev.1xc.top,192.168.1.10,*.example.com,*',
+    help: 'settings.app.allowedHosts.help',
+  },
   'appearance.cardCornerRadiusValue': {
     type: 'number',
     help: 'settings.app.appearance.cardCornerRadiusValue.help',
