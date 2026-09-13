@@ -1091,7 +1091,8 @@
       },
       "filter": {
         "levelPlaceholder": "篩選等級",
-        "tagPlaceholder": "篩選 Tag"
+        "tagPlaceholder": "篩選 Tag",
+        "all": "全部"
       },
       "countLabel": "總筆數/顯示: {total}/{shown}",
       "tagCount": "Tag: {count}",

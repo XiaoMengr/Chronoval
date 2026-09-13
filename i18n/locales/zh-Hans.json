@@ -1255,7 +1255,8 @@
       },
       "filter": {
         "levelPlaceholder": "过滤级别",
-        "tagPlaceholder": "筛选 Tag"
+        "tagPlaceholder": "筛选 Tag",
+        "all": "全部"
       },
       "countLabel": "总条数/展示: {total}/{shown}",
       "tagCount": "Tag: {count}",

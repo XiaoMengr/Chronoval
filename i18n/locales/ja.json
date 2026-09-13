@@ -1090,7 +1090,8 @@
       },
       "filter": {
         "levelPlaceholder": "レベルで絞り込む",
-        "tagPlaceholder": "タグで絞り込む"
+        "tagPlaceholder": "タグで絞り込む",
+        "all": "すべて"
       },
       "countLabel": "合計/表示: {total}/{shown}",
       "tagCount": "タグ: {count}",

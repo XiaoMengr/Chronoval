@@ -68,6 +68,26 @@ const getLevelType = (level: number): string => {
   return levelMap[level] || 'info'
 }
 
+// 级别筛选 chip 的轮廓色
+const chipColor = (
+  level: string,
+): 'danger' | 'warning' | 'info' | 'success' | 'neutral' => {
+  const map: Record<string, 'danger' | 'warning' | 'info' | 'success' | 'neutral'> = {
+    error: 'danger',
+    warn: 'warning',
+    info: 'info',
+    success: 'success',
+    debug: 'neutral',
+  }
+  return map[level] || 'neutral'
+}
+const isLevelActive = (level: string) => selectedLevels.value.includes(level)
+const toggleLevel = (level: string) => {
+  const i = selectedLevels.value.indexOf(level)
+  if (i >= 0) selectedLevels.value.splice(i, 1)
+  else selectedLevels.value.push(level)
+}
+
 // EventSource 连接
 let eventSource: EventSource | null = null
 
@@ -473,36 +493,16 @@ onUnmounted(() => {
 <template>
   <UDashboardPanel>
     <template #header>
-      <UDashboardNavbar :title="$t('title.logs')" />
-    </template>
-
-    <template #body>
-      <div class="terminal-shell flex flex-col flex-1 min-h-0">
-        <!-- 标题栏：macOS 红绿灯 + 居中标题 -->
-        <div class="terminal-titlebar flex items-center gap-3 h-11 shrink-0 select-none">
-          <div class="flex items-center gap-2">
-            <span class="t-dot bg-[#ff5f57]"></span>
-            <span class="t-dot bg-[#febc2e]"></span>
-            <span class="t-dot bg-[#28c840]"></span>
-          </div>
-          <div class="flex-1 min-w-0 flex items-center justify-center gap-2 text-xs text-[var(--term-dim)] truncate">
-            <UIcon
-              name="tabler:terminal-2"
-              class="size-3.5 shrink-0"
-            />
-            <span class="truncate font-medium">app.log</span>
-            <span class="text-[var(--term-dim)]">–</span>
-            <span class="text-[var(--term-dim)] truncate">~/chronoval/data/logs</span>
-          </div>
-          <div class="flex items-center gap-2 shrink-0">
-            <UBadge
-              v-if="connectionState !== 'idle'"
-              size="sm"
-              variant="solid"
-              :color="getConnectionStatusColor()"
-            >
+      <UDashboardNavbar :title="$t('title.logs')">
+        <template #right>
+          <div class="flex items-center gap-1.5">
+            <span
+              class="size-2 shrink-0 rounded-full"
+              :class="[statusDotClass, { 'animate-pulse': connectionState === 'live' }]"
+            ></span>
+            <span class="hidden sm:inline text-sm text-neutral-500 dark:text-neutral-400">
               {{ $t('dashboard.logs.connectionStatus.' + connectionState) }}
-            </UBadge>
+            </span>
             <UButton
               icon="tabler:refresh"
               color="neutral"
@@ -510,115 +510,135 @@ onUnmounted(() => {
               size="sm"
               title="reload"
               :disabled="isInitialLoading"
+              class="ms-1"
               @click="connectLogStream"
             />
           </div>
-        </div>
+        </template>
+      </UDashboardNavbar>
+    </template>
 
-        <!-- 工具栏 -->
+    <template #body>
+      <div class="flex h-full flex-col flex-1 min-h-0">
+        <!-- 筛选栏 -->
         <div
-          class="terminal-toolbar flex flex-wrap items-center gap-2 px-3 py-2 border-t border-[var(--term-border)] shrink-0"
+          class="shrink-0 border-b border-neutral-200/80 px-4 py-3 dark:border-neutral-800"
         >
-          <UInput
-            v-model="searchQuery"
-            :placeholder="$t('dashboard.logs.search.placeholder')"
-            size="sm"
-            icon="tabler:search"
-            class="w-full sm:w-56 md:w-72"
-          >
-            <template v-if="searchQuery?.length" #trailing>
-              <UButton
-                color="neutral"
-                variant="link"
+          <!-- 搜索 + 自动滚动 -->
+          <div class="flex items-center gap-2.5">
+            <UInput
+              v-model="searchQuery"
+              :placeholder="$t('dashboard.logs.search.placeholder')"
+              size="sm"
+              icon="tabler:search"
+              class="max-w-sm min-w-0 flex-1"
+            >
+              <template v-if="searchQuery?.length" #trailing>
+                <UButton
+                  color="neutral"
+                  variant="link"
+                  size="sm"
+                  icon="tabler:x"
+                  :aria-label="$t('dashboard.logs.search.clearAriaLabel')"
+                  @click="searchQuery = ''"
+                />
+              </template>
+            </UInput>
+            <UButton
+              :icon="autoScroll ? 'tabler:arrow-bar-to-down' : 'tabler:arrow-bar-up'"
+              color="neutral"
+              size="sm"
+              :variant="autoScroll ? 'soft' : 'outline'"
+              title="auto scroll"
+              class="shrink-0"
+              @click="toggleAutoScroll"
+            />
+          </div>
+
+          <!-- 级别筛选 chips + Tag 筛选 -->
+          <div class="mt-2.5 flex flex-wrap items-center gap-1.5">
+            <UButton
+              size="xs"
+              :variant="selectedLevels.length === 0 ? 'soft' : 'outline'"
+              color="neutral"
+              class="uppercase"
+              @click="selectedLevels = []"
+            >
+              {{ $t('dashboard.logs.filter.all') }}
+            </UButton>
+            <UButton
+              v-for="lvl in logLevels"
+              :key="lvl"
+              size="xs"
+              :color="chipColor(lvl)"
+              :variant="isLevelActive(lvl) ? 'soft' : 'outline'"
+              class="uppercase"
+              @click="toggleLevel(lvl)"
+            >{{ lvl }}</UButton>
+
+            <div class="ms-auto max-w-[10rem] min-w-0 sm:max-w-full">
+              <USelectMenu
+                v-model="selectedTags"
+                :items="availableTags"
+                multiple
                 size="sm"
-                icon="tabler:x"
-                :aria-label="$t('dashboard.logs.search.clearAriaLabel')"
-                @click="searchQuery = ''"
+                :placeholder="$t('dashboard.logs.filter.tagPlaceholder')"
+                class="w-full sm:w-48"
               />
-            </template>
-          </UInput>
-          <USelect
-            v-model="selectedLevels"
-            :items="logLevels.map((l) => ({ label: l.toUpperCase(), value: l }))"
-            multiple
-            size="sm"
-            :placeholder="$t('dashboard.logs.filter.levelPlaceholder')"
-            class="w-32"
-            :clearable="false"
-          />
-          <USelect
-            v-model="selectedTags"
-            :items="availableTags"
-            multiple
-            size="sm"
-            :placeholder="$t('dashboard.logs.filter.tagPlaceholder')"
-            class="w-40 sm:w-52"
-            :clearable="false"
-          />
-          <UButton
-            :icon="autoScroll ? 'tabler:arrow-bar-to-down' : 'tabler:arrow-bar-up'"
-            color="neutral"
-            size="sm"
-            :variant="autoScroll ? 'soft' : 'outline'"
-            title="auto scroll"
-            class="ms-auto"
-            @click="toggleAutoScroll"
-          />
+            </div>
+          </div>
         </div>
 
         <!-- 日志主体 -->
-        <div
-          class="terminal-body flex-1 min-h-0 relative font-mono text-[13px]"
-        >
+        <div class="relative min-h-0 flex-1 font-mono text-[13px]">
           <div
             ref="logContainer"
-            class="t-scroll absolute inset-0 overflow-y-auto overflow-x-hidden"
+            class="log-scroll absolute inset-0 overflow-y-auto overflow-x-hidden"
             :class="{ 'scroll-smooth': autoScroll }"
             @scroll="handleScroll"
           >
             <div :style="{ height: `${totalVirtualHeight}px`, position: 'relative' }">
               <div
-                class="absolute left-0 right-0 top-0"
+                class="absolute inset-x-0 top-0"
                 :style="{ transform: `translateY(${virtualOffset}px)` }"
               >
                 <div
                   v-for="(log, index) in visibleLogs"
                   :key="`${virtualStart + index}-${log.raw}`"
-                  class="t-row flex items-center gap-3 px-3 border-b border-[var(--term-border)]"
+                  class="log-row flex items-center gap-3 border-b border-neutral-100/80 px-4 dark:border-neutral-800/60"
                   :class="tRowClass(log)"
                   :style="{ height: `${ROW_HEIGHT}px` }"
                 >
-                  <span class="t-time whitespace-nowrap shrink-0 text-xs">
+                  <span class="log-time shrink-0 whitespace-nowrap text-xs tabular-nums">
                     {{ $dayjs(log.date).tz('Asia/Shanghai').format('HH:mm:ss.SSS') }}
                   </span>
                   <span
-                    class="t-level shrink-0 text-[10px] font-semibold tracking-wide rounded px-1.5 py-px"
+                    class="shrink-0 rounded px-1.5 py-px text-[10px] font-semibold tracking-wide"
                     :class="tLevelClass(log)"
                   >
                     {{ (log.type || getLevelType(log.level)).toUpperCase().slice(0, 4) }}
                   </span>
-                  <div class="flex-1 min-w-0">
+                  <div class="min-w-0 flex-1">
                     <span
                       v-if="debouncedSearchQuery"
-                      class="block whitespace-nowrap overflow-hidden text-ellipsis"
+                      class="block overflow-hidden text-ellipsis whitespace-nowrap"
                       v-html="highlightSearch(log.message)"
                     ></span>
                     <span
                       v-else
-                      class="block whitespace-nowrap overflow-hidden text-ellipsis"
+                      class="block overflow-hidden text-ellipsis whitespace-nowrap"
                     >{{ log.message }}</span>
                   </div>
                   <span
                     v-if="log.tag"
-                    class="t-tag text-[11px] whitespace-nowrap shrink-0 truncate"
+                    class="log-tag hidden max-w-40 shrink-0 truncate whitespace-nowrap text-[11px] md:inline"
                   >{{ log.tag }}</span>
                 </div>
               </div>
-
             </div>
             <div
               v-if="filteredLogs.length === 0"
-              class="absolute inset-0 flex items-center justify-center text-[var(--term-dim)]"
+              class="absolute inset-0 flex items-center justify-center text-neutral-400 dark:text-neutral-500"
             >
               <div v-if="logs.length === 0">{{ $t('dashboard.logs.empty.waiting') }}</div>
               <div v-else>{{ $t('dashboard.logs.empty.noMatch') }}</div>
@@ -636,13 +656,13 @@ onUnmounted(() => {
           >
             <div
               v-if="!historyFullyLoaded && !isInitialLoading"
-              class="absolute top-2 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 rounded-full border border-[var(--term-border)] bg-[var(--term-bg)]/85 px-3 py-1.5 shadow-md backdrop-blur-md"
+              class="absolute left-1/2 top-3 z-20 flex max-w-[92%] -translate-x-1/2 items-center gap-2 rounded-full border border-neutral-200/80 bg-white/80 px-3 py-1.5 shadow-md backdrop-blur-sm dark:border-neutral-800 dark:bg-neutral-900/80"
             >
               <UIcon
                 name="tabler:history"
-                class="size-3.5 shrink-0 text-[var(--term-dim)]"
+                class="size-3.5 shrink-0 text-neutral-400"
               />
-              <span class="text-xs whitespace-nowrap text-[var(--term-text)]">
+              <span class="truncate whitespace-nowrap text-xs text-neutral-500 dark:text-neutral-400">
                 {{ $t('dashboard.logs.historyHint', { count: INITIAL_LOG_LINES }) }}
               </span>
               <UButton
@@ -662,18 +682,18 @@ onUnmounted(() => {
           <!-- 初始加载遮罩 -->
           <div
             v-if="isInitialLoading"
-            class="absolute inset-0 bg-[var(--term-bg)]/90 backdrop-blur-sm flex flex-col items-center justify-center gap-3 z-10"
+            class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-neutral-50/80 backdrop-blur-sm dark:bg-neutral-950/70"
           >
             <UIcon
               name="tabler:loader-2"
-              class="animate-spin w-7 h-7 text-emerald-500 dark:text-emerald-400"
+              class="h-7 w-7 animate-spin text-sky-500"
             />
-            <div class="text-xs text-[var(--term-dim)]">
+            <div class="text-xs text-neutral-400 dark:text-neutral-500">
               {{ $t('dashboard.logs.connectionStatus.loadingHistory') }}
             </div>
-            <div class="w-56 h-1 bg-[var(--term-border)] rounded-full overflow-hidden">
+            <div class="h-1 w-56 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">
               <div
-                class="h-full bg-emerald-400 rounded-full transition-all duration-300 ease-out"
+                class="h-full rounded-full bg-sky-400 transition-all duration-300 ease-out"
                 :style="{ width: `${loadingProgress}%` }"
               ></div>
             </div>
@@ -682,17 +702,18 @@ onUnmounted(() => {
 
         <!-- 状态栏 -->
         <div
-          class="terminal-statusbar flex items-center gap-3 px-3 h-7 text-[11px] text-[var(--term-dim)] border-t border-[var(--term-border)] shrink-0"
+          class="flex h-8 shrink-0 items-center gap-3 border-t border-neutral-200/80 px-4 text-[11px] text-neutral-400 dark:border-neutral-800 dark:text-neutral-500"
         >
-          <span class="t-dot size-1.5" :class="statusDotClass"></span>
-          <span>{{ $t('dashboard.logs.connectionStatus.' + connectionState) }}</span>
+          <UIcon name="tabler:terminal-2" class="size-3.5 shrink-0" />
+          <span class="truncate">
+            {{ $t('dashboard.logs.connectionStatus.' + connectionState) }}
+          </span>
           <span class="ms-auto tabular-nums">
             {{ $t('dashboard.logs.countLabel', { total: logs.length, shown: filteredLogs.length }) }}
           </span>
-          <span v-if="availableTags.length" class="hidden sm:inline tabular-nums">
+          <span v-if="availableTags.length" class="hidden tabular-nums sm:inline">
             {{ $t('dashboard.logs.tagCount', { count: availableTags.length }) }}
           </span>
-          <span class="t-cursor"></span>
         </div>
       </div>
     </template>
@@ -700,117 +721,37 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-/* 终端外壳：以局部 CSS 变量承载主题，浅色/深色均可读（macOS 终端窗口观感） */
-.terminal-shell {
-  --term-bg: #fbfbfc;
-  --term-bg2: #f2f3f5;
-  --term-text: #3f4650;
-  --term-dim: #7a828c;
-  --term-border: rgba(15, 23, 42, 0.1);
-  --term-thumb: #cbd4dc;
-  --term-thumb-hover: #b6c2cc;
-  --term-title-bg: #ffffff;
-  --term-hover-row: rgba(15, 23, 42, 0.04);
-  background: var(--term-bg);
-  border: 1px solid var(--term-border);
-  border-radius: 10px;
-  color: var(--term-text);
-  overflow: hidden;
-  box-shadow: 0 12px 32px -12px rgba(15, 23, 42, 0.12);
+/* 日志视图：随全局浅色/深色主题显示，保持清爽克制的观感 */
+.log-time {
+  color: var(--ui-text-muted);
 }
 
-.dark .terminal-shell {
-  --term-bg: #0c0c10;
-  --term-bg2: #141419;
-  --term-text: #d4d4d4;
-  --term-dim: #565f89;
-  --term-border: rgba(255, 255, 255, 0.08);
-  --term-thumb: #2a2a31;
-  --term-thumb-hover: #3a3a44;
-  --term-title-bg: #1b1b20;
-  --term-hover-row: rgba(255, 255, 255, 0.05);
-  box-shadow: 0 12px 32px -12px rgba(0, 0, 0, 0.6);
-}
-
-.terminal-titlebar {
-  background: var(--term-title-bg);
-  border-bottom: 1px solid var(--term-border);
-}
-
-.terminal-toolbar {
-  background: var(--term-bg2);
-}
-
-.terminal-statusbar {
-  background: var(--term-bg2);
-}
-
-.t-dot {
-  width: 0.75rem;
-  height: 0.75rem;
-  border-radius: 9999px;
-}
-
-.terminal-toolbar :deep(input) {
-  background-color: var(--term-bg) !important;
-  color: var(--term-text) !important;
-  border-color: var(--term-border) !important;
-}
-.terminal-toolbar :deep(input::placeholder) {
-  color: var(--term-dim) !important;
-}
-.terminal-toolbar :deep(button) {
-  background-color: var(--term-bg2);
-}
-.terminal-toolbar :deep([data-slot='trigger']) {
-  background-color: var(--term-bg) !important;
-  color: var(--term-text) !important;
-  border-color: var(--term-border) !important;
-}
-
-/* 行内配色 */
-.t-time {
-  color: var(--term-dim);
-}
-.t-tag {
-  color: var(--term-dim);
+.log-tag {
+  color: var(--ui-text-muted);
 }
 
 /* 滚动条 */
-.t-scroll::-webkit-scrollbar {
+.log-scroll::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
-.t-scroll::-webkit-scrollbar-thumb {
-  background: var(--term-thumb);
+.log-scroll::-webkit-scrollbar-thumb {
+  background: var(--ui-text-dimmed);
   border-radius: 4px;
+  opacity: 0.6;
 }
-.t-scroll::-webkit-scrollbar-thumb:hover {
-  background: var(--term-thumb-hover);
+.log-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--ui-text-muted);
 }
-.t-scroll::-webkit-scrollbar-track {
+.log-scroll::-webkit-scrollbar-track {
   background: transparent;
 }
 
-/* 高亮 */
-:deep(mark) {
+/* 搜索高亮 */
+.log-scroll :deep(mark) {
   background: #f4bf3f;
   color: #0c0c10;
   border-radius: 2px;
   padding: 0 2px;
-}
-
-/* 闪烁光标 */
-.t-cursor {
-  display: inline-block;
-  width: 7px;
-  height: 14px;
-  background: #f4bf3f;
-  animation: t-blink 1.1s steps(2, start) infinite;
-}
-@keyframes t-blink {
-  50% {
-    opacity: 0;
-  }
 }
 </style>

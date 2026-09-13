@@ -1169,7 +1169,8 @@
       },
       "filter": {
         "levelPlaceholder": "Уровень журнала",
-        "tagPlaceholder": "Фильтр по тегу"
+        "tagPlaceholder": "Фильтр по тегу",
+        "all": "Все"
       },
       "countLabel": "Всего / показано: {total} / {shown}",
       "tagCount": "Тегов: {count}",

@@ -1257,7 +1257,8 @@
       },
       "filter": {
         "levelPlaceholder": "Filter level",
-        "tagPlaceholder": "Filter Tag"
+        "tagPlaceholder": "Filter Tag",
+        "all": "All"
       },
       "countLabel": "Total/Shown: {total}/{shown}",
       "tagCount": "Tags: {count}",
