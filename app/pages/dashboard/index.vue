@@ -570,31 +570,32 @@ const onShareSite = () => {
 
               <div
                 v-if="mediaStats.total"
-                class="flex flex-col items-center gap-6 sm:flex-row sm:items-center"
+                class="flex items-stretch gap-5 sm:items-center sm:gap-6"
               >
-                <!-- Canvas 环形图：图片/视频两段纯色弧，中心显示图片占比。
-                     key 绑定实时数值：数据异步到位时强制重建确保重绘，避免刷新后偶发空白 -->
-                <DashboardRingGauge
-                  :key="`rg-${mediaStats.image}-${mediaStats.video}`"
-                  :size="132"
-                  :stroke="15"
-                  :gap-deg="0"
-                  :segments="[
-                    { value: mediaStats.image, color: '#0ea5e9' },
-                    { value: mediaStats.video, color: '#8b5cf6' },
-                  ]"
-                >
-                  <span class="text-3xl font-extrabold tracking-tight text-(--ui-text)">
-                    <span class="tabular-nums">{{ mediaTypePercent('image') }}</span
-                    ><span class="text-base font-semibold text-(--ui-text-muted)">%</span>
-                  </span>
-                  <span class="mt-1 text-xs font-medium tracking-wide text-(--ui-text-dimmed)">
-                    {{ $t('dashboard.overview.section.mediaTypes.image') }}
-                  </span>
-                </DashboardRingGauge>
+                <!-- Canvas 环形图：移动端缩小靠左、桌面端放大，外层盒子用 CSS 响应式控尺寸 -->
+                <div class="h-24 w-24 shrink-0 self-center sm:h-[132px] sm:w-[132px]">
+                  <DashboardRingGauge
+                    :key="`rg-${mediaStats.image}-${mediaStats.video}`"
+                    :size="132"
+                    :stroke="15"
+                    :gap-deg="0"
+                    :segments="[
+                      { value: mediaStats.image, color: '#0ea5e9' },
+                      { value: mediaStats.video, color: '#8b5cf6' },
+                    ]"
+                  >
+                    <span class="text-xl font-extrabold tracking-tight text-(--ui-text) sm:text-3xl">
+                      <span class="tabular-nums">{{ mediaTypePercent('image') }}</span
+                      ><span class="text-sm font-semibold text-(--ui-text-muted) sm:text-base">%</span>
+                    </span>
+                    <span class="mt-0.5 text-[10px] font-medium tracking-wide text-(--ui-text-dimmed) sm:mt-1 sm:text-xs">
+                      {{ $t('dashboard.overview.section.mediaTypes.image') }}
+                    </span>
+                  </DashboardRingGauge>
+                </div>
 
                 <!-- 类型 + 来源明细：等宽两列，字段用细分隔线纵向排列，更规整 -->
-                <div class="grid min-w-0 flex-1 grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
+                <div class="grid min-w-0 w-full flex-1 grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
                   <div class="space-y-0">
                     <p class="pb-2 text-[11px] font-semibold uppercase tracking-wider text-(--ui-text-dimmed)">
                       {{ $t('dashboard.overview.section.mediaTypes.typeLabel') }}

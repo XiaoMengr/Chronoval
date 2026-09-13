@@ -23,7 +23,8 @@ function draw(progress: number) {
   const canvas = canvasRef.value
   if (!canvas) return
   const dpr = window.devicePixelRatio || 1
-  const size = props.size
+  // 实际渲染尺寸以盒子为准（CSS 控制），canvas 像素跟随后端清晰；容错回退 props.size
+  const size = canvas.clientWidth || props.size
   canvas.width = Math.round(size * dpr)
   canvas.height = Math.round(size * dpr)
   const ctx = canvas.getContext('2d')
@@ -34,7 +35,8 @@ function draw(progress: number) {
   const dark =
     typeof document !== 'undefined' &&
     document.documentElement.classList.contains('dark')
-  const stroke = props.stroke
+  // 描边随尺寸缩放，避免小环上描边太粗
+  const stroke = props.stroke * Math.max(1, size / (props.size || size))
   const cx = size / 2
   const cy = size / 2
   const rMid = size / 2 - stroke / 2 - 1.5
@@ -100,10 +102,7 @@ watch(
 </script>
 
 <template>
-  <div
-    class="relative inline-block shrink-0"
-    :style="{ width: `${props.size}px`, height: `${props.size}px` }"
-  >
+  <div class="relative inline-block h-full w-full shrink-0">
     <canvas ref="canvasRef" class="h-full w-full" />
     <div
       class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-1.5 leading-none"
