@@ -832,6 +832,24 @@
       "createButton": "建立相簿",
       "noAlbums": "還沒有相簿",
       "noAlbumsTip": "建立您的第一個相簿來組織您的照片",
+      "searchPlaceholder": "搜尋相簿…",
+      "totalCount_other": "本相簿",
+      "searchResult_other": "筆搜尋結果",
+      "searchEmpty": "找不到符合的相簿",
+      "searchEmptyTip": "沒有與「{keyword}」相關的相簿",
+      "viewGrid": "網格檢視",
+      "viewList": "列表檢視",
+      "subAlbums": "個子相簿",
+      "searchClear": "清除搜尋",
+      "card": {
+        "locked": "已上鎖",
+        "actions": {
+          "view": "查看相簿",
+          "edit": "編輯",
+          "reset": "重設自訂",
+          "delete": "刪除"
+        }
+      },
       "form": {
         "title": "標題",
         "titlePlaceholder": "輸入相簿標題",
@@ -855,7 +873,12 @@
           "photoCount": "相片數",
           "createdAt": "建立時間",
           "actions": "操作"
-        }
+        },
+        "external": "外部圖庫",
+        "customized": "已自訂",
+        "hidden": "已隱藏",
+        "resetCustom": "清除自訂設定",
+        "expand": "展開子相簿"
       },
       "modal": {
         "selectPhotos": "選擇相片",

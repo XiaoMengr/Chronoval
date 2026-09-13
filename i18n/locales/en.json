@@ -981,6 +981,26 @@
       "createButton": "Create Album",
       "noAlbums": "No albums yet",
       "noAlbumsTip": "Create your first album to organize your photos",
+      "searchPlaceholder": "Search albums…",
+      "totalCount_one": "album",
+      "totalCount_other": "albums",
+      "searchResult_one": "search result",
+      "searchResult_other": "search results",
+      "searchEmpty": "No matching albums",
+      "searchEmptyTip": "No albums related to “{keyword}”",
+      "viewGrid": "Grid view",
+      "viewList": "List view",
+      "subAlbums": "sub-albums",
+      "searchClear": "Clear search",
+      "card": {
+        "locked": "Locked",
+        "actions": {
+          "view": "View album",
+          "edit": "Edit",
+          "reset": "Reset custom",
+          "delete": "Delete"
+        }
+      },
       "form": {
         "title": "Title",
         "titlePlaceholder": "Enter album title",

@@ -832,6 +832,24 @@
       "createButton": "アルバムを作成",
       "noAlbums": "アルバムがまだありません",
       "noAlbumsTip": "最初のアルバムを作成して、写真を整理してください",
+      "searchPlaceholder": "アルバムを検索…",
+      "totalCount_other": "件のアルバム",
+      "searchResult_other": "件の検索結果",
+      "searchEmpty": "一致するアルバムが見つかりません",
+      "searchEmptyTip": "「{keyword}」に関連するアルバムはありません",
+      "viewGrid": "グリッド表示",
+      "viewList": "リスト表示",
+      "subAlbums": "サブアルバム",
+      "searchClear": "検索をクリア",
+      "card": {
+        "locked": "ロック中",
+        "actions": {
+          "view": "アルバムを開く",
+          "edit": "編集",
+          "reset": "カスタムをリセット",
+          "delete": "削除"
+        }
+      },
       "form": {
         "title": "タイトル",
         "titlePlaceholder": "アルバムのタイトルを入力",
@@ -855,7 +873,12 @@
           "photoCount": "写真数",
           "createdAt": "作成時刻",
           "actions": "操作"
-        }
+        },
+        "external": "外部ライブラリ",
+        "customized": "カスタマイズ済み",
+        "hidden": "非表示",
+        "resetCustom": "カスタム設定をクリア",
+        "expand": "サブアルバムを展開"
       },
       "modal": {
         "selectPhotos": "写真を選択",

@@ -25,8 +25,6 @@ interface AlbumItem extends Album {
   hasChildren?: boolean
   children?: AlbumItem[]
   external?: boolean
-  // 树状展示辅助字段
-  __depth?: number
 }
 
 interface AlbumFormState {
@@ -38,7 +36,51 @@ interface AlbumFormState {
 }
 
 const albums = ref<AlbumItem[]>([])
-const isLoadingAlbums = ref(false)
+// 初始为 true：首次渲染先显示加载态，避免在数据加载完成前误显示「没有相簿」
+const isLoadingAlbums = ref(true)
+const searchQuery = ref('')
+// 视图模式：grid=卡片网格（美观），list=紧凑列表（相簿多时更省位置）
+const viewMode = ref<'grid' | 'list'>(
+  (typeof localStorage !== 'undefined' &&
+  localStorage.getItem('albums.viewMode') === 'list'
+    ? 'list'
+    : 'grid') as 'grid' | 'list',
+)
+watch(viewMode, (v) => {
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem('albums.viewMode', v)
+  }
+})
+
+const filteredAlbums = computed<AlbumItem[]>(() => {
+  const q = searchQuery.value.trim().toLowerCase()
+  if (!q) return albums.value
+  return albums.value.filter((album) => {
+    const haystack = [
+      album.title,
+      album.description,
+      album.slug,
+      album.relPath,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+    return haystack.includes(q)
+  })
+})
+
+const { t, locale } = useI18n()
+// 按系统语言取单复数名词：取 key_one / key_few / key_many / key_other
+const pluralNoun = (base: string, n: number) => {
+  const category = new Intl.PluralRules(locale.value || 'en').select(n)
+  return t(`${base}_${category}`)
+}
+const albumCountWord = computed(() =>
+  pluralNoun('dashboard.albums.totalCount', filteredAlbums.value.length),
+)
+const searchResultWord = computed(() =>
+  pluralNoun('dashboard.albums.searchResult', filteredAlbums.value.length),
+)
 const allPhotos = ref<Photo[]>([])
 const isLoadingPhotos = ref(false)
 
@@ -174,39 +216,6 @@ const toggleExpandScan = (album: AlbumItem) => {
 
 const isScanExpanded = (album: AlbumItem) =>
   expandedScanAlbums.value.has(scanKey(album))
-
-// 外部库（扫描库）相簿：统计当前目录及其所有子相簿的照片总数（含嵌套）
-const sumScanAlbumPhotos = (node: AlbumItem): number => {
-  let total = node.photoCount || 0
-  for (const child of node.children || []) {
-    total += sumScanAlbumPhotos(child)
-  }
-  return total
-}
-
-// 展平树：展开的外部库主相簿会把其二级子相簿展开为缩进行
-const displayAlbums = computed<AlbumItem[]>(() => {
-  const out: AlbumItem[] = []
-  const walk = (nodes: AlbumItem[], depth: number) => {
-    for (const node of nodes) {
-      const row = {
-        ...node,
-        __depth: depth,
-        photoCount:
-          node.kind === 'scan'
-            ? sumScanAlbumPhotos(node)
-            : node.photoCount ?? (node.photoIds?.length || 0),
-      }
-      out.push(row)
-      const kids = node.children || []
-      if (node.kind === 'scan' && node.relPath === '' && isScanExpanded(node)) {
-        for (const child of kids) walk([child], depth + 1)
-      }
-    }
-  }
-  walk(albums.value, 0)
-  return out
-})
 
 const openEditSlideover = async (album: AlbumItem) => {
   currentAlbum.value = album
@@ -536,37 +545,19 @@ const submitButtonLabel = computed(() => {
     : $t('dashboard.albums.slideover.submitCreate')
 })
 
-const columns = computed<any[]>(() => [
-  {
-    id: 'coverPhoto',
-    accessorKey: 'coverPhoto',
-    header: $t('dashboard.albums.table.columns.cover'),
-  },
-  {
-    id: 'title',
-    accessorKey: 'title',
-    header: $t('dashboard.albums.table.columns.title'),
-  },
-  {
-    id: 'description',
-    accessorKey: 'description',
-    header: $t('dashboard.albums.table.columns.description'),
-  },
-  {
-    id: 'photoCount',
-    accessorKey: 'photoCount',
-    header: $t('dashboard.albums.table.columns.photoCount'),
-  },
-  {
-    id: 'createdAt',
-    accessorKey: 'createdAt',
-    header: $t('dashboard.albums.table.columns.createdAt'),
-  },
-  {
-    id: 'actions',
-    header: $t('dashboard.albums.table.columns.actions'),
-  },
-])
+// —— 卡片网格辅助 ——
+
+const albumKey = (album: AlbumItem) =>
+  isScanAlbum(album)
+    ? `scan:${album.libId}:${album.relPath ?? ''}`
+    : `manual:${album.id}`
+
+const openAlbum = (album: AlbumItem) => {
+  const link = isScanAlbum(album)
+    ? album.link || `/albums/scan/${album.libId}`
+    : `/albums/${album.id}`
+  window.open(link, '_blank', 'noopener')
+}
 </script>
 
 <template>
@@ -587,259 +578,165 @@ const columns = computed<any[]>(() => [
 
     <template #body>
       <div class="flex flex-col gap-6">
-        <div
-          v-if="albums.length > 0"
-          class="bg-white dark:bg-neutral-900 rounded-lg border border-gray-200 dark:border-neutral-800 overflow-hidden shadow-sm"
-        >
-          <div
-            class="flex items-center justify-between gap-3 px-4 py-3 border-b border-gray-200 dark:border-neutral-800 bg-gray-50/60 dark:bg-neutral-900"
-          >
-            <div
-              class="flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-100"
-            >
-              <span
-                class="flex h-7 w-7 items-center justify-center rounded-md bg-primary-500/10 text-primary-500"
-              >
-                <Icon name="tabler:album" size="16" />
-              </span>
-              {{ $t('title.albums') }}
+        <!-- 页面标题、搜索与统计 -->
+        <div class="flex flex-col gap-4">
+          <div class="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 class="text-lg font-semibold text-(--ui-text)">
+                {{ $t('dashboard.albums.title') }}
+              </h2>
+              <p class="mt-0.5 text-sm text-(--ui-text-muted)">
+                {{ $t('dashboard.albums.subtitle') }}
+              </p>
             </div>
-            <UBadge
-              variant="soft"
-              color="neutral"
-              size="sm"
-              icon="tabler:folders"
-            >
-              {{ displayAlbums.length }}
-            </UBadge>
+            <div class="flex items-center gap-2">
+              <UInput
+                v-model="searchQuery"
+                icon="tabler:search"
+                class="w-40 sm:w-52"
+                :placeholder="$t('dashboard.albums.searchPlaceholder')"
+              />
+              <UButtonGroup size="sm">
+                <UButton
+                  :color="viewMode === 'grid' ? 'primary' : 'neutral'"
+                  :variant="viewMode === 'grid' ? 'solid' : 'soft'"
+                  icon="tabler:layout-grid"
+                  :aria-label="$t('dashboard.albums.viewGrid')"
+                  :title="$t('dashboard.albums.viewGrid')"
+                  @click="viewMode = 'grid'"
+                />
+                <UButton
+                  :color="viewMode === 'list' ? 'primary' : 'neutral'"
+                  :variant="viewMode === 'list' ? 'solid' : 'soft'"
+                  icon="tabler:list"
+                  :aria-label="$t('dashboard.albums.viewList')"
+                  :title="$t('dashboard.albums.viewList')"
+                  @click="viewMode = 'list'"
+                />
+              </UButtonGroup>
+            </div>
           </div>
-          <UTable
-            :data="displayAlbums"
-            :columns="columns"
-            :ui="{
-              thead: 'border-b border-gray-200 dark:border-neutral-800',
-              th: 'text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-neutral-500',
-              td: 'py-3',
-              tr: 'transition-colors hover:bg-gray-50/80 dark:hover:bg-neutral-800/40',
-            }"
+
+          <div class="flex items-center gap-1.5 text-xs text-(--ui-text-muted)">
+            <Icon name="tabler:album" size="15" />
+            <span v-if="searchQuery.trim()" class="tabular-nums">
+              <span class="font-semibold text-(--ui-text)">{{
+                filteredAlbums.length
+              }}</span>
+              {{ searchResultWord }}
+            </span>
+            <span v-else class="tabular-nums">
+              <span class="font-semibold text-(--ui-text)">{{
+                filteredAlbums.length
+              }}</span>
+              {{ albumCountWord }}
+            </span>
+          </div>
+        </div>
+
+        <!-- 相簿列表（网格 / 紧凑列表） -->
+        <div v-if="filteredAlbums.length > 0">
+          <!-- 网格：卡片视图 -->
+          <div
+            v-if="viewMode === 'grid'"
+            class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 sm:gap-5"
           >
-            <template #coverPhoto-cell="{ row }">
+          <template v-for="album in filteredAlbums" :key="albumKey(album)">
+            <div class="min-w-0 flex flex-col">
+              <AlbumCard
+                :album="album"
+                :expanded="isScanAlbum(album) && isScanExpanded(album)"
+                size="md"
+                @expand="toggleExpandScan(album)"
+                @edit="openEditSlideover(album)"
+                @reset="openDeleteConfirm(album)"
+                @delete="openDeleteConfirm(album)"
+                @view="openAlbum(album)"
+              />
+
               <div
-                class="group relative w-16 h-12 rounded-lg overflow-hidden bg-gray-100 dark:bg-neutral-800 ring-1 ring-inset ring-black/5 dark:ring-white/10 shrink-0"
+                v-if="isScanAlbum(album) && isScanExpanded(album) && album.children?.length"
+                class="ml-1.5 mt-2 space-y-1.5 border-l-2 border-primary-400/40 pl-3"
               >
-                <img
-                  v-if="(row.original as unknown as AlbumItem).coverPhoto"
-                  :src="
-                    (row.original as unknown as AlbumItem).coverPhoto
-                      ?.thumbnailUrl || ''
-                  "
-                  :alt="(row.original as unknown as AlbumItem).title"
-                  class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                />
-                <div
-                  v-else
-                  class="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-600"
-                >
-                  <Icon
-                    name="tabler:image"
-                    size="20"
-                  />
-                </div>
-                <div
-                  v-if="(row.original as unknown as AlbumItem).coverPhoto"
-                  class="absolute inset-0 bg-linear-to-t from-black/25 to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                <AlbumCard
+                  v-for="child in album.children"
+                  :key="scanKey(child)"
+                  :album="child"
+                  size="sm"
+                  @edit="openEditSlideover(child)"
+                  @reset="openDeleteConfirm(child)"
+                  @delete="openDeleteConfirm(child)"
+                  @view="openAlbum(child)"
                 />
               </div>
-            </template>
+            </div>
+          </template>
+          </div>
 
-            <template #title-cell="{ row }">
+          <!-- 紧凑列表：相簿较多时的省空间视图 -->
+          <div v-else class="flex flex-col gap-2">
+            <div
+              v-for="album in filteredAlbums"
+              :key="albumKey(album)"
+              class="min-w-0"
+            >
+              <AlbumCard
+                :album="album"
+                :expanded="isScanAlbum(album) && isScanExpanded(album)"
+                size="row"
+                @expand="toggleExpandScan(album)"
+                @edit="openEditSlideover(album)"
+                @reset="openDeleteConfirm(album)"
+                @delete="openDeleteConfirm(album)"
+                @view="openAlbum(album)"
+              />
+
               <div
-                class="flex items-center gap-2"
-                :style="{
-                  paddingLeft: `${
-                    ((row.original as unknown as AlbumItem).__depth || 0) * 24
-                  }px`,
-                }"
+                v-if="isScanAlbum(album) && isScanExpanded(album) && album.children?.length"
+                class="ml-9 mt-1.5 space-y-1.5"
               >
-                <button
-                  v-if="
-                    isScanAlbum(row.original as unknown as AlbumItem) &&
-                    ((row.original as unknown as AlbumItem).children ||
-                      []).length > 0
-                  "
-                  class="shrink-0 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
-                  :aria-label="$t('dashboard.albums.table.expand')"
-                  @click="
-                    toggleExpandScan(row.original as unknown as AlbumItem)
-                  "
-                >
-                  <Icon
-                    :name="
-                      isScanExpanded(row.original as unknown as AlbumItem)
-                        ? 'tabler:chevron-down'
-                        : 'tabler:chevron-right'
-                    "
-                    size="18"
-                  />
-                </button>
-                <span
-                  v-else-if="
-                    isScanAlbum(row.original as unknown as AlbumItem)
-                  "
-                  class="w-[18px] shrink-0"
-                ></span>
-
-                <Icon
-                  v-if="isScanAlbum(row.original as unknown as AlbumItem)"
-                  :name="
-                    ((row.original as unknown as AlbumItem).__depth || 0) === 0
-                      ? 'tabler:folder-heart'
-                      : 'tabler:folder'
-                  "
-                  size="18"
-                  class="shrink-0 text-primary-400/80 dark:text-primary-500/80"
-                />
-                <Icon
-                  v-else
-                  name="tabler:album"
-                  size="18"
-                  class="shrink-0 text-gray-400 dark:text-neutral-500"
-                />
-
-                <NuxtLink
-                  :to="
-                    isScanAlbum(row.original as unknown as AlbumItem)
-                      ? (row.original as unknown as AlbumItem).link ||
-                        `/albums/scan/${
-                          (row.original as unknown as AlbumItem).libId
-                        }`
-                      : `/albums/${(row.original as unknown as AlbumItem).id}`
-                  "
-                  target="_blank"
-                  class="font-medium text-primary-600 dark:text-primary-400 hover:underline cursor-pointer inline-flex items-center gap-2"
-                >
-                  {{ (row.original as unknown as AlbumItem).title }}
-                  <Icon
-                    name="tabler:external-link"
-                    size="16"
-                    class="shrink-0 opacity-60 hover:opacity-100 transition-opacity"
-                  />
-                </NuxtLink>
-
-                <UBadge
-                  v-if="isScanAlbum(row.original as unknown as AlbumItem)"
-                  size="xs"
-                  color="sky"
-                  variant="soft"
-                >
-                  {{ $t('dashboard.albums.table.external') }}
-                </UBadge>
-                <UBadge
-                  v-if="(row.original as unknown as AlbumItem).hasCustom"
-                  size="xs"
-                  color="amber"
-                  variant="soft"
-                >
-                  {{ $t('dashboard.albums.table.customized') }}
-                </UBadge>
-                <UBadge
-                  v-if="(row.original as unknown as AlbumItem).isHidden"
-                  size="xs"
-                  color="neutral"
-                  variant="soft"
-                >
-                  {{ $t('dashboard.albums.table.hidden') }}
-                </UBadge>
-              </div>
-            </template>
-
-            <template #description-cell="{ row }">
-              <div
-                v-if="(row.original as unknown as AlbumItem).description"
-                class="text-sm text-gray-600 dark:text-gray-400 line-clamp-1"
-              >
-                {{ (row.original as unknown as AlbumItem).description }}
-              </div>
-              <div
-                v-else
-                class="text-sm text-gray-400 dark:text-gray-600"
-              >
-                -
-              </div>
-            </template>
-
-            <template #photoCount-cell="{ row }">
-              <UBadge
-                variant="subtle"
-                color="neutral"
-                icon="tabler:photo"
-                class="tabular-nums"
-              >
-                {{ (row.original as unknown as AlbumItem).photoCount || 0 }}
-              </UBadge>
-            </template>
-
-            <template #createdAt-cell="{ row }">
-              <div class="text-sm text-gray-600 dark:text-gray-400">
-                <template
-                  v-if="
-                    !isScanAlbum(row.original as unknown as AlbumItem)
-                  "
-                >
-                  {{
-                    dayjs(
-                      (row.original as unknown as AlbumItem).createdAt,
-                    ).format('YYYY-MM-DD')
-                  }}
-                </template>
-                <template v-else>
-                  -
-                </template>
-              </div>
-            </template>
-
-            <template #actions-cell="{ row }">
-              <div class="flex gap-1">
-                <UButton
-                  variant="ghost"
-                  color="primary"
-                  size="xs"
-                  icon="tabler:edit"
-                  @click="
-                    openEditSlideover(row.original as unknown as AlbumItem)
-                  "
-                />
-                <template
-                  v-if="
-                    isScanAlbum(row.original as unknown as AlbumItem)
-                  "
-                >
-                  <UButton
-                    variant="ghost"
-                    color="amber"
-                    size="xs"
-                    icon="tabler:eraser"
-                    :title="$t('dashboard.albums.table.resetCustom')"
-                    @click="
-                      openDeleteConfirm(
-                        row.original as unknown as AlbumItem,
-                      )
-                    "
-                  />
-                </template>
-                <UButton
-                  v-else
-                  variant="ghost"
-                  color="error"
-                  size="xs"
-                  icon="tabler:trash"
-                  @click="
-                    openDeleteConfirm(row.original as unknown as AlbumItem)
-                  "
+                <AlbumCard
+                  v-for="child in album.children"
+                  :key="scanKey(child)"
+                  :album="child"
+                  size="sm"
+                  @edit="openEditSlideover(child)"
+                  @reset="openDeleteConfirm(child)"
+                  @delete="openDeleteConfirm(child)"
+                  @view="openAlbum(child)"
                 />
               </div>
-            </template>
-          </UTable>
+            </div>
+          </div>
+          </div>
+
+        <div
+          v-else-if="albums.length > 0 && searchQuery.trim()"
+          class="flex flex-col items-center justify-center py-12 text-center"
+        >
+          <Icon
+            name="tabler:search-off"
+            size="48"
+            class="text-gray-400 dark:text-gray-600 mb-4"
+          />
+          <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300">
+            {{ $t('dashboard.albums.searchEmpty') }}
+          </h3>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+            {{
+              $t('dashboard.albums.searchEmptyTip', {
+                keyword: searchQuery.trim(),
+              })
+            }}
+          </p>
+          <UButton
+            variant="soft"
+            color="neutral"
+            class="mt-4"
+            @click="searchQuery = ''"
+          >
+            {{ $t('dashboard.albums.searchClear') }}
+          </UButton>
         </div>
 
         <div

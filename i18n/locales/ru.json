@@ -905,6 +905,30 @@
       "createButton": "Создать альбом",
       "noAlbums": "Альбомов пока нет",
       "noAlbumsTip": "Создайте первый альбом, чтобы упорядочить фотографии",
+      "searchPlaceholder": "Поиск альбомов…",
+      "totalCount_one": "альбом",
+      "totalCount_few": "альбома",
+      "totalCount_many": "альбомов",
+      "totalCount_other": "альбомов",
+      "searchResult_one": "результат",
+      "searchResult_few": "результата",
+      "searchResult_many": "результатов",
+      "searchResult_other": "результатов",
+      "searchEmpty": "Альбомы не найдены",
+      "searchEmptyTip": "Нет альбомов по запросу «{keyword}»",
+      "viewGrid": "Сетка",
+      "viewList": "Список",
+      "subAlbums": "под-альбомов",
+      "searchClear": "Очистить поиск",
+      "card": {
+        "locked": "Заблокировано",
+        "actions": {
+          "view": "Открыть альбом",
+          "edit": "Изменить",
+          "reset": "Сбросить оформление",
+          "delete": "Удалить"
+        }
+      },
       "form": {
         "title": "Название",
         "titlePlaceholder": "Введите название альбома",
@@ -928,7 +952,12 @@
           "photoCount": "Фотографии",
           "createdAt": "Дата создания",
           "actions": "Действия"
-        }
+        },
+        "external": "Внешняя библиотека",
+        "customized": "Настроено",
+        "hidden": "Скрыт",
+        "resetCustom": "Сбросить настройки",
+        "expand": "Развернуть под-альбомы"
       },
       "modal": {
         "selectPhotos": "Выбор фотографий",
