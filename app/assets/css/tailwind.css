@@ -172,3 +172,16 @@ html.dark .glass-surface {
 html {
   scrollbar-gutter: stable;
 }
+
+/* 画廊滚动指示：隐藏原生滚动条，改由 ScrollIndicator 组件在桌面端
+   （pointer:fine）滚动时显示一小段半透明进度条、停顿后自动淡出。
+   scrollbar-gutter: stable 负责布局稳定（查看器打开时 body overflow:hidden
+   不引起列宽变化）；原生滚动条宽度为 0，故无宽度跳变。后台内部滚动容器不受影响。 */
+html {
+  scrollbar-width: none;
+}
+html::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}

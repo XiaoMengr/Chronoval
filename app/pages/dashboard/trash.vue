@@ -380,17 +380,19 @@ const confirmEmptyTrash = async () => {
     v-model:open="isPreviewOpen"
     :title="previewPhoto?.title || previewPhoto?.id"
   >
-    <div class="flex items-center justify-center p-2">
-      <ThumbImage
-        v-if="previewPhoto"
-        :src="previewPhoto.originalUrl || previewPhoto.thumbnailUrl || ''"
-        :alt="previewPhoto.title || previewPhoto.id"
-        :thumbhash="previewPhoto.thumbnailHash"
-        lazy
-        image-contain
-        class="max-h-[70vh] w-full"
-      />
-    </div>
+    <template #body>
+      <div class="flex items-center justify-center p-2">
+        <ThumbImage
+          v-if="previewPhoto"
+          :src="previewPhoto.originalUrl || previewPhoto.thumbnailUrl || ''"
+          :alt="previewPhoto.title || previewPhoto.id"
+          :thumbhash="previewPhoto.thumbnailHash"
+          lazy
+          image-contain
+          class="max-h-[70vh] w-full"
+        />
+      </div>
+    </template>
   </UModal>
 
   <!-- 彻底删除确认 -->
@@ -398,27 +400,29 @@ const confirmEmptyTrash = async () => {
     v-model:open="isDeleteForeverOpen"
     :title="$t('dashboard.photos.trash.confirm.deleteForever.title')"
   >
-    <div class="space-y-4">
-      <p class="text-sm text-(--ui-text-muted)">
-        {{ $t('dashboard.photos.trash.confirm.deleteForever.message') }}
-      </p>
-      <div class="flex justify-end gap-2">
-        <UButton
-          variant="ghost"
-          color="neutral"
-          @click="isDeleteForeverOpen = false"
-        >
-          {{ $t('dashboard.photos.trash.messages.cancel') }}
-        </UButton>
-        <UButton
-          color="error"
-          :loading="isDeletingForever"
-          @click="confirmDeleteForever"
-        >
-          {{ $t('dashboard.photos.trash.messages.confirm') }}
-        </UButton>
+    <template #body>
+      <div class="space-y-4">
+        <p class="text-sm text-(--ui-text-muted)">
+          {{ $t('dashboard.photos.trash.confirm.deleteForever.message') }}
+        </p>
+        <div class="flex justify-end gap-2">
+          <UButton
+            variant="ghost"
+            color="neutral"
+            @click="isDeleteForeverOpen = false"
+          >
+            {{ $t('dashboard.photos.trash.messages.cancel') }}
+          </UButton>
+          <UButton
+            color="error"
+            :loading="isDeletingForever"
+            @click="confirmDeleteForever"
+          >
+            {{ $t('dashboard.photos.trash.messages.confirm') }}
+          </UButton>
+        </div>
       </div>
-    </div>
+    </template>
   </UModal>
 
   <!-- 清空回收站确认 -->
@@ -426,30 +430,32 @@ const confirmEmptyTrash = async () => {
     v-model:open="isEmptyTrashOpen"
     :title="$t('dashboard.photos.trash.confirm.deleteForeverAll.title')"
   >
-    <div class="space-y-4">
-      <p class="text-sm text-(--ui-text-muted)">
-        {{
-          $t('dashboard.photos.trash.confirm.deleteForeverAll.message', {
-            count: trashPhotos.length,
-          })
-        }}
-      </p>
-      <div class="flex justify-end gap-2">
-        <UButton
-          variant="ghost"
-          color="neutral"
-          @click="isEmptyTrashOpen = false"
-        >
-          {{ $t('dashboard.photos.trash.messages.cancel') }}
-        </UButton>
-        <UButton
-          color="error"
-          :loading="isClearing"
-          @click="confirmEmptyTrash"
-        >
-          {{ $t('dashboard.photos.trash.messages.confirm') }}
-        </UButton>
+    <template #body>
+      <div class="space-y-4">
+        <p class="text-sm text-(--ui-text-muted)">
+          {{
+            $t('dashboard.photos.trash.confirm.deleteForeverAll.message', {
+              count: trashPhotos.length,
+            })
+          }}
+        </p>
+        <div class="flex justify-end gap-2">
+          <UButton
+            variant="ghost"
+            color="neutral"
+            @click="isEmptyTrashOpen = false"
+          >
+            {{ $t('dashboard.photos.trash.messages.cancel') }}
+          </UButton>
+          <UButton
+            color="error"
+            :loading="isClearing"
+            @click="confirmEmptyTrash"
+          >
+            {{ $t('dashboard.photos.trash.messages.confirm') }}
+          </UButton>
+        </div>
       </div>
-    </div>
+    </template>
   </UModal>
 </template>

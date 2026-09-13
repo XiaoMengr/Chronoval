@@ -17,68 +17,82 @@ const navItems = computed<NavigationMenuItem[][]>(() => [
       label: $t('title.dashboard'),
       icon: 'tabler:dashboard',
       to: '/dashboard',
+      class: '[&_.iconify]:!text-blue-500',
     },
     {
       label: $t('title.photos'),
       icon: 'tabler:photo-cog',
       to: '/dashboard/photos',
-    },
-    {
-      label: $t('title.trash'),
-      icon: 'tabler:trash',
-      to: '/dashboard/trash',
+      class: '[&_.iconify]:!text-emerald-500',
     },
     {
       label: $t('title.albums'),
       icon: 'tabler:album',
       to: '/dashboard/albums',
+      class: '[&_.iconify]:!text-violet-500',
     },
     {
       label: $t('title.queue'),
       icon: 'tabler:list-check',
       to: '/dashboard/queue',
+      class: '[&_.iconify]:!text-amber-500',
     },
     {
       label: $t('title.logs'),
       icon: 'tabler:file-text',
       to: '/dashboard/logs',
+      class: '[&_.iconify]:!text-sky-500',
     },
     {
       label: $t('title.siteAdministration'),
       icon: 'tabler:settings',
       defaultOpen: route.path.startsWith('/dashboard/settings'),
+      class: '[&_.iconify]:!text-teal-500',
       children: [
         {
           label: $t('title.generalSettings'),
           icon: 'tabler:settings-2',
           to: '/dashboard/settings/general',
+          class: '[&_.iconify]:!text-blue-500',
         },
         {
           label: $t('title.storageSettings'),
           icon: 'tabler:database',
           to: '/dashboard/settings/storage',
+          class: '[&_.iconify]:!text-emerald-500',
         },
         {
           label: $t('title.privacySettings'),
           icon: 'tabler:shield-lock',
           to: '/dashboard/settings/privacy',
+          class: '[&_.iconify]:!text-violet-500',
         },
         {
           label: $t('title.mapAndLocation'),
           icon: 'tabler:map-pin',
           to: '/dashboard/settings/map',
+          class: '[&_.iconify]:!text-amber-500',
         },
         {
           label: $t('title.systemSettings'),
           icon: 'tabler:cpu',
           to: '/dashboard/settings/system',
+          class: '[&_.iconify]:!text-sky-500',
         },
         {
           label: $t('title.analyticsSettings'),
           icon: 'tabler:chart-bar',
           to: '/dashboard/settings/analytics',
+          class: '[&_.iconify]:!text-rose-500',
         },
       ],
+    },
+    {
+      label: $t('title.trash'),
+      icon: 'tabler:trash',
+      to: '/dashboard/trash',
+      // 仅删除图标标红，整行保持普通导航样式
+      class: '[&_.iconify]:!text-(--ui-error)',
     },
   ],
   [

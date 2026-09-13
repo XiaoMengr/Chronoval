@@ -27,10 +27,43 @@ await settingsStore.initSettings()
 
 const appTitle = useSettingRef('app:title')
 
-// 主题持久化修复：优先尊重浏览器已保存的配色选择（顶栏切换后 Nuxt ColorMode
-// 会写入 cframe-color-mode）。仅当用户从未显式选择过浅/暗色时，才用服务端设置的
-// 默认主题兜底。此前无条件覆盖导致首页切换主题后一旦刷新就被服务端默认值打回浅色。
-if (import.meta.client) {
+// 主题优先级（与后台外观设置联动，避免两套主题控制互相冲突）：
+// - 「顶栏显示主题切换按钮」(app:appearance.themeToggle) 开启：访客通过顶栏切换保存的
+//   手动选择（localStorage cframe-color-mode）优先于「应用主题」；「应用主题」仅作默认兜底。
+// - 该开关关闭（默认）：一律按「应用主题」(app:appearance.theme) 应用，忽略历史手动选择，
+//   从而保证后台把主题设为浅色时，画廊顶栏等界面能真正切到浅色（不会因以前手动切过深色
+//   而被 localStorage 覆盖成深色）。
+// 用响应式 ref 承接后台设置，便于下方 watch 在这些设置为空/首次载入后才同步时仍能生效
+const themeToggleEnabledRef = useSettingRef('app:appearance.themeToggle')
+const systemThemeRef = useSettingRef('app:appearance.theme')
+
+// 根据优先级结算实际生效主题并写入 colorMode.preference，同时联动 colorMode.force：
+// - 「顶栏显示主题切换按钮」关闭（默认）：强制所有访客都采用「应用主题」。
+//   force=true 让 Nuxt colorMode 完全忽略浏览器 localStorage 里的历史手动选择，
+//   真正做到"后台设为浅色 → 所有访问者都是浅色"。
+// - 该开关开启：force=true 时不可行，改用尊重访客手动选择。
+// 用 watch(..., { immediate:true }) 而非一次性代码：
+// - 后台保存主题后 SPA 内切换到画廊时能实时跟随，无需整页刷新；
+// - SSR 阶段也结算一次（下面按 import.meta.client 分派），让刷新/首屏直接渲染正确主题，
+//   避免顶栏先按默认 dark 渲染造成"灰色透明一闪才变浅色"。
+function applyThemePrecedence() {
+  const themeToggleEnabled = !!themeToggleEnabledRef.value
+  const systemTheme = (systemThemeRef.value as string) || 'system'
+  if (!import.meta.client) {
+    // SSR：无 localStorage 可读。开关关闭（默认）时强制按「应用主题」输出 html 主题类，
+    // 刷新/直连画廊首屏即为正确主题，顶栏不会闪灰。
+    colorMode.force = !themeToggleEnabled
+    colorMode.preference = systemTheme
+    return
+  }
+  if (!themeToggleEnabled) {
+    // 开关关闭：强制所有访客采用后台「应用主题」，忽略任何历史手动选择。
+    colorMode.force = true
+    colorMode.preference = systemTheme
+    return
+  }
+  // 开关开启：尊重访客手动选择（Nuxt 默认读取 localStorage），「应用主题」仅作兜底。
+  colorMode.force = false
   let storedTheme: string | null = null
   try {
     storedTheme = window.localStorage.getItem('cframe-color-mode')
@@ -40,8 +73,11 @@ if (import.meta.client) {
   colorMode.preference =
     storedTheme === 'light' || storedTheme === 'dark'
       ? storedTheme
-      : (useSettingRef('app:appearance.theme').value as string)
+      : systemTheme
 }
+watch([themeToggleEnabledRef, systemThemeRef], applyThemePrecedence, {
+  immediate: true,
+})
 
 useHead({
   titleTemplate: (title) =>

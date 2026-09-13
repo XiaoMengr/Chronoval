@@ -51,7 +51,9 @@ const onAuthSubmit = async (event: any) => {
   })
     .then(async () => {
       await fetchUserSession()
-      router.push(route.query.redirect?.toString() || '/')
+      // 登入成功后默认直达后台管理面板（而非回到画廊）。
+      // 指定了 redirect 参数时优先跳转到目标页，否则进 /dashboard。
+      router.push(route.query.redirect?.toString() || '/dashboard')
     })
     .catch((error) => {
       console.error('Login error:', error)
