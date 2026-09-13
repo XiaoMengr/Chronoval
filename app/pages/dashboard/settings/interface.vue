@@ -196,7 +196,7 @@ const handleLoaderImagesSubmit = async () => {
           </div>
 
           <div v-else class="px-5 py-5">
-            <LoaderImagesSetting
+            <SettingLoaderImagesSetting
               :model-value="state['loader.images']"
               :card-style="state['loader.cardStyle']"
               :animation="state['loader.animation']"
