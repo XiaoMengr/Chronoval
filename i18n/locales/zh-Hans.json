@@ -468,7 +468,10 @@
       "photos": "照片",
       "close": "关闭",
       "prev": "上一张",
-      "next": "下一张"
+      "next": "下一张",
+      "redirecting": "正在跳转到相簿…",
+      "customUrlRedirect": "相簿跳转",
+      "backToAlbums": "返回相册"
     }
   },
   "auth": {
@@ -991,7 +994,15 @@
         "selectedCount": "已选择 {count} 张照片",
         "clearAll": "全部清除",
         "isHidden": "隐藏相簿",
-        "isHiddenHint": "隐藏的相簿中的照片不会在首页展示"
+        "isHiddenHint": "隐藏的相簿中的照片不会在首页展示",
+        "customUrl": "自定义访问链接",
+        "customUrlHint": "设置后相簿将通过 /albums/s/{'{'}链接{'}'} 访问，否则使用由扫描库自动生成的路径。",
+        "customUrlPlaceholder": "例如 my-trip-2024（留空则使用默认路径）",
+        "password": "访问密码",
+        "passwordHint": "设置后，访问该相簿及其未单独设密码的二级相簿需输入此密码；二级相簿可自行覆盖。",
+        "passwordPlaceholder": "设置相簿访问密码（选填）",
+        "passwordPlaceholderSet": "留空则不修改现有密码",
+        "clearPassword": "清除该相簿的访问密码"
       },
       "table": {
         "columns": {
@@ -1001,7 +1012,12 @@
           "photoCount": "照片数",
           "createdAt": "创建时间",
           "actions": "操作"
-        }
+        },
+        "external": "外部库",
+        "customized": "已自定义",
+        "hidden": "已隐藏",
+        "resetCustom": "清除自定义配置",
+        "expand": "展开子相簿"
       },
       "modal": {
         "selectPhotos": "选择照片",
@@ -1037,6 +1053,11 @@
         "cancel": "取消",
         "confirm": "确认删除"
       },
+      "reset": {
+        "title": "清除自定义配置",
+        "message": "确定要清除\"{title}\"的自定义设置吗？将还原为文件夹默认的外观。此操作不会删除任何照片或文件夹。",
+        "confirm": "清除自定义"
+      },
       "messages": {
         "createSuccess": "相簿创建成功",
         "updateSuccess": "相簿更新成功",
@@ -1046,7 +1067,9 @@
         "deleteError": "删除相簿失败",
         "loadError": "加载相簿失败",
         "loadDetailError": "加载相簿详情失败",
-        "loadPhotosError": "加载照片失败"
+        "loadPhotosError": "加载照片失败",
+        "resetSuccess": "自定义配置已清除",
+        "resetError": "清除自定义配置失败"
       },
       "photoCount": "{count} 张"
     },
@@ -1223,6 +1246,23 @@
   },
   "settings": {
     "app": {
+      "trash": {
+        "retention": {
+          "label": "回收站保留",
+          "description": "照片在回收站中保留多少天后会被自动彻底删除",
+          "help": "移入回收站的照片会在到期后自动彻底删除；选择“永不删除”会一直保留，直到你手动清除。",
+          "options": {
+            "never": "永不删除",
+            "7": "7 天",
+            "14": "14 天",
+            "30": "30 天",
+            "60": "60 天",
+            "90": "90 天",
+            "180": "180 天",
+            "365": "1 年"
+          }
+        }
+      },
       "title": {
         "label": "实例名称",
         "description": "实例的标题"
@@ -1639,10 +1679,7 @@
           "asAlbumLabel": "作为相簿展示",
           "asAlbumStateOn": "相簿",
           "asAlbumStateOff": "画廊",
-          "asAlbumHint": "将该库以「相簿」形式展示在相册页，并从首页全局画廊中隐藏。库内子文件夹会自动嵌套为子相簿。",
-          "passwordLabel": "访问密码",
-          "passwordPlaceholder": "留空表示保持不变 / 清除现有密码",
-          "passwordHint": "设置后访问该相簿需输入密码；子相簿会自动继承该密码。"
+          "asAlbumHint": "将该库以「相簿」形式展示在相册页，并从首页全局画廊中隐藏。库内子文件夹会自动嵌套为子相簿。"
         },
         "info": {
           "title": "扫描库信息",

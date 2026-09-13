@@ -1,5 +1,8 @@
 import { z } from 'zod'
-import { getScanLibraryRow } from '~~/server/services/scan-library/manager'
+import {
+  getScanLibraryRow,
+  getScanAlbumEffectivePasswordHash,
+} from '~~/server/services/scan-library/manager'
 import {
   hasScanAlbumAccess,
   authorizeScanAlbum,
@@ -9,6 +12,10 @@ export default eventHandler(async (event) => {
   const { libId } = await getValidatedRouterParams(
     event,
     z.object({ libId: z.string().transform((v) => parseInt(v, 10)) }).parse,
+  )
+  const query = await getValidatedQuery(
+    event,
+    z.object({ path: z.string().optional().default('') }).parse,
   )
   const body = await readValidatedBody(
     event,
@@ -20,17 +27,22 @@ export default eventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'Not Found' })
   }
 
+  const passwordHash = await getScanAlbumEffectivePasswordHash(
+    libId,
+    query.path,
+  )
+
   const session = await getUserSession(event)
   const isAdmin = Boolean((session as any)?.user?.isAdmin)
   if (isAdmin) {
-    authorizeScanAlbum(event, lib)
+    authorizeScanAlbum(event, { libId, relPath: query.path, passwordHash })
     return { authorized: true }
   }
 
-  if (!lib.passwordHash || !(await verifyPassword(lib.passwordHash, body.password))) {
+  if (!passwordHash || !(await verifyPassword(passwordHash, body.password))) {
     throw createError({ statusCode: 401, statusMessage: 'Incorrect password' })
   }
 
-  authorizeScanAlbum(event, lib)
+  authorizeScanAlbum(event, { libId, relPath: query.path, passwordHash })
   return { authorized: true }
 })

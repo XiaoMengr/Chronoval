@@ -127,6 +127,20 @@
       "when": 1789223314212,
       "tag": "0017_striped_ted_forrester",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1789290138091,
+      "tag": "0018_scan_album_meta",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1789291800091,
+      "tag": "0019_scan_album_meta_password",
+      "breakpoints": true
     }
   ]
 }

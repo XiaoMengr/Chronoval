@@ -376,7 +376,6 @@ interface ScanLibraryItem {
   provider: 'local'
   enabled: boolean
   asAlbum: boolean
-  passwordProtected: boolean
   watchIntervalMs: number
   lastScanAt: string | null
   lastScanResult: string | null
@@ -399,8 +398,6 @@ const scanLibraryFormState = reactive<{
   enabled: boolean
   /** 作为「相簿」在相册页展示（同时从首页全局画廊隐藏） */
   asAlbum: boolean
-  /** 访问密码（明文，仅编辑时使用；留空表示保持不变） */
-  password: string
   watchIntervalMs: number
 }>({
   editId: null,
@@ -408,7 +405,6 @@ const scanLibraryFormState = reactive<{
   rootPath: '',
   enabled: true,
   asAlbum: false,
-  password: '',
   watchIntervalMs: 60000,
 })
 
@@ -418,7 +414,6 @@ const resetScanLibraryForm = () => {
   scanLibraryFormState.rootPath = ''
   scanLibraryFormState.enabled = true
   scanLibraryFormState.asAlbum = false
-  scanLibraryFormState.password = ''
   scanLibraryFormState.watchIntervalMs = 60000
 }
 
@@ -441,8 +436,6 @@ const openScanLibraryEdit = (lib: ScanLibraryItem) => {
   scanLibraryFormState.rootPath = lib.rootPath
   scanLibraryFormState.enabled = lib.enabled
   scanLibraryFormState.asAlbum = lib.asAlbum
-  // 密码单向存储为哈希，编辑时不回填，留空表示保持不变
-  scanLibraryFormState.password = ''
   scanLibraryFormState.watchIntervalMs = lib.watchIntervalMs
   Object.assign(scanLibSlideover, { open: true, mode: 'edit', lib })
 }
@@ -452,7 +445,6 @@ const scanLibraryPayload = () => ({
   rootPath: scanLibraryFormState.rootPath,
   enabled: scanLibraryFormState.enabled,
   asAlbum: scanLibraryFormState.asAlbum,
-  password: scanLibraryFormState.password || undefined,
   watchIntervalMs: scanLibraryFormState.watchIntervalMs,
 })
 
@@ -1207,21 +1199,6 @@ const storageInfoConfigEntries = computed(() => {
                     {{ $t('settings.storage.scanLibrary.form.asAlbumHint') }}
                   </p>
                 </UFormField>
-                <UFormField
-                  :label="$t('settings.storage.scanLibrary.form.passwordLabel')"
-                  :ui="{ container: 'sm:max-w-full' }"
-                >
-                  <UInput
-                    v-model="scanLibraryFormState.password"
-                    type="password"
-                    autocomplete="new-password"
-                    :placeholder="$t('settings.storage.scanLibrary.form.passwordPlaceholder')"
-                  />
-                  <p class="mt-1.5 flex items-start gap-1 text-xs text-neutral-400 dark:text-neutral-500">
-                    <UIcon name="tabler:lock" class="size-3.5 shrink-0 mt-px" />
-                    {{ $t('settings.storage.scanLibrary.form.passwordHint') }}
-                  </p>
-                </UFormField>
               </div>
 
               <div
@@ -1307,11 +1284,6 @@ const storageInfoConfigEntries = computed(() => {
                       {{ scanLibInfo.asAlbum
                         ? $t('settings.storage.scanLibrary.info.modeAlbum')
                         : $t('settings.storage.scanLibrary.info.modeGallery') }}
-                      <UIcon
-                        v-if="scanLibInfo.passwordProtected"
-                        name="tabler:lock"
-                        class="size-3.5 text-amber-500"
-                      />
                     </span>
                   </div>
                   <div class="bg-neutral-50 dark:bg-neutral-900 flex items-start justify-between gap-4 px-4 py-3">

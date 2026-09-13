@@ -77,7 +77,10 @@ const getComponentProps = (): Record<string, any> => {
       break
     case 'select':
       propsMap.items = props.field.ui.options
-        ? Array.from(props.field.ui.options)
+        ? Array.from(props.field.ui.options).map((opt: any) => ({
+            label: $t(opt.label),
+            value: opt.value,
+          }))
         : []
       propsMap['label-key'] = 'label'
       propsMap['value-key'] = 'value'

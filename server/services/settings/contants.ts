@@ -91,6 +91,17 @@ export const DEFAULT_SETTINGS = [
     description: 'settings.app.appearance.cardCornerRadiusValue.description',
     isPublic: true,
   },
+  // 回收站保留策略：移入回收站的照片在「多少天」后自动彻底删除；never=永不自动删除
+  {
+    namespace: 'app',
+    key: 'trash.retention',
+    type: 'string',
+    defaultValue: '30',
+    enum: ['never', '7', '14', '30', '60', '90', '180', '365'],
+    label: 'settings.app.trash.retention.label',
+    description: 'settings.app.trash.retention.description',
+    isPublic: true,
+  },
   {
     namespace: 'app',
     key: 'loader.images',

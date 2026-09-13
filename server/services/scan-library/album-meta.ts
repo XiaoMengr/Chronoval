@@ -1,0 +1,183 @@
+import { and, eq, isNull } from 'drizzle-orm'
+import { useDB, tables } from '../../utils/db'
+import type { ScanAlbumNode } from './manager'
+
+export type ScanAlbumMetaRow = typeof tables.scanAlbumMeta.$inferSelect
+
+export interface ScanAlbumMetaInput {
+  mount: string
+  relPath: string
+  title?: string | null
+  description?: string | null
+  coverPhotoId?: string | null
+  isHidden?: boolean | null
+  /** 相簿访问密码哈希；null=清除密码，undefined=保持不变 */
+  passwordHash?: string | null
+  slug?: string | null
+}
+
+const cleanRelPath = (p: string): string =>
+  p
+    .split('/')
+    .map((s) => decodeURIComponent(s))
+    .filter((s) => s && s !== '.' && s !== '..')
+    .join('/')
+
+/** 按 挂载名+相对路径 读取一条扫描相簿元数据 */
+export const getScanAlbumMeta = async (
+  mount: string,
+  relPath: string,
+): Promise<ScanAlbumMetaRow | null> => {
+  const row = await useDB()
+    .select()
+    .from(tables.scanAlbumMeta)
+    .where(
+      and(
+        eq(tables.scanAlbumMeta.mount, mount),
+        eq(tables.scanAlbumMeta.relPath, cleanRelPath(relPath)),
+      ),
+    )
+    .get()
+  return row ?? null
+}
+
+/**
+ * 新增或更新一条扫描相簿元数据。
+ * 传入 null 的字段表示“使用默认值”，调用方需注意只传确实要覆盖的字段。
+ */
+export const upsertScanAlbumMeta = async (
+  input: ScanAlbumMetaInput,
+): Promise<ScanAlbumMetaRow> => {
+  const db = useDB()
+  const relPath = cleanRelPath(input.relPath)
+
+  const existing = await db
+    .select()
+    .from(tables.scanAlbumMeta)
+    .where(
+      and(
+        eq(tables.scanAlbumMeta.mount, input.mount),
+        eq(tables.scanAlbumMeta.relPath, relPath),
+      ),
+    )
+    .get()
+
+  if (existing) {
+    const updateData: Partial<ScanAlbumMetaRow> = { updatedAt: new Date() }
+    if (input.title !== undefined) updateData.title = input.title || null
+    if (input.description !== undefined)
+      updateData.description = input.description || null
+    if (input.coverPhotoId !== undefined)
+      updateData.coverPhotoId = input.coverPhotoId || null
+    if (input.isHidden !== undefined) updateData.isHidden = Boolean(input.isHidden)
+    if (input.passwordHash !== undefined)
+      updateData.passwordHash = input.passwordHash || null
+    if (input.slug !== undefined) updateData.slug = input.slug || null
+
+    await db
+      .update(tables.scanAlbumMeta)
+      .set(updateData)
+      .where(eq(tables.scanAlbumMeta.id, existing.id))
+      .run()
+
+    return db
+      .select()
+      .from(tables.scanAlbumMeta)
+      .where(eq(tables.scanAlbumMeta.id, existing.id))
+      .get() as ScanAlbumMetaRow
+  }
+
+  return db
+    .insert(tables.scanAlbumMeta)
+    .values({
+      mount: input.mount,
+      relPath,
+      title: input.title || null,
+      description: input.description || null,
+      coverPhotoId: input.coverPhotoId || null,
+      isHidden: input.isHidden ? true : false,
+      passwordHash: input.passwordHash ?? null,
+      slug: input.slug || null,
+    })
+    .returning()
+    .get()
+}
+
+/** 删除一条扫描相簿元数据（还原为默认推导值） */
+export const clearScanAlbumMeta = async (
+  mount: string,
+  relPath: string,
+): Promise<boolean> => {
+  const res = await useDB()
+    .delete(tables.scanAlbumMeta)
+    .where(
+      and(
+        eq(tables.scanAlbumMeta.mount, mount),
+        eq(tables.scanAlbumMeta.relPath, cleanRelPath(relPath)),
+      ),
+    )
+    .run()
+  return res.changes > 0
+}
+
+/** 按自定义URL别名读取相簿元数据（用于 /albums/s/{slug} 解析） */
+export const getScanAlbumMetaBySlug = async (
+  slug: string,
+): Promise<ScanAlbumMetaRow | null> => {
+  if (!slug) return null
+  const row = await useDB()
+    .select()
+    .from(tables.scanAlbumMeta)
+    .where(eq(tables.scanAlbumMeta.slug, slug))
+    .get()
+  return row ?? null
+}
+
+/**
+ * 把元数据覆盖应用到扫描相簿节点上：
+ * - 标题 / 介绍 / 隐藏 / 自定义封面
+ * - 自定义URL别名（有 slug 时公开链接改为 /albums/s/{slug}）
+ * @param node 已构建的默认节点
+ * @param photos 该挂载下的全部照片（用于解析自定义封面的缩略图）
+ */
+export const applyScanAlbumMeta = async (
+  node: ScanAlbumNode,
+  photos: Array<{ id: string; thumbnailUrl: string | null; thumbnailHash: string | null; aspectRatio: number | null }>,
+): Promise<ScanAlbumNode> => {
+  const meta = await getScanAlbumMeta(node.mount, node.relPath)
+  if (!meta) {
+    return { ...node, external: true }
+  }
+
+  const covers = [...node.covers]
+  let coverPhotoId = node.coverPhotoId
+
+  if (meta.coverPhotoId) {
+    const photo = photos.find((p) => p.id === meta.coverPhotoId)
+    if (photo) {
+      covers.unshift({
+        id: photo.id,
+        thumbnailUrl: photo.thumbnailUrl,
+        thumbnailHash: photo.thumbnailHash,
+        aspectRatio: photo.aspectRatio,
+      })
+      coverPhotoId = photo.id
+    } else {
+      coverPhotoId = meta.coverPhotoId
+    }
+  }
+
+  return {
+    ...node,
+    external: true,
+    title: meta.title || node.title,
+    description: meta.description || null,
+    isHidden: meta.isHidden,
+    passwordProtected: meta.passwordHash ? true : node.passwordProtected,
+    coverPhotoId,
+    covers,
+    link: meta.slug ? `/albums/s/${encodeURIComponent(meta.slug)}` : node.link,
+    slug: meta.slug || null,
+    hasCustom: true,
+  }
+}

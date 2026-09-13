@@ -53,6 +53,7 @@ const onSubmitPassword = async () => {
   try {
     await $fetch(`/api/albums/scan/${libId.value}`, {
       method: 'POST',
+      query: { path: relPath.value },
       body: { password: passwordInput.value },
     })
     passwordInput.value = ''

@@ -1,8 +1,13 @@
-export default eventHandler(async (_event) => {
+export default eventHandler(async (event) => {
   const db = useDB()
   const { listScanAlbumRoots } = await import(
     '~~/server/services/scan-library/manager'
   )
+
+  // 管理端（登录管理员）返回完整树状二级相簿并包含隐藏的外部库相簿；
+  // 公开访问时过滤掉设置为“隐藏”的外部库相簿。
+  const session = await getUserSession(event).catch(() => null)
+  const isAdmin = Boolean((session as any)?.user?.isAdmin)
 
   // 获取所有相册，按创建时间倒序
   const albums = await db.select().from(tables.albums)
@@ -28,14 +33,19 @@ export default eventHandler(async (_event) => {
     }),
   )
 
-  // 扫描库转为的相簿以根节点合并进相册列表（kind: 'scan'）
-  const scanRoots = await listScanAlbumRoots()
+  // 扫描库转为的相簿以根节点合并进相册列表（kind: 'scan'）。
+  // 管理端需要树状二级相簿，故 includeChildren=isAdmin。
+  const scanRoots = await listScanAlbumRoots(isAdmin)
+  const visibleScanRoots = isAdmin
+    ? scanRoots
+    : scanRoots.filter((node) => !node.isHidden)
+
   const combined: unknown[] = [
     ...albumsWithPhotoIds.sort(
       (a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     ),
-    ...scanRoots,
+    ...visibleScanRoots,
   ]
   return combined
 })

@@ -468,7 +468,10 @@
       "photos": "Photos",
       "close": "Close",
       "prev": "Previous",
-      "next": "Next"
+      "next": "Next",
+      "redirecting": "Redirecting to album…",
+      "customUrlRedirect": "Album redirect",
+      "backToAlbums": "Back to albums"
     }
   },
   "auth": {
@@ -991,7 +994,15 @@
         "selectedCount": "Selected {count} photos",
         "clearAll": "Clear all",
         "isHidden": "Hide album",
-        "isHiddenHint": "Photos in hidden albums are not shown on the home page"
+        "isHiddenHint": "Photos in hidden albums are not shown on the home page",
+        "customUrl": "Custom URL slug",
+        "customUrlHint": "When set, the album is accessed via /albums/s/{slug}; otherwise the auto-generated scan path is used.",
+        "customUrlPlaceholder": "e.g. my-trip-2024 (leave empty for default path)",
+        "password": "Access password",
+        "passwordHint": "Visitors must enter this password to open this album and any sub-album that doesn't override it.",
+        "passwordPlaceholder": "Set an access password (optional)",
+        "passwordPlaceholderSet": "Leave empty to keep current password",
+        "clearPassword": "Clear this album's password"
       },
       "table": {
         "columns": {
@@ -1001,7 +1012,12 @@
           "photoCount": "Photos",
           "createdAt": "Created at",
           "actions": "Actions"
-        }
+        },
+        "external": "External",
+        "customized": "Customized",
+        "hidden": "Hidden",
+        "resetCustom": "Clear custom settings",
+        "expand": "Expand sub-albums"
       },
       "modal": {
         "selectPhotos": "Select Photos",
@@ -1037,6 +1053,11 @@
         "cancel": "Cancel",
         "confirm": "Confirm Delete"
       },
+      "reset": {
+        "title": "Clear custom settings",
+        "message": "Are you sure you want to clear the custom settings for \"{title}\"? This restores the folder's default appearance. No photos or folders are deleted.",
+        "confirm": "Clear custom settings"
+      },
       "messages": {
         "createSuccess": "Album created successfully",
         "updateSuccess": "Album updated successfully",
@@ -1046,7 +1067,9 @@
         "deleteError": "Failed to delete album",
         "loadError": "Failed to load albums",
         "loadDetailError": "Failed to load album details",
-        "loadPhotosError": "Failed to load photos"
+        "loadPhotosError": "Failed to load photos",
+        "resetSuccess": "Custom settings cleared",
+        "resetError": "Failed to clear custom settings"
       },
       "photoCount": "{count} photos"
     },
@@ -1223,6 +1246,23 @@
   },
   "settings": {
     "app": {
+      "trash": {
+        "retention": {
+          "label": "Trash retention",
+          "description": "How long photos stay in the trash before they are permanently deleted",
+          "help": "Photos moved to the trash are permanently deleted after this time. \"Never delete\" keeps them until you remove them manually.",
+          "options": {
+            "never": "Never delete",
+            "7": "7 days",
+            "14": "14 days",
+            "30": "30 days",
+            "60": "60 days",
+            "90": "90 days",
+            "180": "180 days",
+            "365": "1 year"
+          }
+        }
+      },
       "title": {
         "label": "Instance Name",
         "description": "The title of the instance"
@@ -1639,10 +1679,7 @@
           "asAlbumLabel": "Show as album",
           "asAlbumStateOn": "Album",
           "asAlbumStateOff": "Gallery",
-          "asAlbumHint": "Show this library as an album in the Albums page and hide its photos from the home gallery. Subfolders appear as nested albums.",
-          "passwordLabel": "Access password",
-          "passwordPlaceholder": "Leave empty to keep / remove current password",
-          "passwordHint": "When set, visiting the album requires this password. Sub-albums inherit it automatically."
+          "asAlbumHint": "Show this library as an album in the Albums page and hide its photos from the home gallery. Subfolders appear as nested albums."
         },
         "info": {
           "title": "Scan Library Info",

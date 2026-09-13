@@ -181,6 +181,45 @@ export const albumPhotos = sqliteTable('album_photos', {
     .default(sql`(unixepoch())`),
 })
 
+// 扫描库=相簿 的自定义元数据覆盖表。
+// 外部库文件夹作为相簿时其标题/介绍等默认由文件结构推导；管理端可通过此表保存
+// 覆盖值（自定义标题、介绍、封面、隐藏、自定义URL）。主键为 挂载名+相对路径。
+export const scanAlbumMeta = sqliteTable(
+  'scan_album_meta',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    // 扫描库挂载名（如 scan-{libId}）
+    mount: text('mount').notNull(),
+    // 目录相对路径：'' 表示库根（主相簿）；子目录为 'sub/dir'
+    relPath: text('rel_path').notNull().default(''),
+    // 自定义标题（覆盖默认由文件夹名推导的标题）；null=使用默认
+    title: text('title'),
+    description: text('description'),
+    coverPhotoId: text('cover_photo_id').references(() => photos.id, {
+      onDelete: 'set null',
+    }),
+    // 是否在前台相册列表隐藏（默认false）
+    isHidden: integer('is_hidden', { mode: 'boolean' }).default(false).notNull(),
+    // 相簿访问密码哈希（单向存储）；null=继承父级；根相簿无值时回退到扫描库旧密码
+    passwordHash: text('password_hash'),
+    // 自定义公开URL别名（全局唯一）；设置后公开链接使用 /albums/s/{slug}
+    slug: text('slug'),
+    createdAt: integer('created_at', { mode: 'timestamp' })
+      .notNull()
+      .default(sql`(unixepoch())`),
+    updatedAt: integer('updated_at', { mode: 'timestamp' })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => ({
+    mountRelPathUnique: uniqueIndex('scan_album_meta_mount_relpath_unique').on(
+      table.mount,
+      table.relPath,
+    ),
+    slugUnique: uniqueIndex('scan_album_meta_slug_unique').on(table.slug),
+  }),
+)
+
 export const settings = sqliteTable(
   'settings',
   {

@@ -66,6 +66,20 @@ export const APP_SETTINGS_UI: Record<string, FieldUIConfig> = {
     max: 64,
     visibleIf: { fieldKey: 'appearance.cardCornerRadius', value: true },
   },
+  'trash.retention': {
+    type: 'select',
+    options: [
+      { label: 'settings.app.trash.retention.options.never', value: 'never' },
+      { label: 'settings.app.trash.retention.options.7', value: '7' },
+      { label: 'settings.app.trash.retention.options.14', value: '14' },
+      { label: 'settings.app.trash.retention.options.30', value: '30' },
+      { label: 'settings.app.trash.retention.options.60', value: '60' },
+      { label: 'settings.app.trash.retention.options.90', value: '90' },
+      { label: 'settings.app.trash.retention.options.180', value: '180' },
+      { label: 'settings.app.trash.retention.options.365', value: '365' },
+    ],
+    help: 'settings.app.trash.retention.help',
+  },
   'loader.images': {
     type: 'custom',
   },

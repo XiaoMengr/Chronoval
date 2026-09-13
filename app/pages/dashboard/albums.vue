@@ -14,12 +14,27 @@ interface AlbumItem extends Album {
   photoCount?: number
   photoIds?: string[]
   coverPhoto?: Photo | null
+  // 外部库（扫描库）相簿字段；kind='scan' 时 id 不存在，改用 libId/mount/relPath
+  kind?: 'manual' | 'scan'
+  libId?: number
+  mount?: string
+  relPath?: string
+  link?: string
+  slug?: string | null
+  hasCustom?: boolean
+  hasChildren?: boolean
+  children?: AlbumItem[]
+  external?: boolean
+  // 树状展示辅助字段
+  __depth?: number
 }
 
 interface AlbumFormState {
   title: string
   description: string
   isHidden: boolean
+  slug: string
+  password: string
 }
 
 const albums = ref<AlbumItem[]>([])
@@ -37,7 +52,11 @@ const formData = reactive<AlbumFormState>({
   title: '',
   description: '',
   isHidden: false,
+  slug: '',
+  password: '',
 })
+
+const clearPassword = ref(false)
 
 const formRef = ref()
 const isSubmittingForm = ref(false)
@@ -78,9 +97,13 @@ const loadAlbums = async () => {
   isLoadingAlbums.value = true
   try {
     const response = await $fetch('/api/albums')
+    // 手动相簿用 photoIds 数量；外部库相簿使用其自带 photoCount，避免被重置为 0
     albums.value = (response as any[]).map((album) => ({
       ...album,
-      photoCount: album.photoIds?.length || 0,
+      photoCount:
+        album.kind === 'scan'
+          ? album.photoCount ?? 0
+          : album.photoIds?.length || 0,
     }))
 
     for (const album of albums.value) {
@@ -121,14 +144,90 @@ const openCreateSlideover = () => {
   formData.title = ''
   formData.description = ''
   formData.isHidden = false
+  formData.slug = ''
+  formData.password = ''
+  clearPassword.value = false
   selectedPhotoIds.value = []
   coverPhotoId.value = ''
   formRef.value?.clear()
   isAlbumSlideoverOpen.value = true
 }
 
+// —— 外部库（扫描库）相簿支持 ——
+
+const isScanAlbum = (album: AlbumItem | null | undefined) =>
+  album?.kind === 'scan'
+
+// 展开态集合：key = `${libId}:${relPath}`
+const expandedScanAlbums = ref<Set<string>>(new Set())
+
+const scanKey = (album: AlbumItem) =>
+  `${album.libId}:${album.relPath ?? ''}`
+
+const toggleExpandScan = (album: AlbumItem) => {
+  const key = scanKey(album)
+  const next = new Set(expandedScanAlbums.value)
+  if (next.has(key)) next.delete(key)
+  else next.add(key)
+  expandedScanAlbums.value = next
+}
+
+const isScanExpanded = (album: AlbumItem) =>
+  expandedScanAlbums.value.has(scanKey(album))
+
+// 外部库（扫描库）相簿：统计当前目录及其所有子相簿的照片总数（含嵌套）
+const sumScanAlbumPhotos = (node: AlbumItem): number => {
+  let total = node.photoCount || 0
+  for (const child of node.children || []) {
+    total += sumScanAlbumPhotos(child)
+  }
+  return total
+}
+
+// 展平树：展开的外部库主相簿会把其二级子相簿展开为缩进行
+const displayAlbums = computed<AlbumItem[]>(() => {
+  const out: AlbumItem[] = []
+  const walk = (nodes: AlbumItem[], depth: number) => {
+    for (const node of nodes) {
+      const row = {
+        ...node,
+        __depth: depth,
+        photoCount:
+          node.kind === 'scan'
+            ? sumScanAlbumPhotos(node)
+            : node.photoCount ?? (node.photoIds?.length || 0),
+      }
+      out.push(row)
+      const kids = node.children || []
+      if (node.kind === 'scan' && node.relPath === '' && isScanExpanded(node)) {
+        for (const child of kids) walk([child], depth + 1)
+      }
+    }
+  }
+  walk(albums.value, 0)
+  return out
+})
+
 const openEditSlideover = async (album: AlbumItem) => {
   currentAlbum.value = album
+  formData.slug = ''
+
+  // 外部库相簿：不从 albums 表加载详情，直接使用列表节点携带的元数据
+  if (isScanAlbum(album)) {
+    formData.title = album.title
+    formData.description = album.description || ''
+    formData.isHidden = album.isHidden || false
+    formData.slug = album.slug || ''
+    formData.password = ''
+    clearPassword.value = false
+    // 密码为单向哈希，编辑时不回填；有密码时用占位提示现有状态
+    coverPhotoId.value = album.coverPhotoId || ''
+    selectedPhotoIds.value = []
+    formRef.value?.clear()
+    isAlbumSlideoverOpen.value = true
+    return
+  }
+
   try {
     const albumDetail = (await $fetch(`/api/albums/${album.id}`)) as any
     formData.title = album.title
@@ -152,10 +251,44 @@ const openDeleteConfirm = (album: AlbumItem) => {
   isDeleteConfirmOpen.value = true
 }
 
+// 删除确认弹窗：外部库相簿=清除自定义配置；手动相册=删除相册
+const isResetScanConfirm = computed(
+  () => isScanAlbum(currentAlbum.value),
+)
+
+const confirmDestructive = () => {
+  if (isResetScanConfirm.value && currentAlbum.value) {
+    void resetScanAlbumMeta(currentAlbum.value)
+  } else {
+    void deleteAlbum()
+  }
+}
+
 const onFormSubmit = async (event: FormSubmitEvent<AlbumFormState>) => {
   isSubmittingForm.value = true
   try {
-    if (currentAlbum.value) {
+    if (currentAlbum.value && isScanAlbum(currentAlbum.value)) {
+      // 外部库相簿：保存到扫描相簿元数据
+      const scan = currentAlbum.value
+      const body: Record<string, unknown> = {
+        libId: scan.libId,
+        path: scan.relPath ?? '',
+        title: event.data.title,
+        description: event.data.description || null,
+        coverPhotoId: coverPhotoId.value || null,
+        isHidden: event.data.isHidden,
+        password: event.data.password?.trim() || undefined,
+        clearPassword: clearPassword.value || undefined,
+        slug: event.data.slug?.trim() || null,
+      }
+      await $fetch('/api/albums/scan-meta', { method: 'PUT', body })
+
+      useToast().add({
+        title: $t('dashboard.albums.messages.updateSuccess'),
+        color: 'success',
+      })
+      isAlbumSlideoverOpen.value = false
+    } else if (currentAlbum.value) {
       await $fetch(`/api/albums/${currentAlbum.value.id}`, {
         method: 'PUT',
         body: {
@@ -200,6 +333,31 @@ const onFormSubmit = async (event: FormSubmitEvent<AlbumFormState>) => {
       title: currentAlbum.value
         ? $t('dashboard.albums.messages.updateError')
         : $t('dashboard.albums.messages.createError'),
+      color: 'error',
+    })
+  } finally {
+    isSubmittingForm.value = false
+  }
+}
+
+// 外部库相簿：清除其自定义元数据（还原为默认推导值）
+const resetScanAlbumMeta = async (album: AlbumItem) => {
+  isSubmittingForm.value = true
+  try {
+    await $fetch('/api/albums/scan-meta', {
+      method: 'PUT',
+      body: { libId: album.libId, path: album.relPath ?? '', clear: true },
+    })
+    useToast().add({
+      title: $t('dashboard.albums.messages.resetSuccess'),
+      color: 'success',
+    })
+    isDeleteConfirmOpen.value = false
+    await loadAlbums()
+  } catch (error) {
+    console.error('Failed to reset scan album:', error)
+    useToast().add({
+      title: $t('dashboard.albums.messages.resetError'),
       color: 'error',
     })
   } finally {
@@ -431,15 +589,43 @@ const columns = computed<any[]>(() => [
       <div class="flex flex-col gap-6">
         <div
           v-if="albums.length > 0"
-          class="bg-white dark:bg-neutral-900 rounded-lg border border-gray-200 dark:border-neutral-800"
+          class="bg-white dark:bg-neutral-900 rounded-lg border border-gray-200 dark:border-neutral-800 overflow-hidden shadow-sm"
         >
+          <div
+            class="flex items-center justify-between gap-3 px-4 py-3 border-b border-gray-200 dark:border-neutral-800 bg-gray-50/60 dark:bg-neutral-900"
+          >
+            <div
+              class="flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-100"
+            >
+              <span
+                class="flex h-7 w-7 items-center justify-center rounded-md bg-primary-500/10 text-primary-500"
+              >
+                <Icon name="tabler:album" size="16" />
+              </span>
+              {{ $t('title.albums') }}
+            </div>
+            <UBadge
+              variant="soft"
+              color="neutral"
+              size="sm"
+              icon="tabler:folders"
+            >
+              {{ displayAlbums.length }}
+            </UBadge>
+          </div>
           <UTable
-            :data="albums"
+            :data="displayAlbums"
             :columns="columns"
+            :ui="{
+              thead: 'border-b border-gray-200 dark:border-neutral-800',
+              th: 'text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-neutral-500',
+              td: 'py-3',
+              tr: 'transition-colors hover:bg-gray-50/80 dark:hover:bg-neutral-800/40',
+            }"
           >
             <template #coverPhoto-cell="{ row }">
               <div
-                class="w-16 h-12 rounded-lg overflow-hidden bg-gray-100 dark:bg-neutral-800 shrink-0"
+                class="group relative w-16 h-12 rounded-lg overflow-hidden bg-gray-100 dark:bg-neutral-800 ring-1 ring-inset ring-black/5 dark:ring-white/10 shrink-0"
               >
                 <img
                   v-if="(row.original as unknown as AlbumItem).coverPhoto"
@@ -448,7 +634,7 @@ const columns = computed<any[]>(() => [
                       ?.thumbnailUrl || ''
                   "
                   :alt="(row.original as unknown as AlbumItem).title"
-                  class="w-full h-full object-cover"
+                  class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                 />
                 <div
                   v-else
@@ -459,22 +645,112 @@ const columns = computed<any[]>(() => [
                     size="20"
                   />
                 </div>
+                <div
+                  v-if="(row.original as unknown as AlbumItem).coverPhoto"
+                  class="absolute inset-0 bg-linear-to-t from-black/25 to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                />
               </div>
             </template>
 
             <template #title-cell="{ row }">
-              <NuxtLink
-                :to="`/albums/${(row.original as unknown as AlbumItem).id}`"
-                target="_blank"
-                class="font-medium text-primary-600 dark:text-primary-400 hover:underline cursor-pointer inline-flex items-center gap-2"
+              <div
+                class="flex items-center gap-2"
+                :style="{
+                  paddingLeft: `${
+                    ((row.original as unknown as AlbumItem).__depth || 0) * 24
+                  }px`,
+                }"
               >
-                {{ (row.original as unknown as AlbumItem).title }}
+                <button
+                  v-if="
+                    isScanAlbum(row.original as unknown as AlbumItem) &&
+                    ((row.original as unknown as AlbumItem).children ||
+                      []).length > 0
+                  "
+                  class="shrink-0 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                  :aria-label="$t('dashboard.albums.table.expand')"
+                  @click="
+                    toggleExpandScan(row.original as unknown as AlbumItem)
+                  "
+                >
+                  <Icon
+                    :name="
+                      isScanExpanded(row.original as unknown as AlbumItem)
+                        ? 'tabler:chevron-down'
+                        : 'tabler:chevron-right'
+                    "
+                    size="18"
+                  />
+                </button>
+                <span
+                  v-else-if="
+                    isScanAlbum(row.original as unknown as AlbumItem)
+                  "
+                  class="w-[18px] shrink-0"
+                ></span>
+
                 <Icon
-                  name="tabler:external-link"
-                  size="16"
-                  class="shrink-0 opacity-60 hover:opacity-100 transition-opacity"
+                  v-if="isScanAlbum(row.original as unknown as AlbumItem)"
+                  :name="
+                    ((row.original as unknown as AlbumItem).__depth || 0) === 0
+                      ? 'tabler:folder-heart'
+                      : 'tabler:folder'
+                  "
+                  size="18"
+                  class="shrink-0 text-primary-400/80 dark:text-primary-500/80"
                 />
-              </NuxtLink>
+                <Icon
+                  v-else
+                  name="tabler:album"
+                  size="18"
+                  class="shrink-0 text-gray-400 dark:text-neutral-500"
+                />
+
+                <NuxtLink
+                  :to="
+                    isScanAlbum(row.original as unknown as AlbumItem)
+                      ? (row.original as unknown as AlbumItem).link ||
+                        `/albums/scan/${
+                          (row.original as unknown as AlbumItem).libId
+                        }`
+                      : `/albums/${(row.original as unknown as AlbumItem).id}`
+                  "
+                  target="_blank"
+                  class="font-medium text-primary-600 dark:text-primary-400 hover:underline cursor-pointer inline-flex items-center gap-2"
+                >
+                  {{ (row.original as unknown as AlbumItem).title }}
+                  <Icon
+                    name="tabler:external-link"
+                    size="16"
+                    class="shrink-0 opacity-60 hover:opacity-100 transition-opacity"
+                  />
+                </NuxtLink>
+
+                <UBadge
+                  v-if="isScanAlbum(row.original as unknown as AlbumItem)"
+                  size="xs"
+                  color="sky"
+                  variant="soft"
+                >
+                  {{ $t('dashboard.albums.table.external') }}
+                </UBadge>
+                <UBadge
+                  v-if="(row.original as unknown as AlbumItem).hasCustom"
+                  size="xs"
+                  color="amber"
+                  variant="soft"
+                >
+                  {{ $t('dashboard.albums.table.customized') }}
+                </UBadge>
+                <UBadge
+                  v-if="(row.original as unknown as AlbumItem).isHidden"
+                  size="xs"
+                  color="neutral"
+                  variant="soft"
+                >
+                  {{ $t('dashboard.albums.table.hidden') }}
+                </UBadge>
+              </div>
             </template>
 
             <template #description-cell="{ row }">
@@ -494,20 +770,31 @@ const columns = computed<any[]>(() => [
 
             <template #photoCount-cell="{ row }">
               <UBadge
-                variant="soft"
+                variant="subtle"
                 color="neutral"
+                icon="tabler:photo"
+                class="tabular-nums"
               >
-                {{ $t('dashboard.albums.photoCount', { count: (row.original as unknown as AlbumItem).photoCount || 0 }) }}
+                {{ (row.original as unknown as AlbumItem).photoCount || 0 }}
               </UBadge>
             </template>
 
             <template #createdAt-cell="{ row }">
               <div class="text-sm text-gray-600 dark:text-gray-400">
-                {{
-                  dayjs(
-                    (row.original as unknown as AlbumItem).createdAt,
-                  ).format('YYYY-MM-DD')
-                }}
+                <template
+                  v-if="
+                    !isScanAlbum(row.original as unknown as AlbumItem)
+                  "
+                >
+                  {{
+                    dayjs(
+                      (row.original as unknown as AlbumItem).createdAt,
+                    ).format('YYYY-MM-DD')
+                  }}
+                </template>
+                <template v-else>
+                  -
+                </template>
               </div>
             </template>
 
@@ -522,7 +809,26 @@ const columns = computed<any[]>(() => [
                     openEditSlideover(row.original as unknown as AlbumItem)
                   "
                 />
+                <template
+                  v-if="
+                    isScanAlbum(row.original as unknown as AlbumItem)
+                  "
+                >
+                  <UButton
+                    variant="ghost"
+                    color="amber"
+                    size="xs"
+                    icon="tabler:eraser"
+                    :title="$t('dashboard.albums.table.resetCustom')"
+                    @click="
+                      openDeleteConfirm(
+                        row.original as unknown as AlbumItem,
+                      )
+                    "
+                  />
+                </template>
                 <UButton
+                  v-else
                   variant="ghost"
                   color="error"
                   size="xs"
@@ -646,20 +952,57 @@ const columns = computed<any[]>(() => [
                   />
                 </UFormField>
 
+                <template v-if="isScanAlbum(currentAlbum)">
                 <UFormField
-                  :label="$t('dashboard.albums.form.isHidden')"
-                  name="isHidden"
-                  :hint="$t('dashboard.albums.form.isHiddenHint')"
+                  :label="$t('dashboard.albums.form.customUrl')"
+                  name="slug"
+                  :help="$t('dashboard.albums.form.customUrlHint')"
                 >
-                  <UCheckbox
-                    v-model="formData.isHidden"
-                    :label="$t('dashboard.albums.form.isHidden')"
+                  <UInput
+                    v-model="formData.slug"
+                    class="w-full"
+                    :placeholder="$t('dashboard.albums.form.customUrlPlaceholder')"
                   />
                 </UFormField>
+
+                <UFormField
+                  :label="$t('dashboard.albums.form.password')"
+                  name="password"
+                  :help="$t('dashboard.albums.form.passwordHint')"
+                >
+                  <UInput
+                    v-model="formData.password"
+                    class="w-full"
+                    type="password"
+                    autocomplete="new-password"
+                    :placeholder="
+                      currentAlbum && (currentAlbum as any).passwordProtected
+                        ? $t('dashboard.albums.form.passwordPlaceholderSet')
+                        : $t('dashboard.albums.form.passwordPlaceholder')
+                    "
+                  />
+                  <UCheckbox
+                    v-model="clearPassword"
+                    class="mt-3"
+                    :label="$t('dashboard.albums.form.clearPassword')"
+                  />
+                </UFormField>
+              </template>
+
+              <UFormField
+                :label="$t('dashboard.albums.form.isHidden')"
+                name="isHidden"
+                :hint="$t('dashboard.albums.form.isHiddenHint')"
+              >
+                <UCheckbox
+                  v-model="formData.isHidden"
+                  :label="$t('dashboard.albums.form.isHidden')"
+                />
+              </UFormField>
               </UForm>
 
-              <!-- 照片选择部分 -->
-              <div class="space-y-3">
+              <!-- 照片选择部分（仅手动相册） -->
+              <div v-if="!isScanAlbum(currentAlbum)" class="space-y-3">
                 <UButton
                   variant="outline"
                   color="primary"
@@ -1148,13 +1491,21 @@ const columns = computed<any[]>(() => [
                 </div>
                 <div>
                   <h3 class="text-lg font-semibold">
-                    {{ $t('dashboard.albums.delete.title') }}
+                    {{
+                      isResetScanConfirm
+                        ? $t('dashboard.albums.reset.title')
+                        : $t('dashboard.albums.delete.title')
+                    }}
                   </h3>
                   <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
                     {{
-                      $t('dashboard.albums.delete.message', {
-                        title: currentAlbum?.title,
-                      })
+                      isResetScanConfirm
+                        ? $t('dashboard.albums.reset.message', {
+                            title: currentAlbum?.title,
+                          })
+                        : $t('dashboard.albums.delete.message', {
+                            title: currentAlbum?.title,
+                          })
                     }}
                   </p>
                 </div>
@@ -1169,11 +1520,15 @@ const columns = computed<any[]>(() => [
                   {{ $t('dashboard.albums.delete.cancel') }}
                 </UButton>
                 <UButton
-                  color="error"
-                  icon="tabler:trash"
-                  @click="deleteAlbum"
+                  :color="isResetScanConfirm ? 'warning' : 'error'"
+                  :icon="isResetScanConfirm ? 'tabler:eraser' : 'tabler:trash'"
+                  @click="confirmDestructive"
                 >
-                  {{ $t('dashboard.albums.delete.confirm') }}
+                  {{
+                    isResetScanConfirm
+                      ? $t('dashboard.albums.reset.confirm')
+                      : $t('dashboard.albums.delete.confirm')
+                  }}
                 </UButton>
               </div>
             </div>

@@ -2,6 +2,7 @@ import path from 'node:path'
 import { and, count, eq, isNull } from 'drizzle-orm'
 import { z } from 'zod'
 import { useDB, tables } from '~~/server/utils/db'
+import { applyScanAlbumMeta, getScanAlbumMeta } from './album-meta'
 import { scanLibraries } from '~~/server/database/schema'
 import {
   type LibraryMount,
@@ -27,8 +28,6 @@ export interface ScanLibrary {
   enabled: boolean
   /** 是否以「相簿」形式在相册页展示（同时从首页全局画廊隐藏） */
   asAlbum: boolean
-  /** 是否设置了访问密码 */
-  passwordProtected: boolean
   watchIntervalMs: number
   lastScanAt: string | null
   lastScanResult: string | null
@@ -44,8 +43,6 @@ export const scanLibraryInputSchema = z.object({
   rootPath: z.string().trim().min(1).max(1024),
   enabled: z.boolean().optional(),
   asAlbum: z.boolean().optional(),
-  /** 访问密码（明文，仅用于写入时哈希）；空字符串表示清除密码 */
-  password: z.string().max(128).optional(),
   watchIntervalMs: z.number().int().min(5000).max(3600000).optional(),
 })
 export type ScanLibraryInput = z.infer<typeof scanLibraryInputSchema>
@@ -129,7 +126,6 @@ export const listScanLibraries = async (): Promise<ScanLibrary[]> => {
     provider: 'local',
     enabled: row.enabled,
     asAlbum: row.asAlbum,
-    passwordProtected: Boolean(row.passwordHash),
     watchIntervalMs: row.watchIntervalMs,
     lastScanAt: row.lastScanAt ? new Date(row.lastScanAt).toISOString() : null,
     lastScanResult: row.lastScanResult,
@@ -178,10 +174,6 @@ export const createScanLibrary = async (input: ScanLibraryInput): Promise<number
       provider: 'local',
       enabled: input.enabled ?? true,
       asAlbum: input.asAlbum ?? false,
-      passwordHash:
-        input.password !== undefined && input.password !== ''
-          ? await hashPassword(input.password)
-          : null,
       watchIntervalMs: input.watchIntervalMs ?? 60000,
     })
     .returning({ id: scanLibraries.id })
@@ -211,11 +203,7 @@ export const updateScanLibrary = async (
     else if (k === 'asAlbum') colPatch.asAlbum = v
     else if (k === 'watchIntervalMs') colPatch.watchIntervalMs = v
   }
-  // 密码：提供非空明文 → 更新哈希；提供空字符串 → 清除密码；缺省 → 保持不变
-  if (input.password !== undefined) {
-    colPatch.passwordHash =
-      input.password === '' ? null : await hashPassword(input.password)
-  }
+  // 密码已下沉到「相簿」级别（scan_album_meta.password_hash），此处不再处理库级密码
   if (Object.keys(colPatch).length === 0) return false
   await db
     .update(scanLibraries)
@@ -261,7 +249,7 @@ export const getMinWatchIntervalMs = (): number | null => {
 // 扫描库 → 相簿
 // ---------------------------------------------------------------------------
 
-/** 只读单条扫描库（含内部字段：asAlbum / passwordHash） */
+/** 只读单条扫描库行 */
 export const getScanLibraryRow = (
   id: number,
 ): (typeof scanLibraries.$inferSelect) | null => {
@@ -272,6 +260,36 @@ export const getScanLibraryRow = (
     .where(eq(scanLibraries.id, id))
     .get()
   return row ?? null
+}
+
+/**
+ * 计算某相簿（含其上级）生效的相簿访问密码哈希。
+ * 自身 meta 优先；未单独设置则向上继承最近一级；均无密码时返回 null（开放相簿）。
+ * 密码仅存于相簿级别（scan_album_meta.password_hash），与扫描库级无关。
+ */
+export const getScanAlbumEffectivePasswordHash = async (
+  libId: number,
+  relPath: string,
+): Promise<string | null> => {
+  const lib = getScanLibraryRow(libId)
+  if (!lib) return null
+  const mount = scanMountName(libId)
+  // 从自身向根逐级（deepest → shallowest）查找带密码的 meta
+  const segs = relPath.split('/').filter(Boolean)
+  const deepToRoot: string[] = []
+  let acc = ''
+  segs.forEach((s) => {
+    acc = acc ? `${acc}/${s}` : s
+    deepToRoot.push(acc)
+  })
+  deepToRoot.reverse() // ['a/b','a', ...] → 最深在前
+  deepToRoot.push('') // 根
+  for (const p of deepToRoot) {
+    const meta = await getScanAlbumMeta(mount, p)
+    if (meta?.passwordHash) return meta.passwordHash
+  }
+  // 密码仅存在于相簿级别（scan_album_meta.password_hash）；无相簿密码即视为开放
+  return null
 }
 
 /** 以「相簿」展示且启用的扫描库挂载名集合（如 scan_1），用于从首页全局画廊隐藏 */
@@ -298,9 +316,13 @@ export interface ScanAlbumCover {
 export interface ScanAlbumNode {
   kind: 'scan'
   libId: number
+  /** 挂载名（如 scan_12），用于定位元数据 */
+  mount: string
   /** '' 表示库根；子目录为相对路径，如 'sub/dir' */
   relPath: string
   title: string
+  /** 展示用的介绍文字（自定义元数据或 null） */
+  description: string | null
   link: string
   /** 该层目录直接包含的照片数（不含更深的子目录） */
   photoCount: number
@@ -308,6 +330,16 @@ export interface ScanAlbumNode {
   covers: ScanAlbumCover[]
   passwordProtected: boolean
   hasChildren: boolean
+  /** 是否为外部库（扫描库）相簿：始终为 true */
+  external: boolean
+  /** 是否在前台相册列表隐藏（有自定义隐藏设置时为 true） */
+  isHidden?: boolean
+  /** 自定义URL别名（有设置时公开链接使用 /albums/s/{slug}） */
+  slug?: string | null
+  /** 是否存在自定义元数据覆盖 */
+  hasCustom?: boolean
+  /** 嵌套子相簿（用于管理端树状展示） */
+  children?: ScanAlbumNode[]
 }
 
 const dirOfScanPath = (rel: string): string => {
@@ -335,7 +367,7 @@ const childSegmentsOf = (
 }
 
 const buildScanAlbumNode = (
-  lib: { id: number; name: string; passwordHash: string | null },
+  lib: { id: number; name: string },
   relPath: string,
   photos: Array<typeof tables.photos.$inferSelect>,
 ): ScanAlbumNode => {
@@ -362,19 +394,27 @@ const buildScanAlbumNode = (
   return {
     kind: 'scan',
     libId: lib.id,
+    mount,
     relPath,
     title,
+    description: null,
     link,
     photoCount: dirPhotos.length,
     coverPhotoId: covers[0]?.id ?? null,
     covers,
-    passwordProtected: Boolean(lib.passwordHash),
+    // 相簿级密码由 applyScanAlbumMeta 依据 scan_album_meta.password_hash 覆盖
+    passwordProtected: false,
     hasChildren: childSegmentsOf(mount, relPath, photos).length > 0,
+    external: true,
   }
 }
 
-/** 相册页顶层列表：返回所有「相簿」扫描库根节点 */
-export const listScanAlbumRoots = async (): Promise<ScanAlbumNode[]> => {
+/** 相册页顶层列表：返回所有「相簿」扫描库根节点。
+ * @param includeChildren 管理端需要树状二级相簿时传 true，为根节点填充 children
+ */
+export const listScanAlbumRoots = async (
+  includeChildren = false,
+): Promise<ScanAlbumNode[]> => {
   const db = useDB()
   const rows = db
     .select()
@@ -383,20 +423,76 @@ export const listScanAlbumRoots = async (): Promise<ScanAlbumNode[]> => {
     .all()
   const out: ScanAlbumNode[] = []
   for (const row of rows) {
+    const mount = scanMountName(row.id)
     const photos = db
       .select()
       .from(tables.photos)
       .where(
         and(
-          eq(tables.photos.libraryMount, scanMountName(row.id)),
+          eq(tables.photos.libraryMount, mount),
           isNull(tables.photos.deletedAt),
         ),
       )
       .all()
-    out.push(buildScanAlbumNode(row, '', photos))
+    const node = await applyScanAlbumMeta(
+      buildScanAlbumNode(row, '', photos),
+      photos,
+    )
+    if (includeChildren) {
+      node.children = await buildScanAlbumTree(
+        row,
+        '',
+        photos,
+        node.isHidden,
+        node.passwordProtected,
+      )
+    }
+    out.push(node)
   }
   out.sort((a, b) => a.title.localeCompare(b.title))
   return out
+}
+
+/**
+ * 递归构建某目录层的完整子相簿树（已应用元数据）。
+ * 子相簿默认不单独设配置，继承其主相簿（所属扫描库）的隐藏状态；
+ * 未单独自定义的子相簿会继承主相簿的 isHidden 状态。密码同样在相簿级别继承。
+ * @param parentHidden 主相簿的隐藏状态；未单独自定义的子相簿继承它
+ */
+const buildScanAlbumTree = async (
+  lib: { id: number; name: string },
+  relPath: string,
+  photos: Array<typeof tables.photos.$inferSelect>,
+  parentHidden?: boolean,
+  parentPasswordProtected = false,
+): Promise<ScanAlbumNode[]> => {
+  const segs = childSegmentsOf(scanMountName(lib.id), relPath, photos).sort()
+  const nodes: ScanAlbumNode[] = []
+  for (const seg of segs) {
+    const childRel = relPath ? `${relPath}/${seg}` : seg
+    const childNode = await applyScanAlbumMeta(
+      buildScanAlbumNode(lib, childRel, photos),
+      photos,
+    )
+    // 未单独自定义隐藏的子相簿继承主相簿隐藏状态
+    if (parentHidden && childNode.hasCustom !== true) {
+      childNode.isHidden = true
+    }
+    // 未单独设置密码的子相簿继承父级加密状态
+    if (parentPasswordProtected && !childNode.passwordProtected) {
+      childNode.passwordProtected = true
+    }
+    const effectiveHidden = childNode.isHidden ?? parentHidden
+    childNode.children = await buildScanAlbumTree(
+      lib,
+      childRel,
+      photos,
+      effectiveHidden,
+      childNode.passwordProtected,
+    )
+    nodes.push(childNode)
+  }
+  return nodes
 }
 
 /** 单个扫描相簿详情（某目录层）：直接照片 + 嵌套子相簿 + 密码信息 */
@@ -440,7 +536,10 @@ export const getScanAlbumDetail = async (
     )
     .all()
 
-  const node = buildScanAlbumNode(lib, normalized, photos)
+  const node = await applyScanAlbumMeta(
+    buildScanAlbumNode(lib, normalized, photos),
+    photos,
+  )
   const dirPhotos = photos
     .filter(
       (p) => dirOfScanPath(p.libraryPath || '') === normalized,
@@ -468,12 +567,25 @@ export const getScanAlbumDetail = async (
       livePhotoVideoUrl: p.livePhotoVideoUrl,
     }))
 
-  const children: ScanAlbumNode[] = childSegmentsOf(mount, normalized, photos)
-    .sort((a, b) => a.localeCompare(b))
-    .map((seg) => {
-      const childRel = normalized ? `${normalized}/${seg}` : seg
-      return buildScanAlbumNode(lib, childRel, photos)
-    })
+  const children: ScanAlbumNode[] = await Promise.all(
+    childSegmentsOf(mount, normalized, photos)
+      .sort((a, b) => a.localeCompare(b))
+      .map(async (seg) => {
+        const childRel = normalized ? `${normalized}/${seg}` : seg
+        const childNode = await applyScanAlbumMeta(
+          buildScanAlbumNode(lib, childRel, photos),
+          photos,
+        )
+        childNode.children = await buildScanAlbumTree(
+          lib,
+          childRel,
+          photos,
+          node.isHidden ?? childNode.isHidden,
+          childNode.passwordProtected,
+        )
+        return childNode
+      }),
+  )
 
   return { node, dirPhotos, children }
 }

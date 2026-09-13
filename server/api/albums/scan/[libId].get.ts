@@ -1,5 +1,9 @@
 import { z } from 'zod'
-import { getScanLibraryRow, getScanAlbumDetail } from '~~/server/services/scan-library/manager'
+import {
+  getScanLibraryRow,
+  getScanAlbumDetail,
+  getScanAlbumEffectivePasswordHash,
+} from '~~/server/services/scan-library/manager'
 import { hasScanAlbumAccess } from '~~/server/utils/scanAlbumAuth'
 
 export default eventHandler(async (event) => {
@@ -25,10 +29,21 @@ export default eventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'Not Found' })
   }
 
-  const authorized = hasScanAlbumAccess(event, lib, isAdmin)
+  // 相簿级生效密码：自身 meta 优先，未设置则向上继承/回退到扫描库旧密码
+  const passwordHash = await getScanAlbumEffectivePasswordHash(
+    libId,
+    query.path,
+  )
+  const authorized = hasScanAlbumAccess(
+    event,
+    { libId, relPath: query.path, passwordHash },
+    isAdmin,
+  )
+
+  const passwordProtected = Boolean(detail.node.passwordProtected)
 
   // 未解锁的受保护相簿仅返回节点信息用于标题/封面展示，不返回目录照片与子相簿
-  if (lib.passwordHash && !authorized) {
+  if (passwordProtected && !authorized) {
     return {
       node: detail.node,
       dirPhotos: [],
@@ -40,7 +55,7 @@ export default eventHandler(async (event) => {
 
   return {
     ...detail,
-    passwordProtected: Boolean(lib.passwordHash),
+    passwordProtected,
     authorized,
   }
 })
