@@ -22,54 +22,40 @@ const emit = defineEmits<{
   click: []
 }>()
 
+// 单一强调色 + 内凹色块：图标落在一块低饱和柔和的色斑上，数值用墨黑/近白
+// 双色调，去掉 AI 渐变，保持苹果风克制的层次感
 const colorSchemes = {
   blue: {
-    background:
-      'bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/70 dark:to-cyan-950/70',
-    border: 'border-cyan-100 dark:border-cyan-900',
-    text: 'text-blue-400 dark:text-white',
+    chip: 'bg-sky-500/10 text-sky-600 dark:bg-sky-400/15 dark:text-sky-300',
+    dot: 'bg-sky-500',
   },
   green: {
-    background:
-      'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/70 dark:to-emerald-950/70',
-    border: 'border-emerald-100 dark:border-emerald-900',
-    text: 'text-green-400 dark:text-white',
+    chip: 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-400/15 dark:text-emerald-300',
+    dot: 'bg-emerald-500',
   },
   purple: {
-    background:
-      'bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-950/70 dark:to-violet-950/70',
-    border: 'border-violet-100 dark:border-violet-900',
-    text: 'text-purple-400 dark:text-white',
+    chip: 'bg-violet-500/10 text-violet-600 dark:bg-violet-400/15 dark:text-violet-300',
+    dot: 'bg-violet-500',
   },
   orange: {
-    background:
-      'bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/70 dark:to-amber-950/70',
-    border: 'border-amber-100 dark:border-amber-900',
-    text: 'text-orange-400 dark:text-white',
+    chip: 'bg-amber-500/10 text-amber-600 dark:bg-amber-400/15 dark:text-amber-300',
+    dot: 'bg-amber-500',
   },
   red: {
-    background:
-      'bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-950/70 dark:to-rose-950/70',
-    border: 'border-rose-100 dark:border-rose-900',
-    text: 'text-red-400 dark:text-white',
+    chip: 'bg-rose-500/10 text-rose-600 dark:bg-rose-400/15 dark:text-rose-300',
+    dot: 'bg-rose-500',
   },
   gray: {
-    background:
-      'bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-950/70 dark:to-slate-950/70',
-    border: 'border-slate-100 dark:border-slate-900',
-    text: 'text-gray-400 dark:text-white',
+    chip: 'bg-neutral-500/10 text-neutral-600 dark:bg-neutral-400/15 dark:text-neutral-300',
+    dot: 'bg-neutral-500',
   },
   pink: {
-    background:
-      'bg-gradient-to-r from-pink-50 to-rose-50 dark:from-pink-950/70 dark:to-rose-950/70',
-    border: 'border-rose-100 dark:border-rose-900',
-    text: 'text-pink-400 dark:text-white',
+    chip: 'bg-pink-500/10 text-pink-600 dark:bg-pink-400/15 dark:text-pink-300',
+    dot: 'bg-pink-500',
   },
   yellow: {
-    background:
-      'bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-950/70 dark:to-amber-950/70',
-    border: 'border-amber-100 dark:border-amber-900',
-    text: 'text-yellow-400 dark:text-white',
+    chip: 'bg-yellow-500/10 text-yellow-600 dark:bg-yellow-400/15 dark:text-yellow-300',
+    dot: 'bg-yellow-500',
   },
 }
 
@@ -79,36 +65,37 @@ const currentScheme = computed(() => colorSchemes[props.color])
 <template>
   <div
     :class="[
-      'flex justify-center border rounded-lg p-4',
-      currentScheme.background,
-      currentScheme.border,
-      currentScheme.text,
+      'flex items-center gap-3.5 rounded-xl border border-(--ui-border-accented) bg-(--ui-bg-elevated) py-4 pr-4 pl-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.5),0_1px_2px_rgba(20,20,24,0.04)]',
+      'dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.3)]',
       clickable
-        ? 'cursor-pointer hover:scale-[1.01] transition-transform duration-200'
+        ? 'cursor-pointer transition-transform duration-200 hover:-translate-y-0.5'
         : '',
     ]"
     @click="clickable ? emit('click') : undefined"
   >
-    <div class="flex-1 flex items-center justify-between gap-4 overflow-hidden">
-      <div class="flex-1 overflow-hidden">
-        <p
-          v-if="title"
-          class="text-lg opacity-90 font-medium max-w-48 truncate"
-        >
-          {{ title }}
-        </p>
-        <p
-          v-if="!isNil(value)"
-          class="text-2xl font-bold max-w-full sm:max-w-1/2 truncate"
-        >
-          {{ value }}
-        </p>
-      </div>
+    <span
+      class="flex size-10 shrink-0 items-center justify-center rounded-lg"
+      :class="currentScheme.chip"
+    >
       <UIcon
         v-if="icon"
         :name="icon"
-        class="size-8 opacity-80"
+        class="size-5"
       />
+    </span>
+    <div class="min-w-0 flex-1">
+      <p
+        v-if="title"
+        class="truncate text-xs font-medium text-(--ui-text-muted)"
+      >
+        {{ title }}
+      </p>
+      <p
+        v-if="!isNil(value)"
+        class="mt-0.5 truncate text-xl font-bold tabular-nums text-(--ui-text)"
+      >
+        {{ value }}
+      </p>
     </div>
   </div>
 </template>

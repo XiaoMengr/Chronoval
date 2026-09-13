@@ -1094,6 +1094,7 @@
     },
     "overview": {
       "title": "仪表板概览",
+      "refreshData": "刷新",
       "indicator": {
         "totalPhotos": "照片总数",
         "thisMonth": "本月新增",

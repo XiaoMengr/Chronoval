@@ -1096,6 +1096,7 @@
     },
     "overview": {
       "title": "Overview",
+      "refreshData": "Refresh",
       "indicator": {
         "totalPhotos": "Total Photos",
         "thisMonth": "New This Month",

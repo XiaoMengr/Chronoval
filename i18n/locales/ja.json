@@ -930,6 +930,7 @@
     },
     "overview": {
       "title": "概要",
+      "refreshData": "更新",
       "indicator": {
         "totalPhotos": "写真の総数",
         "thisMonth": "今月は新しく",

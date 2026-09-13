@@ -1009,6 +1009,7 @@
     },
     "overview": {
       "title": "Обзор",
+      "refreshData": "Обновить",
       "indicator": {
         "totalPhotos": "Всего фотографий",
         "thisMonth": "Новых за месяц",

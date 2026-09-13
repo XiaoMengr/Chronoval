@@ -227,19 +227,22 @@ const handleLogin = () => {
       </template>
 
       <template #footer="{ collapsed }">
-        <UButton
-          :avatar="{
-            src: user?.avatar || '',
-            alt: user?.username || user?.email || 'User Avatar',
-            icon: 'tabler:user',
-          }"
-          :label="collapsed ? undefined : user?.username || 'User'"
-          size="lg"
-          color="neutral"
-          variant="ghost"
-          class="w-full"
-          :block="collapsed"
-        />
+        <div class="flex flex-col gap-0.5 px-2 pb-1">
+          <DashboardLanguageSwitcher v-if="!collapsed" />
+          <UButton
+            :avatar="{
+              src: user?.avatar || '',
+              alt: user?.username || user?.email || 'User Avatar',
+              icon: 'tabler:user',
+            }"
+            :label="collapsed ? undefined : user?.username || 'User'"
+            size="lg"
+            color="neutral"
+            variant="ghost"
+            class="w-full"
+            :block="collapsed"
+          />
+        </div>
       </template>
     </UDashboardSidebar>
 

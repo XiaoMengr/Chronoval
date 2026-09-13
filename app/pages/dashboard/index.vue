@@ -262,7 +262,30 @@ const onShareSite = () => {
 <template>
   <UDashboardPanel>
     <template #header>
-      <UDashboardNavbar :title="$t('dashboard.overview.title')" />
+      <UDashboardNavbar>
+        <template #left>
+          <div class="flex items-baseline gap-2">
+            <h1 class="text-base font-semibold text-(--ui-text)">
+              {{ $t('dashboard.overview.title') }}
+            </h1>
+            <span class="hidden text-xs text-(--ui-text-dimmed) tabular-nums sm:inline">
+              {{ $dayjs().format('LL') }}
+            </span>
+          </div>
+        </template>
+        <template #right>
+          <UButton
+            icon="tabler:refresh"
+            :label="$t('dashboard.overview.refreshData')"
+            size="xs"
+            variant="ghost"
+            color="neutral"
+            :loading="isLoading"
+            class="text-(--ui-text-muted)"
+            @click="refreshData"
+          />
+        </template>
+      </UDashboardNavbar>
     </template>
 
     <template #body>
@@ -305,25 +328,28 @@ const onShareSite = () => {
         <!-- 运行信息 -->
         <UCard>
           <template #header>
-            <h2 class="text-lg font-semibold pb-1.5">
+            <h2 class="flex items-center gap-2 text-sm font-semibold text-(--ui-text)">
+              <Icon name="tabler:terminal-2" class="size-4 text-(--ui-text-muted)" />
               {{ $t('dashboard.overview.section.runtimeInfo.title') }}
             </h2>
           </template>
 
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-              <p class="text-sm text-neutral-500 dark:text-neutral-400">
+          <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <div class="rounded-lg bg-(--ui-bg-muted) p-3.5">
+              <p class="flex items-center gap-1.5 text-xs font-medium text-(--ui-text-muted)">
+                <Icon name="tabler:badge" class="size-3.5" />
                 {{ $t('dashboard.overview.section.runtimeInfo.version') }}
               </p>
-              <p class="text-lg font-bold">
-                {{ $config.public.VERSION }}
+              <p class="mt-1.5 text-lg font-bold tabular-nums text-(--ui-text)">
+                v{{ $config.public.VERSION }}
               </p>
             </div>
-            <div>
-              <p class="text-sm text-neutral-500 dark:text-neutral-400">
+            <div class="rounded-lg bg-(--ui-bg-muted) p-3.5">
+              <p class="flex items-center gap-1.5 text-xs font-medium text-(--ui-text-muted)">
+                <Icon name="tabler:clock" class="size-3.5" />
                 {{ $t('dashboard.overview.section.runtimeInfo.uptime') }}
               </p>
-              <p class="text-lg font-bold">
+              <p class="mt-1.5 text-lg font-bold tabular-nums text-(--ui-text)">
                 {{
                   dashboardStats?.uptime
                     ? $dayjs
@@ -333,39 +359,32 @@ const onShareSite = () => {
                 }}
               </p>
             </div>
-            <div>
-              <p class="text-sm text-neutral-500 dark:text-neutral-400">
+            <div class="rounded-lg bg-(--ui-bg-muted) p-3.5">
+              <p class="flex items-center gap-1.5 text-xs font-medium text-(--ui-text-muted)">
+                <Icon name="tabler:box" class="size-3.5" />
                 {{ $t('dashboard.overview.section.runtimeInfo.environment') }}
               </p>
-              <UBadge
-                :color="
-                  dashboardStats?.runningOn === 'docker' ? 'info' : 'success'
-                "
-                variant="soft"
-              >
-                {{
-                  $t(
-                    `dashboard.overview.section.runtimeInfo.systems.${dashboardStats?.runningOn || 'unknown'}`,
-                  )
-                }}
-              </UBadge>
+              <p class="mt-1.5">
+                <UBadge
+                  :color="
+                    dashboardStats?.runningOn === 'docker' ? 'info' : 'success'
+                  "
+                  variant="soft"
+                >
+                  {{
+                    $t(
+                      `dashboard.overview.section.runtimeInfo.systems.${dashboardStats?.runningOn || 'unknown'}`,
+                    )
+                  }}
+                </UBadge>
+              </p>
             </div>
-            <!-- <div>
-          <p class="text-sm text-neutral-500 dark:text-neutral-400">
-            {{ $t('dashboard.overview.section.runtimeInfo.lastUpdate') }}
-          </p>
-          <p class="text-lg font-bold">
-            <ClientOnly>
-              {{ $dayjs().fromNow() }}
-              <template #placeholder>--</template>
-            </ClientOnly>
-          </p>
-        </div> -->
-            <div>
-              <p class="text-sm text-neutral-500 dark:text-neutral-400">
+            <div class="rounded-lg bg-(--ui-bg-muted) p-3.5">
+              <p class="flex items-center gap-1.5 text-xs font-medium text-(--ui-text-muted)">
+                <Icon name="tabler:share" class="size-3.5" />
                 {{ $t('dashboard.overview.shareSite.label') }}
               </p>
-              <p class="text-lg font-bold">
+              <p class="mt-1.5">
                 <UButton
                   external
                   variant="subtle"
@@ -386,6 +405,12 @@ const onShareSite = () => {
           <!-- 左侧 -->
           <div class="lg:col-span-3 space-y-4">
             <UCard>
+              <template #header>
+                <h3 class="flex items-center gap-2 text-sm font-semibold text-(--ui-text)">
+                  <Icon name="tabler:calendar-stats" class="size-4 text-(--ui-text-muted)" />
+                  {{ $t('common.heatmap.legend.recentlyYear') }}
+                </h3>
+              </template>
               <div class="heatmap-container">
                 <ClientOnly>
                   <CalendarHeatmap
@@ -466,8 +491,9 @@ const onShareSite = () => {
             <!-- 最近上传缩略图横条 -->
             <UCard>
               <template #header>
-                <div class="flex items-center justify-between pb-1.5">
-                  <h3 class="font-semibold">
+                <div class="flex items-center justify-between">
+                  <h3 class="flex items-center gap-2 text-sm font-semibold text-(--ui-text)">
+                    <Icon name="tabler:photo-star" class="size-4 text-(--ui-text-muted)" />
                     {{ $t('dashboard.overview.section.recentUploads.title') }}
                   </h3>
                   <UButton
@@ -536,7 +562,8 @@ const onShareSite = () => {
             <!-- 类型与来源分布 -->
             <UCard>
               <template #header>
-                <h3 class="font-semibold pb-1.5">
+                <h3 class="flex items-center gap-2 text-sm font-semibold text-(--ui-text)">
+                  <Icon name="tabler:chart-donut" class="size-4 text-(--ui-text-muted)" />
                   {{ $t('dashboard.overview.section.mediaTypes.title') }}
                 </h3>
               </template>
@@ -566,35 +593,35 @@ const onShareSite = () => {
                 <!-- 类型 + 来源明细：左右两列，让环形图居中更突出 -->
                 <div class="min-w-0 flex-1 grid grid-cols-2 gap-x-6 gap-y-3">
                   <div class="space-y-2">
-                    <p class="text-[11px] font-semibold tracking-wider text-neutral-400 uppercase">
+                    <p class="text-[11px] font-semibold tracking-wider text-(--ui-text-dimmed) uppercase">
                       {{ $t('dashboard.overview.section.mediaTypes.typeLabel') }}
                     </p>
                     <div class="flex justify-between text-xs">
-                      <span class="flex items-center gap-1.5 text-neutral-600 dark:text-neutral-300">
+                      <span class="flex items-center gap-1.5 text-(--ui-text-toned)">
                         <span class="size-2 rounded-full bg-[var(--color-sky-500)]"></span>
                         {{ $t('dashboard.overview.section.mediaTypes.image') }}
-                        <span class="text-neutral-400">({{ mediaTypePercent('image') }}%)</span>
+                        <span class="text-(--ui-text-dimmed)">({{ mediaTypePercent('image') }}%)</span>
                       </span>
-                      <span class="tabular-nums text-neutral-500">{{ mediaStats.image }}</span>
+                      <span class="tabular-nums text-(--ui-text-muted)">{{ mediaStats.image }}</span>
                     </div>
                     <div class="mt-1 flex justify-between text-xs">
-                      <span class="flex items-center gap-1.5 text-neutral-600 dark:text-neutral-300">
+                      <span class="flex items-center gap-1.5 text-(--ui-text-toned)">
                         <span class="size-2 rounded-full bg-[var(--color-violet-500)]"></span>
                         {{ $t('dashboard.overview.section.mediaTypes.video') }}
-                        <span class="text-neutral-400">({{ mediaTypePercent('video') }}%)</span>
+                        <span class="text-(--ui-text-dimmed)">({{ mediaTypePercent('video') }}%)</span>
                       </span>
-                      <span class="tabular-nums text-neutral-500">{{ mediaStats.video }}</span>
+                      <span class="tabular-nums text-(--ui-text-muted)">{{ mediaStats.video }}</span>
                     </div>
                   </div>
-                  <div class="space-y-1.5 border-l border-neutral-100 pl-6 dark:border-neutral-800">
-                    <p class="text-[11px] font-semibold tracking-wider text-neutral-400 uppercase">
+                  <div class="space-y-1.5 border-l border-(--ui-border-muted) pl-6">
+                    <p class="text-[11px] font-semibold tracking-wider text-(--ui-text-dimmed) uppercase">
                       {{ $t('dashboard.overview.section.mediaTypes.sourceLabel') }}
                     </p>
                     <div class="flex items-center justify-between text-xs">
-                      <span class="text-neutral-500">
+                      <span class="text-(--ui-text-muted)">
                         {{ $t('dashboard.overview.section.mediaTypes.upload') }}
                       </span>
-                      <span class="tabular-nums text-neutral-500">{{ mediaStats.upload }}</span>
+                      <span class="tabular-nums text-(--ui-text-muted)">{{ mediaStats.upload }}</span>
                     </div>
                     <UProgress
                       :model-value="
@@ -606,10 +633,10 @@ const onShareSite = () => {
                       size="xs"
                     />
                     <div class="flex items-center justify-between text-xs pt-1">
-                      <span class="text-neutral-500">
+                      <span class="text-(--ui-text-muted)">
                         {{ $t('dashboard.overview.section.mediaTypes.library') }}
                       </span>
-                      <span class="tabular-nums text-neutral-500">{{ mediaStats.library }}</span>
+                      <span class="tabular-nums text-(--ui-text-muted)">{{ mediaStats.library }}</span>
                     </div>
                     <UProgress
                       :model-value="
@@ -637,7 +664,8 @@ const onShareSite = () => {
             <!-- 内存使用 -->
             <UCard>
               <template #header>
-                <h3 class="font-semibold pb-1.5">
+                <h3 class="flex items-center gap-2 text-sm font-semibold text-(--ui-text)">
+                  <Icon name="tabler:memory" class="size-4 text-(--ui-text-muted)" />
                   {{ $t('dashboard.overview.section.memory.title') }}
                 </h3>
               </template>
@@ -665,14 +693,14 @@ const onShareSite = () => {
                   class="w-full"
                 />
                 <div class="flex justify-between text-sm">
-                  <div class="text-xs text-neutral-500 dark:text-neutral-400">
+                  <div class="text-xs text-(--ui-text-muted)">
                     {{
                       dashboardStats?.memory
                         ? `${Math.round((dashboardStats.memory.used / 1024 / 1024 / 1024) * 100) / 100}GB / ${Math.round((dashboardStats.memory.total / 1024 / 1024 / 1024) * 100) / 100}GB`
                         : $t('dashboard.overview.memoryUnavailable')
                     }}
                   </div>
-                  <span>
+                  <span class="text-sm font-semibold tabular-nums text-(--ui-text)">
                     {{
                       dashboardStats?.memory
                         ? Math.round(
@@ -690,7 +718,8 @@ const onShareSite = () => {
             <!-- CPU 使用 -->
           <UCard>
             <template #header>
-              <h3 class="font-semibold pb-1.5">
+              <h3 class="flex items-center gap-2 text-sm font-semibold text-(--ui-text)">
+                <Icon name="tabler:cpu" class="size-4 text-(--ui-text-muted)" />
                 {{ $t('dashboard.overview.section.cpu.title') }}
               </h3>
             </template>
@@ -708,10 +737,12 @@ const onShareSite = () => {
                 class="w-full"
               />
               <div class="flex justify-between text-sm">
-                <div class="text-xs text-neutral-500 dark:text-neutral-400">
+                <div class="text-xs text-(--ui-text-muted)">
                   {{ $t('dashboard.overview.section.cpu.label') }}
                 </div>
-                <span>{{ Math.round(cpuLoad * 10) / 10 }}%</span>
+                <span class="text-sm font-semibold tabular-nums text-(--ui-text)">
+                  {{ Math.round(cpuLoad * 10) / 10 }}%
+                </span>
               </div>
             </div>
           </UCard>
@@ -719,7 +750,8 @@ const onShareSite = () => {
           <!-- 存储空间 -->
           <UCard>
             <template #header>
-              <h3 class="font-semibold pb-1.5">
+              <h3 class="flex items-center gap-2 text-sm font-semibold text-(--ui-text)">
+                <Icon name="tabler:database" class="size-4 text-(--ui-text-muted)" />
                 {{ $t('dashboard.overview.section.storage.title') }}
               </h3>
             </template>
@@ -728,13 +760,13 @@ const onShareSite = () => {
               <!-- 网络存储提示：内部照片默认存储不在本地磁盘 -->
               <div
                 v-if="isNetworkProvider"
-                class="flex items-center gap-1.5 rounded-md bg-neutral-50 px-2 py-1.5 text-sm dark:bg-neutral-900"
+                class="flex items-center gap-1.5 rounded-md bg-(--ui-bg-muted) px-2 py-1.5 text-sm"
               >
                 <Icon
                   name="tabler:cloud"
-                  class="size-4 shrink-0 text-neutral-500 dark:text-neutral-400"
+                  class="size-4 shrink-0 text-(--ui-text-muted)"
                 />
-                <span class="text-xs text-neutral-500 dark:text-neutral-400">
+                <span class="text-xs text-(--ui-text-muted)">
                   {{ $t('dashboard.overview.storageNetwork') }}
                 </span>
                 <UBadge variant="soft" size="sm">
@@ -745,7 +777,7 @@ const onShareSite = () => {
               <!-- 无任何位置信息 -->
               <div
                 v-if="storageLocations.length === 0"
-                class="text-xs text-neutral-500 dark:text-neutral-400"
+                class="text-xs text-(--ui-text-muted)"
               >
                 {{ $t('dashboard.overview.storageUnavailable') }}
               </div>
@@ -764,9 +796,9 @@ const onShareSite = () => {
                           ? 'tabler:folder'
                           : 'tabler:database'
                       "
-                      class="size-4 shrink-0 text-neutral-500 dark:text-neutral-400"
+                      class="size-4 shrink-0 text-(--ui-text-muted)"
                     />
-                    <span class="text-xs font-medium">
+                    <span class="text-xs font-medium text-(--ui-text-toned)">
                       {{
                         loc.type === 'library'
                           ? $t('dashboard.overview.section.storage.library')
@@ -774,7 +806,7 @@ const onShareSite = () => {
                       }}
                     </span>
                   </div>
-                  <span class="text-xs text-neutral-500 dark:text-neutral-400">
+                  <span class="text-xs tabular-nums text-(--ui-text-muted)">
                     {{ loc.total ? `${locPercent(loc)}%` : '-' }}
                   </span>
                 </div>
@@ -792,18 +824,18 @@ const onShareSite = () => {
                 />
 
                 <div class="flex items-center justify-between text-xs">
-                  <span class="truncate text-neutral-500 dark:text-neutral-400" :title="loc.path">
+                  <span class="truncate text-(--ui-text-muted)" :title="loc.path">
                     {{ loc.path }}
                   </span>
-                  <span class="shrink-0 pl-2 text-neutral-500 dark:text-neutral-400">
+                  <span class="shrink-0 pl-2 tabular-nums text-(--ui-text-muted)">
                     {{ loc.total ? `${formatBytes(loc.used)} / ${formatBytes(loc.total)}` : '-' }}
                   </span>
                 </div>
               </div>
 
               <!-- 照片总占用量 -->
-              <div class="flex items-center justify-between border-t border-neutral-100 pt-2 text-sm dark:border-neutral-800">
-                <span class="text-xs text-neutral-500 dark:text-neutral-400">
+              <div class="flex items-center justify-between border-t border-(--ui-border-muted) pt-2 text-sm">
+                <span class="text-xs text-(--ui-text-muted)">
                   {{ $t('dashboard.overview.storagePhotos') }}
                 </span>
                 <span>{{ formatBytes(dashboardStats?.storage?.totalSize || 0) }}</span>
@@ -814,7 +846,8 @@ const onShareSite = () => {
             <!-- 队列详情 -->
             <UCard>
               <template #header>
-                <h3 class="font-semibold pb-1.5">
+                <h3 class="flex items-center gap-2 text-sm font-semibold text-(--ui-text)">
+                  <Icon name="tabler:list-check" class="size-4 text-(--ui-text-muted)" />
                   {{ $t('dashboard.overview.section.queue.title') }}
                 </h3>
               </template>

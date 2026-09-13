@@ -930,6 +930,7 @@
     },
     "overview": {
       "title": "儀表板概覽",
+      "refreshData": "重新整理",
       "indicator": {
         "totalPhotos": "照片總數",
         "thisMonth": "本月新增",
