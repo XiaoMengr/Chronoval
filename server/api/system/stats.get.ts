@@ -1,6 +1,7 @@
 import { sql, gte, isNull } from 'drizzle-orm'
 import * as si from 'systeminformation'
 import { readFileSync } from 'node:fs'
+import { settingsManager } from '../../services/settings/settingsManager'
 
 // 短 TTL 缓存：stats 数据变化频率远低于请求频率（后台页每 5s 轮询）
 const STATS_TTL_MS = 10_000
@@ -9,6 +10,34 @@ let statsCache: { at: number; data: any } | null = null
 async function getQueueStats() {
   const workerPool = globalThis.__workerPool
   return workerPool ? workerPool.getPoolStats() : null
+}
+
+// 获取当前照片存储方式元信息（内部照片默认存储）。
+// - local：照片存在本地磁盘目录（config.basePath），磁盘空间可统计；
+// - s3 / openlist 等网络存储：不占本地磁盘，磁盘空间无法用本地口径统计，交由前端显示未知。
+async function getStorageMeta(): Promise<{
+  provider: string | null
+  local: boolean
+  basePath: string | null
+}> {
+  try {
+    const active = await settingsManager.storage.getActiveProvider()
+    if (!active) {
+      return { provider: null, local: false, basePath: null }
+    }
+    const cfg =
+      typeof active.config === 'string' ? JSON.parse(active.config) : active.config || {}
+    const provider = active.provider || cfg?.provider || null
+    const local = provider === 'local'
+    return {
+      provider,
+      local,
+      basePath: local && cfg?.basePath ? String(cfg.basePath) : null,
+    }
+  } catch (error) {
+    console.warn('Failed to get storage meta:', error)
+    return { provider: null, local: false, basePath: null }
+  }
 }
 
 async function checkIfDocker(): Promise<boolean> {
@@ -121,6 +150,52 @@ function mapSystemInfo(distribution: string): string {
   return 'unknown'
 }
 
+// 获取系统 CPU 负载（0-100）
+// 容器内读取到的为宿主整体负载，非仅本进程；
+// 拿不到时降级回 null，前端显示不可用文案。
+async function getCpuLoad(): Promise<{ current: number } | null> {
+  try {
+    const cpu = await si.currentLoad()
+    return { current: Math.round(cpu.current * 10) / 10 }
+  } catch (error) {
+    console.warn('Failed to get CPU info:', error)
+    return null
+  }
+}
+
+// 获取磁盘空间统计（优先统计目标目录 basePath 所在挂载点，其次根挂载 /）
+async function getDiskStats(basePath?: string): Promise<{
+  used: number
+  total: number
+} | null> {
+  try {
+    const disks = await si.fsSize()
+    if (!disks || disks.length === 0) return null
+
+    const isRealFs = (d: { type?: string; size?: number }) =>
+      d.type !== 'tmpfs' && d.type !== 'overlay' && d.type !== 'squashfs' && (d.size || 0) > 0
+
+    // 1) 优先匹配「内部存储目录」所在挂载点（挂载路径最长前缀优先）
+    let root: (typeof disks)[number] | undefined
+    if (basePath) {
+      const matches = disks
+        .filter((d) => isRealFs(d) && (basePath.startsWith(d.mount) || d.mount.startsWith(basePath)))
+        .sort((a, b) => b.mount.length - a.mount.length)
+      root = matches[0]
+    }
+    // 2) 其次根挂载 /
+    root = root || disks.find((d) => d.mount === '/')
+    // 3) 最后任一真实文件系统
+    root = root || disks.find((d) => isRealFs(d)) || disks.find((d) => (d.size || 0) > 0)
+
+    if (!root || !root.size) return null
+    return { used: root.used || 0, total: root.size || 0 }
+  } catch (error) {
+    console.warn('Failed to get disk info:', error)
+    return null
+  }
+}
+
 export default eventHandler(async (event) => {
   await requireUserSession(event)
 
@@ -228,10 +303,20 @@ export default eventHandler(async (event) => {
     }
   }
 
+  // 存储方式元信息：决定存储卡片如何展示磁盘空间
+  const storageMeta = await getStorageMeta()
+
+  // 仅本地存储可统计内部存储目录所在磁盘；网络存储（s3/openlist 等）不占本地磁盘 → disk 为 null
+  const disk = storageMeta.local && storageMeta.basePath
+    ? await getDiskStats(storageMeta.basePath)
+    : null
+
   const data = {
     uptime: process.uptime() || 0,
     runningOn: systemInfo,
     memory: (await getMemoryStats()) || { used: 0, total: 0 },
+    cpu: (await getCpuLoad()) || { current: 0 },
+    disk,
     photos: {
       total: totalPhotos?.count || 0,
       today: todayPhotos?.count || 0,
@@ -243,6 +328,9 @@ export default eventHandler(async (event) => {
       totalSize: storageStats?.totalSize || 0,
       averageSize: storageStats?.avgSize || 0,
       maxSize: storageStats?.maxSize || 0,
+      provider: storageMeta.provider,
+      local: storageMeta.local,
+      basePath: storageMeta.basePath,
     },
     trends: trendData.toReversed(),
     timestamp: new Date().toISOString(),

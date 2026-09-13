@@ -968,6 +968,13 @@
         "memory": {
           "title": "內存使用率"
         },
+        "cpu": {
+          "title": "CPU 負載",
+          "label": "系統當前負載"
+        },
+        "storage": {
+          "title": "儲存空間"
+        },
         "queue": {
           "title": "隊列狀態",
           "activeWorkers": "活躍 Workers",
@@ -981,7 +988,10 @@
         "label": "分享你的網站",
         "button": "分享你的網站"
       },
-      "memoryUnavailable": "無法取得記憶體資訊"
+      "memoryUnavailable": "無法取得記憶體資訊",
+      "storageUnavailable": "無法取得儲存空間資訊",
+      "storageNetwork": "網絡儲存，本地磁碟空間無法統計",
+      "storagePhotos": "相片佔用量"
     },
     "queue": {
       "title": "隊列管理",

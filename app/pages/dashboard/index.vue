@@ -34,11 +34,6 @@ const refreshData = async () => {
 // 后台主页轮询：30s 一次，页面隐藏时暂停、回到前台立即刷新（减少无效请求）
 const REFRESH_MS = 30000
 
-// 正式发布页展示的拉取镜像地址（内网容器注册表，版本随构建同步）
-const imageAddress = computed(
-  () =>
-    `172.16.0.1:322/xiaomengr/chronoval:${config.public.VERSION}`,
-)
 let refreshInterval: ReturnType<typeof setInterval> | undefined
 
 const stopPolling = () => {
@@ -82,6 +77,26 @@ const systemStatus = computed(() => {
 
   if (memoryUsage > 90) return 'critical'
   if (memoryUsage > 70) return 'warning'
+  return 'healthy'
+})
+
+// CPU 负载（0-100）
+const cpuLoad = computed(() => dashboardStats.value?.cpu?.current || 0)
+const cpuStatus = computed(() => {
+  if (cpuLoad.value > 90) return 'critical'
+  if (cpuLoad.value > 75) return 'warning'
+  return 'healthy'
+})
+
+// 磁盘空间使用率（0-100）
+const diskPercent = computed(() => {
+  const disk = dashboardStats.value?.disk
+  if (!disk?.total) return 0
+  return Math.round((disk.used / disk.total) * 100)
+})
+const diskStatus = computed(() => {
+  if (diskPercent.value > 95) return 'critical'
+  if (diskPercent.value > 80) return 'warning'
   return 'healthy'
 })
 
@@ -232,14 +247,6 @@ const onShareSite = () => {
               <p class="text-lg font-bold">
                 {{ $config.public.VERSION }}
               </p>
-            </div>
-            <div>
-              <p class="text-sm text-neutral-500 dark:text-neutral-400">
-                {{ $t('dashboard.overview.section.runtimeInfo.image') }}
-              </p>
-              <code
-                class="block max-w-[220px] break-all text-xs font-mono text-neutral-200"
-              >{{ imageAddress }}</code>
             </div>
             <div>
               <p class="text-sm text-neutral-500 dark:text-neutral-400">
@@ -440,6 +447,98 @@ const onShareSite = () => {
                 </div>
               </div>
             </UCard>
+
+            <!-- CPU 使用 -->
+          <UCard>
+            <template #header>
+              <h3 class="font-semibold pb-1.5">
+                {{ $t('dashboard.overview.section.cpu.title') }}
+              </h3>
+            </template>
+
+            <div class="space-y-2">
+              <UProgress
+                :model-value="Math.round(cpuLoad * 10) / 10"
+                :color="
+                  cpuStatus === 'healthy'
+                    ? 'success'
+                    : cpuStatus === 'warning'
+                      ? 'warning'
+                      : 'error'
+                "
+                class="w-full"
+              />
+              <div class="flex justify-between text-sm">
+                <div class="text-xs text-neutral-500 dark:text-neutral-400">
+                  {{ $t('dashboard.overview.section.cpu.label') }}
+                </div>
+                <span>{{ Math.round(cpuLoad * 10) / 10 }}%</span>
+              </div>
+            </div>
+          </UCard>
+
+          <!-- 存储空间 -->
+          <UCard>
+            <template #header>
+              <h3 class="font-semibold pb-1.5">
+                {{ $t('dashboard.overview.section.storage.title') }}
+              </h3>
+            </template>
+
+            <!-- 本地存储：展示内部照片默认存储目录所在磁盘的占用 -->
+            <div v-if="dashboardStats?.storage?.local" class="space-y-2">
+              <UProgress
+                :model-value="diskPercent"
+                :color="
+                  diskStatus === 'healthy'
+                    ? 'success'
+                    : diskStatus === 'warning'
+                      ? 'warning'
+                      : 'error'
+                "
+                class="w-full"
+              />
+              <div class="flex items-center justify-between text-sm">
+                <div class="text-xs text-neutral-500 dark:text-neutral-400">
+                  {{
+                    dashboardStats?.disk
+                      ? `${formatBytes(dashboardStats.disk.used)} / ${formatBytes(dashboardStats.disk.total)}`
+                      : $t('dashboard.overview.storageUnavailable')
+                  }}
+                </div>
+                <span>{{ dashboardStats?.disk ? `${diskPercent}%` : '-' }}</span>
+              </div>
+              <p
+                v-if="dashboardStats?.storage?.basePath"
+                class="truncate text-[11px] text-neutral-500 dark:text-neutral-400"
+                :title="dashboardStats.storage.basePath"
+              >
+                {{ dashboardStats.storage.basePath }}
+              </p>
+            </div>
+
+            <!-- 网络存储（s3/openlist 等）：不占本地磁盘，显示照片占用与存储类型 -->
+            <div v-else class="space-y-2">
+              <div class="flex items-center gap-1.5 text-sm">
+                <Icon
+                  name="tabler:cloud"
+                  class="size-4 shrink-0 text-neutral-500 dark:text-neutral-400"
+                />
+                <span class="text-xs text-neutral-500 dark:text-neutral-400">
+                  {{ $t('dashboard.overview.storageNetwork') }}
+                </span>
+                <UBadge v-if="dashboardStats?.storage?.provider" variant="soft" size="sm">
+                  {{ dashboardStats.storage.provider }}
+                </UBadge>
+              </div>
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-xs text-neutral-500 dark:text-neutral-400">
+                  {{ $t('dashboard.overview.storagePhotos') }}
+                </span>
+                <span>{{ formatBytes(dashboardStats?.storage?.totalSize || 0) }}</span>
+              </div>
+            </div>
+          </UCard>
 
             <!-- 队列详情 -->
             <UCard>

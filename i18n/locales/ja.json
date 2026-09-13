@@ -967,6 +967,13 @@
         "memory": {
           "title": "メモリの使用"
         },
+        "cpu": {
+          "title": "CPU 負荷",
+          "label": "現在のシステム負荷"
+        },
+        "storage": {
+          "title": "ストレージ"
+        },
         "queue": {
           "title": "キューステータス",
           "activeWorkers": "アクティブワーカー",
@@ -980,7 +987,10 @@
         "label": "サイトを共有",
         "button": "サイトを共有"
       },
-      "memoryUnavailable": "メモリ情報を取得できません"
+      "memoryUnavailable": "メモリ情報を取得できません",
+      "storageUnavailable": "ストレージ情報を取得できません",
+      "storageNetwork": "ネットワークストレージのため、ローカルディスク容量は取得できません",
+      "storagePhotos": "写真使用量"
     },
     "queue": {
       "title": "キュー管理",

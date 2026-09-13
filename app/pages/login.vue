@@ -31,6 +31,10 @@ const router = useRouter()
 
 const isLoading = ref(false)
 
+// 登录失败的页面级错误提示：不依赖全局 toast 组件（该 toast 在登录/首屏等场景可能出现渲染缺失，
+// 导致"点击登录毫无反应"的观感），用显式状态 + 表单内错误条兜底，保证失败必有可见反馈。
+const loginError = ref('')
+
 // AuthForm 实例引用：登录接口失败时也复用它的顶部浮动通知卡片
 const authFormRef = ref<{ showNotice: (text: string) => void } | null>(null)
 
@@ -45,6 +49,7 @@ const githubOauthEnabled = computed(() => {
 
 const onAuthSubmit = async (event: any) => {
   isLoading.value = true
+  loginError.value = ''
   await $fetch('/api/login', {
     method: 'POST',
     body: event.data,
@@ -58,8 +63,10 @@ const onAuthSubmit = async (event: any) => {
     .catch((error) => {
       console.error('Login error:', error)
       const message = error?.data?.message || $t('auth.messages.loginFailed.description')
+      // 页面级错误条：保证失败时一定有肉眼可见的反馈
+      loginError.value = $t('auth.messages.loginFailed.title') + (message ? '：' + message : '')
       // 顶部浮动通知卡片：与 AuthForm 内校验失败同一套反馈
-      authFormRef.value?.showNotice($t('auth.messages.loginFailed.title') + (message ? '：' + message : ''))
+      authFormRef.value?.showNotice(loginError.value)
       toast.add({
         color: 'error',
         title: $t('auth.messages.loginFailed.title'),
@@ -135,6 +142,19 @@ const onAuthSubmit = async (event: any) => {
     <!-- ===== 登录卡片：桌面偏右占右半，移动居中浮于全屏森林上 ===== -->
     <section class="relative z-20 flex w-full flex-1 items-center justify-center px-4 py-[clamp(0.5rem,3svh,3rem)] min-h-0 lg:w-1/2 lg:min-h-auto lg:py-0 lg:px-0 lg:pr-14 xl:pr-20">
       <div class="auth-glass w-full max-w-[24rem] rounded-[2rem] px-[clamp(1.25rem,4vw,2rem)] py-[clamp(1rem,5svh,2.25rem)] sm:px-10 max-h-[80svh] overflow-y-auto lg:max-w-md sm:max-h-none sm:overflow-visible">
+        <!-- 登录失败的错误条：本地显式状态渲染，确保失败必有可见反馈（不依赖全局 toast） -->
+        <Transition name="hint">
+          <div
+            v-if="loginError"
+            role="alert"
+            class="mb-4 flex items-start gap-2.5 rounded-xl border border-rose-300/30 bg-rose-500/15 px-3.5 py-3 backdrop-blur-md"
+          >
+            <Icon name="tabler:alert-circle" class="mt-0.5 size-5 shrink-0 text-rose-300" />
+            <p class="text-sm font-medium leading-snug text-rose-50/95">
+              {{ loginError }}
+            </p>
+          </div>
+        </Transition>
         <AuthForm
           ref="authFormRef"
           :title="$t('auth.form.signin.title')"
@@ -175,5 +195,16 @@ const onAuthSubmit = async (event: any) => {
   box-shadow:
     0 30px 70px -20px rgba(0, 0, 0, 0.65),
     inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+/* 登录失败错误条：淡入淡出 */
+.hint-enter-active,
+.hint-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.hint-enter-from,
+.hint-leave-to {
+  opacity: 0;
+  transform: translateY(-3px);
 }
 </style>

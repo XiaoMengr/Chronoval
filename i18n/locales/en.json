@@ -1134,6 +1134,13 @@
         "memory": {
           "title": "Memory Usage"
         },
+        "cpu": {
+          "title": "CPU Load",
+          "label": "Current system load"
+        },
+        "storage": {
+          "title": "Storage"
+        },
         "queue": {
           "title": "Queue Status",
           "activeWorkers": "Active Workers",
@@ -1147,7 +1154,10 @@
         "label": "Share Your Site",
         "button": "Share Your Site"
       },
-      "memoryUnavailable": "memory info not available"
+      "memoryUnavailable": "memory info not available",
+      "storageUnavailable": "storage info not available",
+      "storageNetwork": "Network storage; local disk space cannot be reported",
+      "storagePhotos": "Photos usage"
     },
     "queue": {
       "title": "Queue Management",

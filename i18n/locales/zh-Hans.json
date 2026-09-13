@@ -1132,6 +1132,13 @@
         "memory": {
           "title": "内存使用率"
         },
+        "cpu": {
+          "title": "CPU 负载",
+          "label": "系统当前负载"
+        },
+        "storage": {
+          "title": "存储空间"
+        },
         "queue": {
           "title": "队列状态",
           "activeWorkers": "活跃 Workers",
@@ -1145,7 +1152,10 @@
         "label": "分享你的站点",
         "button": "分享你的站点"
       },
-      "memoryUnavailable": "无法获取内存信息"
+      "memoryUnavailable": "无法获取内存信息",
+      "storageUnavailable": "无法获取存储空间信息",
+      "storageNetwork": "网络存储，本地磁盘空间无法统计",
+      "storagePhotos": "照片占用量"
     },
     "queue": {
       "title": "队列管理",
