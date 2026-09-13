@@ -88,17 +88,32 @@ const cpuStatus = computed(() => {
   return 'healthy'
 })
 
-// 磁盘空间使用率（0-100）
-const diskPercent = computed(() => {
-  const disk = dashboardStats.value?.disk
-  if (!disk?.total) return 0
-  return Math.round((disk.used / disk.total) * 100)
-})
-const diskStatus = computed(() => {
-  if (diskPercent.value > 95) return 'critical'
-  if (diskPercent.value > 80) return 'warning'
+// 存储位置磁盘使用率辅助（用于存储卡片中每个位置的进度条与状态）
+type LocationMeta = {
+  type: 'local' | 'library'
+  path: string
+  used: number
+  total: number
+}
+
+const locPercent = (loc: LocationMeta) => {
+  if (!loc.total) return 0
+  return Math.round((loc.used / loc.total) * 100)
+}
+const locStatus = (loc: LocationMeta) => {
+  const p = locPercent(loc)
+  if (p > 95) return 'critical'
+  if (p > 80) return 'warning'
   return 'healthy'
-})
+}
+const isNetworkProvider = computed(
+  () =>
+    dashboardStats.value?.storage?.provider &&
+    dashboardStats.value.storage.provider !== 'local',
+)
+const storageLocations = computed<LocationMeta[]>(
+  () => dashboardStats.value?.storage?.locations || [],
+)
 
 // 获取所有有照片的年份
 const availableYears = computed(() => {
@@ -485,41 +500,12 @@ const onShareSite = () => {
               </h3>
             </template>
 
-            <!-- 本地存储：展示内部照片默认存储目录所在磁盘的占用 -->
-            <div v-if="dashboardStats?.storage?.local" class="space-y-2">
-              <UProgress
-                :model-value="diskPercent"
-                :color="
-                  diskStatus === 'healthy'
-                    ? 'success'
-                    : diskStatus === 'warning'
-                      ? 'warning'
-                      : 'error'
-                "
-                class="w-full"
-              />
-              <div class="flex items-center justify-between text-sm">
-                <div class="text-xs text-neutral-500 dark:text-neutral-400">
-                  {{
-                    dashboardStats?.disk
-                      ? `${formatBytes(dashboardStats.disk.used)} / ${formatBytes(dashboardStats.disk.total)}`
-                      : $t('dashboard.overview.storageUnavailable')
-                  }}
-                </div>
-                <span>{{ dashboardStats?.disk ? `${diskPercent}%` : '-' }}</span>
-              </div>
-              <p
-                v-if="dashboardStats?.storage?.basePath"
-                class="truncate text-[11px] text-neutral-500 dark:text-neutral-400"
-                :title="dashboardStats.storage.basePath"
+            <div class="space-y-3">
+              <!-- 网络存储提示：内部照片默认存储不在本地磁盘 -->
+              <div
+                v-if="isNetworkProvider"
+                class="flex items-center gap-1.5 rounded-md bg-neutral-50 px-2 py-1.5 text-sm dark:bg-neutral-900"
               >
-                {{ dashboardStats.storage.basePath }}
-              </p>
-            </div>
-
-            <!-- 网络存储（s3/openlist 等）：不占本地磁盘，显示照片占用与存储类型 -->
-            <div v-else class="space-y-2">
-              <div class="flex items-center gap-1.5 text-sm">
                 <Icon
                   name="tabler:cloud"
                   class="size-4 shrink-0 text-neutral-500 dark:text-neutral-400"
@@ -527,11 +513,72 @@ const onShareSite = () => {
                 <span class="text-xs text-neutral-500 dark:text-neutral-400">
                   {{ $t('dashboard.overview.storageNetwork') }}
                 </span>
-                <UBadge v-if="dashboardStats?.storage?.provider" variant="soft" size="sm">
-                  {{ dashboardStats.storage.provider }}
+                <UBadge variant="soft" size="sm">
+                  {{ dashboardStats?.storage?.provider }}
                 </UBadge>
               </div>
-              <div class="flex items-center justify-between text-sm">
+
+              <!-- 无任何位置信息 -->
+              <div
+                v-if="storageLocations.length === 0"
+                class="text-xs text-neutral-500 dark:text-neutral-400"
+              >
+                {{ $t('dashboard.overview.storageUnavailable') }}
+              </div>
+
+              <!-- 遍历展示每个存储位置：内部默认存储 + 外部库 -->
+              <div
+                v-for="loc in storageLocations"
+                :key="loc.path"
+                class="space-y-1.5"
+              >
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-1.5 text-sm">
+                    <Icon
+                      :name="
+                        loc.type === 'library'
+                          ? 'tabler:folder'
+                          : 'tabler:database'
+                      "
+                      class="size-4 shrink-0 text-neutral-500 dark:text-neutral-400"
+                    />
+                    <span class="text-xs font-medium">
+                      {{
+                        loc.type === 'library'
+                          ? $t('dashboard.overview.section.storage.library')
+                          : $t('dashboard.overview.section.storage.local')
+                      }}
+                    </span>
+                  </div>
+                  <span class="text-xs text-neutral-500 dark:text-neutral-400">
+                    {{ loc.total ? `${locPercent(loc)}%` : '-' }}
+                  </span>
+                </div>
+
+                <UProgress
+                  :model-value="locPercent(loc)"
+                  :color="
+                    locStatus(loc) === 'healthy'
+                      ? 'success'
+                      : locStatus(loc) === 'warning'
+                        ? 'warning'
+                        : 'error'
+                  "
+                  class="w-full"
+                />
+
+                <div class="flex items-center justify-between text-xs">
+                  <span class="truncate text-neutral-500 dark:text-neutral-400" :title="loc.path">
+                    {{ loc.path }}
+                  </span>
+                  <span class="shrink-0 pl-2 text-neutral-500 dark:text-neutral-400">
+                    {{ loc.total ? `${formatBytes(loc.used)} / ${formatBytes(loc.total)}` : '-' }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- 照片总占用量 -->
+              <div class="flex items-center justify-between border-t border-neutral-100 pt-2 text-sm dark:border-neutral-800">
                 <span class="text-xs text-neutral-500 dark:text-neutral-400">
                   {{ $t('dashboard.overview.storagePhotos') }}
                 </span>

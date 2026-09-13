@@ -1137,7 +1137,9 @@
           "label": "系统当前负载"
         },
         "storage": {
-          "title": "存储空间"
+          "title": "存储空间",
+          "local": "本地存储",
+          "library": "外部库"
         },
         "queue": {
           "title": "队列状态",

@@ -1,7 +1,8 @@
-import { sql, gte, isNull } from 'drizzle-orm'
+import { sql, gte, isNull, eq } from 'drizzle-orm'
 import * as si from 'systeminformation'
 import { readFileSync } from 'node:fs'
 import { settingsManager } from '../../services/settings/settingsManager'
+import { scanLibraries } from '../../database/schema'
 
 // 短 TTL 缓存：stats 数据变化频率远低于请求频率（后台页每 5s 轮询）
 const STATS_TTL_MS = 10_000
@@ -12,31 +13,103 @@ async function getQueueStats() {
   return workerPool ? workerPool.getPoolStats() : null
 }
 
-// 获取当前照片存储方式元信息（内部照片默认存储）。
-// - local：照片存在本地磁盘目录（config.basePath），磁盘空间可统计；
-// - s3 / openlist 等网络存储：不占本地磁盘，磁盘空间无法用本地口径统计，交由前端显示未知。
+// 存储位置：type 区分「内部默认存储」(local) 与「外部库扫描目录」(library)
+type StorageLocation = {
+  type: 'local' | 'library'
+  path: string
+  used: number
+  total: number
+}
+
+// 为多个目录路径一次性解析其所在挂载点磁盘用量（挂载路径最长前缀优先）
+async function resolveDiskPerPath(paths: string[]): Promise<
+  { used: number; total: number }[]
+> {
+  let disks: Awaited<ReturnType<typeof si.fsSize>> | null = null
+  try {
+    disks = await si.fsSize()
+  } catch (error) {
+    console.warn('Failed to read filesystems:', error)
+  }
+
+  const isRealFs = (d: { type?: string; size?: number }) =>
+    d.type !== 'tmpfs' && d.type !== 'overlay' && d.type !== 'squashfs' && (d.size || 0) > 0
+
+  const mountOf = (p: string): (typeof disks)[number] | undefined => {
+    if (!disks?.length) return undefined
+    const matches = disks
+      .filter(
+        (d) => isRealFs(d) && (p.startsWith(d.mount) || d.mount.startsWith(p)),
+      )
+      .sort((a, b) => b.mount.length - a.mount.length)
+    let root = matches[0]
+    root = root || disks.find((d) => d.mount === '/')
+    root = root || disks.find((d) => isRealFs(d)) || disks.find((d) => (d.size || 0) > 0)
+    return root
+  }
+
+  return paths.map((p) => {
+    const root = mountOf(p)
+    if (!root || !root.size) return { used: 0, total: 0 }
+    return { used: root.used || 0, total: root.size || 0 }
+  })
+}
+
+// 获取照片存储方式元信息 + 所有存储位置（内部默认存储 / 外部库），
+// - local provider：内部照片存在本地目录（basePath），可统计磁盘；
+// - s3 / openlist 等网络存储：内部照片不占本地磁盘，前端以「未知」处理，外部库仍单独列出。
 async function getStorageMeta(): Promise<{
   provider: string | null
   local: boolean
   basePath: string | null
+  locations: StorageLocation[]
 }> {
   try {
     const active = await settingsManager.storage.getActiveProvider()
-    if (!active) {
-      return { provider: null, local: false, basePath: null }
-    }
-    const cfg =
-      typeof active.config === 'string' ? JSON.parse(active.config) : active.config || {}
-    const provider = active.provider || cfg?.provider || null
+    const cfg = active
+      ? typeof active.config === 'string'
+        ? JSON.parse(active.config)
+        : active.config || {}
+      : {}
+    const provider = active?.provider || cfg?.provider || null
     const local = provider === 'local'
-    return {
-      provider,
-      local,
-      basePath: local && cfg?.basePath ? String(cfg.basePath) : null,
+    const basePath = local && cfg?.basePath ? String(cfg.basePath) : null
+
+    // 收集所有存储位置：内部默认存储（仅本地）+ 已启用的外部库（扫描库根目录）
+    const collected: Array<{ type: 'local' | 'library'; path: string }> = []
+    if (basePath) {
+      collected.push({ type: 'local', path: basePath })
     }
+    try {
+      const libs = useDB()
+        .select({ rootPath: scanLibraries.rootPath })
+        .from(scanLibraries)
+        .where(eq(scanLibraries.enabled, true))
+        .all()
+      for (const lib of libs) {
+        if (
+          lib.rootPath &&
+          !collected.some((c) => c.path === lib.rootPath)
+        ) {
+          collected.push({ type: 'library', path: lib.rootPath })
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to list scan libraries for storage:', error)
+    }
+
+    const sizes = await resolveDiskPerPath(collected.map((c) => c.path))
+    const locations = collected.map((c, i) => ({
+      type: c.type,
+      path: c.path,
+      used: sizes[i]?.used || 0,
+      total: sizes[i]?.total || 0,
+    }))
+
+    return { provider, local, basePath, locations }
   } catch (error) {
     console.warn('Failed to get storage meta:', error)
-    return { provider: null, local: false, basePath: null }
+    return { provider: null, local: false, basePath: null, locations: [] }
   }
 }
 
@@ -163,39 +236,6 @@ async function getCpuLoad(): Promise<{ current: number } | null> {
   }
 }
 
-// 获取磁盘空间统计（优先统计目标目录 basePath 所在挂载点，其次根挂载 /）
-async function getDiskStats(basePath?: string): Promise<{
-  used: number
-  total: number
-} | null> {
-  try {
-    const disks = await si.fsSize()
-    if (!disks || disks.length === 0) return null
-
-    const isRealFs = (d: { type?: string; size?: number }) =>
-      d.type !== 'tmpfs' && d.type !== 'overlay' && d.type !== 'squashfs' && (d.size || 0) > 0
-
-    // 1) 优先匹配「内部存储目录」所在挂载点（挂载路径最长前缀优先）
-    let root: (typeof disks)[number] | undefined
-    if (basePath) {
-      const matches = disks
-        .filter((d) => isRealFs(d) && (basePath.startsWith(d.mount) || d.mount.startsWith(basePath)))
-        .sort((a, b) => b.mount.length - a.mount.length)
-      root = matches[0]
-    }
-    // 2) 其次根挂载 /
-    root = root || disks.find((d) => d.mount === '/')
-    // 3) 最后任一真实文件系统
-    root = root || disks.find((d) => isRealFs(d)) || disks.find((d) => (d.size || 0) > 0)
-
-    if (!root || !root.size) return null
-    return { used: root.used || 0, total: root.size || 0 }
-  } catch (error) {
-    console.warn('Failed to get disk info:', error)
-    return null
-  }
-}
-
 export default eventHandler(async (event) => {
   await requireUserSession(event)
 
@@ -303,20 +343,14 @@ export default eventHandler(async (event) => {
     }
   }
 
-  // 存储方式元信息：决定存储卡片如何展示磁盘空间
+  // 存储方式元信息：决定存储卡片如何展示磁盘空间（含多个存储位置）
   const storageMeta = await getStorageMeta()
-
-  // 仅本地存储可统计内部存储目录所在磁盘；网络存储（s3/openlist 等）不占本地磁盘 → disk 为 null
-  const disk = storageMeta.local && storageMeta.basePath
-    ? await getDiskStats(storageMeta.basePath)
-    : null
 
   const data = {
     uptime: process.uptime() || 0,
     runningOn: systemInfo,
     memory: (await getMemoryStats()) || { used: 0, total: 0 },
     cpu: (await getCpuLoad()) || { current: 0 },
-    disk,
     photos: {
       total: totalPhotos?.count || 0,
       today: todayPhotos?.count || 0,
@@ -331,6 +365,7 @@ export default eventHandler(async (event) => {
       provider: storageMeta.provider,
       local: storageMeta.local,
       basePath: storageMeta.basePath,
+      locations: storageMeta.locations,
     },
     trends: trendData.toReversed(),
     timestamp: new Date().toISOString(),

@@ -973,7 +973,9 @@
           "label": "系統當前負載"
         },
         "storage": {
-          "title": "儲存空間"
+          "title": "儲存空間",
+          "local": "本機儲存",
+          "library": "外部庫"
         },
         "queue": {
           "title": "隊列狀態",

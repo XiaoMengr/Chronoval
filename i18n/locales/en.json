@@ -1139,7 +1139,9 @@
           "label": "Current system load"
         },
         "storage": {
-          "title": "Storage"
+          "title": "Storage",
+          "local": "Local storage",
+          "library": "External library"
         },
         "queue": {
           "title": "Queue Status",
