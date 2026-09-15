@@ -229,7 +229,8 @@ function mapSystemInfo(distribution: string): string {
 async function getCpuLoad(): Promise<{ current: number } | null> {
   try {
     const cpu = await si.currentLoad()
-    return { current: Math.round(cpu.current * 10) / 10 }
+    // 注意：systeminformation 返回的字段是 currentLoad，不是 current
+    return { current: Math.round((cpu.currentLoad || 0) * 10) / 10 }
   } catch (error) {
     console.warn('Failed to get CPU info:', error)
     return null

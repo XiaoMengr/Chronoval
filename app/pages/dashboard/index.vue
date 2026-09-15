@@ -31,7 +31,116 @@ const refreshData = async () => {
   }
 }
 
-// 后台主页轮询：30s 一次，页面隐藏时暂停、回到前台立即刷新（减少无效请求）
+const systemStatus = computed(() => {
+  if (!dashboardStats.value) return 'unknown'
+
+  const memoryUsage = dashboardStats.value.memory
+    ? (dashboardStats.value.memory.used / dashboardStats.value.memory.total) *
+      100
+    : 0
+
+  if (memoryUsage > 90) return 'critical'
+  if (memoryUsage > 70) return 'warning'
+  return 'healthy'
+})
+
+// ---- CPU 高频监测 ----
+// cpuTarget：最新拉取到的真实负载；cpuDisplay：经 rAF 缓动平滑过渡后的展示值，
+// 驱动进度条与数字产生“平滑跳动”到实际值的过渡效果。
+const cpuTarget = ref(0)
+const cpuDisplay = ref(0)
+
+let cpuRaf = 0
+// 安全 rAF：浏览器用 requestAnimationFrame，SSR/非浏览器退化为 setTimeout，
+// 避免 "requestAnimationFrame is not defined"
+const safeRaf = (cb: () => void) =>
+  typeof requestAnimationFrame !== 'undefined'
+    ? requestAnimationFrame(cb)
+    : (setTimeout(cb, 16) as unknown as number)
+const safeCancel = (id: number) => {
+  if (typeof cancelAnimationFrame !== 'undefined') cancelAnimationFrame(id)
+  else clearTimeout(id)
+}
+
+// CPU 实际负载（0-100，来自 stats，随整体统计一起刷新）
+const cpuRealValue = computed(() => {
+  const v = dashboardStats.value?.cpu?.current
+  return typeof v === 'number' && Number.isFinite(v) ? v : 0
+})
+// CPU 负载（平滑过渡后的展示值，0-100）
+const cpuLoad = computed(() => cpuDisplay.value)
+const cpuStatus = computed(() => {
+  if (cpuLoad.value > 90) return 'critical'
+  if (cpuLoad.value > 75) return 'warning'
+  return 'healthy'
+})
+
+const tickCpu = () => {
+  cpuRaf = safeRaf(() => {
+    const diff = cpuTarget.value - cpuDisplay.value
+    if (Math.abs(diff) > 0.05) {
+      // 每帧逼近目标约 12%，先快后慢（与内存一致）
+      cpuDisplay.value += diff * 0.12
+      tickCpu()
+    } else {
+      cpuDisplay.value = cpuTarget.value
+      cpuRaf = 0
+    }
+  })
+}
+
+// 与内存同步：随 stats（30s）刷新目标值，并用缓动平滑过渡，不再单独高频跳
+watch(
+  cpuRealValue,
+  (v) => {
+    if (!import.meta.client) return
+    cpuTarget.value = v
+    if (!cpuRaf) tickCpu()
+  },
+  { immediate: true },
+)
+
+// ---- 内存使用率平滑动画 ----
+// 与 CPU 同样在进入页面时从 0 平滑过渡到实际使用率（进度条 + 百分比）
+const memTarget = ref(0)
+const memDisplay = ref(0)
+let memRaf = 0
+
+const memRealPercent = computed(() => {
+  const m = dashboardStats.value?.memory
+  if (!m || !m.total) return 0
+  return Math.round((m.used / m.total) * 100)
+})
+// 平滑过渡后的展示使用率
+const memLoad = computed(() => memDisplay.value)
+
+const tickMem = () => {
+  memRaf = safeRaf(() => {
+    const diff = memTarget.value - memDisplay.value
+    if (Math.abs(diff) > 0.05) {
+      memDisplay.value += diff * 0.12
+      tickMem()
+    } else {
+      memDisplay.value = memTarget.value
+      memRaf = 0
+    }
+  })
+}
+
+watch(
+  memRealPercent,
+  (v) => {
+    if (!import.meta.client) return
+    if (typeof v === 'number' && Number.isFinite(v)) {
+      memTarget.value = v
+      if (!memRaf) tickMem()
+    }
+  },
+  { immediate: true },
+)
+
+// 后台主页轮询：30s 刷新全量统计（含照片/存储/内存）+ 1s CPU 高频监测，
+// 页面隐藏时暂停、回到前台立即刷新（减少无效请求）
 const REFRESH_MS = 30000
 
 let refreshInterval: ReturnType<typeof setInterval> | undefined
@@ -55,8 +164,8 @@ const onVisibilityChange = () => {
   }
 }
 
-startPolling()
 if (import.meta.client) {
+  startPolling()
   document.addEventListener('visibilitychange', onVisibilityChange)
 }
 
@@ -65,27 +174,6 @@ onBeforeUnmount(() => {
   if (import.meta.client) {
     document.removeEventListener('visibilitychange', onVisibilityChange)
   }
-})
-
-const systemStatus = computed(() => {
-  if (!dashboardStats.value) return 'unknown'
-
-  const memoryUsage = dashboardStats.value.memory
-    ? (dashboardStats.value.memory.used / dashboardStats.value.memory.total) *
-      100
-    : 0
-
-  if (memoryUsage > 90) return 'critical'
-  if (memoryUsage > 70) return 'warning'
-  return 'healthy'
-})
-
-// CPU 负载（0-100）
-const cpuLoad = computed(() => dashboardStats.value?.cpu?.current || 0)
-const cpuStatus = computed(() => {
-  if (cpuLoad.value > 90) return 'critical'
-  if (cpuLoad.value > 75) return 'warning'
-  return 'healthy'
 })
 
 // 存储位置磁盘使用率辅助（用于存储卡片中每个位置的进度条与状态）
@@ -696,15 +784,7 @@ const onShareSite = () => {
 
               <div class="space-y-2">
                 <UProgress
-                  :model-value="
-                    dashboardStats?.memory
-                      ? Math.round(
-                          (dashboardStats.memory.used /
-                            dashboardStats.memory.total) *
-                            100,
-                        )
-                      : 0
-                  "
+                  :model-value="Math.round(memLoad * 10) / 10"
                   :color="
                     systemStatus === 'healthy'
                       ? 'success'
@@ -725,15 +805,7 @@ const onShareSite = () => {
                     }}
                   </div>
                   <span class="text-sm font-semibold tabular-nums text-(--ui-text)">
-                    {{
-                      dashboardStats?.memory
-                        ? Math.round(
-                            (dashboardStats.memory.used /
-                              dashboardStats.memory.total) *
-                              100,
-                          )
-                        : 0
-                    }}%
+                    {{ Math.round(memLoad) }}%
                   </span>
                 </div>
               </div>
