@@ -53,6 +53,12 @@ const colorSchemes = {
     border: 'border-rose-100 dark:border-rose-900',
     text: 'text-red-400 dark:text-white',
   },
+  cyan: {
+    background:
+      'bg-gradient-to-r from-cyan-50 to-teal-50 dark:from-cyan-950/70 dark:to-teal-950/70',
+    border: 'border-teal-100 dark:border-teal-900',
+    text: 'text-cyan-400 dark:text-white',
+  },
   gray: {
     background:
       'bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-950/70 dark:to-slate-950/70',

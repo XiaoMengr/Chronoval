@@ -152,25 +152,66 @@ html body.dashboard-active {
   --ui-radius-2xl: 0.625rem;
 }
 
-/* ---- 卡片：苹果毛玻璃（大圆角 + 高模糊 + 高光内描边） ---- */
+/* ---- 卡片：3D 纸感（大圆角 + 顶部高光 + 多层纵深阴影 + 悬停抬升） ---- */
 .dashboard-root .ui-card {
   background: var(--ui-bg-elevated);
   -webkit-backdrop-filter: blur(30px) saturate(1.4);
   backdrop-filter: blur(30px) saturate(1.4);
   border: 1px solid var(--ui-border-accented);
-  border-radius: 8px;
+  border-radius: 12px;
+  will-change: transform;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.5),
-    inset 0 -1px 0 rgba(20, 20, 24, 0.03),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 0 rgba(20, 20, 24, 0.04),
     0 1px 2px rgba(20, 20, 24, 0.04),
-    0 24px 48px -28px rgba(20, 20, 24, 0.22);
+    0 8px 18px -8px rgba(20, 20, 24, 0.1),
+    0 26px 52px -26px rgba(20, 20, 24, 0.22);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 .dark .dashboard-root .ui-card {
-  background: rgba(255, 255, 255, 0.045);
+  background: rgba(255, 255, 255, 0.05);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 1px 2px rgba(0, 0, 0, 0.28),
-    0 28px 60px -30px rgba(0, 0, 0, 0.8);
+    inset 0 -1px 0 rgba(0, 0, 0, 0.5),
+    0 1px 2px rgba(0, 0, 0, 0.3),
+    0 18px 40px -22px rgba(0, 0, 0, 0.72);
+}
+
+/* 悬停 3D 抬升：仅细腻指针设备生效，触屏不触发，避免滚动时晃 */
+@media (hover: hover) and (pointer: fine) {
+  .dashboard-root .ui-card:hover {
+    transform: translateY(-3px);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.95),
+      inset 0 -1px 0 rgba(20, 20, 24, 0.03),
+      0 3px 6px rgba(20, 20, 24, 0.05),
+      0 20px 34px -14px rgba(20, 20, 24, 0.18),
+      0 48px 90px -36px rgba(20, 20, 24, 0.34);
+  }
+  .dark .dashboard-root .ui-card:hover {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      0 6px 14px rgba(0, 0, 0, 0.32),
+      0 30px 60px -24px rgba(0, 0, 0, 0.85);
+  }
+}
+
+/* ---- 卡片差异化色调：均为「白色为底的极浅冷色」，和而不同，杜绝米黄 ---- */
+:root:not(.dark) .dashboard-root .ui-card.card-tint-pearl {
+  background: linear-gradient(180deg, #ffffff, #f6f7f9);
+  border-color: rgba(20, 20, 24, 0.08);
+}
+:root:not(.dark) .dashboard-root .ui-card.card-tint-sky {
+  background: linear-gradient(180deg, #ffffff, #eff3fb);
+  border-color: rgba(79, 118, 187, 0.16);
+}
+:root:not(.dark) .dashboard-root .ui-card.card-tint-mint {
+  background: linear-gradient(180deg, #ffffff, #edf6f2);
+  border-color: rgba(45, 138, 108, 0.14);
+}
+:root:not(.dark) .dashboard-root .ui-card.card-tint-lavender {
+  background: linear-gradient(180deg, #ffffff, #f3f0fb);
+  border-color: rgba(122, 96, 191, 0.15);
 }
 
 /* ---- 页面外壳（导航 + 主体）：不与卡片争抢，保持整屏通栏 ---- */

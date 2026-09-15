@@ -408,13 +408,13 @@ const onShareSite = () => {
           <DashboardIndicator
             :title="$t('dashboard.overview.indicator.storageUsage')"
             icon="tabler:database"
-            color="blue"
+            color="cyan"
             :value="formatBytes(dashboardStats?.storage?.totalSize || 0)"
           />
         </div>
 
         <!-- 运行信息 -->
-        <UCard>
+        <UCard class="card-tint-lavender">
           <template #header>
             <h2 class="flex items-center gap-2 text-sm font-semibold text-(--ui-text)">
               <Icon name="tabler:terminal-2" class="size-4 text-(--ui-text-muted)" />
@@ -577,7 +577,7 @@ const onShareSite = () => {
             </UCard>
 
             <!-- 最近上传缩略图横条 -->
-            <UCard>
+            <UCard class="card-tint-mint">
               <template #header>
                 <div class="flex items-center justify-between">
                   <h3 class="flex items-center gap-2 text-sm font-semibold text-(--ui-text)">
@@ -648,7 +648,7 @@ const onShareSite = () => {
             </UCard>
 
             <!-- 类型与来源分布 -->
-            <UCard>
+            <UCard class="card-tint-sky">
               <template #header>
                 <h3 class="flex items-center gap-2 text-sm font-semibold text-(--ui-text)">
                   <Icon name="tabler:chart-donut" class="size-4 text-(--ui-text-muted)" />
@@ -672,9 +672,9 @@ const onShareSite = () => {
                       { value: mediaStats.video, color: '#8b5cf6' },
                     ]"
                   >
-                    <span class="text-xl font-extrabold tracking-tight text-(--ui-text) sm:text-3xl">
+                    <span class="text-lg font-semibold tracking-tight text-(--ui-text) sm:text-2xl">
                       <span class="tabular-nums">{{ mediaTypePercent('image') }}</span
-                      ><span class="text-sm font-semibold text-(--ui-text-muted) sm:text-base">%</span>
+                      ><span class="text-xs font-medium text-(--ui-text-muted) sm:text-sm">%</span>
                     </span>
                     <span class="mt-0.5 text-[10px] font-medium tracking-wide text-(--ui-text-dimmed) sm:mt-1 sm:text-xs">
                       {{ $t('dashboard.overview.section.mediaTypes.image') }}
@@ -774,7 +774,7 @@ const onShareSite = () => {
           <!-- 右侧：系统资源监控 -->
           <div class="lg:col-span-2 w-full space-y-4">
             <!-- 内存使用 -->
-            <UCard>
+            <UCard class="card-tint-pearl">
               <template #header>
                 <h3 class="flex items-center gap-2 text-sm font-semibold text-(--ui-text)">
                   <Icon name="tabler:memory" class="size-4 text-(--ui-text-muted)" />
@@ -812,7 +812,7 @@ const onShareSite = () => {
             </UCard>
 
             <!-- CPU 使用 -->
-          <UCard>
+          <UCard class="card-tint-lavender">
             <template #header>
               <h3 class="flex items-center gap-2 text-sm font-semibold text-(--ui-text)">
                 <Icon name="tabler:cpu" class="size-4 text-(--ui-text-muted)" />
@@ -844,7 +844,7 @@ const onShareSite = () => {
           </UCard>
 
           <!-- 存储空间 -->
-          <UCard>
+          <UCard class="card-tint-mint">
             <template #header>
               <h3 class="flex items-center gap-2 text-sm font-semibold text-(--ui-text)">
                 <Icon name="tabler:database" class="size-4 text-(--ui-text-muted)" />
@@ -940,7 +940,7 @@ const onShareSite = () => {
           </UCard>
 
             <!-- 队列详情 -->
-            <UCard>
+            <UCard class="card-tint-sky">
               <template #header>
                 <h3 class="flex items-center gap-2 text-sm font-semibold text-(--ui-text)">
                   <Icon name="tabler:list-check" class="size-4 text-(--ui-text-muted)" />
