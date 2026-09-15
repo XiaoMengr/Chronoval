@@ -377,7 +377,7 @@ const onShareSite = () => {
     </template>
 
     <template #body>
-      <div class="mx-auto flex w-full max-w-[1480px] flex-col gap-6 pb-8">
+      <div class="flex w-full flex-col gap-6 pb-8">
         <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <DashboardIndicator
             :title="$t('dashboard.overview.indicator.totalPhotos')"

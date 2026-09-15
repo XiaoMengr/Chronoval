@@ -10,9 +10,9 @@
    ============================================================ */
 
 .dashboard-root {
-  /* ---- 外壳表面：暖象牙底 ---- */
-  --ui-bg: #f3f2f0;
-  --ui-bg-muted: #ecebe8;
+  /* ---- 外壳表面：中性浅白底 ---- */
+  --ui-bg: #fafafa;
+  --ui-bg-muted: #f2f2f4;
   --ui-bg-elevated: rgba(255, 255, 255, 0.55);
   --ui-bg-accented: rgba(255, 255, 255, 0.92);
   --ui-bg-inverted: #141417;
@@ -245,10 +245,10 @@ html body.dashboard-active {
    仅后台路由挂载，不污染画廊。
    ============================================================ */
 html body.dashboard-active {
-  --ui-bg: #f3f2f0;
-  --ui-bg-muted: #ecebe8;
-  --ui-bg-elevated: rgba(255, 255, 255, 0.78);
-  --ui-bg-accented: rgba(255, 255, 255, 0.94);
+  --ui-bg: #fafafa;
+  --ui-bg-muted: #f2f2f4;
+  --ui-bg-elevated: rgba(255, 255, 255, 0.9);
+  --ui-bg-accented: rgba(255, 255, 255, 0.96);
 
   --ui-text-dimmed: #9a9a9f;
   --ui-text-muted: #6e6e75;
@@ -290,15 +290,13 @@ html.dark body.dashboard-active {
    深色：炭黑基底 + 微弱光晕 + 更隐蔽的点阵，保留纵深。整体像一张有织理的
    高级哑光纸，而非一片纯色，规避"廉价感"。 */
 html body.dashboard-active {
-  background-color: #f3f2f0;
+  background-color: #fafafa;
   background-image:
-    radial-gradient(1px 1px at 50% 50%, rgba(20, 20, 24, 0.055), transparent 100%),
-    radial-gradient(56rem 34rem at 8% -12%, rgba(79, 138, 176, 0.055), transparent 60%),
-    radial-gradient(50rem 32rem at 100% -8%, rgba(176, 148, 79, 0.045), transparent 55%),
-    radial-gradient(64rem 44rem at 50% 120%, rgba(112, 123, 176, 0.05), transparent 58%);
+    radial-gradient(1px 1px at 50% 50%, rgba(20, 20, 24, 0.04), transparent 100%),
+    radial-gradient(56rem 34rem at 8% -12%, rgba(79, 138, 176, 0.04), transparent 60%),
+    radial-gradient(64rem 44rem at 50% 120%, rgba(112, 123, 176, 0.04), transparent 58%);
   background-size:
     26px 26px,
-    auto,
     auto,
     auto;
 }
