@@ -79,6 +79,32 @@ watch([themeToggleEnabledRef, systemThemeRef], applyThemePrecedence, {
   immediate: true,
 })
 
+// ===== 首屏（FOUC）防抖：让 HTML 一进来就是正确主题 =====
+// @nuxtjs/color-mode 会在 <head> 注入一段在 Vue water化之前就执行的内联脚本，
+// 它默认按 `localStorage.getItem(key) || preference(构建期默认 dark)` 给 <html> 加 class。
+// 由于后台主题是通过异步接口加载的，SSR 输出的 <html> 若不带任何主题属性，
+// 浏览器首帧会先用默认 dark 渲染，水合后才切浅色——造成"先黑后浅"的闪烁。
+// 解法：在 SSR 阶段把有效主题写到 `data-color-mode-forced` 上（设置在我方
+// settings 加载完成之后、渲染前写入）。内联脚本逻辑为 `forced && (i = forced)`，
+// 因此首帧即采用后台主题，彻底消除闪烁。
+const forcedTheme = computed(() => {
+  const themeToggleEnabled = !!themeToggleEnabledRef.value
+  const systemTheme = (systemThemeRef.value as string) || 'system'
+  // 后台把主题设成了明确的 light/dark 才强制；system（跟随系统）交由内联脚本自行判断。
+  if (systemTheme !== 'light' && systemTheme !== 'dark') return undefined
+  return systemTheme
+})
+useHead(() => ({
+  htmlAttrs: {
+    // 仅在「顶栏开关关闭」或 SSR 首帧（后台主题即默认）时强制；
+    // 顶栏开关开启时访客可在客户端自行切换，SSR 无访客上下文，仍以后台主题作首帧兜底。
+    'data-color-mode-forced':
+      import.meta.client && themeToggleEnabledRef.value === true
+        ? undefined
+        : forcedTheme.value,
+  },
+}))
+
 useHead({
   titleTemplate: (title) =>
     `${title ? title + ' | ' : ''}${appTitle.value || 'Chronoval'}`,
