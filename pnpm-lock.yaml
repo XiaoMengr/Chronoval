@@ -20,6 +20,9 @@ importers:
       '@chronoframe/webgl-image':
         specifier: workspace:*
         version: link:packages/webgl-image
+      '@fontsource/carter-one':
+        specifier: ^5.3.0
+        version: 5.3.0
       '@fontsource/geist-sans':
         specifier: ^5.3.0
         version: 5.3.0
@@ -1313,6 +1316,9 @@ packages:
 
   '@floating-ui/vue@1.1.9':
     resolution: {integrity: sha512-BfNqNW6KA83Nexspgb9DZuz578R7HT8MZw1CfK9I6Ah4QReNWEJsXWHN+SdmOVLNGmTPDi+fDT535Df5PzMLbQ==}
+
+  '@fontsource/carter-one@5.3.0':
+    resolution: {integrity: sha512-/zJyBBKtNNIISqHz1skA2lB1U6G1lnAEssyJd+3jS7B/6ifswued6V4ffVtY9xOLSpKMnkPsT6cpMmtH4Ng2PQ==}
 
   '@fontsource/geist-sans@5.3.0':
     resolution: {integrity: sha512-AmG7cE1AvE4NHROPaOl1sN+a02cB5xy6pA/ZV76HXqWTCsJTV2SCBc9DTFHfJqnVOODm7HhXIYtUIb75NP5QXQ==}
@@ -9769,6 +9775,8 @@ snapshots:
     transitivePeerDependencies:
       - '@vue/composition-api'
       - vue
+
+  '@fontsource/carter-one@5.3.0': {}
 
   '@fontsource/geist-sans@5.3.0': {}
 

@@ -85,7 +85,7 @@ const onAuthSubmit = async (event: any) => {
 </script>
 
 <template>
-  <main class="font-apple relative flex h-svh w-full flex-col overflow-hidden lg:h-svh lg:flex-row">
+  <main class="font-apple login-enter relative flex h-svh w-full flex-col overflow-hidden lg:h-svh lg:flex-row">
 
     <!-- ===== 统一全屏森林背景层：桌面 + 移动共用，铺满整页 ===== -->
     <div class="absolute inset-0" aria-hidden="true">
@@ -113,13 +113,14 @@ const onAuthSubmit = async (event: any) => {
 
     <!-- ===== 移动端品牌顶栏（仅移动端）：占位式高斯模糊渐入，仿首页顶栏；占据顶部空间，卡片在其下方不再被遮挡/挤压 ===== -->
     <div class="relative z-30 w-full shrink-0 lg:hidden">
-      <!-- 毛玻璃层 + 向下渐隐遮罩：顶部实、向下淡出，与首页顶栏观感一致（亮色毛玻璃） -->
-      <div class="absolute inset-0 -z-10 bg-white/65 backdrop-blur-2xl [mask-image:linear-gradient(to_bottom,black_0%,black_55%,transparent_100%)]" />
-      <!-- 品牌内容（logo + CHRONOVAL） -->
-      <div class="relative flex items-center gap-2.5 px-5 pb-4 pt-[max(1rem,env(safe-area-inset-top))] lg:pb-6 lg:pt-6">
+      <!-- 毛玻璃层 + 向下渐隐遮罩：顶部实、向下淡出，与首页顶栏观感一致（暗色高斯模糊） -->
+      <div class="absolute inset-0 -z-10 bg-neutral-950/30 backdrop-blur-2xl [mask-image:linear-gradient(to_bottom,black_0%,black_55%,transparent_100%)]" />
+      <!-- 品牌内容（logo + CHRONOVAL wordmark，Carter One 水彩笔刷描画动画） -->
+      <div class="relative flex items-center gap-3 px-5 pb-4 pt-[max(1rem,env(safe-area-inset-top))] lg:pb-6 lg:pt-6">
         <img :src="appLogo" alt="Chronoval" class="size-8 shrink-0 rounded-lg" />
-        <span class="text-[0.72rem] font-semibold uppercase tracking-[0.32em] text-neutral-900">
-          Chronoval
+        <!-- Carter One 圆润手写标题体 + 从左到右渐入水彩绘画 -->
+        <span class="brand-wordmark brand-ink text-[0.92rem] leading-none">
+          CHRONOVAL
         </span>
       </div>
     </div>
@@ -128,8 +129,8 @@ const onAuthSubmit = async (event: any) => {
     <aside class="relative z-10 hidden w-full flex-col justify-between p-12 lg:flex lg:w-1/2 xl:p-16">
       <div class="flex items-center gap-3">
         <img :src="appLogo" alt="Chronoval" class="h-8 w-8" />
-        <span class="text-[0.7rem] font-semibold uppercase tracking-[0.4em] text-white/80">
-          Chronoval
+        <span class="brand-wordmark brand-ink text-[1.05rem] leading-none">
+          CHRONOVAL
         </span>
       </div>
 
@@ -172,6 +173,55 @@ const onAuthSubmit = async (event: any) => {
 </template>
 
 <style scoped>
+/* 整页进入渐入：森林背景 + 卡片 + 顶栏整体淡入，约 0.6s */
+.login-enter {
+  animation: loginPageIn 0.7s cubic-bezier(0.33, 0, 0.4, 1) both;
+}
+@keyframes loginPageIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* 品牌 wordmark：Carter One + 从左到右渐入水彩绘画。
+   墨色从左往右一笔柔和铺开（软边斜角笔锋），同时整体轻微渐显，
+   观感干净平顺，像水彩在纸上从左边缓缓洇到右边。 */
+.brand-wordmark {
+  font-family: 'Carter One', 'Manrope', 'Bradley Hand', system-ui, sans-serif;
+  font-weight: 400;
+  display: inline-block;
+  position: relative;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.97);
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 0 18px rgba(255, 255, 255, 0.2);
+}
+.brand-ink {
+  -webkit-mask-image: linear-gradient(
+    100deg,
+    #000 0%, #000 60%, rgba(0, 0, 0, 0.6) 78%, rgba(0, 0, 0, 0.12) 92%, transparent 100%
+  );
+  -webkit-mask-size: 410% 100%;
+  -webkit-mask-position: 0% 0%;
+  -webkit-mask-repeat: no-repeat;
+  mask-image: linear-gradient(
+    100deg,
+    #000 0%, #000 60%, rgba(0, 0, 0, 0.6) 78%, rgba(0, 0, 0, 0.12) 92%, transparent 100%
+  );
+  mask-size: 410% 100%;
+  mask-position: 0% 0%;
+  mask-repeat: no-repeat;
+  opacity: 0;
+  animation: brandReveal 2.7s cubic-bezier(0.33, 0, 0.4, 1) 0.55s both;
+}
+/* 蒙版宽度从左到右平滑增长（软边笔锋），并整体轻微渐显，形成平顺的“渐入绘画” */
+@keyframes brandReveal {
+  0%   { mask-size: 5% 100%; -webkit-mask-size: 5% 100%; opacity: 0; }
+  62%  { mask-size: 300% 100%; -webkit-mask-size: 300% 100%; opacity: 0.96; }
+  100% { mask-size: 410% 100%; -webkit-mask-size: 410% 100%; opacity: 1; }
+}
+
 /* 苹果风亮色毛玻璃卡片：白色半透明 + 重高斯模糊，深字高对比；浅/暗主题下均亮眼 */
 .auth-glass {
   position: relative;

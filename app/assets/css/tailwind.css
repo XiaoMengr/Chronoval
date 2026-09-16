@@ -18,6 +18,9 @@
 @import '@fontsource/manrope/700.css';
 @import '@fontsource/manrope/800.css';
 
+/* 登录页品牌 logo 专用字体：Carter One（OFL 许可，手写感圆润标题体，仅 wordmark 使用，全量离线打包） */
+@import '@fontsource/carter-one/400.css';
+
 :root {
   /* New text-autospace property */
   /* see docs: https://developer.mozilla.org/en-US/docs/Web/CSS/text-autospace */
@@ -176,6 +179,12 @@ html.dark .glass-surface {
 }
 .font-apple :is(input, button, textarea, select, a, span, p, h1, h2, h3, h4, label, small, div, em, strong) {
   font-family: inherit;
+}
+
+/* 登录页品牌 logo 专用字体（仅作为类名存在，作用域已收敛到登录页 wordmark） */
+.font-brand {
+  font-family: 'Carter One', 'Manrope', 'Bradley Hand', 'Comic Sans MS', system-ui, sans-serif;
+  font-weight: 400;
 }
 
 .custom-scrollbar::-webkit-scrollbar {
