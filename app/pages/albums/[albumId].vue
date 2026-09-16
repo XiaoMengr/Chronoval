@@ -31,7 +31,13 @@ const albumData = computed(() => album.value)
 // 避免依赖 albumPhotos.position（按配置时的加入顺序、非拍摄时间）导致相册内排序"看起来很乱"。
 const sortedAlbumPhotos = computed<Photo[]>(() => {
   const raw = (albumData.value?.photos as Photo[]) ?? []
-  return [...raw].sort((a, b) => {
+  const seen = new Set<string>()
+  const deduped = raw.filter((p) => {
+    if (seen.has(p.id)) return false
+    seen.add(p.id)
+    return true
+  })
+  return [...deduped].sort((a, b) => {
     const ta = a.dateTaken ? new Date(a.dateTaken).getTime() : 0
     const tb = b.dateTaken ? new Date(b.dateTaken).getTime() : 0
     return tb - ta

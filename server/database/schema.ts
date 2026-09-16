@@ -167,19 +167,25 @@ export const albums = sqliteTable('albums', {
 })
 
 // 相簿-照片 多对多关系表
-export const albumPhotos = sqliteTable('album_photos', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  albumId: integer('album_id')
-    .notNull()
-    .references(() => albums.id, { onDelete: 'cascade' }),
-  photoId: text('photo_id')
-    .notNull()
-    .references(() => photos.id, { onDelete: 'cascade' }),
-  position: real('position').notNull().default(1000000),
-  addedAt: integer('added_at', { mode: 'timestamp' })
-    .notNull()
-    .default(sql`(unixepoch())`),
-})
+export const albumPhotos = sqliteTable(
+  'album_photos',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    albumId: integer('album_id')
+      .notNull()
+      .references(() => albums.id, { onDelete: 'cascade' }),
+    photoId: text('photo_id')
+      .notNull()
+      .references(() => photos.id, { onDelete: 'cascade' }),
+    position: real('position').notNull().default(1000000),
+    addedAt: integer('added_at', { mode: 'timestamp' })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  // 同一照片在同一相簿中只能出现一次；同时让 onConflictDoNothing 真正生效，
+  // 也从根源上杜绝相簿照片重复（此前无唯一约束，历史脏数据可能产生重复行）。
+  (table) => [uniqueIndex('album_photos_album_photo_unique').on(table.albumId, table.photoId)],
+)
 
 // 扫描库=相簿 的自定义元数据覆盖表。
 // 外部库文件夹作为相簿时其标题/介绍等默认由文件结构推导；管理端可通过此表保存

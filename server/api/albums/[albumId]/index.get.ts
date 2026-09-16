@@ -67,8 +67,16 @@ export default eventHandler(async (event) => {
     }
   }
 
+  // 兜底去重：防御历史脏数据导致的重复行（正常由唯一索引保证唯一）
+  const seen = new Set<string>()
+  const uniquePhotos = photos.filter((p) => {
+    if (seen.has(p.id)) return false
+    seen.add(p.id)
+    return true
+  })
+
   return {
     ...album,
-    photos,
+    photos: uniquePhotos,
   }
 })

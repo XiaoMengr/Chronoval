@@ -155,12 +155,17 @@ export const applyScanAlbumMeta = async (
   if (meta.coverPhotoId) {
     const photo = photos.find((p) => p.id === meta.coverPhotoId)
     if (photo) {
-      covers.unshift({
-        id: photo.id,
-        thumbnailUrl: photo.thumbnailUrl,
-        thumbnailHash: photo.thumbnailHash,
-        aspectRatio: photo.aspectRatio,
-      })
+      // 自定义封面通常来自本相簿的默认封面（node.covers），
+      // unshift 前先去重，避免同一张封面在 covers 中出现两次。
+      const already = covers.some((c) => c.id === photo.id)
+      if (!already) {
+        covers.unshift({
+          id: photo.id,
+          thumbnailUrl: photo.thumbnailUrl,
+          thumbnailHash: photo.thumbnailHash,
+          aspectRatio: photo.aspectRatio,
+        })
+      }
       coverPhotoId = photo.id
     } else {
       coverPhotoId = meta.coverPhotoId

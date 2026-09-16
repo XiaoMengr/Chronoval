@@ -141,6 +141,13 @@
       "when": 1789291800091,
       "tag": "0019_scan_album_meta_password",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1789542661704,
+      "tag": "0020_fancy_wolf_cub",
+      "breakpoints": true
     }
   ]
 }
