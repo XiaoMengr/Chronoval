@@ -118,7 +118,7 @@ const onAuthSubmit = async (event: any) => {
       <!-- 品牌内容（logo + CHRONOVAL wordmark，Carter One 水彩笔刷描画动画） -->
       <div class="relative flex items-center gap-3 px-5 pb-4 pt-[max(1rem,env(safe-area-inset-top))] lg:pb-6 lg:pt-6">
         <img :src="appLogo" alt="Chronoval" class="size-8 shrink-0 rounded-lg" />
-        <!-- Carter One 圆润手写标题体 + 从左到右渐入水彩绘画 -->
+        <!-- Carter One 圆润手写标题体 + 从左到右水彩笔扫过描画 -->
         <span class="brand-wordmark brand-ink text-[0.92rem] leading-none">
           CHRONOVAL
         </span>
@@ -182,15 +182,14 @@ const onAuthSubmit = async (event: any) => {
   to { opacity: 1; }
 }
 
-/* 品牌 wordmark：Carter One + 从左到右渐入水彩绘画。
-   墨色从左往右一笔柔和铺开（软边斜角笔锋），同时整体轻微渐显，
-   观感干净平顺，像水彩在纸上从左边缓缓洇到右边。 */
+/* 品牌 wordmark：Carter One + 从左到右水彩笔扫过描画。
+   墨色软边笔锋从左往右一笔掠过整个 CHRONOVAL，配合整体轻微渐显，
+   像一支蘸了水彩的毛笔在纸上从左边缓缓画到右边。 */
 .brand-wordmark {
   font-family: 'Carter One', 'Manrope', 'Bradley Hand', system-ui, sans-serif;
   font-weight: 400;
   display: inline-block;
-  position: relative;
-  letter-spacing: 0.045em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.97);
   text-shadow:
@@ -200,26 +199,26 @@ const onAuthSubmit = async (event: any) => {
 .brand-ink {
   -webkit-mask-image: linear-gradient(
     100deg,
-    #000 0%, #000 60%, rgba(0, 0, 0, 0.6) 78%, rgba(0, 0, 0, 0.12) 92%, transparent 100%
+    #000 0%, #000 58%, rgba(0, 0, 0, 0.6) 74%, rgba(0, 0, 0, 0.12) 90%, transparent 100%
   );
-  -webkit-mask-size: 410% 100%;
+  -webkit-mask-size: 430% 100%;
   -webkit-mask-position: 0% 0%;
   -webkit-mask-repeat: no-repeat;
   mask-image: linear-gradient(
     100deg,
-    #000 0%, #000 60%, rgba(0, 0, 0, 0.6) 78%, rgba(0, 0, 0, 0.12) 92%, transparent 100%
+    #000 0%, #000 58%, rgba(0, 0, 0, 0.6) 74%, rgba(0, 0, 0, 0.12) 90%, transparent 100%
   );
-  mask-size: 410% 100%;
+  mask-size: 430% 100%;
   mask-position: 0% 0%;
   mask-repeat: no-repeat;
   opacity: 0;
-  animation: brandReveal 2.7s cubic-bezier(0.33, 0, 0.4, 1) 0.55s both;
+  animation: brandReveal 2.6s cubic-bezier(0.33, 0, 0.4, 1) 0.5s both;
 }
-/* 蒙版宽度从左到右平滑增长（软边笔锋），并整体轻微渐显，形成平顺的“渐入绘画” */
+/* 蒙版宽度从左到右平滑增长：软边笔锋把墨色从左往右画过去，同时整体轻微渐显 */
 @keyframes brandReveal {
-  0%   { mask-size: 5% 100%; -webkit-mask-size: 5% 100%; opacity: 0; }
-  62%  { mask-size: 300% 100%; -webkit-mask-size: 300% 100%; opacity: 0.96; }
-  100% { mask-size: 410% 100%; -webkit-mask-size: 410% 100%; opacity: 1; }
+  0%   { mask-size: 4% 100%; -webkit-mask-size: 4% 100%; opacity: 0; }
+  60%  { mask-size: 300% 100%; -webkit-mask-size: 300% 100%; opacity: 0.96; }
+  100% { mask-size: 430% 100%; -webkit-mask-size: 430% 100%; opacity: 1; }
 }
 
 /* 苹果风亮色毛玻璃卡片：白色半透明 + 重高斯模糊，深字高对比；浅/暗主题下均亮眼 */
