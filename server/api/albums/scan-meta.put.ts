@@ -4,6 +4,7 @@ import {
   upsertScanAlbumMeta,
   clearScanAlbumMeta,
 } from '~~/server/services/scan-library/album-meta'
+import { hashAlbumPassword } from '~~/server/utils/scanAlbumPassword'
 
 /**
  * 新增/更新/清除某扫描库相簿（或其二级子相簿）的元数据。
@@ -51,7 +52,7 @@ export default eventHandler(async (event) => {
   if (body.clearPassword) {
     passwordHash = null
   } else if (body.password && body.password.trim()) {
-    passwordHash = await hashPassword(body.password.trim())
+    passwordHash = hashAlbumPassword(body.password.trim())
   }
 
   const meta = await upsertScanAlbumMeta({

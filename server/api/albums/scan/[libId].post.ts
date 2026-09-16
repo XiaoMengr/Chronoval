@@ -3,9 +3,9 @@ import {
   getScanLibraryByKey,
   getScanAlbumEffectivePasswordHash,
 } from '~~/server/services/scan-library/manager'
-import {
-  authorizeScanAlbum,
-} from '~~/server/utils/scanAlbumAuth'
+import { authorizeScanAlbum } from '~~/server/utils/scanAlbumAuth'
+import { verifyAlbumPassword } from '~~/server/utils/scanAlbumPassword'
+import { settingsManager } from '~~/server/services/settings/settingsManager'
 
 export default eventHandler(async (event) => {
   const { libId } = await getValidatedRouterParams(
@@ -32,14 +32,24 @@ export default eventHandler(async (event) => {
     query.path,
   )
 
+  // 管理员的「免密访问」只有在显式开启对应系统设置时才放行；
+  // 默认关闭：即使登录管理员，也必须输入正确相簿密码。
   const session = await getUserSession(event)
   const isAdmin = Boolean((session as any)?.user?.isAdmin)
-  if (isAdmin) {
-    authorizeScanAlbum(event, { libId: libIdNum, relPath: query.path, passwordHash })
+  const adminBypass =
+    isAdmin &&
+    (await settingsManager.get<boolean>('system', 'scanAlbum.adminBypass', false))
+
+  if (adminBypass) {
+    authorizeScanAlbum(event, {
+      libId: libIdNum,
+      relPath: query.path,
+      passwordHash,
+    })
     return { authorized: true }
   }
 
-  if (!passwordHash || !(await verifyPassword(passwordHash, body.password))) {
+  if (!passwordHash || !(await verifyAlbumPassword(passwordHash, body.password))) {
     throw createError({ statusCode: 401, statusMessage: 'Incorrect password' })
   }
 

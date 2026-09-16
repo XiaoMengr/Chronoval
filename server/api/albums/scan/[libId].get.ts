@@ -5,6 +5,7 @@ import {
   getScanAlbumEffectivePasswordHash,
 } from '~~/server/services/scan-library/manager'
 import { hasScanAlbumAccess } from '~~/server/utils/scanAlbumAuth'
+import { settingsManager } from '~~/server/services/settings/settingsManager'
 
 export default eventHandler(async (event) => {
   const { libId } = await getValidatedRouterParams(
@@ -22,9 +23,6 @@ export default eventHandler(async (event) => {
   }
   const libIdNum = lib.id
 
-  const session = await getUserSession(event)
-  const isAdmin = Boolean((session as any)?.user?.isAdmin)
-
   const detail = await getScanAlbumDetail(libIdNum, query.path)
   if (!detail) {
     throw createError({ statusCode: 404, statusMessage: 'Not Found' })
@@ -35,10 +33,17 @@ export default eventHandler(async (event) => {
     libIdNum,
     query.path,
   )
+  // 访问权只认「解锁 cookie」或显式开启的「管理员免密」开关；
+  // 默认不因管理员身份放行，避免「任意密码都可进入」。
+  const session = await getUserSession(event)
+  const isAdmin = Boolean((session as any)?.user?.isAdmin)
+  const adminBypass =
+    isAdmin &&
+    (await settingsManager.get<boolean>('system', 'scanAlbum.adminBypass', false))
   const authorized = hasScanAlbumAccess(
     event,
     { libId: libIdNum, relPath: query.path, passwordHash },
-    isAdmin,
+    Boolean(adminBypass),
   )
 
   const passwordProtected = Boolean(detail.node.passwordProtected)

@@ -254,6 +254,10 @@ export const SYSTEM_SETTINGS_UI: Record<string, FieldUIConfig> = {
     placeholder: 'github_oauth_client_secret',
     visibleIf: { fieldKey: 'auth.github.enabled', value: true },
   },
+  'scanAlbum.adminBypass': {
+    type: 'toggle',
+    help: 'settings.system.scanAlbum.adminBypass.help',
+  },
 }
 
 export const STORAGE_SETTINGS_UI: Record<string, FieldUIConfig> = {

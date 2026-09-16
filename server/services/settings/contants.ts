@@ -218,6 +218,16 @@ export const DEFAULT_SETTINGS = [
     description: 'settings.system.auth.github.clientSecret.description',
     isSecret: true,
   },
+  // 相簿密码：管理员是否可「免密访问」受保护相簿（默认关闭，需输入正确密码）
+  {
+    namespace: 'system',
+    key: 'scanAlbum.adminBypass',
+    type: 'boolean',
+    defaultValue: false,
+    label: 'settings.system.scanAlbum.adminBypass.label',
+    description: 'settings.system.scanAlbum.adminBypass.description',
+    isPublic: true,
+  },
   // NAMESPACE: privacy
   {
     namespace: 'privacy',

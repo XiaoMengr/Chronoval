@@ -1451,6 +1451,13 @@
         "description": "Control whether the WebGL image viewer shows debug info in production",
         "help": "When enabled, logged-in users can view the WebGL debug panel in any environment; when disabled, debug info is shown only in development"
       },
+      "scanAlbum": {
+        "adminBypass": {
+          "label": "Admin passwordless access to protected albums",
+          "description": "When enabled, the logged-in admin can open password-protected albums without entering the password",
+          "help": "Off by default: even the admin must enter the correct album password. When enabled, admin can skip the password (applies to the logged-in admin only)"
+        }
+      },
       "auth": {
         "github": {
           "enabled": {

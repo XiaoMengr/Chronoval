@@ -172,11 +172,12 @@ html.dark .glass-surface {
 }
 
 /* 全局焦点键盘指示：用低对比的主题色细圈替代浏览器默认的白色高亮，
-   浅色下也不会刺眼；深色自动跟随 --ui-text 翻转。 */
-:focus-visible {
+   浅色下也不会刺眼；深色自动跟随 --ui-text 翻转。
+   跳过表单控件（input/textarea/select）：它们各自定义聚焦反馈，
+   这里只作用于链接/按钮等元素，避免在输入框上闪出黑圈或改动圆角。 */
+:focus-visible:not(input):not(textarea):not(select) {
   outline: 2px solid var(--ui-outline);
   outline-offset: 2px;
-  border-radius: 2px;
 }
 
 /* ghost 按钮（悬浮于背景内容上，app.config 的 variants.variant.ghost 标记为 ghost-flat）：

@@ -369,7 +369,8 @@ const hoveredAlbum = ref<number | null>(null)
                       name="tabler:clock"
                       class="h-lh size-4"
                     />
-                    {{ $dayjs(album.createdAt).fromNow() }}
+                    <!-- 相对时间在 SSR 与客户端“现在”不同会导致 hydration mismatch，故客户端渲染 -->
+                    <ClientOnly fallback="…">{{ $dayjs(album.createdAt).fromNow() }}</ClientOnly>
                   </p>
                 </div>
               </div>

@@ -35,10 +35,17 @@ export default eventHandler(async (event) => {
 
   // 扫描库转为的相簿以根节点合并进相册列表（kind: 'scan'）。
   // 管理端需要树状二级相簿，故 includeChildren=isAdmin。
-  const scanRoots = await listScanAlbumRoots(isAdmin)
-  const visibleScanRoots = isAdmin
-    ? scanRoots
-    : scanRoots.filter((node) => !node.isHidden)
+  // 扫描库是可选的「增强」特性：即便该模块初始化异常（如 migrate 未建表），
+  // 也不应拖垮整个相簿列表接口导致「加载相簿失败」——此处隔离兜底。
+  let visibleScanRoots: Awaited<ReturnType<typeof listScanAlbumRoots>> = []
+  try {
+    const scanRoots = await listScanAlbumRoots(isAdmin)
+    visibleScanRoots = isAdmin
+      ? scanRoots
+      : scanRoots.filter((node) => !node.isHidden)
+  } catch (error) {
+    console.error('[albums] 扫描库相簿加载失败，已忽略：', error)
+  }
 
   const combined: unknown[] = [
     ...albumsWithPhotoIds.sort(
