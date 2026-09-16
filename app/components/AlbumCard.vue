@@ -288,7 +288,7 @@ const menuItems = computed(() => {
     </button>
 
     <!-- 下半部分信息卡 -->
-    <div class="flex min-w-0 flex-1 flex-col gap-2 p-2.5">
+    <div class="flex min-w-0 flex-1 flex-col gap-1.5 p-2">
       <div class="flex items-start justify-between gap-2">
         <button
           type="button"
@@ -296,7 +296,7 @@ const menuItems = computed(() => {
           :title="t('dashboard.albums.card.actions.view')"
           @click="emit('view')"
         >
-          <p class="truncate text-sm font-semibold leading-tight text-(--ui-text)">
+          <p class="truncate text-[13px] font-semibold leading-tight text-(--ui-text)">
             {{ album.title }}
           </p>
         </button>
@@ -354,7 +354,7 @@ const menuItems = computed(() => {
         </span>
       </div>
 
-      <div class="mt-auto flex items-center gap-2 border-t border-(--ui-border)/60 pt-2">
+      <div class="mt-auto flex items-center gap-2 border-t border-(--ui-border)/60 pt-1.5">
         <UButton
           color="primary"
           size="xs"

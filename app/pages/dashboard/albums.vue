@@ -676,7 +676,7 @@ const openAlbum = (album: AlbumItem) => {
           <!-- 中型网格：以大型卡片为参考，卡片更紧凑（sm 尺寸），比大还小、比列表还大 -->
           <div
             v-else-if="viewMode === 'medium'"
-            class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 sm:gap-4"
+            class="grid grid-cols-2 gap-3 sm:gap-4"
           >
           <template v-for="album in filteredAlbums" :key="albumKey(album)">
             <div class="min-w-0 flex flex-col">
