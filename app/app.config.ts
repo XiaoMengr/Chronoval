@@ -13,6 +13,14 @@ export default defineAppConfig({
       slots: {
         base: 'cursor-pointer',
       },
+      variants: {
+        variant: {
+          // ghost（悬浮于背景内容上）按钮：点击/悬停/聚焦时不要浮出浅灰背景色，
+          // 改为完全透明，避免在照片亮背景上显得发白刺眼。
+          // 具体透明规则见 assets/css/tailwind.css 中 .ghost-flat 的选择器。
+          ghost: 'ghost-flat',
+        },
+      },
     },
     popover: {
       slots: {

@@ -281,11 +281,19 @@ export const settings_storage_providers = sqliteTable(
  * 本地扫描库（独立存储方式）：把明文照片/视频放入某一文件夹即被自动扫描、生成缩略图。
  * 与 settings_storage_providers（上传加密 blob 存储后端）完全分离。
  */
-export const scanLibraries = sqliteTable('scan_libraries', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  name: text('name').notNull(),
-  /** 扫描的根目录绝对路径（只读源，原图始终引用该目录） */
-  rootPath: text('root_path').notNull(),
+export const scanLibraries = sqliteTable(
+  'scan_libraries',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    name: text('name').notNull(),
+    /**
+     * 公开相簿 URL 标识：sha256 短前缀（形如 a1b2c3d4，类似 git 提交 hash）；
+     * 自动生成并做去重检测。为空时回退到数字 id。自定义 slug（scan_album_meta.slug）
+     * 优先级更高，相簿公开链接使用 /albums/s/{slug}。
+     */
+    urlKey: text('url_key'),
+    /** 扫描的根目录绝对路径（只读源，原图始终引用该目录） */
+    rootPath: text('root_path').notNull(),
   provider: text('provider', { enum: ['local'] }).default('local').notNull(),
   enabled: integer('enabled', { mode: 'boolean' }).default(true).notNull(),
   /** 转为相簿展示：启用后该库以「相簿」形式出现在相册页，并从首页全局画廊隐藏 */
@@ -303,4 +311,6 @@ export const scanLibraries = sqliteTable('scan_libraries', {
   updatedAt: integer('updated_at', { mode: 'timestamp' })
     .notNull()
     .default(sql`(unixepoch())`),
-})
+  },
+  (table) => [uniqueIndex('scan_libraries_url_key_unique').on(table.urlKey)],
+)

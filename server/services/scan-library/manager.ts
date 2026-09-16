@@ -1,4 +1,5 @@
 import path from 'node:path'
+import { createHash } from 'node:crypto'
 import { and, count, eq, isNull } from 'drizzle-orm'
 import { z } from 'zod'
 import { useDB, tables } from '~~/server/utils/db'
@@ -23,6 +24,8 @@ import {
 export interface ScanLibrary {
   id: number
   name: string
+  /** 公开相簿 URL 标识（自定义 slug 存在时其优先级更高） */
+  urlKey: string | null
   rootPath: string
   provider: 'local'
   enabled: boolean
@@ -52,6 +55,16 @@ export const scanMountName = (id: number | string) => `scan_${id}`
 const scanMountId = (name: string): number | null =>
   name.startsWith('scan_') ? Number(name.slice(5)) || null : null
 export const isScanMountName = (name: string) => scanMountId(name) !== null
+
+/**
+ * 由 id 推导唯一 urlKey：sha256(id) 短前缀（形如 a1b2c3d4，类似 git 提交 hash）。
+ * 确定性映射：同一 id 永远得到同一 key，天然无碰撞（id 唯一），无需随机。
+ */
+export const scanUrlKeyOfId = (id: number): string =>
+  createHash('sha256').update(String(id)).digest('hex').slice(0, 8)
+
+/** 依据 id 确定性生成 urlKey（存库持久化，供按 key 反查） */
+const generateUrlKeyById = (id: number): string => scanUrlKeyOfId(id)
 
 const unionMediaExtensions = (): Set<string> => {
   const s = new Set<string>()
@@ -104,8 +117,26 @@ export const listRawScanLibraries = (): Array<typeof scanLibraries.$inferSelect>
     .all()
 }
 
+/** 为缺失 url_key（或与 id 推导不符）的存量扫描库补齐持久化，返回受影响行数 */
+const backfillScanLibraryUrlKeys = (): number => {
+  const db = useDB()
+  let updated = 0
+  for (const row of listRawScanLibraries()) {
+    const expect = generateUrlKeyById(row.id)
+    if (row.urlKey === expect) continue
+    db.update(scanLibraries)
+      .set({ urlKey: expect, updatedAt: new Date() })
+      .where(eq(scanLibraries.id, row.id))
+      .run()
+    updated++
+  }
+  if (updated > 0) invalidateLibraryMountsCache()
+  return updated
+}
+
 /** 读取全部扫描库（含 photoCount 统计与状态字段） */
 export const listScanLibraries = async (): Promise<ScanLibrary[]> => {
+  backfillScanLibraryUrlKeys()
   const rows = listRawScanLibraries()
   const db = useDB()
   // 单条聚合查询一次取回所有扫描库的索引照片数，避免 N+1 计数
@@ -122,6 +153,7 @@ export const listScanLibraries = async (): Promise<ScanLibrary[]> => {
   return rows.map((row) => ({
     id: row.id,
     name: row.name,
+    urlKey: row.urlKey,
     rootPath: row.rootPath,
     provider: 'local',
     enabled: row.enabled,
@@ -172,12 +204,18 @@ export const createScanLibrary = async (input: ScanLibraryInput): Promise<number
       name,
       rootPath: path.resolve(input.rootPath),
       provider: 'local',
+      // urlKey 由自增 id 导入后推导（sha256(id) 前 8 位）
       enabled: input.enabled ?? true,
       asAlbum: input.asAlbum ?? false,
       watchIntervalMs: input.watchIntervalMs ?? 60000,
     })
     .returning({ id: scanLibraries.id })
     .get()
+  // 依据 id 确定性生成并持久化 urlKey，供按 key 反查
+  db.update(scanLibraries)
+    .set({ urlKey: generateUrlKeyById(res.id), updatedAt: new Date() })
+    .where(eq(scanLibraries.id, res.id))
+    .run()
   invalidateLibraryMountsCache()
   return res.id
 }
@@ -263,6 +301,27 @@ export const getScanLibraryRow = (
 }
 
 /**
+ * 按公开 URL 标识解析扫描库行。
+ * 优先匹配 urlKey（base36 时间戳），其次兼容存量数字 id 链接。
+ */
+export const getScanLibraryByKey = (
+  key: string,
+): (typeof scanLibraries.$inferSelect) | null => {
+  const db = useDB()
+  const cleaned = (key || '').trim()
+  if (!cleaned) return null
+  backfillScanLibraryUrlKeys()
+  const byUrl = db
+    .select()
+    .from(scanLibraries)
+    .where(eq(scanLibraries.urlKey, cleaned))
+    .get()
+  if (byUrl) return byUrl
+  if (/^\d+$/.test(cleaned)) return getScanLibraryRow(Number(cleaned))
+  return null
+}
+
+/**
  * 计算某相簿（含其上级）生效的相簿访问密码哈希。
  * 自身 meta 优先；未单独设置则向上继承最近一级；均无密码时返回 null（开放相簿）。
  * 密码仅存于相簿级别（scan_album_meta.password_hash），与扫描库级无关。
@@ -323,6 +382,8 @@ export interface ScanAlbumNode {
   title: string
   /** 展示用的介绍文字（自定义元数据或 null） */
   description: string | null
+  /** 公开 URL 标识：sha256 短前缀（形如 a1b2c3d4）；未持久化时为 null */
+  urlKey: string | null
   link: string
   /** 该层目录直接包含的照片数（不含更深的子目录） */
   photoCount: number
@@ -367,7 +428,7 @@ const childSegmentsOf = (
 }
 
 const buildScanAlbumNode = (
-  lib: { id: number; name: string },
+  lib: { id: number; name: string; urlKey: string | null },
   relPath: string,
   photos: Array<typeof tables.photos.$inferSelect>,
 ): ScanAlbumNode => {
@@ -386,8 +447,10 @@ const buildScanAlbumNode = (
   }))
   const seg = relPath.split('/').filter(Boolean).pop()
   const title = relPath === '' ? lib.name : decodeURIComponent(seg || relPath)
+  // 公开链接优先使用 urlKey（base36 时间戳），回退到数字 id 兼容存量
+  const key = lib.urlKey || String(lib.id)
   const link =
-    `/albums/scan/${lib.id}` +
+    `/albums/scan/${key}` +
     (relPath
       ? '/' + relPath.split('/').map((s) => encodeURIComponent(s)).join('/')
       : '')
@@ -398,6 +461,7 @@ const buildScanAlbumNode = (
     relPath,
     title,
     description: null,
+    urlKey: lib.urlKey,
     link,
     photoCount: dirPhotos.length,
     coverPhotoId: covers[0]?.id ?? null,
@@ -460,7 +524,7 @@ export const listScanAlbumRoots = async (
  * @param parentHidden 主相簿的隐藏状态；未单独自定义的子相簿继承它
  */
 const buildScanAlbumTree = async (
-  lib: { id: number; name: string },
+  lib: { id: number; name: string; urlKey: string | null },
   relPath: string,
   photos: Array<typeof tables.photos.$inferSelect>,
   parentHidden?: boolean,

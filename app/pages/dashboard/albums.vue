@@ -21,6 +21,8 @@ interface AlbumItem extends Album {
   mount?: string
   relPath?: string
   link?: string
+  /** 扫描库公开 URL 标识（sha256 短前缀），无自定义 slug 时的 UID/公开链接 */
+  urlKey?: string | null
   slug?: string | null
   hasCustom?: boolean
   hasChildren?: boolean
@@ -245,6 +247,40 @@ const openEditSlideover = async (album: AlbumItem) => {
     })
   }
   isAlbumSlideoverOpen.value = true
+}
+
+const scanAlbumUid = computed(() => {
+  const album = currentAlbum.value
+  if (!album || !isScanAlbum(album)) return ''
+  // 优先自定义 slug；否则用公开 urlKey（sha256 短前缀）；两者皆无才回退内部数字 id
+  return album.slug && album.slug.trim()
+    ? String(album.slug.trim())
+    : album.urlKey || `scan:${album.libId}${album.relPath ? ':' + album.relPath : ''}`
+})
+
+const scanAlbumPublicUrl = computed(() => {
+  const album = currentAlbum.value
+  if (!album || !isScanAlbum(album)) return ''
+  // 公开访问路径：设了自定义 slug 用 /albums/s/{slug}，否则用 /albums/scan/{urlKey}
+  if (formData.slug && formData.slug.trim()) {
+    return `/albums/s/${encodeURIComponent(formData.slug.trim())}`
+  }
+  if (album.urlKey) return `/albums/scan/${album.urlKey}`
+  return ''
+})
+
+const copyPublicUrl = async () => {
+  const url = scanAlbumPublicUrl.value
+  if (!url) return
+  try {
+    await navigator.clipboard.writeText(`${window.location.origin}${url}`)
+    useToast().add({
+      title: $t('dashboard.albums.form.copied'),
+      color: 'success',
+    })
+  } catch {
+    /* 忽略剪贴板权限异常 */
+  }
 }
 
 const openDeleteConfirm = (album: AlbumItem) => {
@@ -897,6 +933,48 @@ const openAlbum = (album: AlbumItem) => {
                     class="w-full"
                     :placeholder="$t('dashboard.albums.form.customUrlPlaceholder')"
                   />
+                </UFormField>
+
+                <UFormField
+                  :label="$t('dashboard.albums.form.albumUidLabel')"
+                  name="albumUid"
+                >
+                  <div class="flex w-full items-center gap-2 rounded-md border border-dashed border-gray-300 bg-gray-50 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900">
+                    <Icon name="tabler:hash" class="size-4 shrink-0 text-gray-400" />
+                    <code class="truncate font-mono text-gray-700 dark:text-gray-200">
+                      {{ scanAlbumUid }}
+                    </code>
+                  </div>
+                </UFormField>
+
+                <UFormField
+                  v-if="isScanAlbum(currentAlbum)"
+                  :label="$t('dashboard.albums.form.publicLinkLabel')"
+                  name="publicLink"
+                >
+                  <div class="flex w-full items-center gap-2">
+                    <div
+                      class="flex min-w-0 flex-1 items-center gap-2 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+                    >
+                      <Icon name="tabler:link" class="size-4 shrink-0 text-gray-400" />
+                      <span v-if="scanAlbumPublicUrl" class="truncate text-primary-500 dark:text-primary-400">
+                        {{ scanAlbumPublicUrl }}
+                      </span>
+                      <span v-else class="truncate text-neutral-400 dark:text-neutral-500">
+                        {{ $t('dashboard.albums.form.publicLinkFallback') }}
+                      </span>
+                    </div>
+                    <UTooltip :text="$t('dashboard.albums.form.copyLink')">
+                      <UButton
+                        icon="tabler:copy"
+                        size="sm"
+                        color="neutral"
+                        variant="soft"
+                        :disabled="!scanAlbumPublicUrl"
+                        @click="copyPublicUrl"
+                      />
+                    </UTooltip>
+                  </div>
                 </UFormField>
 
                 <UFormField

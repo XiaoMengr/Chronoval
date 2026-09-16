@@ -1,28 +1,27 @@
 <script lang="ts" setup>
+import ScanAlbumView from '~/components/albums/ScanAlbumView.vue'
+
 const route = useRoute()
 
-const slug = computed(() => (route.params.slug || []) as string[])
+const rawSlug = computed(() => route.params.slug as string)
+const slug = computed<string[]>(() =>
+  rawSlug.value ? [decodeURIComponent(rawSlug.value)] : [],
+)
+const slugKey = computed(() => slug.value[0] || '')
 
-const { data, error } = await useAsyncData(
-  () => `scan-album-slug-${slug.value.join('/')}`,
+// 通过自定义 URL 别名解析出真实的扫描库 id 与相对路径
+const {
+  data,
+  status,
+  error,
+} = await useAsyncData<{ libId: number; mount: string; relPath: string }>(
+  `scan-album-slug-${slugKey.value}`,
   () =>
     $fetch<{ libId: number; mount: string; relPath: string }>(
-      `/api/albums/scan-by-slug/${encodeURIComponent(slug.value.join('/') || '')}`,
+      `/api/albums/scan-by-slug/${encodeURIComponent(slugKey.value)}`,
     ),
-  { watch: [slug] },
+  { watch: [slugKey] },
 )
-
-// 解析成功则重定向到规范相簿地址
-if (data.value) {
-  const { libId, relPath } = data.value
-  const pathSegs = relPath
-    .split('/')
-    .filter(Boolean)
-    .map((s: string) => encodeURIComponent(s))
-    .join('/')
-  const target = `/albums/scan/${libId}${pathSegs ? '/' + pathSegs : ''}`
-  await navigateTo(target, { replace: true })
-}
 
 useHead({
   title: () => $t('albums.scan.customUrlRedirect'),
@@ -30,12 +29,19 @@ useHead({
 </script>
 
 <template>
-  <div class="flex min-h-[40vh] items-center justify-center p-8">
-    <p class="text-neutral-500 dark:text-neutral-400">
-      <template v-if="slug.length">{{ $t('albums.scan.redirecting') }}…</template>
-      <template v-else>
-        <UButton variant="link" :to="`/albums`">← {{ $t('albums.scan.backToAlbums') }}</UButton>
-      </template>
-    </p>
+  <div v-if="status === 'pending'" class="flex min-h-[40vh] items-center justify-center p-8">
+    <p class="text-neutral-400">{{ $t('albums.scan.loading') }}</p>
   </div>
+
+  <div v-else-if="error || !data" class="flex min-h-[40vh] items-center justify-center p-8">
+    <p class="text-neutral-400">{{ $t('albums.scan.notFound') }}</p>
+  </div>
+
+  <!-- 直接渲染扫描相簿，URL 保持 /albums/s/{slug} 而非跳转到数字 id -->
+  <ScanAlbumView
+    v-else
+    :lib-key="String(data.libId)"
+    :rel-path="data.relPath"
+    mode="slug"
+  />
 </template>

@@ -873,7 +873,13 @@
         "selectedCount": "{count}枚の写真を選択しました",
         "clearAll": "すべてクリア",
         "isHidden": "アルバムを非表示",
-        "isHiddenHint": "非表示のアルバム内の写真はホームページに表示されません"
+        "isHiddenHint": "非表示のアルバム内の写真はホームページに表示されません",
+        "albumUidLabel": "アルバムUID",
+        "publicLinkLabel": "公開リンク",
+        "publicLinkFallback": "カスタムリンク未設定。デフォルトのパスが使用されます。",
+        "publicLinkEmptyTip": "上のカスタムリンクを入力するとここに公開URLが表示されます。",
+        "copied": "コピーしました",
+        "copyLink": "リンクをコピー"
       },
       "table": {
         "columns": {

@@ -873,7 +873,13 @@
         "selectedCount": "已選擇 {count} 張照片",
         "clearAll": "全部清除",
         "isHidden": "隱藏相簿",
-        "isHiddenHint": "隱藏相簿中的照片不會在首頁顯示"
+        "isHiddenHint": "隱藏相簿中的照片不會在首頁顯示",
+        "albumUidLabel": "相簿 UID",
+        "publicLinkLabel": "公開訪問連結",
+        "publicLinkFallback": "尚未設定自訂連結，將使用預設路徑。",
+        "publicLinkEmptyTip": "填寫上方自訂連結後，這裡會顯示公開網址。",
+        "copied": "已複製",
+        "copyLink": "複製連結"
       },
       "table": {
         "columns": {

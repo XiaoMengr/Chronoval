@@ -33,6 +33,11 @@
   --ui-text-highlighted: var(--ui-color-neutral-900);
   --ui-text-inverted: var(--color-white);
 
+  /* 全局焦点指示（取代浏览器默认的白色高亮轮廓）：接近透明、只留一丝细圈，
+     浅色下不刺眼、深色随 --ui-text 自适应；仅对没有自定义 focus-visible
+     样式的元素生效（Tailwind 的 focus-visible:* 特异性更高，优先）。 */
+  --ui-outline: color-mix(in srgb, var(--ui-text) 22%, transparent);
+
   --ui-bg: var(--color-white);
   --ui-bg-muted: var(--ui-color-neutral-50);
   --ui-bg-elevated: var(--ui-color-neutral-100);
@@ -164,6 +169,24 @@ html.dark .glass-surface {
     'Microsoft YaHei', sans-serif;
 
   --leading-normal: normal;
+}
+
+/* 全局焦点键盘指示：用低对比的主题色细圈替代浏览器默认的白色高亮，
+   浅色下也不会刺眼；深色自动跟随 --ui-text 翻转。 */
+:focus-visible {
+  outline: 2px solid var(--ui-outline);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ghost 按钮（悬浮于背景内容上，app.config 的 variants.variant.ghost 标记为 ghost-flat）：
+   点击 / 悬停 / 聚焦时默认会浮出 --ui-bg-elevated 的浅灰背景（照片亮底上显得发白刺眼），
+   这里强制透明，交互时只有一丝全局 focus 细圈。 */
+.ghost-flat:hover,
+.ghost-flat:active,
+.ghost-flat:focus-visible,
+.ghost-flat:focus {
+  background-color: transparent !important;
 }
 
 /* ---------------------------------------------------------------

@@ -332,6 +332,30 @@ export default defineNuxtConfig({
       fontshare: false,
       adobe: false,
       npm: false,
+      // 未本地安装的字体（如 albums/index.vue 里的 Pacifico）会走 fontsource provider
+      // 去 api.fontsource.org 联网拉取，受限网络下会 connect 超时重试；一并禁用。
+      fontsource: false,
+    },
+    // fontless/fontaine 会对每个被用到的字体族联网拉取字体文件计算 fallback 度量
+    // （undici fetch fromUrl），在无外网/受限网络环境下会抛 fetch failed 并使
+    // 引用了 Google 字体族的页面渲染 500。这里把各类 generic 的 fallback 置空，
+    // 使 generateFontFallbacks 直接返回空结果、完全杜绝联网拉取。
+    defaults: {
+      fallbacks: {
+        serif: [],
+        'sans-serif': [],
+        monospace: [],
+        cursive: [],
+        fantasy: [],
+        'system-ui': [],
+        'ui-serif': [],
+        'ui-sans-serif': [],
+        'ui-monospace': [],
+        'ui-rounded': [],
+        emoji: [],
+        math: [],
+        fangsong: [],
+      },
     },
   },
 
