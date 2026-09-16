@@ -28,23 +28,8 @@ const state = reactive<Partial<Schema>>({
   password: '',
 })
 
-// 仅输入时建议：字段有内容且校验失败才提示；空/未输入/已通过则不显示
-const emailHint = computed(() => {
-  const v = state.email ?? ''
-  if (!v) return ''
-  const r = schema.safeParse(state)
-  if (r.success) return ''
-  return r.error.issues.find((i) => i.path[0] === 'email')?.message ?? ''
-})
-const passwordHint = computed(() => {
-  const v = state.password ?? ''
-  if (!v) return ''
-  const r = schema.safeParse(state)
-  if (r.success) return ''
-  return r.error.issues.find((i) => i.path[0] === 'password')?.message ?? ''
-})
-
-// ===== 顶部浮动通知：点击登入校验失败时淡入，数秒后淡出 =====
+// 邮箱/密码的“无效”提示统一交给页面顶部居中的浮动通知展示（showNotice），
+// 不再在卡片内字段下方穿插行内提示，避免错误信息挤在卡片里。
 const notice = ref('')
 let noticeTimer: ReturnType<typeof setTimeout> | undefined
 const showNotice = (text: string) => {
@@ -55,14 +40,33 @@ const showNotice = (text: string) => {
   }, 3400)
 }
 
+// 细分校验提示：区分“没输入”与“格式错误”，让提示更贴近实际情况。
+const sEmail = z.email()
 const onSubmit = () => {
-  const r = schema.safeParse(state)
-  if (!r.success) {
-    const messages = [...new Set(r.error.issues.map((i) => i.message))]
-    showNotice(messages.join('，'))
+  const email = (state.email ?? '').trim()
+  const password = state.password ?? ''
+  const msgs: string[] = []
+
+  if (!email && !password) {
+    msgs.push($t('auth.form.errors.emailAndPasswordMissing'))
+  } else {
+    if (!email) {
+      msgs.push($t('auth.form.errors.emailMissing'))
+    } else if (!sEmail.safeParse(email).success) {
+      msgs.push($t('auth.form.errors.invalidEmail'))
+    }
+    if (!password) {
+      msgs.push($t('auth.form.errors.passwordMissing'))
+    } else if (password.length < 6) {
+      msgs.push($t('auth.form.errors.invalidPassword'))
+    }
+  }
+
+  if (msgs.length) {
+    showNotice(msgs.join('，'))
     return
   }
-  emit('submit', { data: JSON.parse(JSON.stringify(state)) })
+  emit('submit', { data: JSON.parse(JSON.stringify({ email, password })) })
 }
 
 // 暴露给父组件：登录接口失败时也能复用同一个顶部浮动通知卡片
@@ -72,11 +76,12 @@ defineExpose({ showNotice })
 const inputUi = {
   root: 'w-full',
   base: [
-    'w-full rounded-xl border border-white/15 bg-white/8 px-3.5 py-2.5 text-[0.95rem] text-white lg:px-4 lg:py-3.5 lg:text-[1rem]',
-    'placeholder:text-white/40',
-    'shadow-inner shadow-black/20',
+    'w-full rounded-xl border border-white/70 bg-white/60 px-3.5 py-2.5 text-[0.95rem] text-neutral-900 caret-neutral-900 lg:px-4 lg:py-3.5 lg:text-[1rem]',
+    'placeholder:text-neutral-400',
+    'shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)]',
     'transition-all duration-200',
-    'focus:border-white/40 focus:bg-white/12 focus:ring-4 focus:ring-white/10',
+    'focus:border-white focus:bg-white focus:ring-4 focus:ring-white/40',
+    'focus:shadow-[inset_0_1px_2px_rgba(0,0,0,0.03),0_1px_0_rgba(255,255,255,0.8)]',
   ].join(' '),
 }
 </script>
@@ -86,29 +91,36 @@ const inputUi = {
     class="relative w-full"
     :class="twMerge('flex flex-col', $props.class)"
   >
-    <!-- 顶部浮动通知：点击登入校验失败时淡入，数秒后淡出 -->
-    <Transition name="notice">
-      <div
-        v-if="notice"
-        class="pointer-events-none fixed inset-x-0 top-[max(1rem,env(safe-area-inset-top))] z-[70] flex justify-center px-5"
-      >
-        <div class="flex max-w-md items-center gap-2.5 rounded-2xl border border-rose-300/25 bg-neutral-900/85 px-4 py-3 shadow-2xl shadow-black/50 backdrop-blur-xl">
-          <span class="size-2 shrink-0 rounded-full bg-rose-400 shadow-[0_0_10px_rgba(251,113,133,0.7)]" />
-          <p class="text-sm font-medium leading-snug text-rose-50/95">{{ notice }}</p>
+    <!-- 顶部浮动通知：点击登入校验失败时在“顶栏下方、屏幕上方偏中间”淡入，数秒后淡出。
+         用 fixed 定位，且必须 Teleport 到 body —— 否则登录卡片的 backdrop-filter(毛玻璃) 会成为 fixed
+         的包含块，把通知困在卡片内部左上角（表现为“错误显示在卡片内”）。
+         Teleport 到 body 后方可真正相对视口固定：顶栏下方、卡片上方、水平居中，且不参与文档流、不推挤卡片。 -->
+    <Teleport to="body">
+      <Transition name="notice">
+        <div
+          v-if="notice"
+          class="pointer-events-none fixed inset-x-0 top-[calc(env(safe-area-inset-top)+5.25rem)] z-[70] flex justify-center px-5 lg:top-[calc(env(safe-area-inset-top)+2rem)]"
+        >
+          <div class="flex w-[min(78vw,19rem)] items-center gap-2 rounded-xl border border-rose-400/50 bg-white/75 py-1.5 pl-2 pr-3 shadow-2xl shadow-black/35 backdrop-blur-2xl backdrop-saturate-150 sm:w-[min(90vw,20rem)] sm:gap-2.5 sm:border-rose-400/40 sm:bg-white/85 sm:py-2.5 sm:pl-2.5 sm:pr-3.5">
+            <span class="flex size-7 shrink-0 items-center justify-center rounded-full bg-rose-500/12 text-rose-600 ring-1 ring-inset ring-rose-400/40 sm:size-8">
+              <UIcon name="tabler:x" class="size-4" />
+            </span>
+            <p class="min-w-0 text-[0.75rem] font-semibold leading-snug text-rose-700 sm:text-[0.83rem]">{{ notice }}</p>
+          </div>
         </div>
-      </div>
-    </Transition>
+      </Transition>
+    </Teleport>
 
     <!-- 标题 -->
     <h2
       v-if="title"
-      class="text-[1.75rem] font-extralight leading-[1.1] tracking-tight text-white text-balance lg:text-5xl lg:leading-[1.05]"
+      class="text-[1.5rem] font-extralight leading-tight tracking-tight text-neutral-900 text-balance sm:text-[1.75rem] lg:text-4xl lg:leading-[1.05]"
     >
       {{ title }}
     </h2>
     <p
       v-if="subtitle"
-      class="mt-3 lg:mt-4 max-w-sm text-[0.85rem] lg:text-[0.95rem] font-light leading-relaxed text-white/75"
+      class="mt-3 lg:mt-4 max-w-sm text-[0.85rem] lg:text-[0.95rem] font-light leading-relaxed text-neutral-700"
     >
       {{ subtitle }}
     </p>
@@ -123,14 +135,14 @@ const inputUi = {
         :key="provider.icon"
         v-bind="provider"
         :loading="loading"
-        class="!h-12 !rounded-xl !border-white/20 !bg-white/10 !text-white backdrop-blur-md hover:!bg-white/15 !font-medium"
+        class="!h-12 !rounded-xl !border-neutral-900/15 !bg-white/60 !text-neutral-900 backdrop-blur-md hover:!bg-white/80 !font-medium"
       />
       <div class="flex items-center gap-3 lg:gap-4 py-1.5 lg:py-2">
-        <span class="h-px flex-1 bg-white/15" />
-        <span class="text-[0.65rem] uppercase tracking-[0.3em] text-white/50">
+        <span class="h-px flex-1 bg-neutral-900/15" />
+        <span class="text-[0.65rem] uppercase tracking-[0.3em] text-neutral-500">
           {{ $t('auth.form.action.or') }}
         </span>
-        <span class="h-px flex-1 bg-white/15" />
+        <span class="h-px flex-1 bg-neutral-900/15" />
       </div>
     </div>
 
@@ -142,7 +154,7 @@ const inputUi = {
       <UFormField
         :label="$t('auth.form.labels.email')"
         name="email"
-        :ui="{ label: 'mb-1.5 text-[0.6rem] lg:text-[0.65rem] font-medium uppercase tracking-[0.2em] text-white/60' }"
+        :ui="{ label: 'mb-1.5 text-[0.6rem] lg:text-[0.65rem] font-medium uppercase tracking-[0.2em] text-neutral-600' }"
       >
         <UInput
           v-model="state.email"
@@ -151,19 +163,12 @@ const inputUi = {
           class="w-full"
           :ui="inputUi"
         />
-        <!-- 仅输入时建议 -->
-        <Transition name="hint">
-          <p v-if="emailHint" class="mt-1.5 flex items-center gap-1 text-[0.7rem] lg:text-[0.75rem] text-amber-200/80">
-            <span class="inline-block size-1 rounded-full bg-amber-300/80" />
-            {{ emailHint }}
-          </p>
-        </Transition>
       </UFormField>
 
       <UFormField
         :label="$t('auth.form.labels.password')"
         name="password"
-        :ui="{ label: 'mb-1.5 text-[0.6rem] lg:text-[0.65rem] font-medium uppercase tracking-[0.2em] text-white/60' }"
+        :ui="{ label: 'mb-1.5 text-[0.6rem] lg:text-[0.65rem] font-medium uppercase tracking-[0.2em] text-neutral-600' }"
       >
         <UInput
           v-model="state.password"
@@ -173,13 +178,6 @@ const inputUi = {
           class="w-full"
           :ui="inputUi"
         />
-        <!-- 仅输入时建议 -->
-        <Transition name="hint">
-          <p v-if="passwordHint" class="mt-1.5 flex items-center gap-1 text-[0.7rem] lg:text-[0.75rem] text-amber-200/80">
-            <span class="inline-block size-1 rounded-full bg-amber-300/80" />
-            {{ passwordHint }}
-          </p>
-        </Transition>
       </UFormField>
 
       <UButton
@@ -190,7 +188,7 @@ const inputUi = {
         block
         size="lg"
         :loading="loading"
-        class="mt-1 !h-12 lg:!h-13 !rounded-xl !bg-white !text-neutral-900 !text-[0.95rem] lg:!text-[1rem] !font-medium shadow-lg shadow-black/30 transition-all duration-200 hover:!bg-neutral-100"
+        class="mt-1 !h-12 lg:!h-13 !rounded-xl !bg-neutral-900 !text-white !text-[0.95rem] lg:!text-[1rem] !font-medium shadow-lg shadow-black/25 transition-all duration-200 hover:!bg-neutral-800"
         @click="onSubmit"
       >
         {{ $t('auth.form.action.continue') }}
@@ -199,11 +197,11 @@ const inputUi = {
       <div class="flex items-center justify-between pt-1 lg:pt-2">
         <NuxtLink
           to="/"
-          class="text-[0.7rem] uppercase tracking-[0.25em] text-white/50 transition-colors hover:text-white"
+          class="text-[0.7rem] uppercase tracking-[0.25em] text-neutral-500 transition-colors hover:text-neutral-900"
         >
           {{ $t('auth.form.action.backToHome') }}
         </NuxtLink>
-        <span class="text-[0.6rem] text-white/40">f/1.8 · 1/250s</span>
+        <span class="text-[0.6rem] text-neutral-400">f/1.8 · 1/250s</span>
       </div>
     </form>
   </div>

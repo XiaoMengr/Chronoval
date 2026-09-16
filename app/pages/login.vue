@@ -31,11 +31,7 @@ const router = useRouter()
 
 const isLoading = ref(false)
 
-// 登录失败的页面级错误提示：不依赖全局 toast 组件（该 toast 在登录/首屏等场景可能出现渲染缺失，
-// 导致"点击登录毫无反应"的观感），用显式状态 + 表单内错误条兜底，保证失败必有可见反馈。
-const loginError = ref('')
-
-// AuthForm 实例引用：登录接口失败时也复用它的顶部浮动通知卡片
+// AuthForm 实例引用：登录接口失败时复用它的顶部浮动通知卡片（不在卡片内插错误条）
 const authFormRef = ref<{ showNotice: (text: string) => void } | null>(null)
 
 const githubOauthEnabled = computed(() => {
@@ -49,24 +45,33 @@ const githubOauthEnabled = computed(() => {
 
 const onAuthSubmit = async (event: any) => {
   isLoading.value = true
-  loginError.value = ''
   await $fetch('/api/login', {
     method: 'POST',
     body: event.data,
   })
     .then(async () => {
       await fetchUserSession()
+      // 登入成功反馈：全局 Toast（UApp 内置 Toaster）在 SPA 跳转后依旧可见，
+      // 让用户点一下就明确看到"登录成功"，避免"点了没动静"的观感。
+      toast.add({
+        color: 'success',
+        icon: 'tabler:circle-check',
+        title: $t('auth.messages.loginSuccess.title'),
+        description: $t('auth.messages.loginSuccess.description'),
+      })
       // 登入成功后默认直达后台管理面板（而非回到画廊）。
       // 指定了 redirect 参数时优先跳转到目标页，否则进 /dashboard。
       router.push(route.query.redirect?.toString() || '/dashboard')
     })
     .catch((error) => {
       console.error('Login error:', error)
-      const message = error?.data?.message || $t('auth.messages.loginFailed.description')
-      // 页面级错误条：保证失败时一定有肉眼可见的反馈
-      loginError.value = $t('auth.messages.loginFailed.title') + (message ? '：' + message : '')
-      // 顶部浮动通知卡片：与 AuthForm 内校验失败同一套反馈
-      authFormRef.value?.showNotice(loginError.value)
+      const status = error?.statusCode || error?.status
+      const isInvalid = status === 401
+      const message = isInvalid
+        ? $t('auth.messages.loginInvalid')
+        : (error?.data?.message || $t('auth.messages.loginFailed.description'))
+      // 顶部浮动通知卡片：作为失败反馈的唯一入口（不再使用页面内错误条）
+      authFormRef.value?.showNotice(message)
       toast.add({
         color: 'error',
         title: $t('auth.messages.loginFailed.title'),
@@ -80,7 +85,7 @@ const onAuthSubmit = async (event: any) => {
 </script>
 
 <template>
-  <main class="relative flex h-svh w-full flex-col overflow-hidden lg:h-svh lg:flex-row">
+  <main class="font-apple relative flex h-svh w-full flex-col overflow-hidden lg:h-svh lg:flex-row">
 
     <!-- ===== 统一全屏森林背景层：桌面 + 移动共用，铺满整页 ===== -->
     <div class="absolute inset-0" aria-hidden="true">
@@ -108,12 +113,12 @@ const onAuthSubmit = async (event: any) => {
 
     <!-- ===== 移动端品牌顶栏（仅移动端）：占位式高斯模糊渐入，仿首页顶栏；占据顶部空间，卡片在其下方不再被遮挡/挤压 ===== -->
     <div class="relative z-30 w-full shrink-0 lg:hidden">
-      <!-- 毛玻璃层 + 向下渐隐遮罩：顶部实、向下淡出，与首页顶栏观感一致 -->
-      <div class="absolute inset-0 -z-10 bg-neutral-950/30 backdrop-blur-2xl [mask-image:linear-gradient(to_bottom,black_0%,black_55%,transparent_100%)]" />
+      <!-- 毛玻璃层 + 向下渐隐遮罩：顶部实、向下淡出，与首页顶栏观感一致（亮色毛玻璃） -->
+      <div class="absolute inset-0 -z-10 bg-white/65 backdrop-blur-2xl [mask-image:linear-gradient(to_bottom,black_0%,black_55%,transparent_100%)]" />
       <!-- 品牌内容（logo + CHRONOVAL） -->
-      <div class="relative flex items-center gap-2.5 px-5 pb-6 pt-[max(1rem,env(safe-area-inset-top))] lg:pb-6 lg:pt-6">
+      <div class="relative flex items-center gap-2.5 px-5 pb-4 pt-[max(1rem,env(safe-area-inset-top))] lg:pb-6 lg:pt-6">
         <img :src="appLogo" alt="Chronoval" class="size-8 shrink-0 rounded-lg" />
-        <span class="text-[0.72rem] font-semibold uppercase tracking-[0.32em] text-white/95">
+        <span class="text-[0.72rem] font-semibold uppercase tracking-[0.32em] text-neutral-900">
           Chronoval
         </span>
       </div>
@@ -140,21 +145,8 @@ const onAuthSubmit = async (event: any) => {
     </aside>
 
     <!-- ===== 登录卡片：桌面偏右占右半，移动居中浮于全屏森林上 ===== -->
-    <section class="relative z-20 flex w-full flex-1 items-center justify-center px-4 py-[clamp(0.5rem,3svh,3rem)] min-h-0 lg:w-1/2 lg:min-h-auto lg:py-0 lg:px-0 lg:pr-14 xl:pr-20">
-      <div class="auth-glass w-full max-w-[24rem] rounded-[2rem] px-[clamp(1.25rem,4vw,2rem)] py-[clamp(1rem,5svh,2.25rem)] sm:px-10 max-h-[80svh] overflow-y-auto lg:max-w-md sm:max-h-none sm:overflow-visible">
-        <!-- 登录失败的错误条：本地显式状态渲染，确保失败必有可见反馈（不依赖全局 toast） -->
-        <Transition name="hint">
-          <div
-            v-if="loginError"
-            role="alert"
-            class="mb-4 flex items-start gap-2.5 rounded-xl border border-rose-300/30 bg-rose-500/15 px-3.5 py-3 backdrop-blur-md"
-          >
-            <Icon name="tabler:alert-circle" class="mt-0.5 size-5 shrink-0 text-rose-300" />
-            <p class="text-sm font-medium leading-snug text-rose-50/95">
-              {{ loginError }}
-            </p>
-          </div>
-        </Transition>
+    <section class="relative z-20 flex w-full flex-1 items-center justify-center px-5 py-6 min-h-0 lg:w-1/2 lg:min-h-auto lg:py-0 lg:px-0 lg:pr-14 xl:pr-20">
+      <div class="auth-glass w-full max-w-[24rem] rounded-[1.375rem] px-7 py-9 max-h-[88svh] overflow-y-auto sm:px-10 lg:max-w-md lg:rounded-[2rem] lg:px-10 lg:py-12 lg:max-h-none lg:overflow-visible">
         <AuthForm
           ref="authFormRef"
           :title="$t('auth.form.signin.title')"
@@ -180,21 +172,21 @@ const onAuthSubmit = async (event: any) => {
 </template>
 
 <style scoped>
-/* 暗色森林玻璃卡片：墨绿系半透明玻璃，白字高对比，浅/暗主题下均清晰 */
+/* 苹果风亮色毛玻璃卡片：白色半透明 + 重高斯模糊，深字高对比；浅/暗主题下均亮眼 */
 .auth-glass {
   position: relative;
   background:
     linear-gradient(
       160deg,
-      rgba(24, 32, 27, 0.55) 0%,
-      rgba(14, 18, 16, 0.72) 100%
+      rgba(255, 255, 255, 0.82) 0%,
+      rgba(255, 255, 255, 0.55) 100%
     );
-  -webkit-backdrop-filter: blur(36px) saturate(1.5);
-  backdrop-filter: blur(36px) saturate(1.5);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  -webkit-backdrop-filter: blur(36px) saturate(1.8);
+  backdrop-filter: blur(36px) saturate(1.8);
+  border: 1px solid rgba(255, 255, 255, 0.6);
   box-shadow:
-    0 30px 70px -20px rgba(0, 0, 0, 0.65),
-    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    0 30px 70px -20px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 /* 登录失败错误条：淡入淡出 */

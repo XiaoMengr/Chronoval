@@ -432,13 +432,21 @@
       },
       "errors": {
         "invalidPassword": "密碼至少需要 6 個字元",
-        "invalidEmail": "無效的電郵地址"
+        "invalidEmail": "無效的電郵地址",
+        "emailAndPasswordMissing": "請輸入電郵與密碼",
+        "emailMissing": "請輸入電郵",
+        "passwordMissing": "請輸入密碼"
       }
     },
     "messages": {
+      "loginInvalid": "帳號或密碼錯誤",
       "loginFailed": {
         "title": "登入失敗",
         "description": "發生未預期錯誤，請稍後再試。"
+      },
+      "loginSuccess": {
+        "title": "登入成功",
+        "description": "歡迎回來，正在為你進入儀表板。"
       }
     }
   },

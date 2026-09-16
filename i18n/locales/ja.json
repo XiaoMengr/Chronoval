@@ -432,13 +432,21 @@
       },
       "errors": {
         "invalidPassword": "パスワードは6文字以上で入力してください",
-        "invalidEmail": "無効なメールアドレスです"
+        "invalidEmail": "無効なメールアドレスです",
+        "emailAndPasswordMissing": "メールアドレスとパスワードを入力してください",
+        "emailMissing": "メールアドレスを入力してください",
+        "passwordMissing": "パスワードを入力してください"
       }
     },
     "messages": {
+      "loginInvalid": "アカウントまたはパスワードが正しくありません",
       "loginFailed": {
         "title": "ログインに失敗しました",
         "description": "予期しないエラーが発生しました。もう一度お試しください。"
+      },
+      "loginSuccess": {
+        "title": "ログイン成功",
+        "description": "おかえりなさい。ダッシュボードへ移動します。"
       }
     }
   },

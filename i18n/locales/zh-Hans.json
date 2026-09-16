@@ -479,7 +479,10 @@
     "form": {
       "errors": {
         "invalidEmail": "无效的电子邮件地址",
-        "invalidPassword": "密码至少需要6个字符"
+        "invalidPassword": "密码至少需要6个字符",
+        "emailAndPasswordMissing": "请输入邮箱和密码",
+        "emailMissing": "请输入邮箱",
+        "passwordMissing": "请输入密码"
       },
       "action": {
         "backToHome": "回到首页",
@@ -496,9 +499,14 @@
       }
     },
     "messages": {
+      "loginInvalid": "账号或密码错误",
       "loginFailed": {
         "title": "登录失败",
         "description": "发生未知错误，请重试。"
+      },
+      "loginSuccess": {
+        "title": "登录成功",
+        "description": "欢迎回来，正在为你进入仪表板。"
       }
     },
     "poster": {

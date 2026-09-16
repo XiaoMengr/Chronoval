@@ -1,10 +1,22 @@
 @import 'tailwindcss';
 @import '@nuxt/ui';
 
-/* 参考站 afilmory 侧栏字体：自托管 Geist（OFL 许可），字重 300 常规 / 400 / 500 */
+/* 参考站 afilmory 侧栏字体：自托管 Geist（OFL 许可），字重 200/300/400/500/600/700 全量离线 */
+@import '@fontsource/geist-sans/200.css';
 @import '@fontsource/geist-sans/300.css';
 @import '@fontsource/geist-sans/400.css';
 @import '@fontsource/geist-sans/500.css';
+@import '@fontsource/geist-sans/600.css';
+@import '@fontsource/geist-sans/700.css';
+
+/* 登录页优雅字体：Manrope（OFL 许可，几何人文无衬线，全量离线打包） */
+@import '@fontsource/manrope/200.css';
+@import '@fontsource/manrope/300.css';
+@import '@fontsource/manrope/400.css';
+@import '@fontsource/manrope/500.css';
+@import '@fontsource/manrope/600.css';
+@import '@fontsource/manrope/700.css';
+@import '@fontsource/manrope/800.css';
 
 :root {
   /* New text-autospace property */
@@ -149,6 +161,21 @@ html.dark .glass-surface {
     'Microsoft YaHei', sans-serif;
 
   --leading-normal: normal;
+}
+
+/* ---------------------------------------------------------------
+   苹果字体（登录页专用，全离线）：
+   优先真实苹果字体（SF / 苹方，Apple 设备系统自带，离线可用），
+   其余平台回退到本地自托管的 Geist Sans（SF 式，打包进产物，同样离线）。
+   用 :is(...) 强制所有后代继承本字体栈，覆盖 Nuxt UI 组件内部的字体设置。
+   --------------------------------------------------------------- */
+.font-apple {
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'SF Pro Display',
+    'SF Pro Text', 'PingFang SC', 'Hiragino Sans GB', 'Helvetica Neue', Arial,
+    system-ui, sans-serif;
+}
+.font-apple :is(input, button, textarea, select, a, span, p, h1, h2, h3, h4, label, small, div, em, strong) {
+  font-family: inherit;
 }
 
 .custom-scrollbar::-webkit-scrollbar {

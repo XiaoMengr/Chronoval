@@ -479,7 +479,10 @@
     "form": {
       "errors": {
         "invalidEmail": "Invalid email address",
-        "invalidPassword": "Password must be at least 6 characters"
+        "invalidPassword": "Password must be at least 6 characters",
+        "emailAndPasswordMissing": "Please enter your email and password",
+        "emailMissing": "Please enter your email",
+        "passwordMissing": "Please enter your password"
       },
       "signin": {
         "title": "Sign In",
@@ -496,9 +499,14 @@
       }
     },
     "messages": {
+      "loginInvalid": "Incorrect account or password",
       "loginFailed": {
         "title": "Login Failed",
         "description": "An unexpected error occurred. Please try again."
+      },
+      "loginSuccess": {
+        "title": "Signed in",
+        "description": "Welcome back. Taking you to the dashboard."
       }
     },
     "poster": {
