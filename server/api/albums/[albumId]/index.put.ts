@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { hashAlbumPassword } from '~~/server/utils/scanAlbumPassword'
 
 export default eventHandler(async (event) => {
   await requireUserSession(event)
@@ -21,6 +22,9 @@ export default eventHandler(async (event) => {
       coverPhotoId: z.string().optional(),
       photoIds: z.array(z.string()).optional(),
       isHidden: z.boolean().optional(),
+      // 相簿访问密码（明文）：配合 clearPassword 完成 设置/清除/保持
+      password: z.string().max(128).optional(),
+      clearPassword: z.boolean().optional(),
     }).parse,
   )
 
@@ -61,6 +65,15 @@ export default eventHandler(async (event) => {
     if (body.isHidden !== undefined) {
       updateData.isHidden = body.isHidden
     }
+
+    // 密码处理：clearPassword=true → 清除；非空明文 → 设置新密码；否则保持不变
+    if (body.clearPassword) {
+      updateData.passwordHash = null
+    } else if (body.password?.trim()) {
+      updateData.passwordHash = hashAlbumPassword(body.password.trim())
+    }
+
+    // 修改密码后之前的解锁 Cookie 立即失效
 
     tx.update(tables.albums)
       .set(updateData)
@@ -104,5 +117,7 @@ export default eventHandler(async (event) => {
       .get()
   })
 
-  return updatedAlbum
+  // 不回传密码哈希
+  const { passwordHash: _ph, ...safeAlbum } = updatedAlbum
+  return safeAlbum
 })

@@ -232,12 +232,15 @@ const openEditSlideover = async (album: AlbumItem) => {
   }
 
   try {
-    const albumDetail = (await $fetch(`/api/albums/${album.id}`)) as any
+    const albumDetail = (await $fetch(`/api/albums/${album.id}?manage=1`)) as any
     formData.title = album.title
     formData.description = album.description || ''
     formData.isHidden = album.isHidden || false
     selectedPhotoIds.value = (albumDetail.photos || []).map((p: Photo) => p.id)
     coverPhotoId.value = album.coverPhotoId || ''
+    // 密码为单向哈希，编辑时不回填；有密码时用占位提示现有状态
+    formData.password = ''
+    clearPassword.value = false
     formRef.value?.clear()
   } catch (error) {
     console.error('Failed to load album details:', error)
@@ -334,6 +337,8 @@ const onFormSubmit = async (event: FormSubmitEvent<AlbumFormState>) => {
           coverPhotoId: coverPhotoId.value || undefined,
           photoIds: selectedPhotoIds.value,
           isHidden: event.data.isHidden,
+          password: event.data.password?.trim() || undefined,
+          clearPassword: clearPassword.value || undefined,
         },
       })
 
@@ -352,6 +357,7 @@ const onFormSubmit = async (event: FormSubmitEvent<AlbumFormState>) => {
           coverPhotoId: coverPhotoId.value || undefined,
           photoIds: selectedPhotoIds.value,
           isHidden: event.data.isHidden,
+          password: event.data.password?.trim() || undefined,
         },
       })
 
@@ -709,10 +715,11 @@ const openAlbum = (album: AlbumItem) => {
           </template>
           </div>
 
-          <!-- 中型网格：以大型卡片为参考，卡片更紧凑（sm 尺寸），比大还小、比列表还大 -->
+          <!-- 中型网格：以大型卡片为参考，卡片更紧凑（sm 尺寸），比大还小、比列表还大。
+               移动端（<lg）维持 grid-cols-2；桌面端比大视图多一档列数以让卡片更小 -->
           <div
             v-else-if="viewMode === 'medium'"
-            class="grid grid-cols-2 gap-3 sm:gap-4"
+            class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-6"
           >
           <template v-for="album in filteredAlbums" :key="albumKey(album)">
             <div class="min-w-0 flex flex-col">

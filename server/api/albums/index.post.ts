@@ -1,4 +1,5 @@
 import z from 'zod'
+import { hashAlbumPassword } from '~~/server/utils/scanAlbumPassword'
 
 export default eventHandler(async (event) => {
   await requireUserSession(event)
@@ -11,10 +12,17 @@ export default eventHandler(async (event) => {
       coverPhotoId: z.string().optional(),
       photoIds: z.array(z.string()).optional(),
       isHidden: z.boolean().optional(),
+      // 相簿访问密码（明文）：非空设置新密码
+      password: z.string().max(128).optional(),
     }).parse,
   )
 
   const db = useDB()
+
+  // 密码处理：与扫描相簿一致，非空明文 → 带盐哈希存储
+  const passwordHash = body.password?.trim()
+    ? hashAlbumPassword(body.password.trim())
+    : null
 
   const album = db.transaction((tx) => {
     const newAlbum = tx
@@ -24,6 +32,7 @@ export default eventHandler(async (event) => {
         description: body.description || null,
         coverPhotoId: body.coverPhotoId || null,
         isHidden: body.isHidden || false,
+        passwordHash,
       })
       .returning()
       .get()
@@ -52,5 +61,7 @@ export default eventHandler(async (event) => {
     return newAlbum
   })
 
-  return album
+  // 不回传密码哈希
+  const { passwordHash: _ph, ...safeAlbum } = album
+  return safeAlbum
 })

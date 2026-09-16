@@ -24,9 +24,16 @@ export default eventHandler(async (event) => {
         .where(eq(tables.albumPhotos.albumId, album.id))
         .orderBy(tables.albumPhotos.position)
 
+      const {
+        passwordHash: _passwordHash,
+        ...restAlbum
+      } = album
+
       return {
-        ...album,
+        ...restAlbum,
         kind: 'manual',
+        // 密码类型：是否有访问密码（不暴露真实哈希）
+        passwordProtected: Boolean(album.passwordHash),
         // 即使是空相册，也返回空数组而不是 undefined
         photoIds: photoIds.length > 0 ? photoIds.map((p) => p.photoId) : [],
       }

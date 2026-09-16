@@ -14,6 +14,7 @@ const {
   data: album,
   error,
   pending,
+  refresh,
 } = await useFetch(() => `/api/albums/${albumId.value}`, {
   watch: [albumId],
 })
@@ -26,6 +27,17 @@ if (error.value) {
 }
 
 const albumData = computed(() => album.value)
+
+// 设置了密码且尚未解锁 → 进入加锁界面
+const isLocked = computed(
+   () =>
+     Boolean(albumData.value?.passwordProtected) &&
+     !((albumData.value as any)?.authorized),
+ )
+
+const handleAlbumUnlocked = () => {
+  refresh()
+}
 
 // 相册照片统一按拍摄时间倒序展示（与首页画廊默认排序一致），
 // 避免依赖 albumPhotos.position（按配置时的加入顺序、非拍摄时间）导致相册内排序"看起来很乱"。
@@ -181,6 +193,30 @@ onBeforeMount(() => {
         {{ $t('ui.loading') }}
       </p>
     </div>
+
+    <template v-else-if="isLocked">
+      <div class="relative min-h-svh w-full">
+        <div class="absolute inset-0 h-2/3 overflow-hidden">
+          <div
+            class="absolute inset-0 bg-gradient-to-b from-white/40 via-white/60 to-white dark:from-neutral-900/30 dark:via-neutral-900/50 dark:to-neutral-900"
+          />
+        </div>
+        <div class="relative container mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+          <UButton
+            variant="ghost"
+            color="neutral"
+            icon="tabler:arrow-left"
+            size="sm"
+            @click="goBackToAlbums"
+          />
+        </div>
+        <AlbumUnlock
+          :album-id="albumData?.id"
+          :title="albumData?.title"
+          @success="handleAlbumUnlocked"
+        />
+      </div>
+    </template>
 
     <template v-else-if="albumData">
       <!-- Backdrop layer -->

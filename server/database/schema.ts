@@ -158,6 +158,8 @@ export const albums = sqliteTable('albums', {
     onDelete: 'set null',
   }),
   isHidden: integer('is_hidden', { mode: 'boolean' }).default(false).notNull(),
+  // 相簿访问密码哈希（单向存储）；null=未设置密码（开放）
+  passwordHash: text('password_hash'),
   createdAt: integer('created_at', { mode: 'timestamp' })
     .notNull()
     .default(sql`(unixepoch())`),
