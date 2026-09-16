@@ -76,11 +76,12 @@ defineExpose({ showNotice })
 const inputUi = {
   root: 'w-full',
   base: [
-    'w-full rounded-xl border border-white/70 bg-white/60 px-3.5 py-2.5 text-[0.95rem] text-neutral-900 caret-neutral-900 lg:px-4 lg:py-3.5 lg:text-[1rem]',
-    'placeholder:text-neutral-400',
+    'w-full rounded-xl border border-white/70 bg-white/60 px-3.5 py-2.5 text-[0.95rem] text-neutral-900 caret-[rgba(100,116,139,0.55)] lg:px-4 lg:py-3.5 lg:text-[1rem]',
+    'placeholder:text-neutral-300/90',
     'shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)]',
     'transition-all duration-200',
-    'focus:border-white focus:bg-white focus:ring-4 focus:ring-white/40',
+    'outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-transparent',
+    'focus:border-white/80 focus:bg-white focus:ring-2 focus:ring-white/20',
     'focus:shadow-[inset_0_1px_2px_rgba(0,0,0,0.03),0_1px_0_rgba(255,255,255,0.8)]',
   ].join(' '),
 }
@@ -159,7 +160,6 @@ const inputUi = {
         <UInput
           v-model="state.email"
           :autofocus="false"
-          placeholder="you@example.com"
           class="w-full"
           :ui="inputUi"
         />
@@ -184,11 +184,10 @@ const inputUi = {
         type="button"
         variant="solid"
         color="neutral"
-        trailing-icon="tabler:arrow-right"
         block
         size="lg"
         :loading="loading"
-        class="mt-1 !h-12 lg:!h-13 !rounded-xl !bg-neutral-900 !text-white !text-[0.95rem] lg:!text-[1rem] !font-medium shadow-lg shadow-black/25 transition-all duration-200 hover:!bg-neutral-800"
+        class="group relative mt-1 !h-12 overflow-hidden !rounded-[0.9rem] !bg-gradient-to-b !from-neutral-800 !to-neutral-950 !font-semibold !text-white !text-[0.95rem] !tracking-wide lg:!h-13 lg:!text-[1rem] !shadow-[0_18px_40px_-14px_rgba(20,20,24,0.7),inset_0_1px_0_rgba(255,255,255,0.18)] transition-all duration-300 hover:!-translate-y-[1px] hover:!shadow-[0_24px_50px_-16px_rgba(20,20,24,0.85),inset_0_1px_0_rgba(255,255,255,0.24)] hover:!brightness-110 active:!translate-y-0 active:!scale-[0.99] active:!brightness-100"
         @click="onSubmit"
       >
         {{ $t('auth.form.action.continue') }}

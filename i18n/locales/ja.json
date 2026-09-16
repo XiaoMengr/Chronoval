@@ -423,7 +423,7 @@
       },
       "action": {
         "or": "または",
-        "continue": "続く",
+        "continue": "ログイン",
         "backToHome": "ホームに戻る"
       },
       "labels": {

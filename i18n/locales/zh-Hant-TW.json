@@ -423,7 +423,7 @@
       },
       "action": {
         "or": "或",
-        "continue": "繼續",
+        "continue": "登入",
         "backToHome": "回到首頁"
       },
       "labels": {

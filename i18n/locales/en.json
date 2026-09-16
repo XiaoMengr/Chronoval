@@ -491,7 +491,7 @@
       "action": {
         "backToHome": "Back to Home",
         "or": "OR",
-        "continue": "Continue"
+        "continue": "Login"
       },
       "labels": {
         "email": "Email",

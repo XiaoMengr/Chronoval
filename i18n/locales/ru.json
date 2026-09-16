@@ -430,7 +430,7 @@
       "action": {
         "backToHome": "На главную",
         "or": "ИЛИ",
-        "continue": "Продолжить"
+        "continue": "Войти"
       },
       "labels": {
         "email": "Электронная почта",
