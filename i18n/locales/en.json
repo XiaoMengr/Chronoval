@@ -999,6 +999,7 @@
       "searchEmptyTip": "No albums related to “{keyword}”",
       "viewGrid": "Grid view",
       "viewList": "List view",
+      "viewMedium": "Medium view",
       "subAlbums": "sub-albums",
       "searchClear": "Clear search",
       "card": {

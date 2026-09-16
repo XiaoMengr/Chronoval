@@ -241,12 +241,12 @@ const photoCount = computed(() => photos.value?.length ?? 0)
 .header-glass {
   background: linear-gradient(
     to bottom,
-    rgba(255, 255, 255, 0.86) 0%,
-    rgba(255, 255, 255, 0.62) 55%,
-    rgba(255, 255, 255, 0.12) 100%
+    rgba(255, 255, 255, 0.30) 0%,
+    rgba(255, 255, 255, 0.18) 55%,
+    rgba(255, 255, 255, 0.04) 100%
   );
-  backdrop-filter: blur(26px) saturate(1.3);
-  -webkit-backdrop-filter: blur(26px) saturate(1.3);
+  backdrop-filter: blur(26px) saturate(1.4);
+  -webkit-backdrop-filter: blur(26px) saturate(1.4);
   mask: linear-gradient(
     to bottom,
     rgba(0, 0, 0, 0.92) 0%,

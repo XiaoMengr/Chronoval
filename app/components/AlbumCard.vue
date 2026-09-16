@@ -7,7 +7,7 @@ interface CardCover {
 const props = withDefaults(
   defineProps<{
     album: any
-    size?: 'md' | 'sm' | 'row'
+    size?: 'md' | 'card' | 'sm' | 'row'
     expanded?: boolean
   }>(),
   {
@@ -222,6 +222,157 @@ const menuItems = computed(() => {
           @click.stop
         />
       </UDropdownMenu>
+    </div>
+  </div>
+
+  <!-- 中型卡片：图片在上、信息卡在下（中型布局专用） -->
+  <div
+    v-else-if="size === 'card'"
+    class="group flex flex-col overflow-hidden rounded-xl ring-1 ring-(--ui-border) bg-(--ui-bg) transition-all duration-300 hover:ring-(--ui-border-accented) hover:shadow-md hover:shadow-black/5"
+  >
+    <button
+      type="button"
+      class="relative block aspect-[16/10] w-full shrink-0 overflow-hidden bg-(--ui-bg-elevated) text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400/60"
+      :title="t('dashboard.albums.card.actions.view')"
+      @click="emit('view')"
+    >
+      <img
+        v-if="coverPrimary"
+        :src="coverPrimary"
+        class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.06]"
+        loading="lazy"
+        :alt="$t('ui.photo.altFallback')"
+        @error="onImgError"
+      />
+      <div
+        v-else
+        class="flex h-full w-full items-center justify-center bg-linear-to-br from-(--ui-bg-elevated) to-(--ui-bg)"
+      >
+        <Icon
+          :name="isScan ? 'tabler:folder-heart' : 'tabler:album'"
+          size="28"
+          class="text-(--ui-text-muted)"
+        />
+      </div>
+
+      <!-- 左上：展开二级相簿 -->
+      <button
+        v-if="isScan && hasChildren"
+        type="button"
+        class="absolute left-2 top-2 z-10 flex size-6 items-center justify-center rounded-lg bg-black/40 text-white shadow-sm backdrop-blur-md transition hover:bg-black/60"
+        :aria-label="$t('dashboard.albums.table.expand')"
+        @click.stop="emit('expand')"
+      >
+        <Icon
+          :name="expanded ? 'tabler:chevron-down' : 'tabler:chevron-right'"
+          size="14"
+        />
+      </button>
+
+      <!-- 右上：锁定状态 -->
+      <span
+        v-if="album.passwordProtected"
+        class="absolute right-2 top-2 z-10 flex size-6 items-center justify-center rounded-lg bg-black/40 text-rose-200 shadow-sm backdrop-blur-md"
+        :title="t('dashboard.albums.card.locked')"
+      >
+        <Icon name="tabler:lock" size="12" />
+      </span>
+
+      <!-- 右下：照片数 -->
+      <span
+        class="absolute bottom-2 right-2 z-10 flex items-center gap-1 rounded-full bg-black/55 px-2 py-0.5 text-[11px] font-medium text-white backdrop-blur-md"
+      >
+        <Icon name="tabler:photo" size="12" />
+        {{ album.photoCount || 0 }}
+      </span>
+    </button>
+
+    <!-- 下半部分信息卡 -->
+    <div class="flex min-w-0 flex-1 flex-col gap-2 p-2.5">
+      <div class="flex items-start justify-between gap-2">
+        <button
+          type="button"
+          class="min-w-0 text-left"
+          :title="t('dashboard.albums.card.actions.view')"
+          @click="emit('view')"
+        >
+          <p class="truncate text-sm font-semibold leading-tight text-(--ui-text)">
+            {{ album.title }}
+          </p>
+        </button>
+        <UDropdownMenu :content="{ align: 'end' }" :items="menuItems">
+          <UButton
+            variant="ghost"
+            color="neutral"
+            size="xs"
+            icon="tabler:dots-vertical"
+            @click.stop
+          />
+        </UDropdownMenu>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-(--ui-text-muted)">
+        <button
+          v-if="isScan && hasChildren"
+          type="button"
+          class="flex items-center gap-1 rounded-md bg-(--ui-bg-elevated) px-1.5 py-0.5 transition hover:bg-primary-500/10 hover:text-primary-600 dark:hover:text-primary-400"
+          :title="t('dashboard.albums.table.expand')"
+          @click="emit('expand')"
+        >
+          <Icon
+            :name="expanded ? 'tabler:chevron-down' : 'tabler:chevron-right'"
+            size="12"
+          />
+          {{ album.children?.length || 0 }}
+          {{ t('dashboard.albums.subAlbums') }}
+        </button>
+        <span
+          v-if="isScan"
+          class="flex items-center gap-1 rounded-md bg-(--ui-bg-elevated) px-1.5 py-0.5"
+        >
+          <Icon name="tabler:book-2" size="12" />
+          {{ t('dashboard.albums.table.external') }}
+        </span>
+        <span
+          v-if="album.hasCustom"
+          class="flex items-center gap-1 rounded-md bg-amber-500/10 px-1.5 py-0.5 text-amber-600 dark:text-amber-400"
+        >
+          <Icon name="tabler:wand" size="12" />
+          {{ t('dashboard.albums.table.customized') }}
+        </span>
+        <Icon
+          v-if="album.isHidden"
+          name="tabler:eye-off"
+          size="12"
+          class="text-(--ui-text-dimmed)"
+        />
+        <span
+          v-if="album.description"
+          class="truncate text-(--ui-text-dimmed)"
+        >
+          {{ album.description }}
+        </span>
+      </div>
+
+      <div class="mt-auto flex items-center gap-2 border-t border-(--ui-border)/60 pt-2">
+        <UButton
+          color="primary"
+          size="xs"
+          icon="tabler:external-link"
+          @click="emit('view')"
+        >
+          {{ t('dashboard.albums.card.actions.view') }}
+        </UButton>
+        <UButton
+          variant="outline"
+          color="neutral"
+          size="xs"
+          icon="tabler:pencil"
+          @click="emit('edit')"
+        >
+          {{ t('dashboard.albums.card.actions.edit') }}
+        </UButton>
+      </div>
     </div>
   </div>
 

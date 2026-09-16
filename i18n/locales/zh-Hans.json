@@ -998,6 +998,7 @@
       "searchEmptyTip": "没有与「{keyword}」相关的相簿",
       "viewGrid": "网格视图",
       "viewList": "列表视图",
+      "viewMedium": "中型视图",
       "subAlbums": "个子相簿",
       "card": {
         "locked": "已上锁",

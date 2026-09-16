@@ -738,7 +738,7 @@ onUnmounted(() => window.removeEventListener('resize', handleWindowResizeRefit))
           draggable="false"
           class="absolute inset-0 h-full w-full scale-[1.8] object-cover transition-opacity duration-700"
           :class="blurReady ? 'opacity-100' : 'opacity-0'"
-          style="filter: blur(64px) saturate(1.1) brightness(1.45)"
+          style="filter: blur(64px) saturate(1.15) brightness(1.08)"
           @load="blurReady = true"
         />
         <!-- 无缩略图时的兜底浅灰 -->
@@ -748,7 +748,7 @@ onUnmounted(() => window.removeEventListener('resize', handleWindowResizeRefit))
         />
         <!-- 主题自适应提亮渐变：浅色模式整体提亮（黑色照片也变灰白）；暗色模式轻微压暗保证工具栏/控件可读性 -->
         <div
-          class="pointer-events-none absolute inset-0 h-full w-full bg-linear-to-b from-white/12 via-transparent to-white/5 dark:from-black/20 dark:via-transparent dark:to-black/30"
+          class="pointer-events-none absolute inset-0 h-full w-full bg-linear-to-b from-white/5 via-transparent to-white/0 dark:from-black/20 dark:via-transparent dark:to-black/30"
         />
       </motion.div>
     </AnimatePresence>

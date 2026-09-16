@@ -927,6 +927,7 @@
       "searchEmptyTip": "Нет альбомов по запросу «{keyword}»",
       "viewGrid": "Сетка",
       "viewList": "Список",
+      "viewMedium": "Средний вид",
       "subAlbums": "под-альбомов",
       "searchClear": "Очистить поиск",
       "card": {

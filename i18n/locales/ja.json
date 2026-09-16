@@ -848,6 +848,7 @@
       "searchEmptyTip": "「{keyword}」に関連するアルバムはありません",
       "viewGrid": "グリッド表示",
       "viewList": "リスト表示",
+      "viewMedium": "中サイズ表示",
       "subAlbums": "サブアルバム",
       "searchClear": "検索をクリア",
       "card": {
