@@ -721,10 +721,10 @@ onUnmounted(() => window.removeEventListener('resize', handleWindowResizeRefit))
     <AnimatePresence>
       <motion.div
         v-if="isOpen"
-        :initial="{ opacity: 1 }"
+        :initial="{ opacity: 0 }"
         :animate="{ opacity: 1 }"
         :exit="{ opacity: 0 }"
-        :transition="{ duration: 0.3 }"
+        :transition="{ duration: 0.45, ease: [0.25, 0.1, 0.25, 1] }"
         class="fixed inset-0 z-30 overflow-hidden bg-[#3a3a42]"
       >
         <!-- 模糊图片本体：放大 + 强 blur，避免四周露边，颜色随当前图变化；

@@ -85,11 +85,11 @@ const onAuthSubmit = async (event: any) => {
     <!-- ===== 统一全屏森林背景层：桌面 + 移动共用，铺满整页 ===== -->
     <div class="absolute inset-0" aria-hidden="true">
       <img
-        src="/login/forest-1080p.jpg"
+        src="/login-forest/forest-1080p.jpg"
         :srcset="`
-          /login/forest-1080p.jpg 1920w,
-          /login/forest-2k.jpg 2560w,
-          /login/forest.jpg 3840w
+          /login-forest/forest-1080p.jpg 1920w,
+          /login-forest/forest-2k.jpg 2560w,
+          /login-forest/forest.jpg 3840w
         `"
         sizes="100vw"
         alt=""
