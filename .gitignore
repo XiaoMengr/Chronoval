@@ -42,6 +42,8 @@ certs/
 db.sqlite
 frpc.toml
 Caddyfile
+/caddy
+/frpc
 _hash*.mjs
 _off_*.mjs
 _set_realhash.mjs

@@ -99,46 +99,50 @@ const menuItems = computed(() => {
     <button
       v-if="isScan && hasChildren"
       type="button"
-      class="relative aspect-[4/3] w-12 shrink-0 overflow-hidden rounded-lg bg-(--ui-bg-elevated)"
+      class="relative w-12 shrink-0 overflow-hidden rounded-lg bg-(--ui-bg-elevated)"
       :title="t('dashboard.albums.table.expand')"
       @click.stop="emit('expand')"
     >
-      <img
-        v-if="coverPrimary"
-        :src="coverPrimary"
-        class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-        loading="lazy"
-        :alt="$t('ui.photo.altFallback')"
-        @error="onImgError"
-      />
-      <Icon
-        v-else
-        name="tabler:folder-heart"
-        size="16"
-        class="absolute inset-0 m-auto text-(--ui-text-muted)"
-      />
+      <span class="relative block h-0 w-full pb-[75%]">
+        <img
+          v-if="coverPrimary"
+          :src="coverPrimary"
+          class="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+          loading="lazy"
+          :alt="$t('ui.photo.altFallback')"
+          @error="onImgError"
+        />
+        <Icon
+          v-else
+          name="tabler:folder-heart"
+          size="16"
+          class="absolute inset-0 m-auto text-(--ui-text-muted)"
+        />
+      </span>
     </button>
     <button
       v-else
       type="button"
-      class="relative aspect-[4/3] w-12 shrink-0 overflow-hidden rounded-lg bg-(--ui-bg-elevated)"
+      class="relative w-12 shrink-0 overflow-hidden rounded-lg bg-(--ui-bg-elevated)"
       :title="t('dashboard.albums.card.actions.view')"
       @click="emit('view')"
     >
-      <img
-        v-if="coverPrimary"
-        :src="coverPrimary"
-        class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-        loading="lazy"
-        :alt="$t('ui.photo.altFallback')"
-        @error="onImgError"
-      />
-      <Icon
-        v-else
-        :name="isScan ? 'tabler:folder-heart' : 'tabler:album'"
-        size="16"
-        class="absolute inset-0 m-auto text-(--ui-text-muted)"
-      />
+      <span class="relative block h-0 w-full pb-[75%]">
+        <img
+          v-if="coverPrimary"
+          :src="coverPrimary"
+          class="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+          loading="lazy"
+          :alt="$t('ui.photo.altFallback')"
+          @error="onImgError"
+        />
+        <Icon
+          v-else
+          :name="isScan ? 'tabler:folder-heart' : 'tabler:album'"
+          size="16"
+          class="absolute inset-0 m-auto text-(--ui-text-muted)"
+        />
+      </span>
     </button>
 
     <div class="min-w-0 flex-1">
@@ -228,32 +232,36 @@ const menuItems = computed(() => {
   <!-- 中型卡片：图片在上、信息卡在下（中型布局专用） -->
   <div
     v-else-if="size === 'card'"
-    class="group flex flex-col overflow-hidden rounded-xl ring-1 ring-(--ui-border) bg-(--ui-bg) transition-all duration-300 hover:ring-(--ui-border-accented) hover:shadow-md hover:shadow-black/5"
+    class="group h-full flex flex-col overflow-hidden rounded-xl ring-1 ring-(--ui-border) bg-(--ui-bg) transition-all duration-300 hover:ring-(--ui-border-accented) hover:shadow-md hover:shadow-black/5"
   >
     <button
       type="button"
-      class="relative block aspect-[16/10] w-full shrink-0 overflow-hidden bg-(--ui-bg-elevated) text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400/60"
+      class="relative block w-full shrink-0 overflow-hidden bg-(--ui-bg-elevated) text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400/60"
       :title="t('dashboard.albums.card.actions.view')"
       @click="emit('view')"
     >
-      <img
-        v-if="coverPrimary"
-        :src="coverPrimary"
-        class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.06]"
-        loading="lazy"
-        :alt="$t('ui.photo.altFallback')"
-        @error="onImgError"
-      />
-      <div
-        v-else
-        class="flex h-full w-full items-center justify-center bg-linear-to-br from-(--ui-bg-elevated) to-(--ui-bg)"
-      >
-        <Icon
-          :name="isScan ? 'tabler:folder-heart' : 'tabler:album'"
-          size="28"
-          class="text-(--ui-text-muted)"
+      <!-- 封面容器：padding-bottom 撑起固定 16:10 比例的高度，
+           封面有无图片、任何浏览器下都等高，避免 flex 布局覆盖 aspect-ratio -->
+      <span class="relative block h-0 w-full pb-[62.5%]">
+        <img
+          v-if="coverPrimary"
+          :src="coverPrimary"
+          class="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.06]"
+          loading="lazy"
+          :alt="$t('ui.photo.altFallback')"
+          @error="onImgError"
         />
-      </div>
+        <span
+          v-else
+          class="absolute inset-0 flex h-full w-full items-center justify-center bg-linear-to-br from-(--ui-bg-elevated) to-(--ui-bg)"
+        >
+          <Icon
+            :name="isScan ? 'tabler:folder-heart' : 'tabler:album'"
+            size="28"
+            class="text-(--ui-text-muted)"
+          />
+        </span>
+      </span>
 
       <!-- 左上：展开二级相簿 -->
       <button
@@ -448,70 +456,77 @@ const menuItems = computed(() => {
   <!-- 顶层相簿：封面 + 明确操作区 -->
   <div
     v-else
-    class="group flex flex-col overflow-hidden rounded-2xl ring-1 ring-(--ui-border) bg-(--ui-bg) shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/5 hover:ring-(--ui-border-accented)"
+    class="group h-full flex flex-col overflow-hidden rounded-2xl ring-1 ring-(--ui-border) bg-(--ui-bg) shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/5 hover:ring-(--ui-border-accented)"
   >
     <button
       type="button"
-      class="relative block aspect-[16/10] w-full shrink-0 overflow-hidden bg-(--ui-bg-elevated) text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400/60"
+      class="relative block w-full shrink-0 overflow-hidden bg-(--ui-bg-elevated) text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400/60"
       :title="t('dashboard.albums.card.actions.view')"
       @click="emit('view')"
     >
-      <!-- 封面拼贴：外部库多封面时展示不对称拼图 -->
-      <div v-if="useCollage" class="grid h-full w-full grid-cols-[1.35fr_1fr]">
+      <!-- 封面容器：padding-bottom 撑起固定 16:10 比例的高度，
+           封面有无图片、任何浏览器下都等高，避免 flex 布局覆盖 aspect-ratio -->
+      <span class="relative block h-0 w-full pb-[62.5%]">
+        <!-- 封面拼贴：外部库多封面时展示不对称拼图 -->
         <div
-          class="relative h-full overflow-hidden border-r border-black/5 dark:border-white/10"
+          v-if="useCollage"
+          class="absolute inset-0 grid h-full w-full grid-cols-[1.35fr_1fr]"
         >
-          <img
-            :src="uniqueCovers[0]"
-            class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.06]"
-            loading="lazy"
-            :alt="$t('ui.photo.altFallback')"
-            @error="onImgError"
-          />
-        </div>
-        <div class="grid h-full grid-rows-2">
           <div
-            class="relative overflow-hidden border-b border-black/5 dark:border-white/10"
+            class="relative h-full overflow-hidden border-r border-black/5 dark:border-white/10"
           >
             <img
-              :src="uniqueCovers[1]"
+              :src="uniqueCovers[0]"
               class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.06]"
               loading="lazy"
               :alt="$t('ui.photo.altFallback')"
               @error="onImgError"
             />
           </div>
-          <div class="relative overflow-hidden">
-            <img
-              v-if="uniqueCovers[2]"
-              :src="uniqueCovers[2]"
-              class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.06]"
-              loading="lazy"
-              :alt="$t('ui.photo.altFallback')"
-              @error="onImgError"
-            />
+          <div class="grid h-full grid-rows-2">
+            <div
+              class="relative overflow-hidden border-b border-black/5 dark:border-white/10"
+            >
+              <img
+                :src="uniqueCovers[1]"
+                class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.06]"
+                loading="lazy"
+                :alt="$t('ui.photo.altFallback')"
+                @error="onImgError"
+              />
+            </div>
+            <div class="relative overflow-hidden">
+              <img
+                v-if="uniqueCovers[2]"
+                :src="uniqueCovers[2]"
+                class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.06]"
+                loading="lazy"
+                :alt="$t('ui.photo.altFallback')"
+                @error="onImgError"
+              />
+            </div>
           </div>
         </div>
-      </div>
 
-      <img
-        v-else-if="coverPrimary"
-        :src="coverPrimary"
-        class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.06]"
-        loading="lazy"
-        :alt="$t('ui.photo.altFallback')"
-        @error="onImgError"
-      />
-      <div
-        v-else
-        class="flex h-full w-full items-center justify-center bg-linear-to-br from-(--ui-bg-elevated) to-(--ui-bg)"
-      >
-        <Icon
-          :name="isScan ? 'tabler:folder-heart' : 'tabler:album'"
-          size="36"
-          class="text-(--ui-text-muted)"
+        <img
+          v-else-if="coverPrimary"
+          :src="coverPrimary"
+          class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.06]"
+          loading="lazy"
+          :alt="$t('ui.photo.altFallback')"
+          @error="onImgError"
         />
-      </div>
+        <span
+          v-else
+          class="absolute inset-0 flex h-full w-full items-center justify-center bg-linear-to-br from-(--ui-bg-elevated) to-(--ui-bg)"
+        >
+          <Icon
+            :name="isScan ? 'tabler:folder-heart' : 'tabler:album'"
+            size="36"
+            class="text-(--ui-text-muted)"
+          />
+        </span>
+      </span>
 
       <!-- 左下：展开二级相簿 -->
       <button

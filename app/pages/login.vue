@@ -173,9 +173,13 @@ const onAuthSubmit = async (event: any) => {
 </template>
 
 <style scoped>
-/* 整页进入渐入：森林背景 + 卡片 + 顶栏整体淡入，约 0.6s */
+/* 整页进入渐入：森林背景 + 卡片 + 顶栏整体淡入，约 0.6s。
+   transform: translateZ(0) 让整页进入自己的合成层，避免 opacity 动画
+   在每一帧对卡片 backdrop-filter 重新采样——否则毛玻璃卡在重绘时会一闪一闪。 */
 .login-enter {
   animation: loginPageIn 0.7s cubic-bezier(0.33, 0, 0.4, 1) both;
+  transform: translateZ(0);
+  will-change: transform, opacity;
 }
 @keyframes loginPageIn {
   from { opacity: 0; }
@@ -221,9 +225,17 @@ const onAuthSubmit = async (event: any) => {
   100% { mask-size: 430% 100%; -webkit-mask-size: 430% 100%; opacity: 1; }
 }
 
-/* 苹果风亮色毛玻璃卡片：白色半透明 + 重高斯模糊，深字高对比；浅/暗主题下均亮眼 */
+/* 苹果风亮色毛玻璃卡片：白色半透明 + 重高斯模糊，深字高对比；浅/暗主题下均亮眼。
+   transform: translateZ(0) + will-change 让卡片独占一个稳定的合成层，
+   固定 backdrop-filter 的采样源；配合父级整页的合成层，彻底避免登入成功时
+   （loading 态切换 / 成功 toast 注入 / 路由切换触发重绘）卡片闪白。 */
 .auth-glass {
   position: relative;
+  transform: translateZ(0);
+  will-change: transform;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  isolation: isolate;
   background:
     linear-gradient(
       160deg,
