@@ -101,37 +101,14 @@ const hasStoredPassword = computed(() => {
 })
 // 眼睛开关：明文/密文显示密码输入框内容
 const passwordReveal = ref(false)
-// 「访问密码」卡片引用：用于「点击密码区之外 → 未输入密码时系统提示警告」
-const passwordBoxRef = ref<HTMLElement | null>(null)
-// 访问密码为空警告最近一次弹出时间（节流，避免与保存提示等重复弹出）
-const lastPasswordWarnAt = ref(0)
 
 const showPasswordWarningToast = () => {
-  const now = Date.now()
-  if (now - lastPasswordWarnAt.value < 500) return
-  lastPasswordWarnAt.value = now
   useToast().add({
     title: $t('dashboard.albums.form.passwordWarningTitle'),
     description: $t('dashboard.albums.form.passwordWarningMessage'),
     color: 'danger',
   })
 }
-
-const handleOutsidePasswordClick = (event: MouseEvent) => {
-  if (!passwordToggle.value) return
-  const box = passwordBoxRef.value
-  if (box && event.target instanceof Node && !box.contains(event.target)) {
-    // 开关已开启但未输入任何密码时，不自动关闭开关，改用系统提示警告
-    if (!formData.password?.trim()) {
-      showPasswordWarningToast()
-    }
-  }
-}
-
-onMounted(() => document.addEventListener('mousedown', handleOutsidePasswordClick))
-onBeforeUnmount(() =>
-  document.removeEventListener('mousedown', handleOutsidePasswordClick),
-)
 
 const formRef = ref()
 const isSubmittingForm = ref(false)
@@ -1111,7 +1088,7 @@ const openAlbum = (album: AlbumItem) => {
 
                   <!-- 相簿密码：按钮式开关 -->
                   <UFormField name="password">
-                    <div ref="passwordBoxRef" class="overflow-hidden rounded-lg border border-neutral-200 bg-neutral-50/50 dark:border-neutral-800 dark:bg-neutral-900/40">
+                    <div class="overflow-hidden rounded-lg border border-neutral-200 bg-neutral-50/50 dark:border-neutral-800 dark:bg-neutral-900/40">
                       <div class="flex items-center justify-between gap-4 px-4 py-3">
                         <div class="min-w-0 space-y-0.5">
                           <p class="text-sm font-medium text-neutral-900 dark:text-neutral-100">
