@@ -203,14 +203,6 @@ const storageLocations = computed<LocationMeta[]>(
   () => dashboardStats.value?.storage?.locations || [],
 )
 
-// 磁盘用量汇总（供顶部「存储使用」指标卡显示 已用 / 总量）
-const storageDiskSummary = computed(() => {
-  const used = storageLocations.value.reduce((s, l) => s + (l.used || 0), 0)
-  // 总量取各存储位置总容量之和；若全部未知则回退到 0
-  const total = storageLocations.value.reduce((s, l) => s + (l.total || 0), 0)
-  return { used, total }
-})
-
 // 获取所有有照片的年份
 const availableYears = computed(() => {
   if (!photos.value || photos.value.length === 0) return []
@@ -417,11 +409,7 @@ const onShareSite = () => {
             :title="$t('dashboard.overview.indicator.storageUsage')"
             icon="tabler:database"
             color="cyan"
-            :value="
-              storageDiskSummary.total
-                ? `${formatBytes(storageDiskSummary.used)} / ${formatBytes(storageDiskSummary.total)}`
-                : formatBytes(dashboardStats?.storage?.totalSize || 0)
-            "
+            :value="formatBytes(dashboardStats?.storage?.totalSize || 0)"
           />
         </div>
 
@@ -684,10 +672,10 @@ const onShareSite = () => {
                       { value: mediaStats.video, color: '#8b5cf6' },
                     ]"
                   >
-                    <span class="text-lg font-semibold tracking-tight text-(--ui-text) sm:text-2xl">
-                      <span class="tabular-nums">{{ mediaTypePercent('image') }}</span
-                      ><span class="text-xs font-medium text-(--ui-text-muted) sm:text-sm">%</span>
-                    </span>
+                    <span class="text-lg font-medium tracking-tight text-(--ui-text) sm:text-2xl">
+  <span class="tabular-nums">{{ mediaTypePercent('image') }}</span
+  ><span class="ml-0.5 text-xs font-medium text-(--ui-text-muted) sm:text-sm">%</span>
+</span>
                     <span class="mt-0.5 text-[10px] font-medium tracking-wide text-(--ui-text-dimmed) sm:mt-1 sm:text-xs">
                       {{ $t('dashboard.overview.section.mediaTypes.image') }}
                     </span>
@@ -707,8 +695,8 @@ const onShareSite = () => {
                           {{ $t('dashboard.overview.section.mediaTypes.image') }}
                           <span class="tabular-nums text-(--ui-text-dimmed)">{{ mediaStats.image }}</span>
                         </span>
-                        <span class="text-xs font-semibold tabular-nums text-(--ui-text)">
-                          {{ mediaTypePercent('image') }}%
+                        <span class="text-xs font-medium tabular-nums text-(--ui-text)">
+                          {{ mediaTypePercent('image') }} %
                         </span>
                       </div>
                       <div class="flex items-center justify-between gap-4 text-xs">
@@ -718,10 +706,10 @@ const onShareSite = () => {
                           <span class="tabular-nums text-(--ui-text-dimmed)">{{ mediaStats.video }}</span>
                         </span>
                         <span
-                          class="text-xs font-semibold tabular-nums"
+                          class="text-xs font-medium tabular-nums"
                           :class="mediaStats.video > 0 ? 'text-(--ui-text)' : 'text-(--ui-text-dimmed)'"
                         >
-                          {{ mediaTypePercent('video') }}%
+                          {{ mediaTypePercent('video') }} %
                         </span>
                       </div>
                     </div>
