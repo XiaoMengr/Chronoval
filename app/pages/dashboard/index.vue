@@ -203,6 +203,14 @@ const storageLocations = computed<LocationMeta[]>(
   () => dashboardStats.value?.storage?.locations || [],
 )
 
+// 磁盘用量汇总（供顶部「存储使用」指标卡显示 已用 / 总量）
+const storageDiskSummary = computed(() => {
+  const used = storageLocations.value.reduce((s, l) => s + (l.used || 0), 0)
+  // 总量取各存储位置总容量之和；若全部未知则回退到 0
+  const total = storageLocations.value.reduce((s, l) => s + (l.total || 0), 0)
+  return { used, total }
+})
+
 // 获取所有有照片的年份
 const availableYears = computed(() => {
   if (!photos.value || photos.value.length === 0) return []
@@ -409,7 +417,11 @@ const onShareSite = () => {
             :title="$t('dashboard.overview.indicator.storageUsage')"
             icon="tabler:database"
             color="cyan"
-            :value="formatBytes(dashboardStats?.storage?.totalSize || 0)"
+            :value="
+              storageDiskSummary.total
+                ? `${formatBytes(storageDiskSummary.used)} / ${formatBytes(storageDiskSummary.total)}`
+                : formatBytes(dashboardStats?.storage?.totalSize || 0)
+            "
           />
         </div>
 
@@ -903,7 +915,7 @@ const onShareSite = () => {
                     </span>
                   </div>
                   <span class="text-xs tabular-nums text-(--ui-text-muted)">
-                    {{ loc.total ? `${locPercent(loc)}%` : '-' }}
+                    {{ loc.total ? `${locPercent(loc)}%` : formatBytes(loc.used) }}
                   </span>
                 </div>
 
@@ -924,7 +936,7 @@ const onShareSite = () => {
                     {{ loc.path }}
                   </span>
                   <span class="shrink-0 pl-2 tabular-nums text-(--ui-text-muted)">
-                    {{ loc.total ? `${formatBytes(loc.used)} / ${formatBytes(loc.total)}` : '-' }}
+                    {{ loc.total ? `${formatBytes(loc.used)} / ${formatBytes(loc.total)}` : formatBytes(loc.used) }}
                   </span>
                 </div>
               </div>
