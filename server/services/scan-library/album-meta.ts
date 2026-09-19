@@ -1,4 +1,4 @@
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { useDB, tables } from '../../utils/db'
 import type { ScanAlbumNode } from './manager'
 
@@ -18,6 +18,8 @@ export interface ScanAlbumMetaInput {
   slug?: string | null
   /** 相簿自身公开 URL 标识（随机）；null=清除改用默认，undefined=保持不变 */
   urlKey?: string | null
+  /** 照片展示布局；undefined=保持不变 */
+  layout?: 'waterfall' | 'grid'
 }
 
 const cleanRelPath = (p: string): string =>
@@ -81,6 +83,7 @@ export const upsertScanAlbumMeta = async (
     if (input.slug !== undefined) updateData.slug = input.slug || null
     if (input.urlKey !== undefined)
       updateData.urlKey = (input.urlKey && input.urlKey.trim()) || null
+    if (input.layout !== undefined) updateData.layout = input.layout
 
     await db
       .update(tables.scanAlbumMeta)
@@ -108,6 +111,7 @@ export const upsertScanAlbumMeta = async (
       password: input.password ?? null,
       slug: input.slug || null,
       urlKey: (input.urlKey && input.urlKey.trim()) || null,
+      layout: input.layout ?? 'waterfall',
     })
     .returning()
     .get()
@@ -206,6 +210,8 @@ export const applyScanAlbumMeta = async (
     coverPhotoId,
     covers,
     urlKey: meta.urlKey || node.urlKey,
+    // 布局：自定义元数据优先，否则使用节点默认
+    layout: meta.layout ?? node.layout,
     // 公开链接优先级：自定义 slug > 相簿自身 urlKey > 库级默认
     link: meta.slug
       ? `/albums/s/${encodeURIComponent(meta.slug)}`

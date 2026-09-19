@@ -100,23 +100,16 @@ const dateRangeText = computed(() => {
   }
 })
 
-// 用于 MasonryWall 的照片数据
-const masonryItems = computed(() => {
-  return (
-    sortedAlbumPhotos.value?.map((photo: any, index: number) => ({
-      id: photo.id,
-      photo,
-      originalIndex: index,
-    })) ?? []
-  )
-})
-
-const isMobile = useMediaQuery('(max-width: 768px)')
-const columnWidth = computed(() => (isMobile.value ? 280 : 280))
-const maxColumns = computed(() => (isMobile.value ? 2 : 8))
-const minColumns = computed(() => (isMobile.value ? 2 : 2))
-
-const MASONRY_GAP = 4
+// —— 相簿展示布局（瀑布流 / 统一网格）——
+// 默认取相簿保存的布局；访客可在页顶切换（仅本次浏览生效，不改持久化配置）
+const layout = ref<'waterfall' | 'grid'>('waterfall')
+watch(
+  () => (albumData.value as any)?.layout,
+  (v) => {
+    if (v === 'grid' || v === 'waterfall') layout.value = v
+  },
+  { immediate: true },
+)
 
 const handleOpenViewer = (index: number) => {
   const photos = sortedAlbumPhotos.value
@@ -349,31 +342,30 @@ onBeforeMount(() => {
             </div>
           </div>
 
-          <MasonryWall
+          <AlbumsAlbumGallery
             v-else
-            :items="masonryItems"
-            :column-width="columnWidth"
-            :gap="MASONRY_GAP"
-            :min-columns="minColumns"
-            :max-columns="maxColumns"
-            :ssr-columns="2"
-            :key-mapper="
-              (_item, _column, _row, index) =>
-                masonryItems[index]?.originalIndex ?? index
-            "
+            v-model:layout="layout"
+            :photos="sortedAlbumPhotos"
           >
-            <template #default="{ item }">
+            <template #waterfall-card="{ photo, index }">
               <MasonryItem
-                v-if="item.photo && typeof item.originalIndex === 'number'"
-                :key="item.photo.id"
-                :photo="item.photo"
-                :index="item.originalIndex"
+                :key="photo.id"
+                :photo="photo"
+                :index="index"
                 :has-animated="false"
                 :first-screen-items="50"
                 @open-viewer="handleOpenViewer($event)"
               />
             </template>
-          </MasonryWall>
+            <template #grid-card="{ photo, index }">
+              <AlbumsAlbumGridCard
+                :key="photo.id"
+                :photo="photo"
+                :index="index"
+                @open="handleOpenViewer($event)"
+              />
+            </template>
+          </AlbumsAlbumGallery>
         </motion.div>
       </div>
     </template>

@@ -475,23 +475,33 @@ const onScanLibrarySubmit = async (close?: () => void) => {
   }
 }
 
+// 扫描库启停正在切换中的 id（用于开关 loading / 防重复点击）
+const scanTogglingId = ref<number | null>(null)
+
 const onScanLibraryToggle = async (lib: ScanLibraryItem) => {
+  if (scanTogglingId.value !== null) return
+  scanTogglingId.value = lib.id
   try {
     await $fetch(`/api/scan-library/${lib.id}`, {
       method: 'PUT',
       body: { enabled: lib.enabled },
     })
+    // 成功后一律以服务端结果为准，重新拉取，保证状态同步
+    await refreshScanLibs()
     toast.add({
       title: $t('settings.storage.scanLibrary.messages.saved'),
       color: 'success',
     })
   } catch (error) {
+    // 失败回滚到服务端真实状态
     await refreshScanLibs()
     toast.add({
       title: $t('settings.storage.scanLibrary.messages.saveError'),
       description: (error as Error).message,
       color: 'error',
     })
+  } finally {
+    scanTogglingId.value = null
   }
 }
 
@@ -1076,7 +1086,13 @@ const storageInfoConfigEntries = computed(() => {
                     @click="onScanLibraryScan(lib)"
                   />
                 </UTooltip>
-                <USwitch v-model="lib.enabled" size="sm" @change="onScanLibraryToggle(lib)" />
+                <USwitch
+                  v-model="lib.enabled"
+                  size="sm"
+                  :loading="scanTogglingId === lib.id"
+                  :disabled="scanTogglingId !== null"
+                  @change="onScanLibraryToggle(lib)"
+                />
 
                 <UButton
                   size="sm"

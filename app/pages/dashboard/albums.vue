@@ -36,6 +36,8 @@ interface AlbumFormState {
   hideFromGallery: boolean
   slug: string
   password: string
+  // 照片展示布局：瀑布流 / 统一网格
+  layout: 'waterfall' | 'grid'
 }
 
 const albums = ref<AlbumItem[]>([])
@@ -94,6 +96,7 @@ const formData = reactive<AlbumFormState>({
   hideFromGallery: false,
   slug: '',
   password: '',
+  layout: 'waterfall',
 })
 
 // 相簿密码「按钮式开关」：是否开启访问密码（表单态）
@@ -203,6 +206,7 @@ const openCreateSlideover = () => {
   formData.hideFromGallery = false
   formData.slug = ''
   formData.password = ''
+  formData.layout = 'waterfall'
   passwordToggle.value = false
   selectedPhotoIds.value = []
   coverPhotoId.value = ''
@@ -245,6 +249,7 @@ const openEditSlideover = async (album: AlbumItem) => {
     formData.hideFromGallery = (album as any).hideFromGallery || false
     formData.slug = album.slug || ''
     formData.password = (album as any).password || ''
+    formData.layout = (album as any).layout === 'grid' ? 'grid' : 'waterfall'
     passwordToggle.value = !!(album as any).passwordProtected
     coverPhotoId.value = album.coverPhotoId || ''
     selectedPhotoIds.value = []
@@ -263,6 +268,7 @@ const openEditSlideover = async (album: AlbumItem) => {
     coverPhotoId.value = album.coverPhotoId || ''
     // 明文密码在管理端回填，可在输入框内用眼睛查看/编辑
     formData.password = albumDetail.password || ''
+    formData.layout = albumDetail.layout === 'grid' ? 'grid' : 'waterfall'
     passwordToggle.value = !!albumDetail.passwordProtected
     formRef.value?.clear()
   } catch (error) {
@@ -423,6 +429,7 @@ const onFormSubmit = async (event: FormSubmitEvent<AlbumFormState>) => {
         description: event.data.description || null,
         coverPhotoId: coverPhotoId.value || null,
         isHidden: event.data.isHidden,
+        layout: event.data.layout,
         ...passwordPayload,
         slug: event.data.slug?.trim() || null,
       }
@@ -443,6 +450,7 @@ const onFormSubmit = async (event: FormSubmitEvent<AlbumFormState>) => {
           photoIds: selectedPhotoIds.value,
           isHidden: event.data.isHidden,
           hideFromGallery: event.data.hideFromGallery,
+          layout: event.data.layout,
           ...passwordPayload,
           slug: event.data.slug?.trim() || null,
         },
@@ -464,6 +472,7 @@ const onFormSubmit = async (event: FormSubmitEvent<AlbumFormState>) => {
           photoIds: selectedPhotoIds.value,
           isHidden: event.data.isHidden,
           hideFromGallery: event.data.hideFromGallery,
+          layout: event.data.layout,
           password: passwordToggle.value ? newPassword || undefined : undefined,
           slug: event.data.slug?.trim() || null,
         },
@@ -1134,6 +1143,71 @@ const openAlbum = (album: AlbumItem) => {
                       :placeholder="$t('dashboard.albums.form.customUrlPlaceholder')"
                     />
                   </UFormField>
+                </section>
+
+                <!-- 分区：展示样式 -->
+                <div class="my-5 h-px bg-neutral-100 dark:bg-neutral-800" />
+                <section class="space-y-3">
+                  <header class="flex items-center gap-2 pt-1">
+                    <p class="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">
+                      {{ $t('dashboard.albums.form.groupLayout') }}
+                    </p>
+                    <span class="h-px flex-1 bg-neutral-100 dark:bg-neutral-800" />
+                  </header>
+
+                  <div class="grid grid-cols-2 gap-3">
+                    <button
+                      v-for="opt in [
+                        {
+                          value: 'waterfall',
+                          label: $t('dashboard.albums.form.layoutWaterfall'),
+                          desc: $t('dashboard.albums.form.layoutWaterfallDesc'),
+                          icon: 'tabler:layout-collage',
+                        },
+                        {
+                          value: 'grid',
+                          label: $t('dashboard.albums.form.layoutGrid'),
+                          desc: $t('dashboard.albums.form.layoutGridDesc'),
+                          icon: 'tabler:layout-grid',
+                        },
+                      ]"
+                      :key="opt.value"
+                      type="button"
+                      class="cursor-pointer rounded-xl border p-3 text-left transition-all"
+                      :class="
+                        formData.layout === opt.value
+                          ? 'border-primary-400 bg-primary-50 ring-1 ring-primary-400 dark:border-primary-500 dark:bg-primary-500/10'
+                          : 'border-neutral-200 hover:border-neutral-300 dark:border-neutral-800 dark:hover:border-neutral-700'
+                      "
+                      @click="formData.layout = opt.value as 'waterfall' | 'grid'"
+                    >
+                      <Icon
+                        :name="opt.icon"
+                        class="mb-2 size-5"
+                        :class="
+                          formData.layout === opt.value
+                            ? 'text-primary-600 dark:text-primary-400'
+                            : 'text-neutral-400'
+                        "
+                      />
+                      <p
+                        class="text-sm font-medium"
+                        :class="
+                          formData.layout === opt.value
+                            ? 'text-primary-700 dark:text-primary-300'
+                            : 'text-neutral-800 dark:text-neutral-200'
+                        "
+                      >
+                        {{ opt.label }}
+                      </p>
+                      <p class="mt-1 text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">
+                        {{ opt.desc }}
+                      </p>
+                    </button>
+                  </div>
+                  <p class="text-xs text-neutral-500 dark:text-neutral-400">
+                    {{ $t('dashboard.albums.form.layoutHint') }}
+                  </p>
                 </section>
 
                 <!-- 分区：访问控制 -->

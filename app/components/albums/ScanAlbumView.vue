@@ -163,6 +163,17 @@ const closeViewer = () => {
 const onViewerIndexChange = (index: number) => {
   viewer.value.index = index
 }
+
+// —— 相簿展示布局（瀑布流 / 统一网格）——
+// 默认取该相簿保存的布局；访客可在页顶切换（仅本次浏览生效）
+const layout = ref<'waterfall' | 'grid'>('waterfall')
+watch(
+  () => (data.value?.node as any)?.layout,
+  (v) => {
+    if (v === 'grid' || v === 'waterfall') layout.value = v
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
@@ -477,10 +488,29 @@ const onViewerIndexChange = (index: number) => {
         </div>
       </div>
 
-      <!-- 照片瀑布流（头部已展示照片数，此处不再显示冗余标题） -->
+      <!-- 照片展示（瀑布流 / 统一网格可选，头部已展示照片数） -->
       <div v-if="data!.dirPhotos.length">
         <ClientOnly>
-          <AlbumsScanMasonry :photos="data!.dirPhotos" @open="openPhoto" />
+          <AlbumsAlbumGallery
+            v-model:layout="layout"
+            :photos="data!.dirPhotos"
+            class="px-6"
+          >
+            <template #waterfall-card="{ photo, index }">
+              <AlbumsAlbumFluidCard
+                :photo="photo"
+                :index="index"
+                @open="openPhoto($event)"
+              />
+            </template>
+            <template #grid-card="{ photo, index }">
+              <AlbumsAlbumGridCard
+                :photo="photo"
+                :index="index"
+                @open="openPhoto($event)"
+              />
+            </template>
+          </AlbumsAlbumGallery>
         </ClientOnly>
       </div>
       <p v-else-if="!data!.children.length" class="py-16 text-center text-neutral-400">

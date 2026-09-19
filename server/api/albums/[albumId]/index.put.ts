@@ -28,6 +28,8 @@ export default eventHandler(async (event) => {
       // 相簿访问密码（明文）：配合 clearPassword 完成 设置/清除/保持
       password: z.string().max(128).optional(),
       clearPassword: z.boolean().optional(),
+      // 照片展示布局：瀑布流 / 统一网格
+      layout: z.enum(['waterfall', 'grid']).optional(),
       // 自定义公开URL别名：可选；未传则保持，null/空串则清除
       slug: z
         .string()
@@ -81,6 +83,10 @@ export default eventHandler(async (event) => {
 
     if (nextSlug !== undefined) {
       updateData.slug = nextSlug
+    }
+
+    if (body.layout !== undefined) {
+      updateData.layout = body.layout
     }
 
     if (body.title !== undefined) {

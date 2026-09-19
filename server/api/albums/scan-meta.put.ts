@@ -35,6 +35,8 @@ export default eventHandler(async (event) => {
         .nullable()
         .optional()
         .transform((v) => (v ? v.replace(/[^a-zA-Z0-9-_]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') : v)),
+      // 照片展示布局：瀑布流 / 统一网格
+      layout: z.enum(['waterfall', 'grid']).optional(),
       // 传 true 时清除该相簿的元数据（还原为默认推导值）
       clear: z.boolean().optional(),
     }).parse,
@@ -69,6 +71,7 @@ export default eventHandler(async (event) => {
     passwordHash,
     password,
     slug: body.slug,
+    layout: body.layout,
   })
 
   return {
@@ -82,6 +85,7 @@ export default eventHandler(async (event) => {
       isHidden: meta.isHidden,
       passwordProtected: Boolean(meta.passwordHash),
       slug: meta.slug,
+      layout: meta.layout,
     },
   }
 })

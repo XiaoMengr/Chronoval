@@ -478,6 +478,11 @@
       "redirecting": "Redirecting to album…",
       "customUrlRedirect": "Album redirect",
       "backToAlbums": "Back to albums"
+    },
+    "layout": {
+      "switchLabel": "Layout",
+      "waterfall": "Waterfall",
+      "grid": "Grid"
     }
   },
   "auth": {
@@ -1070,7 +1075,14 @@
         "passwordWarningTitle": "Album password cannot be empty",
         "passwordWarningMessage": "Enter a non-empty password to enable access to this album.",
         "passwordWarningGotIt": "Got it",
-        "passwordSaveError": "Save failed. The access password cannot be empty."
+        "passwordSaveError": "Save failed. The access password cannot be empty.",
+        "groupLayout": "Display style",
+        "layout": "Album layout",
+        "layoutHint": "Choose how photos are displayed in the album; visitors can switch it on the album page",
+        "layoutWaterfall": "Waterfall",
+        "layoutGrid": "Uniform grid",
+        "layoutWaterfallDesc": "Cards keep their aspect ratio and flow into a staggered waterfall",
+        "layoutGridDesc": "Uniform cards neatly fill a grid"
       },
       "table": {
         "columns": {

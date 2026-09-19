@@ -387,6 +387,8 @@ export interface ScanAlbumNode {
   /** 公开 URL 标识：sha256 短前缀（形如 a1b2c3d4）；未持久化时为 null */
   urlKey: string | null
   link: string
+  /** 照片展示布局：瀑布流 / 统一网格（自定义元数据可覆盖节点默认） */
+  layout: 'waterfall' | 'grid'
   /** 该层目录直接包含的照片数（不含更深的子目录） */
   photoCount: number
   coverPhotoId: string | null
@@ -475,6 +477,7 @@ const buildScanAlbumNode = (
     description: null,
     urlKey: lib.urlKey,
     link,
+    layout: 'waterfall',
     photoCount: dirPhotos.length,
     coverPhotoId: covers[0]?.id ?? null,
     covers,
