@@ -31,6 +31,7 @@ const masonryItems = computed(() =>
 const LAYOUT_OPTIONS: { value: AlbumLayout; label: string }[] = [
   { value: 'waterfall', label: t('albums.layout.waterfall') },
   { value: 'grid', label: t('albums.layout.grid') },
+  { value: 'immersive', label: t('albums.layout.immersive') },
 ]
 </script>
 
@@ -38,7 +39,7 @@ const LAYOUT_OPTIONS: { value: AlbumLayout; label: string }[] = [
   <div class="w-full">
     <!-- 顶部切换控件：仅在有照片且需要展示时渲染 -->
     <div
-      v-if="showSwitch !== false && photos.length > 0"
+      v-if="photos.length > 0"
       class="mb-4 flex items-center justify-end"
     >
       <div
@@ -91,11 +92,18 @@ const LAYOUT_OPTIONS: { value: AlbumLayout; label: string }[] = [
 
     <!-- 统一网格 -->
     <div
-      v-else
+      v-else-if="layout === 'grid'"
       class="grid grid-cols-2 gap-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 2xl:grid-cols-8"
     >
       <div v-for="(photo, index) in photos" :key="photo.id">
         <slot name="grid-card" :photo="photo" :index="index" />
+      </div>
+    </div>
+
+    <!-- 沉浸式看图：单列全幅，向下滚动逐张浏览 -->
+    <div v-else class="mx-auto flex w-full flex-col gap-4 px-2 sm:px-4">
+      <div v-for="(photo, index) in photos" :key="photo.id">
+        <slot name="immersive-card" :photo="photo" :index="index" />
       </div>
     </div>
   </div>

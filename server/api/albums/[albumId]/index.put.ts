@@ -29,7 +29,7 @@ export default eventHandler(async (event) => {
       password: z.string().max(128).optional(),
       clearPassword: z.boolean().optional(),
       // 照片展示布局：瀑布流 / 统一网格
-      layout: z.enum(['waterfall', 'grid']).optional(),
+      layout: z.enum(['waterfall', 'grid', 'immersive']).optional(),
       // 自定义公开URL别名：可选；未传则保持，null/空串则清除
       slug: z
         .string()

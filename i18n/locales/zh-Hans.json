@@ -482,7 +482,8 @@
     "layout": {
       "switchLabel": "样式布局",
       "waterfall": "瀑布流",
-      "grid": "网格"
+      "grid": "网格",
+      "immersive": "沉浸式看图"
     }
   },
   "auth": {
@@ -1076,7 +1077,9 @@
         "layoutWaterfall": "瀑布流",
         "layoutGrid": "统一网格",
         "layoutWaterfallDesc": "照片高度按原始比例参差，形成错落瀑布",
-        "layoutGridDesc": "同尺寸卡片整齐铺满网格"
+        "layoutGridDesc": "同尺寸卡片整齐铺满网格",
+        "layoutImmersive": "沉浸式看图",
+        "layoutImmersiveDesc": "单列全幅卡片，向下滚动逐张浏览"
       },
       "table": {
         "columns": {

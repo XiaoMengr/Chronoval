@@ -100,13 +100,13 @@ const dateRangeText = computed(() => {
   }
 })
 
-// —— 相簿展示布局（瀑布流 / 统一网格）——
+// —— 相簿展示布局（瀑布流 / 统一网格 / 沉浸式看图）——
 // 默认取相簿保存的布局；访客可在页顶切换（仅本次浏览生效，不改持久化配置）
-const layout = ref<'waterfall' | 'grid'>('waterfall')
+const layout = ref<'waterfall' | 'grid' | 'immersive'>('waterfall')
 watch(
   () => (albumData.value as any)?.layout,
   (v) => {
-    if (v === 'grid' || v === 'waterfall') layout.value = v
+    if (v === 'grid' || v === 'waterfall' || v === 'immersive') layout.value = v
   },
   { immediate: true },
 )
@@ -359,6 +359,14 @@ onBeforeMount(() => {
             </template>
             <template #grid-card="{ photo, index }">
               <AlbumsAlbumGridCard
+                :key="photo.id"
+                :photo="photo"
+                :index="index"
+                @open="handleOpenViewer($event)"
+              />
+            </template>
+            <template #immersive-card="{ photo, index }">
+              <AlbumsAlbumImmersiveCard
                 :key="photo.id"
                 :photo="photo"
                 :index="index"

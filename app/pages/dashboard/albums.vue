@@ -36,8 +36,8 @@ interface AlbumFormState {
   hideFromGallery: boolean
   slug: string
   password: string
-  // 照片展示布局：瀑布流 / 统一网格
-  layout: 'waterfall' | 'grid'
+  // 照片展示布局：瀑布流 / 统一网格 / 沉浸式看图
+  layout: 'waterfall' | 'grid' | 'immersive'
 }
 
 const albums = ref<AlbumItem[]>([])
@@ -249,7 +249,10 @@ const openEditSlideover = async (album: AlbumItem) => {
     formData.hideFromGallery = (album as any).hideFromGallery || false
     formData.slug = album.slug || ''
     formData.password = (album as any).password || ''
-    formData.layout = (album as any).layout === 'grid' ? 'grid' : 'waterfall'
+    formData.layout =
+      (album as any).layout === 'grid' || (album as any).layout === 'immersive'
+        ? (album as any).layout
+        : 'waterfall'
     passwordToggle.value = !!(album as any).passwordProtected
     coverPhotoId.value = album.coverPhotoId || ''
     selectedPhotoIds.value = []
@@ -268,7 +271,10 @@ const openEditSlideover = async (album: AlbumItem) => {
     coverPhotoId.value = album.coverPhotoId || ''
     // 明文密码在管理端回填，可在输入框内用眼睛查看/编辑
     formData.password = albumDetail.password || ''
-    formData.layout = albumDetail.layout === 'grid' ? 'grid' : 'waterfall'
+    formData.layout =
+      albumDetail.layout === 'grid' || albumDetail.layout === 'immersive'
+        ? albumDetail.layout
+        : 'waterfall'
     passwordToggle.value = !!albumDetail.passwordProtected
     formRef.value?.clear()
   } catch (error) {
@@ -1155,7 +1161,7 @@ const openAlbum = (album: AlbumItem) => {
                     <span class="h-px flex-1 bg-neutral-100 dark:bg-neutral-800" />
                   </header>
 
-                  <div class="grid grid-cols-2 gap-3">
+                  <div class="grid grid-cols-2 gap-3 lg:grid-cols-3">
                     <button
                       v-for="opt in [
                         {
@@ -1170,6 +1176,12 @@ const openAlbum = (album: AlbumItem) => {
                           desc: $t('dashboard.albums.form.layoutGridDesc'),
                           icon: 'tabler:layout-grid',
                         },
+                        {
+                          value: 'immersive',
+                          label: $t('dashboard.albums.form.layoutImmersive'),
+                          desc: $t('dashboard.albums.form.layoutImmersiveDesc'),
+                          icon: 'tabler:photo',
+                        },
                       ]"
                       :key="opt.value"
                       type="button"
@@ -1179,7 +1191,7 @@ const openAlbum = (album: AlbumItem) => {
                           ? 'border-primary-400 bg-primary-50 ring-1 ring-primary-400 dark:border-primary-500 dark:bg-primary-500/10'
                           : 'border-neutral-200 hover:border-neutral-300 dark:border-neutral-800 dark:hover:border-neutral-700'
                       "
-                      @click="formData.layout = opt.value as 'waterfall' | 'grid'"
+                      @click="formData.layout = opt.value as 'waterfall' | 'grid' | 'immersive'"
                     >
                       <Icon
                         :name="opt.icon"

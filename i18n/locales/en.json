@@ -482,7 +482,8 @@
     "layout": {
       "switchLabel": "Layout",
       "waterfall": "Waterfall",
-      "grid": "Grid"
+      "grid": "Grid",
+      "immersive": "Immersive"
     }
   },
   "auth": {
@@ -1082,7 +1083,9 @@
         "layoutWaterfall": "Waterfall",
         "layoutGrid": "Uniform grid",
         "layoutWaterfallDesc": "Cards keep their aspect ratio and flow into a staggered waterfall",
-        "layoutGridDesc": "Uniform cards neatly fill a grid"
+        "layoutGridDesc": "Uniform cards neatly fill a grid",
+        "layoutImmersive": "Immersive viewer",
+        "layoutImmersiveDesc": "Single full-width column; scroll down to browse photo by photo"
       },
       "table": {
         "columns": {

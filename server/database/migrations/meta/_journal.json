@@ -225,6 +225,13 @@
       "when": 1789827800000,
       "tag": "0031_album_layout",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "6",
+      "when": 1789831071095,
+      "tag": "0032_powerful_wolf_cub",
+      "breakpoints": true
     }
   ]
 }
