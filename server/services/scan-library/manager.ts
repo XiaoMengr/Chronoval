@@ -380,6 +380,8 @@ export interface ScanAlbumNode {
   /** '' 表示库根；子目录为相对路径，如 'sub/dir' */
   relPath: string
   title: string
+  /** 扫描库登记的创建时间（ISO 字符串） */
+  createdAt: string | null
   /** 展示用的介绍文字（自定义元数据或 null） */
   description: string | null
   /** 公开 URL 标识：sha256 短前缀（形如 a1b2c3d4）；未持久化时为 null */
@@ -428,7 +430,12 @@ const childSegmentsOf = (
 }
 
 const buildScanAlbumNode = (
-  lib: { id: number; name: string; urlKey: string | null },
+  lib: {
+    id: number
+    name: string
+    urlKey: string | null
+    createdAt?: Date | null
+  },
   relPath: string,
   photos: Array<typeof tables.photos.$inferSelect>,
 ): ScanAlbumNode => {
@@ -460,6 +467,9 @@ const buildScanAlbumNode = (
     mount,
     relPath,
     title,
+    createdAt: lib.createdAt
+      ? new Date(lib.createdAt instanceof Date ? lib.createdAt : new Date(lib.createdAt)).toISOString()
+      : null,
     description: null,
     urlKey: lib.urlKey,
     link,
@@ -524,7 +534,12 @@ export const listScanAlbumRoots = async (
  * @param parentHidden 主相簿的隐藏状态；未单独自定义的子相簿继承它
  */
 const buildScanAlbumTree = async (
-  lib: { id: number; name: string; urlKey: string | null },
+  lib: {
+    id: number
+    name: string
+    urlKey: string | null
+    createdAt?: Date | null
+  },
   relPath: string,
   photos: Array<typeof tables.photos.$inferSelect>,
   parentHidden?: boolean,

@@ -432,6 +432,7 @@
   },
   "title": {
     "gallery": "Gallery",
+    "language": "Language",
     "fallback": {
       "photo": "Photo"
     },
@@ -1318,7 +1319,8 @@
     },
     "nav": {
       "home": "Back to Home",
-      "documentation": "Documentation"
+      "documentation": "Documentation",
+      "albums": "Albums"
     }
   },
   "settings": {

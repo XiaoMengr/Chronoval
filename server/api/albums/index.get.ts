@@ -36,6 +36,7 @@ export default eventHandler(async (event) => {
         passwordProtected: Boolean(album.passwordHash),
         // 即使是空相册，也返回空数组而不是 undefined
         photoIds: photoIds.length > 0 ? photoIds.map((p) => p.photoId) : [],
+        photoCount: photoIds.length,
       }
     }),
   )

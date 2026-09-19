@@ -435,6 +435,7 @@
       "photo": "照片"
     },
     "gallery": "相册",
+    "language": "界面语言",
     "locations": "位置管理",
     "photos": "照片库",
     "trash": "回收站",
@@ -1316,7 +1317,8 @@
     },
     "nav": {
       "home": "返回首页",
-      "documentation": "文档"
+      "documentation": "文档",
+      "albums": "相簿集"
     }
   },
   "settings": {

@@ -393,6 +393,7 @@
   },
   "title": {
     "dashboard": "控制台",
+    "language": "介面語言",
     "fallback": {
       "photo": "相片"
     },
@@ -1141,7 +1142,8 @@
     },
     "nav": {
       "documentation": "文件",
-      "home": "返回首頁"
+      "home": "返回首頁",
+      "albums": "相簿集"
     }
   },
   "settings": {

@@ -26,7 +26,7 @@ const navItems = computed<NavigationMenuItem[][]>(() => [
       class: '[&_.iconify]:!text-emerald-500',
     },
     {
-      label: $t('title.albums'),
+      label: $t('dashboard.nav.albums'),
       icon: 'tabler:album',
       to: '/dashboard/albums',
       class: '[&_.iconify]:!text-violet-500',
@@ -234,7 +234,6 @@ const handleLogin = () => {
 
       <template #footer="{ collapsed }">
         <div class="flex flex-col gap-0.5 px-2 pb-1">
-          <DashboardLanguageSwitcher v-if="!collapsed" />
           <UButton
             :avatar="{
               src: user?.avatar || '',

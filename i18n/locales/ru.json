@@ -393,6 +393,7 @@
   },
   "title": {
     "gallery": "Галерея",
+    "language": "Язык",
     "fallback": {
       "photo": "Фотография"
     },
@@ -1213,7 +1214,8 @@
     },
     "nav": {
       "documentation": "Документация",
-      "home": "На главную"
+      "home": "На главную",
+      "albums": "Альбомы"
     }
   },
   "settings": {

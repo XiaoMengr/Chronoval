@@ -393,6 +393,7 @@
   },
   "title": {
     "gallery": "ギャラリー",
+    "language": "言語",
     "fallback": {
       "photo": "写真"
     },
@@ -1140,7 +1141,8 @@
     },
     "nav": {
       "documentation": "ドキュメント",
-      "home": "ホームに戻る"
+      "home": "ホームに戻る",
+      "albums": "アルバム"
     }
   },
   "settings": {

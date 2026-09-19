@@ -339,6 +339,14 @@ const hoveredAlbum = ref<number | null>(null)
                 </p> -->
               </div>
             </div>
+
+            <!-- 照片数浮标：位于封面堆叠右下角，避免与描述挤在同一行 -->
+            <div
+              class="pointer-events-none absolute right-2 bottom-2 z-10 flex items-center gap-1 rounded-full bg-neutral-950/55 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm"
+            >
+              <Icon name="tabler:photo" class="size-3.5" />
+              {{ album.photoCount ?? 0 }}
+            </div>
           </div>
 
           <!-- Album Info -->
@@ -375,13 +383,6 @@ const hoveredAlbum = ref<number | null>(null)
                 </div>
               </div>
               <p
-                v-if="album.kind === 'scan'"
-                class="text-sm text-neutral-600 dark:text-neutral-400 line-clamp-2"
-              >
-                {{ album.photoCount }} {{ $t('ui.album.scanPhotos') }}
-              </p>
-              <p
-                v-else
                 class="text-sm text-neutral-600 dark:text-neutral-400 line-clamp-2"
               >
                 {{ album.description || $t('ui.album.noDescription') }}

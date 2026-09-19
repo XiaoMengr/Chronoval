@@ -14,7 +14,13 @@ interface ScanChildNode {
   hasChildren: boolean
 }
 interface ScanAlbumPayload {
-  node: { title: string; relPath: string }
+  node: {
+    title: string
+    relPath: string
+    photoCount?: number
+    description?: string | null
+    createdAt?: string | null
+  }
   dirPhotos: ScanPhoto[]
   children: ScanChildNode[]
   passwordProtected: boolean
@@ -37,6 +43,7 @@ const props = withDefaults(
 
 const relPath = computed(() => props.relPath || '')
 const { t } = useI18n()
+const dayjs = useDayjs()
 
 const { data, status, refresh } = await useAsyncData<ScanAlbumPayload>(
   () => `scan-album-${props.libKey}-${relPath.value}`,
@@ -121,6 +128,30 @@ const crumbs = computed(() => {
   return rel.split('/').filter(Boolean)
 })
 
+/** 本相簿直接照片数（与普通相簿头部一致） */
+const photoCount = computed(() => {
+  const n = data.value?.node?.photoCount
+  if (typeof n === 'number') return n
+  return data.value?.dirPhotos.length ?? 0
+})
+
+/** 根据目录照片拍摄时间推导日期范围文本（格式与普通相簿一致） */
+const dateRangeText = computed(() => {
+  const dates = (data.value?.dirPhotos ?? [])
+    .map((p) => p.dateTaken)
+    .filter((d): d is string => Boolean(d))
+    .sort()
+  if (dates.length === 0) return null
+  const start = dayjs(dates[0])
+  const end = dayjs(dates[dates.length - 1])
+  if (start.isSame(end, 'day')) return start.format('ll')
+  if (start.isSame(end, 'month')) return start.format('MMM YYYY')
+  if (start.isSame(end, 'year')) return `${start.format('MMM')} - ${end.format('MMM YYYY')}`
+  return `${start.format('ll')} - ${end.format('ll')}`
+})
+
+const createdAt = computed(() => data.value?.node?.createdAt ?? null)
+
 // 轻量查看器状态
 const viewer = ref<{ open: boolean; index: number }>({ open: false, index: 0 })
 const openPhoto = (index: number) => {
@@ -158,13 +189,55 @@ const onViewerIndexChange = (index: number) => {
       </div>
 
       <h1
-        class="mb-8 flex items-center gap-3 text-3xl font-black text-neutral-900 dark:text-neutral-100"
+        class="mb-2 flex items-center gap-3 text-3xl font-black text-neutral-900 dark:text-neutral-100"
       >
         {{ data?.node?.title }}
         <span v-if="data?.passwordProtected" class="inline-flex items-center gap-1 text-sm font-normal">
           <Icon name="tabler:lock" class="size-5 text-neutral-400" />
         </span>
       </h1>
+
+      <!-- 元信息：照片数 / 日期范围 / 创建时间（与普通相簿头部一致）；仅在未设锁或已解锁时展示 -->
+      <div
+        v-if="!data?.passwordProtected || data?.authorized"
+        class="mb-8 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm"
+      >
+        <div class="flex items-center gap-1">
+          <Icon
+            name="tabler:photo"
+            class="size-4 -mt-0.5 text-neutral-400 dark:text-neutral-500"
+          />
+          <span class="text-neutral-700 dark:text-neutral-200">
+            <span class="font-medium text-neutral-900 dark:text-white">
+              {{ photoCount }}
+            </span>
+            <span class="text-neutral-500 dark:text-neutral-400 ml-1">
+              {{ t('album.metadata.photos') }}
+            </span>
+          </span>
+        </div>
+
+        <div v-if="dateRangeText" class="flex items-center gap-1">
+          <Icon
+            name="tabler:calendar"
+            class="size-4 -mt-0.5 text-neutral-400 dark:text-neutral-500"
+          />
+          <span class="text-neutral-700 dark:text-neutral-200">
+            {{ dateRangeText }}
+          </span>
+        </div>
+
+        <div v-if="createdAt" class="flex items-center gap-1">
+          <Icon
+            name="tabler:clock-plus"
+            class="size-4 -mt-0.5 text-neutral-400 dark:text-neutral-500"
+          />
+          <span class="text-neutral-700 dark:text-neutral-200">
+            {{ t('album.metadata.created') }}
+            <ClientOnly fallback="…">{{ dayjs(createdAt).fromNow() }}</ClientOnly>
+          </span>
+        </div>
+      </div>
     </div>
 
     <div v-if="status === 'pending'" class="py-24 text-center text-neutral-400">
@@ -404,11 +477,8 @@ const onViewerIndexChange = (index: number) => {
         </div>
       </div>
 
-      <!-- 照片瀑布流 -->
+      <!-- 照片瀑布流（头部已展示照片数，此处不再显示冗余标题） -->
       <div v-if="data!.dirPhotos.length">
-        <h2 class="mb-4 px-6 text-base font-semibold text-neutral-700 dark:text-neutral-300">
-          {{ t('albums.scan.photos') }}
-        </h2>
         <ClientOnly>
           <AlbumsScanMasonry :photos="data!.dirPhotos" @open="openPhoto" />
         </ClientOnly>

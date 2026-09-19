@@ -83,7 +83,7 @@ export const authorizeScanAlbum = (
       sameSite: 'lax',
       secure: false, // 与登录 cookie 保持一致
       path: '/',
-      maxAge: 60 * 60 * 24 * 30, // 30 天
+      // 不设 maxAge → 会话 Cookie：浏览器/会话关闭后即失效，下次访问需重新输入密码
     },
   )
 }

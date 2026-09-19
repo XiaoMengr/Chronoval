@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import { locales as localeMeta } from '~/../i18n/i18n.options'
+
 definePageMeta({
   layout: 'dashboard',
 })
@@ -8,6 +10,22 @@ useHead({
 })
 
 const colorMode = useColorMode()
+
+// 界面语言：locale 代码 → 国旗（emoji，离线可用）
+const { locale, setLocale } = useI18n()
+const langFlagMap: Record<string, string> = {
+  'zh-Hans': '🇨🇳',
+  'zh-Hant-TW': '🇹🇼',
+  'zh-Hant-HK': '🇭🇰',
+  'en': '🇺🇸',
+  'ja': '🇯🇵',
+  'ru': '🇷🇺',
+}
+const langOptions = localeMeta.map((l) => ({
+  label: l.name ?? l.code,
+  code: l.code,
+  flag: langFlagMap[l.code] ?? '🌐',
+}))
 
 const { fields, state, submit, loading } = useSettingsForm('app')
 
@@ -174,6 +192,37 @@ const handleLoaderImagesSubmit = async () => {
               </UButton>
             </div>
           </footer>
+        </section>
+
+        <!-- 界面语言 -->
+        <section class="rounded-md border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
+          <header class="border-b border-neutral-200 px-5 py-4 dark:border-neutral-800">
+            <h3 class="text-base font-semibold text-neutral-900 dark:text-neutral-100">
+              {{ $t('title.language') }}
+            </h3>
+          </header>
+          <div class="grid grid-cols-1 gap-2 px-5 py-5 sm:grid-cols-2 lg:grid-cols-3">
+            <button
+              v-for="opt in langOptions"
+              :key="opt.code"
+              type="button"
+              class="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2.5 text-sm font-medium transition"
+              :class="
+                locale === opt.code
+                  ? 'border-neutral-900 bg-neutral-900 text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900'
+                  : 'border-neutral-200 text-neutral-600 hover:border-neutral-400 hover:text-neutral-900 dark:border-neutral-800 dark:text-neutral-400 dark:hover:border-neutral-600 dark:hover:text-neutral-100'
+              "
+              @click="setLocale(opt.code)"
+            >
+              <span class="shrink-0 text-lg leading-none">{{ opt.flag }}</span>
+              <span class="flex-1 text-left">{{ opt.label }}</span>
+              <Icon
+                v-if="locale === opt.code"
+                name="tabler:check"
+                class="size-4 shrink-0"
+              />
+            </button>
+          </div>
         </section>
 
         <!-- 加载配置 -->
