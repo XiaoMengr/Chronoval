@@ -104,9 +104,10 @@ const passwordReveal = ref(false)
 
 const showPasswordWarningToast = () => {
   useToast().add({
-    title: $t('dashboard.albums.form.passwordWarningTitle'),
-    description: $t('dashboard.albums.form.passwordWarningMessage'),
+    title: $t('dashboard.albums.form.passwordSaveError'),
     color: 'danger',
+    progress: { color: 'error' },
+    duration: 4000,
   })
 }
 
@@ -1127,12 +1128,6 @@ const openAlbum = (album: AlbumItem) => {
                             />
                           </template>
                         </UInput>
-                        <p
-                          v-if="!hasStoredPassword"
-                          class="mt-1.5 text-xs text-neutral-500 dark:text-neutral-400"
-                        >
-                          {{ $t('dashboard.albums.form.passwordEnableHint') }}
-                        </p>
                       </div>
                     </div>
                   </UFormField>
