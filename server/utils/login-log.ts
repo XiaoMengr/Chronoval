@@ -4,9 +4,46 @@
  */
 import type { H3Event } from 'h3'
 import { and, desc, eq, isNull } from 'drizzle-orm'
+// geoip-lite 为 CommonJS 包（内置离线 GeoIP 库），其类型仅提供具名导出，这里以默认导出拿到运行时对象
+import geoipLite from 'geoip-lite'
+
+type GeoipLookupResult = {
+  country: string
+  region: string
+  city: string
+} | null
+const geoipLookup = (geoipLite as unknown as { lookup(ip: string): GeoipLookupResult }).lookup
 
 export type LoginLogMethod = 'password' | 'two-factor' | 'github'
 export type LoginLogStatus = 'success' | 'failed' | 'challenge'
+
+interface GeoInfo {
+  country: string | null
+  region: string | null
+  city: string | null
+}
+
+/** 利用内置离线 GeoIP 库解析 IP 归属地；内网/环回/解析不到返回 null */
+function resolveGeo(ip: string | null | undefined): GeoInfo | null {
+  if (!ip) return null
+  const clean = ip.replace(/^::ffff:/, '').toLowerCase()
+  if (clean === '::1' || clean === 'localhost' || clean.startsWith('127.')) return null
+  // 常见私网 / 保留段快速排除
+  if (
+    clean.startsWith('10.') ||
+    clean.startsWith('192.168.') ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(clean)
+  )
+    return null
+
+  const hit = geoipLookup(clean)
+  if (!hit) return null
+  return {
+    country: hit.country || null,
+    region: hit.region || null,
+    city: hit.city || null,
+  }
+}
 
 interface RecordOptions {
   /** 关联用户 id；未知账户（登录邮箱不存在）可省略 */
@@ -31,6 +68,7 @@ export function recordLoginAttempt(event: H3Event, opts: RecordOptions) {
   const db = useDB()
   const ip = resolveIp(event)
   const userAgent = getRequestHeader(event, 'user-agent') ?? null
+  const geo = resolveGeo(ip)
 
   db.insert(tables.loginLogs)
     .values({
@@ -38,6 +76,9 @@ export function recordLoginAttempt(event: H3Event, opts: RecordOptions) {
       email: opts.email,
       ip,
       userAgent,
+      country: geo?.country ?? null,
+      region: geo?.region ?? null,
+      city: geo?.city ?? null,
       method: opts.method ?? 'password',
       status: opts.status,
     })

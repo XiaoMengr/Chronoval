@@ -165,6 +165,9 @@ interface LoginLog {
   email: string
   ip: string | null
   userAgent: string | null
+  country: string | null
+  region: string | null
+  city: string | null
   method: 'password' | 'two-factor' | 'github'
   status: 'success' | 'failed' | 'challenge'
   createdAt: string
@@ -208,6 +211,58 @@ const parseDevice = (ua: string | null) => {
 const formatLogTime = (ts: string) =>
   dayjs(ts).isValid() ? dayjs(ts).format('YYYY-MM-DD HH:mm') : '—'
 
+// ===== IP 归属地（中文化映射；离线库仅给出国家码/省码/英文城市名）=====
+const COUNTRY_CN: Record<string, string> = {
+  CN: '中国', US: '美国', JP: '日本', KR: '韩国', GB: '英国',
+  DE: '德国', FR: '法国', IT: '意大利', ES: '西班牙', PT: '葡萄牙',
+  NL: '荷兰', BE: '比利时', CH: '瑞士', AT: '奥地利', SE: '瑞典',
+  NO: '挪威', DK: '丹麦', FI: '芬兰', PL: '波兰', CZ: '捷克',
+  RU: '俄罗斯', UA: '乌克兰', SG: '新加坡', MY: '马来西亚', TH: '泰国',
+  VN: '越南', PH: '菲律宾', ID: '印度尼西亚', IN: '印度', PK: '巴基斯坦',
+  AU: '澳大利亚', NZ: '新西兰', CA: '加拿大', MX: '墨西哥', BR: '巴西',
+  AR: '阿根廷', CL: '智利', PE: '秘鲁', CO: '哥伦比亚', VE: '委内瑞拉',
+  ZA: '南非', EG: '埃及', NG: '尼日利亚', KE: '肯尼亚', MA: '摩洛哥',
+  IL: '以色列', TR: '土耳其', SA: '沙特阿拉伯', AE: '阿联酋', QA: '卡塔尔',
+  IR: '伊朗', KZ: '哈萨克斯坦', MN: '蒙古', HK: '香港', MO: '澳门',
+  TW: '台湾', GR: '希腊', IE: '爱尔兰', RO: '罗马尼亚', HU: '匈牙利',
+  BG: '保加利亚', HR: '克罗地亚', SK: '斯洛伐克', LT: '立陶宛', LV: '拉脱维亚',
+  EE: '爱沙尼亚', IS: '冰岛', LU: '卢森堡', CY: '塞浦路斯',
+}
+
+const CN_REGION_CN: Record<string, string> = {
+  BJ: '北京', TJ: '天津', SH: '上海', CQ: '重庆', HE: '河北', SX: '山西',
+  NM: '内蒙古', LN: '辽宁', JL: '吉林', HL: '黑龙江', JS: '江苏', ZJ: '浙江',
+  AH: '安徽', FJ: '福建', JX: '江西', SD: '山东', HA: '河南', HB: '湖北',
+  HN: '湖南', GD: '广东', GX: '广西', HI: '海南', SC: '四川', GZ: '贵州',
+  YN: '云南', XZ: '西藏', SN: '陕西', GS: '甘肃', QH: '青海', NX: '宁夏',
+  XJ: '新疆', HK: '香港', MO: '澳门',
+}
+
+const CN_CITY_CN: Record<string, string> = {
+  Beijing: '北京', Shanghai: '上海', Guangzhou: '广州', Shenzhen: '深圳',
+  Hangzhou: '杭州', Chengdu: '成都', Wuhan: '武汉', Nanjing: '南京',
+  "Xi'an": '西安', Xian: '西安', Chongqing: '重庆', Tianjin: '天津',
+  Suzhou: '苏州', Qingdao: '青岛', Dalian: '大连', Xiamen: '厦门',
+  Zhengzhou: '郑州', Changsha: '长沙', Shenyang: '沈阳', Harbin: '哈尔滨',
+  Jinan: '济南', Kunming: '昆明', Fuzhou: '福州', Hefei: '合肥',
+  Haikou: '海口', Guiyang: '贵阳', Nanning: '南宁', Lanzhou: '兰州',
+  Urumqi: '乌鲁木齐', Shijiazhuang: '石家庄', Taiyuan: '太原',
+}
+
+// 依据国家码/省码/城市拼出可读归属地；解析不到（内网/未知）返回 null
+const describeLocation = (log: LoginLog): string | null => {
+  if (!log.country && !log.region && !log.city) return null
+  const country = log.country ? (COUNTRY_CN[log.country] || log.country) : null
+  if (log.country !== 'CN') {
+    const city = log.city || null
+    return [country, city].filter(Boolean).join(' · ') || null
+  }
+  const region = log.region ? (CN_REGION_CN[log.region] || log.region) : null
+  const city = log.city ? (CN_CITY_CN[log.city] || log.city) : null
+  if (city && region) return `中国 · ${region} · ${city}`
+  return [country, city || region].filter(Boolean).join(' · ') || country
+}
+
 const loadLogs = async (refreshing = false) => {
   if (refreshing) logRefreshing.value = true
   try {
@@ -237,49 +292,66 @@ onMounted(() => {
     </template>
 
     <template #body>
-      <div class="mx-auto w-full max-w-5xl space-y-6">
-        <section
-          class="space-y-2 border-b border-neutral-200 pb-4 dark:border-neutral-800"
-        >
-          <h2
-            class="text-xl font-semibold text-neutral-900 dark:text-neutral-100"
-          >
-            {{ $t('settings.security.sectionTitle') }}
-          </h2>
-          <p class="text-sm text-neutral-600 dark:text-neutral-400">
-            {{ $t('settings.security.sectionDescription') }}
-          </p>
-        </section>
+      <div class="mx-auto w-full max-w-5xl space-y-6 pb-10">
+        <!-- 页头说明 -->
+        <header class="flex items-end justify-between gap-4 pb-2">
+          <div class="flex items-center gap-3">
+            <span
+              class="hidden size-10 shrink-0 items-center justify-center rounded-lg border border-(--ui-border) bg-muted text-(--ui-text-toned) sm:flex"
+            >
+              <UIcon name="tabler:shield" class="size-5" />
+            </span>
+            <div>
+              <h2
+                class="text-xl font-semibold tracking-tight text-(--ui-text-highlighted)"
+              >
+                {{ $t('settings.security.sectionTitle') }}
+              </h2>
+              <p class="mt-1 text-sm text-(--ui-text-muted)">
+                {{ $t('settings.security.sectionDescription') }}
+              </p>
+            </div>
+          </div>
+        </header>
 
         <!-- 状态骨架 -->
-        <section
-          v-if="loadingState"
-          class="rounded-md border border-neutral-200 bg-white px-5 py-6 dark:border-neutral-800 dark:bg-neutral-950"
-        >
-          <USkeleton class="h-5 w-52" />
-          <USkeleton class="mt-4 h-14 w-full" />
-        </section>
+        <UCard v-if="loadingState" variant="outline">
+          <div class="space-y-4 px-1 py-2">
+            <USkeleton class="h-5 w-52" />
+            <USkeleton class="h-14 w-full" />
+            <USkeleton class="h-20 w-full" />
+          </div>
+        </UCard>
 
         <!-- 两步验证状态与操作 -->
-        <section
-          v-else
-          class="rounded-md border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950"
-        >
-          <header
-            class="border-b border-neutral-200 px-5 py-4 dark:border-neutral-800"
-          >
+        <UCard v-else variant="outline">
+          <!-- 头部：图标 + 标题 + 状态徽章 -->
+          <template #header>
             <div class="flex flex-wrap items-center justify-between gap-3">
-              <h3
-                class="text-base font-semibold text-neutral-900 dark:text-neutral-100"
-              >
-                {{ $t('settings.security.twoFactor.title') }}
-              </h3>
+              <div class="flex items-center gap-3">
+                <span
+                  class="flex size-10 shrink-0 items-center justify-center rounded-lg border border-(--ui-border) bg-muted text-(--ui-text-toned)"
+                >
+                  <UIcon name="tabler:shield-lock" class="size-5" />
+                </span>
+                <div>
+                  <h3
+                    class="text-base font-semibold text-(--ui-text-highlighted)"
+                  >
+                    {{ $t('settings.security.twoFactor.title') }}
+                  </h3>
+                  <p class="mt-0.5 text-sm text-(--ui-text-muted)">
+                    {{ $t('settings.security.twoFactor.description') }}
+                  </p>
+                </div>
+              </div>
+
               <span
-                class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium"
+                class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium"
                 :class="
                   enabled
-                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300'
-                    : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300'
+                    ? 'border-emerald-300/40 bg-emerald-50 text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-950/40 dark:text-emerald-300'
+                    : 'border-neutral-200 bg-neutral-100 text-neutral-600 dark:border-neutral-700 dark:bg-neutral-800/60 dark:text-neutral-300'
                 "
               >
                 <span
@@ -295,76 +367,82 @@ onMounted(() => {
                 }}
               </span>
             </div>
-          </header>
+          </template>
 
-          <div class="space-y-4 px-5 py-5">
-            <p
-              class="rounded-md px-3 py-2 text-sm"
+          <!-- 正文：状态提示 + 操作 -->
+          <div class="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <!-- 状态横幅 -->
+            <div
+              class="flex min-w-0 items-start gap-3 rounded-lg border p-3.5"
               :class="
                 enabled
-                  ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200'
-                  : 'bg-neutral-50 text-neutral-600 dark:bg-neutral-900 dark:text-neutral-400'
+                  ? 'border-emerald-300/40 bg-emerald-50/70 text-emerald-800 dark:border-emerald-400/20 dark:bg-emerald-950/30 dark:text-emerald-200'
+                  : 'border-(--ui-border) bg-muted/60 text-(--ui-text-muted)'
               "
             >
-              {{
-                $t(
-                  enabled
-                    ? 'settings.security.twoFactor.enabledNotice'
-                    : 'settings.security.twoFactor.disabledNotice',
-                )
-              }}
-            </p>
+              <UIcon
+                :name="enabled ? 'tabler:shield-check' : 'tabler:shield-exclamation'"
+                class="mt-0.5 size-5 shrink-0"
+                :class="enabled ? 'text-emerald-600 dark:text-emerald-400' : ''"
+              />
+              <p class="min-w-0 text-sm leading-relaxed">
+                {{
+                  $t(
+                    enabled
+                      ? 'settings.security.twoFactor.enabledNotice'
+                      : 'settings.security.twoFactor.disabledNotice',
+                  )
+                }}
+              </p>
+            </div>
 
-            <p class="text-sm text-neutral-600 dark:text-neutral-400">
-              {{ $t('settings.security.twoFactor.description') }}
-            </p>
-
-            <!-- 未开启：执行设置 -->
-            <div v-if="!enabled && !setup" class="pt-1">
+            <!-- 操作按钮 -->
+            <div class="shrink-0">
               <UButton
+                v-if="!enabled && !setup"
                 color="primary"
-                icon="tabler:shield-lock-plus"
+                icon="tabler:shield-plus"
                 :loading="enabling"
                 @click="startSetup"
               >
                 {{ $t('settings.security.twoFactor.enableAction') }}
               </UButton>
-            </div>
-
-            <!-- 已开启：可关闭 -->
-            <div v-else-if="enabled" class="flex flex-col gap-2 pt-1">
-              <UButton
-                color="error"
-                variant="outline"
-                icon="tabler:shield-lock-off"
-                @click="openDisable"
-              >
-                {{ $t('settings.security.twoFactor.disableAction') }}
-              </UButton>
-              <p class="text-xs text-amber-600 dark:text-amber-400">
-                {{ $t('settings.security.twoFactor.cutoffHint') }}
-              </p>
+              <div v-else-if="enabled" class="flex flex-col items-start gap-1.5 sm:items-end">
+                <UButton
+                  color="error"
+                  variant="outline"
+                  icon="tabler:shield-off"
+                  @click="openDisable"
+                >
+                  {{ $t('settings.security.twoFactor.disableAction') }}
+                </UButton>
+                <p class="text-xs text-amber-600 dark:text-amber-400">
+                  {{ $t('settings.security.twoFactor.cutoffHint') }}
+                </p>
+              </div>
             </div>
           </div>
-        </section>
+        </UCard>
 
         <!-- 设置步骤：二维码 -->
-        <section
-          v-if="setup"
-          class="rounded-md border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950"
-        >
-          <header
-            class="border-b border-neutral-200 px-5 py-4 dark:border-neutral-800"
-          >
-            <h3
-              class="text-base font-semibold text-neutral-900 dark:text-neutral-100"
-            >
-              {{ $t('settings.security.twoFactor.setupTitle') }}
-            </h3>
-          </header>
+        <UCard v-if="setup" variant="outline">
+          <template #header>
+            <div class="flex items-center gap-3">
+              <span
+                class="flex size-9 shrink-0 items-center justify-center rounded-lg border border-(--ui-border) bg-muted text-(--ui-text-toned)"
+              >
+                <UIcon name="tabler:qrcode" class="size-5" />
+              </span>
+              <h3
+                class="text-base font-semibold text-(--ui-text-highlighted)"
+              >
+                {{ $t('settings.security.twoFactor.setupTitle') }}
+              </h3>
+            </div>
+          </template>
 
-          <div class="space-y-5 px-5 py-6">
-            <p class="text-sm text-neutral-600 dark:text-neutral-400">
+          <div class="space-y-6 px-1 py-2">
+            <p class="text-sm text-(--ui-text-muted)">
               {{ $t('settings.security.twoFactor.setupScanHint') }}
             </p>
 
@@ -374,24 +452,24 @@ onMounted(() => {
                 v-if="setup.qr"
                 :src="setup.qr"
                 alt="2FA QR code"
-                class="size-56 rounded-lg border border-neutral-200 p-2 dark:border-neutral-800"
+                class="size-52 rounded-xl border border-(--ui-border) bg-white p-2.5"
               />
-              <USkeleton v-else class="size-56 rounded-lg" />
+              <USkeleton v-else class="size-52 rounded-xl" />
             </div>
 
             <!-- 手动密钥 -->
             <div
               v-if="setup.secret"
-              class="flex items-center justify-between gap-3 rounded-md border border-neutral-200 px-4 py-3 dark:border-neutral-800"
+              class="flex items-center justify-between gap-3 rounded-lg border border-(--ui-border) bg-muted/50 px-4 py-3"
             >
               <div class="min-w-0">
                 <p
-                  class="text-[0.65rem] font-medium uppercase tracking-[0.2em] text-neutral-500"
+                  class="text-[0.65rem] font-medium uppercase tracking-[0.2em] text-(--ui-text-dimmed)"
                 >
                   {{ $t('settings.security.twoFactor.secretLabel') }}
                 </p>
                 <p
-                  class="mt-0.5 select-all font-mono text-sm tracking-wider text-neutral-800 dark:text-neutral-200"
+                  class="mt-1 select-all truncate font-mono text-sm tracking-[0.15em] text-(--ui-text)"
                 >
                   {{ setup.secret }}
                 </p>
@@ -400,26 +478,31 @@ onMounted(() => {
                 color="neutral"
                 variant="outline"
                 icon="tabler:copy"
-                :label="
+                class="shrink-0"
+                @click="copySecret"
+              >
+                {{
                   copied
                     ? $t('settings.security.twoFactor.copied')
                     : $t('settings.security.twoFactor.copySecret')
-                "
-                @click="copySecret"
-              />
+                }}
+              </UButton>
             </div>
 
             <!-- 确认验证码 -->
-            <div class="space-y-2">
-              <p
-                class="text-[0.65rem] font-medium uppercase tracking-[0.2em] text-neutral-500"
-              >
-                {{ $t('settings.security.twoFactor.codeLabel') }}
-              </p>
-              <p class="text-sm text-neutral-500 dark:text-neutral-400">
-                {{ $t('settings.security.twoFactor.codeHint') }}
-              </p>
-              <div class="flex flex-wrap items-center gap-2">
+            <div class="space-y-3">
+              <div>
+                <p
+                  class="text-[0.65rem] font-medium uppercase tracking-[0.2em] text-(--ui-text-dimmed)"
+                >
+                  {{ $t('settings.security.twoFactor.codeLabel') }}
+                </p>
+                <p class="mt-0.5 text-sm text-(--ui-text-muted)">
+                  {{ $t('settings.security.twoFactor.codeHint') }}
+                </p>
+              </div>
+
+              <div class="flex flex-wrap items-center gap-2.5">
                 <UInput
                   v-model="setupCode"
                   inputmode="numeric"
@@ -430,7 +513,7 @@ onMounted(() => {
                 />
                 <UButton
                   color="primary"
-                  icon="tabler:shield-lock-check"
+                  icon="tabler:shield-check"
                   :loading="setupSubmitting"
                   @click="confirmSetup"
                 >
@@ -447,82 +530,91 @@ onMounted(() => {
               </div>
             </div>
           </div>
-        </section>
+        </UCard>
 
         <!-- 登入记录 -->
-        <section
-          class="rounded-md border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950"
-        >
-          <header
-            class="flex items-center justify-between gap-3 border-b border-neutral-200 px-5 py-4 dark:border-neutral-800"
-          >
-            <div>
-              <h3
-                class="text-base font-semibold text-neutral-900 dark:text-neutral-100"
-              >
-                {{ $t('settings.security.loginRecords.title') }}
-              </h3>
-              <p class="mt-0.5 text-sm text-neutral-500 dark:text-neutral-400">
-                {{ $t('settings.security.loginRecords.description') }}
-              </p>
-            </div>
-            <UButton
-              color="neutral"
-              variant="outline"
-              icon="tabler:refresh"
-              :loading="logRefreshing"
-              @click="loadLogs(true)"
-            >
-              {{ $t('settings.security.loginRecords.refresh') }}
-            </UButton>
-          </header>
+        <UCard variant="outline">
+          <template #header>
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div class="flex items-center gap-3">
+                <span
+                  class="flex size-10 shrink-0 items-center justify-center rounded-lg border border-(--ui-border) bg-muted text-(--ui-text-toned)"
+                >
+                  <UIcon name="tabler:login" class="size-5" />
+                </span>
+                <div>
+                  <h3
+                    class="text-base font-semibold text-(--ui-text-highlighted)"
+                  >
+                    {{ $t('settings.security.loginRecords.title') }}
+                  </h3>
+                  <p class="mt-0.5 text-sm text-(--ui-text-muted)">
+                    {{ $t('settings.security.loginRecords.description') }}
+                  </p>
+                </div>
+              </div>
 
+              <UButton
+                color="neutral"
+                variant="outline"
+                icon="tabler:refresh"
+                :loading="logRefreshing"
+                @click="loadLogs(true)"
+              >
+                {{ $t('settings.security.loginRecords.refresh') }}
+              </UButton>
+            </div>
+          </template>
+
+          <!-- 内容：骨架 / 空态 / 列表 -->
           <div>
             <!-- 加载骨架 -->
-            <div
-              v-if="logLoading"
-              class="space-y-3 px-5 py-5"
-            >
-              <USkeleton v-for="i in 4" :key="i" class="h-12 w-full" />
+            <div v-if="logLoading" class="space-y-3 px-1 py-3">
+              <USkeleton v-for="i in 4" :key="i" class="h-12 w-full rounded-lg" />
             </div>
 
             <!-- 空状态 -->
-            <p
+            <div
               v-else-if="logs.length === 0"
-              class="px-5 py-8 text-center text-sm text-neutral-500 dark:text-neutral-400"
+              class="flex flex-col items-center justify-center gap-3 px-6 py-14 text-center"
             >
-              {{ $t('settings.security.loginRecords.empty') }}
-            </p>
+              <span
+                class="flex size-12 items-center justify-center rounded-full bg-muted text-(--ui-text-dimmed)"
+              >
+                <UIcon name="tabler:history" class="size-6" />
+              </span>
+              <p class="text-sm text-(--ui-text-muted)">
+                {{ $t('settings.security.loginRecords.empty') }}
+              </p>
+            </div>
 
             <!-- 记录列表 -->
-            <ul
-              v-else
-              class="divide-y divide-neutral-100 dark:divide-neutral-800"
-            >
+            <ul v-else class="divide-y divide-(--ui-border-muted)">
               <li
                 v-for="log in logs"
                 :key="log.id"
-                class="flex items-center gap-4 px-5 py-4"
+                class="group flex items-center gap-3.5 px-1 py-3.5 sm:gap-4 sm:px-2"
               >
                 <!-- 状态图标 -->
                 <span
-                  class="flex size-9 shrink-0 items-center justify-center rounded-md"
+                  class="flex size-9 shrink-0 items-center justify-center rounded-lg border"
                   :class="{
-                    'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400':
+                    'border-emerald-300/40 bg-emerald-50 text-emerald-600 dark:border-emerald-400/20 dark:bg-emerald-950/40 dark:text-emerald-400':
                       log.status === 'success',
-                    'bg-red-50 text-red-600 dark:bg-red-950/50 dark:text-red-400':
+                    'border-red-300/40 bg-red-50 text-red-600 dark:border-red-400/20 dark:bg-red-950/40 dark:text-red-400':
                       log.status === 'failed',
-                    'bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400':
+                    'border-amber-300/40 bg-amber-50 text-amber-600 dark:border-amber-400/20 dark:bg-amber-950/40 dark:text-amber-400':
                       log.status === 'challenge',
                   }"
                 >
                   <UIcon :name="statusIcon[log.status]" class="size-5" />
                 </span>
 
+                <!-- 主体信息 -->
                 <div class="min-w-0 flex-1">
                   <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <span
-                      class="text-sm font-medium text-neutral-900 dark:text-neutral-100"
+                      class="text-sm font-semibold"
                       :class="{
                         'text-emerald-700 dark:text-emerald-300':
                           log.status === 'success',
@@ -539,7 +631,7 @@ onMounted(() => {
                       }}
                     </span>
                     <span
-                      class="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-0.5 text-[0.7rem] font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300"
+                      class="inline-flex items-center gap-1 rounded-full border border-(--ui-border) bg-muted px-2 py-0.5 text-[0.7rem] font-medium text-(--ui-text-toned)"
                     >
                       <UIcon :name="methodIcon[log.method]" class="size-3" />
                       {{
@@ -549,25 +641,45 @@ onMounted(() => {
                       }}
                     </span>
                   </div>
-                  <p class="mt-1 truncate text-xs text-neutral-500 dark:text-neutral-400">
-                    <span class="font-mono">
+
+                  <p
+                    class="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-xs"
+                  >
+                    <!-- 归属地（离线库解析） -->
+                    <span
+                      class="inline-flex items-center gap-1 font-medium text-(--ui-text-toned)"
+                    >
+                      <UIcon name="tabler:map-pin" class="size-3.5 shrink-0" />
+                      <span class="truncate">
+                        {{
+                          describeLocation(log) ||
+                          $t('settings.security.loginRecords.locationUnknown')
+                        }}
+                      </span>
+                    </span>
+                    <span class="opacity-40">·</span>
+                    <span class="truncate font-mono text-(--ui-text-dimmed)">
                       {{ log.ip || $t('settings.security.loginRecords.unknownIp') }}
                     </span>
                     <template v-if="parseDevice(log.userAgent)">
-                      <span class="mx-1 opacity-50">·</span>{{ parseDevice(log.userAgent) }}
+                      <span class="opacity-40">·</span>
+                      <span class="truncate text-(--ui-text-dimmed)">
+                        {{ parseDevice(log.userAgent) }}
+                      </span>
                     </template>
                   </p>
                 </div>
 
+                <!-- 时间 -->
                 <time
-                  class="shrink-0 text-xs tabular-nums text-neutral-400 dark:text-neutral-500"
+                  class="shrink-0 text-xs tabular-nums text-(--ui-text-dimmed)"
                 >
                   {{ formatLogTime(log.createdAt) }}
                 </time>
               </li>
             </ul>
           </div>
-        </section>
+        </UCard>
       </div>
     </template>
   </UDashboardPanel>
@@ -582,13 +694,13 @@ onMounted(() => {
         <p class="text-sm text-(--ui-text-muted)">
           {{ $t('settings.security.twoFactor.disableHint') }}
         </p>
-        <div class="flex flex-wrap items-center gap-2">
+        <div>
           <UInput
             v-model="disableCode"
             inputmode="numeric"
             maxlength="8"
             placeholder="••••••"
-            class="w-48 [&>input]:!text-center [&>input]:!tracking-[0.4em]"
+            class="w-full [&>input]:!text-center [&>input]:!tracking-[0.4em]"
             @keyup.enter="confirmDisable"
           />
         </div>
@@ -603,7 +715,7 @@ onMounted(() => {
           </UButton>
           <UButton
             color="error"
-            icon="tabler:shield-lock-off"
+            icon="tabler:shield-off"
             :loading="disableSubmitting"
             @click="confirmDisable"
           >

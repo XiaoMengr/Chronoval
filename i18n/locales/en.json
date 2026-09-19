@@ -1884,7 +1884,8 @@
           "two-factor": "Two-Step",
           "github": "OAuth"
         },
-        "unknownIp": "Unknown"
+        "unknownIp": "Unknown",
+        "locationUnknown": "Unknown location"
       }
     },
     "general": {

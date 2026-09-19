@@ -1882,7 +1882,8 @@
           "two-factor": "两步验证",
           "github": "OAuth"
         },
-        "unknownIp": "未知"
+        "unknownIp": "未知",
+        "locationUnknown": "位置未知"
       }
     },
     "general": {

@@ -60,6 +60,10 @@ export const loginLogs = sqliteTable(
     email: text('email').notNull(),
     ip: text('ip'),
     userAgent: text('user_agent'),
+    // IP 归属地（离线库解析，失败/内网为 null）
+    country: text('country'),
+    region: text('region'),
+    city: text('city'),
     // 认证途径：password 邮箱密码 / two-factor 两步验证 / github OAuth
     method: text('method', {
       enum: ['password', 'two-factor', 'github'],
