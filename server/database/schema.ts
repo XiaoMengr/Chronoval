@@ -206,6 +206,8 @@ export const albums = sqliteTable('albums', {
   hideFromGallery: integer('hide_from_gallery', { mode: 'boolean' }).default(false).notNull(),
   // 相簿访问密码哈希（单向存储）；null=未设置密码（开放）
   passwordHash: text('password_hash'),
+  // 相簿访问密码明文（仅管理端编辑回显；访问验证仍以 password_hash 为准）
+  password: text('password'),
   // 相簿公开标识（不透明 UID，替代自增 id 暴露在公网链接中）；
   // 惰性生成：存量相簿首次返回时自动补全并落库。
   uid: text('uid'),
@@ -265,6 +267,8 @@ export const scanAlbumMeta = sqliteTable(
     isHidden: integer('is_hidden', { mode: 'boolean' }).default(false).notNull(),
     // 相簿访问密码哈希（单向存储）；null=继承父级；根相簿无值时回退到扫描库旧密码
     passwordHash: text('password_hash'),
+    // 相簿访问密码明文（仅管理端编辑回显；访问验证仍以 password_hash 为准）
+    password: text('password'),
     // 自定义公开URL别名（全局唯一）；设置后公开链接使用 /albums/s/{slug}
     slug: text('slug'),
     createdAt: integer('created_at', { mode: 'timestamp' })

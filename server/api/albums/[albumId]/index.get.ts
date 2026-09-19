@@ -78,12 +78,17 @@ export default eventHandler(async (event) => {
   // 惰性补全并返回公开 UID
   const uid = await ensureAlbumUid(db, album)
 
-  // 公共字段（不暴露哈希）
+  // 公共字段（不暴露哈希，也不暴露明文）
   const {
     passwordHash: _passwordHash,
+    password: _password,
     ...publicAlbum
   } = album
-  const safeAlbum = { ...publicAlbum, uid }
+  const baseAlbum = { ...publicAlbum, uid }
+  // 明文密码仅在管理端编辑面板（manage=1 + 管理员）回显；公开访问一律不返回
+  const safeAlbum = manageMode
+    ? { ...baseAlbum, password: album.password ?? undefined }
+    : baseAlbum
 
   // 未解锁的受保护相簿：仅返回标题/介绍/封面等元数据用于加锁界面，不返回照片
   if (passwordProtected && !authorized) {

@@ -13,6 +13,8 @@ export interface ScanAlbumMetaInput {
   isHidden?: boolean | null
   /** 相簿访问密码哈希；null=清除密码，undefined=保持不变 */
   passwordHash?: string | null
+  /** 相簿访问密码明文（仅管理端回显）；null=清除，undefined=保持不变 */
+  password?: string | null
   slug?: string | null
 }
 
@@ -72,6 +74,8 @@ export const upsertScanAlbumMeta = async (
     if (input.isHidden !== undefined) updateData.isHidden = Boolean(input.isHidden)
     if (input.passwordHash !== undefined)
       updateData.passwordHash = input.passwordHash || null
+    if (input.password !== undefined)
+      updateData.password = input.password || null
     if (input.slug !== undefined) updateData.slug = input.slug || null
 
     await db
@@ -97,6 +101,7 @@ export const upsertScanAlbumMeta = async (
       coverPhotoId: input.coverPhotoId || null,
       isHidden: input.isHidden ? true : false,
       passwordHash: input.passwordHash ?? null,
+      password: input.password ?? null,
       slug: input.slug || null,
     })
     .returning()
@@ -179,6 +184,7 @@ export const applyScanAlbumMeta = async (
     description: meta.description || null,
     isHidden: meta.isHidden,
     passwordProtected: meta.passwordHash ? true : node.passwordProtected,
+    password: meta.password || undefined,
     coverPhotoId,
     covers,
     link: meta.slug ? `/albums/s/${encodeURIComponent(meta.slug)}` : node.link,

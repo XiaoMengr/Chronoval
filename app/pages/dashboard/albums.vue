@@ -99,12 +99,28 @@ const hasStoredPassword = computed(() => {
   const album = currentAlbum.value
   return !!album && !!(album as any).passwordProtected
 })
-// 开启相簿密码但未输入密码时的内联错误标记：在密码输入框下方（卡片内）显示提示
-const passwordEnableError = ref(false)
-// 密码开关或密码输入变化时，清除内联错误提示
-watch([passwordToggle, () => formData.password], () => {
-  passwordEnableError.value = false
-})
+// 眼睛开关：明文/密文显示密码输入框内容
+const passwordReveal = ref(false)
+// 「访问密码」卡片引用：用于「点击密码区之外 → 未输入密码时红色弹框警告」
+const passwordBoxRef = ref<HTMLElement | null>(null)
+// 访问密码警告弹框（红色提示）
+const isPasswordWarningOpen = ref(false)
+
+const handleOutsidePasswordClick = (event: MouseEvent) => {
+  if (!passwordToggle.value) return
+  const box = passwordBoxRef.value
+  if (box && event.target instanceof Node && !box.contains(event.target)) {
+    // 开关已开启但未输入任何密码时，不自动关闭开关，而是弹出红色警告提示
+    if (!formData.password?.trim() && !isPasswordWarningOpen.value) {
+      isPasswordWarningOpen.value = true
+    }
+  }
+}
+
+onMounted(() => document.addEventListener('mousedown', handleOutsidePasswordClick))
+onBeforeUnmount(() =>
+  document.removeEventListener('mousedown', handleOutsidePasswordClick),
+)
 
 const formRef = ref()
 const isSubmittingForm = ref(false)
@@ -137,15 +153,6 @@ const validateForm = (state: any): FormError[] => {
       name: 'title',
       message: $t('dashboard.albums.form.titleRequired'),
     })
-  }
-  // 勾选「开启相簿密码」但未输入新密码、且当前也尚未设定密码时的内联校验：
-  // 不返回给 UForm（避免显示在卡片外部），而是设置内联标记，在密码输入框下方提示。
-  if (
-    passwordToggle.value &&
-    !state.password?.trim() &&
-    !hasStoredPassword.value
-  ) {
-    passwordEnableError.value = true
   }
   return errors
 }
@@ -236,6 +243,8 @@ const isScanExpanded = (album: AlbumItem) =>
 const openEditSlideover = async (album: AlbumItem) => {
   currentAlbum.value = album
   formData.slug = ''
+  passwordReveal.value = false
+  isPasswordWarningOpen.value = false
 
   // 外部库相簿：不从 albums 表加载详情，直接使用列表节点携带的元数据
   if (isScanAlbum(album)) {
@@ -244,9 +253,8 @@ const openEditSlideover = async (album: AlbumItem) => {
     formData.isHidden = album.isHidden || false
     formData.hideFromGallery = (album as any).hideFromGallery || false
     formData.slug = album.slug || ''
-    formData.password = ''
+    formData.password = (album as any).password || ''
     passwordToggle.value = !!(album as any).passwordProtected
-    // 密码为单向哈希，编辑时不回填；有密码时用占位提示现有状态
     coverPhotoId.value = album.coverPhotoId || ''
     selectedPhotoIds.value = []
     formRef.value?.clear()
@@ -262,8 +270,8 @@ const openEditSlideover = async (album: AlbumItem) => {
     formData.slug = album.slug || ''
     selectedPhotoIds.value = (albumDetail.photos || []).map((p: Photo) => p.id)
     coverPhotoId.value = album.coverPhotoId || ''
-    // 密码为单向哈希，编辑时不回填；有密码时用占位提示现有状态
-    formData.password = ''
+    // 明文密码在管理端回填，可在输入框内用眼睛查看/编辑
+    formData.password = albumDetail.password || ''
     passwordToggle.value = !!albumDetail.passwordProtected
     formRef.value?.clear()
   } catch (error) {
@@ -358,17 +366,7 @@ const confirmDestructive = () => {
 
 const onFormSubmit = async (event: FormSubmitEvent<AlbumFormState>) => {
   isSubmittingForm.value = true
-  // 内联拦截：开启相簿密码但未输入新密码、且当前也尚未设定密码时，禁止提交并提示
   const newPassword = event.data.password?.trim() || ''
-  if (
-    passwordToggle.value &&
-    !newPassword &&
-    !hasStoredPassword.value
-  ) {
-    passwordEnableError.value = true
-    isSubmittingForm.value = false
-    return
-  }
   // 依据「按钮式开关」推导密码载荷：
   // - 关闭开关 → 清除已设定的密码；
   // - 开关开启 → 输入了新密码则更新；未输入且原本已有密码则保持不变（无密码被校验拦截）。
@@ -755,7 +753,7 @@ const openAlbum = (album: AlbumItem) => {
         </div>
 
         <!-- 相簿列表（网格 / 紧凑列表） -->
-        <div v-if="filteredAlbums.length > 0">
+        <div v-if="filteredAlbums.length > 0" class="mb-2 pb-2 sm:mb-0 sm:pb-6">
           <!-- 网格：卡片视图 -->
           <div
             v-if="viewMode === 'grid'"
@@ -1097,7 +1095,7 @@ const openAlbum = (album: AlbumItem) => {
 
                   <!-- 相簿密码：按钮式开关 -->
                   <UFormField name="password">
-                    <div class="overflow-hidden rounded-lg border border-neutral-200 bg-neutral-50/50 dark:border-neutral-800 dark:bg-neutral-900/40">
+                    <div ref="passwordBoxRef" class="overflow-hidden rounded-lg border border-neutral-200 bg-neutral-50/50 dark:border-neutral-800 dark:bg-neutral-900/40">
                       <div class="flex items-center justify-between gap-4 px-4 py-3">
                         <div class="min-w-0 space-y-0.5">
                           <p class="text-sm font-medium text-neutral-900 dark:text-neutral-100">
@@ -1106,40 +1104,41 @@ const openAlbum = (album: AlbumItem) => {
                           <p v-if="!passwordToggle" class="text-xs text-neutral-500 dark:text-neutral-400">
                             {{ $t('dashboard.albums.form.passwordNotSet') }}
                           </p>
-                          <p v-else class="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
-                            <span class="font-mono tracking-[0.3em]">••••</span>
-                            {{ $t('dashboard.albums.form.passwordSet') }}
-                          </p>
                         </div>
                         <USwitch
                           :model-value="passwordToggle"
                           color="info"
-                          @update:model-value="passwordEnableError = false; passwordToggle = $event"
+                          @update:model-value="passwordToggle = $event"
                         />
                       </div>
                       <div v-if="passwordToggle" class="border-t border-neutral-200 px-4 py-3 dark:border-neutral-800">
                         <UInput
                           v-model="formData.password"
                           class="w-full"
-                          type="password"
+                          :type="passwordReveal ? 'text' : 'password'"
                           autocomplete="new-password"
                           :placeholder="
                             hasStoredPassword
                               ? $t('dashboard.albums.form.passwordPlaceholderSet')
                               : $t('dashboard.albums.form.passwordPlaceholder')
                           "
-                        />
+                        >
+                          <template #trailing>
+                            <UButton
+                              variant="ghost"
+                              color="neutral"
+                              square
+                              :icon="passwordReveal ? 'i-lucide-eye-off' : 'i-lucide-eye'"
+                              :aria-label="$t('dashboard.albums.form.passwordReveal')"
+                              @click="passwordReveal = !passwordReveal"
+                            />
+                          </template>
+                        </UInput>
                         <p
                           v-if="!hasStoredPassword"
                           class="mt-1.5 text-xs text-neutral-500 dark:text-neutral-400"
                         >
                           {{ $t('dashboard.albums.form.passwordEnableHint') }}
-                        </p>
-                        <p
-                          v-if="passwordEnableError"
-                          class="mt-1.5 text-xs text-danger-600 dark:text-danger-400"
-                        >
-                          {{ $t('dashboard.albums.form.passwordRequiredToEnable') }}
                         </p>
                       </div>
                     </div>
@@ -1710,6 +1709,39 @@ const openAlbum = (album: AlbumItem) => {
                       ? $t('dashboard.albums.reset.confirm')
                       : $t('dashboard.albums.delete.confirm')
                   }}
+                </UButton>
+              </div>
+            </div>
+          </template>
+        </UModal>
+
+        <!-- 访问密码为空：红色警告提示 -->
+        <UModal v-model:open="isPasswordWarningOpen">
+          <template #content>
+            <div class="p-6 space-y-4">
+              <div class="flex items-center gap-3">
+                <div
+                  class="shrink-0 w-10 h-10 bg-error-100 dark:bg-error-900/30 rounded-full flex items-center justify-center"
+                >
+                  <Icon name="tabler:alert-circle" class="text-error-500" />
+                </div>
+                <div>
+                  <h3 class="text-lg font-semibold">
+                    {{ $t('dashboard.albums.form.passwordWarningTitle') }}
+                  </h3>
+                  <p class="text-sm text-error-600 dark:text-error-400 mt-1">
+                    {{ $t('dashboard.albums.form.passwordWarningMessage') }}
+                  </p>
+                </div>
+              </div>
+
+              <div class="flex justify-end gap-2 pt-4">
+                <UButton
+                  variant="ghost"
+                  color="neutral"
+                  @click="isPasswordWarningOpen = false"
+                >
+                  {{ $t('dashboard.albums.form.passwordWarningGotIt') }}
                 </UButton>
               </div>
             </div>

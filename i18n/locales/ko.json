@@ -1059,8 +1059,12 @@
         "clearPassword": "이 앨범의 비밀번호 지우기",
         "passwordNotSet": "비밀번호가 설정되지 않음",
         "passwordSet": "비밀번호 설정됨",
-        "passwordEnableHint": "이 앨범 접근 비밀번호를 켜려면 비밀번호를 입력하세요",
-        "passwordRequiredToEnable": "앨범 비밀번호를 켜기 전에 비밀번호를 입력하세요"
+        "passwordEnableHint": "이 앨범 접근 비밀번호를 켜려면 비밀번호를 입력하세요 (비밀번호는 비워둘 수 없습니다)",
+        "passwordRequiredToEnable": "앨범 비밀번호를 켜기 전에 비밀번호를 입력하세요",
+        "passwordReveal": "비밀번호 표시/숨기기",
+        "passwordWarningTitle": "앨범 비밀번호는 비워둘 수 없습니다",
+        "passwordWarningMessage": "이 앨범 접근 비밀번호를 켜려면 비밀번호를 입력하세요. 비밀번호는 비워둘 수 없습니다.",
+        "passwordWarningGotIt": "확인"
       },
       "table": {
         "columns": {

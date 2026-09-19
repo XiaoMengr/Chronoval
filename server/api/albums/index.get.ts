@@ -27,6 +27,7 @@ export default eventHandler(async (event) => {
 
       const {
         passwordHash: _passwordHash,
+        password: _password,
         ...restAlbum
       } = album
 
@@ -40,6 +41,8 @@ export default eventHandler(async (event) => {
         kind: 'manual',
         // 密码类型：是否有访问密码（不暴露真实哈希）
         passwordProtected: Boolean(album.passwordHash),
+        // 明文密码仅对管理员回显；公开访问一律不返回
+        password: isAdmin ? album.password ?? undefined : undefined,
         // 即使是空相册，也返回空数组而不是 undefined
         photoIds: photoIds.length > 0 ? photoIds.map((p) => p.photoId) : [],
         photoCount: photoIds.length,
@@ -59,6 +62,17 @@ export default eventHandler(async (event) => {
       : scanRoots.filter((node) => !node.isHidden)
   } catch (error) {
     console.error('[albums] 扫描库相簿加载失败，已忽略：', error)
+  }
+
+  // 公开访问时彻底剥离扫描相簿节点上的明文密码（含二级子相簿）
+  if (!isAdmin) {
+    const strip = (node: any): any => {
+      const { password: _pw, children, ...rest } = node
+      return children?.length
+        ? { ...rest, children: children.map(strip) }
+        : rest
+    }
+    visibleScanRoots = visibleScanRoots.map(strip)
   }
 
   const combined: unknown[] = [

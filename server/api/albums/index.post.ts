@@ -58,6 +58,7 @@ export default eventHandler(async (event) => {
         isHidden: body.isHidden || false,
         hideFromGallery: body.hideFromGallery || false,
         passwordHash,
+        password: body.password?.trim() || null,
         // 创建即分配不透明 UID
         uid: generateAlbumUid(),
         slug,

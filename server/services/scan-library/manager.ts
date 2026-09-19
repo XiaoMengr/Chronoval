@@ -392,6 +392,8 @@ export interface ScanAlbumNode {
   coverPhotoId: string | null
   covers: ScanAlbumCover[]
   passwordProtected: boolean
+  /** 相簿访问密码明文（仅管理端回显；公开返回前会被剥离） */
+  password?: string | null
   hasChildren: boolean
   /** 是否为外部库（扫描库）相簿：始终为 true */
   external: boolean

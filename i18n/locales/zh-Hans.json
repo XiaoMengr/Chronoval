@@ -1057,8 +1057,12 @@
         "clearPassword": "清除该相簿的访问密码",
         "passwordNotSet": "当前未设定密码",
         "passwordSet": "已设定密码",
-        "passwordEnableHint": "请输入密码以开启该相簿的访问密码",
-        "passwordRequiredToEnable": "开启相簿密码前请先输入密码"
+        "passwordEnableHint": "请输入密码以开启该相簿的访问密码，密码不能为空",
+        "passwordRequiredToEnable": "开启相簿密码前请先输入密码",
+        "passwordReveal": "显示/隐藏密码",
+        "passwordWarningTitle": "访问密码不能为空",
+        "passwordWarningMessage": "请输入密码以开启该相簿的访问密码，密码不能为空",
+        "passwordWarningGotIt": "知道了"
       },
       "table": {
         "columns": {

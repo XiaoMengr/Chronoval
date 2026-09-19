@@ -102,10 +102,14 @@ export default eventHandler(async (event) => {
     }
 
     // 密码处理：clearPassword=true → 清除；非空明文 → 设置新密码；否则保持不变
+    // password（明文）与 passwordHash 同步维护：明文仅供管理端回显，验证仍以哈希为准。
     if (body.clearPassword) {
       updateData.passwordHash = null
+      updateData.password = null
     } else if (body.password?.trim()) {
-      updateData.passwordHash = hashAlbumPassword(body.password.trim())
+      const plain = body.password.trim()
+      updateData.passwordHash = hashAlbumPassword(plain)
+      updateData.password = plain
     }
 
     // 修改密码后之前的解锁 Cookie 立即失效

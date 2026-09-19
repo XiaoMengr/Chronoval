@@ -48,10 +48,18 @@ export default eventHandler(async (event) => {
 
   const passwordProtected = Boolean(detail.node.passwordProtected)
 
+  // 无论解锁与否，公开返回的节点都不带明文密码（明文仅供管理端编辑面板回显）
+  const stripPassword = (node: any): any => {
+    const { password: _pw, children, ...rest } = node
+    return children?.length
+      ? { ...rest, children: children.map(stripPassword) }
+      : rest
+  }
+
   // 未解锁的受保护相簿仅返回节点信息用于标题/封面展示，不返回目录照片与子相簿
   if (passwordProtected && !authorized) {
     return {
-      node: detail.node,
+      node: stripPassword(detail.node),
       dirPhotos: [],
       children: [],
       passwordProtected: true,
@@ -61,6 +69,8 @@ export default eventHandler(async (event) => {
 
   return {
     ...detail,
+    node: stripPassword(detail.node),
+    children: detail.children.map(stripPassword),
     passwordProtected,
     authorized,
   }

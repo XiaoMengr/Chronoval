@@ -1059,8 +1059,12 @@
         "clearPassword": "Xóa mật khẩu của album này",
         "passwordNotSet": "Chưa đặt mật khẩu",
         "passwordSet": "Đã đặt mật khẩu",
-        "passwordEnableHint": "Nhập mật khẩu để bật mật khẩu truy cập album này",
-        "passwordRequiredToEnable": "Vui lòng nhập mật khẩu trước khi bật mật khẩu album"
+        "passwordEnableHint": "Nhập mật khẩu (không được để trống) để bật mật khẩu truy cập album này",
+        "passwordRequiredToEnable": "Vui lòng nhập mật khẩu trước khi bật mật khẩu album",
+        "passwordReveal": "Hiển thị/ẩn mật khẩu",
+        "passwordWarningTitle": "Mật khẩu album không được để trống",
+        "passwordWarningMessage": "Nhập mật khẩu (không được để trống) để bật mật khẩu truy cập album.",
+        "passwordWarningGotIt": "Đã hiểu"
       },
       "table": {
         "columns": {
