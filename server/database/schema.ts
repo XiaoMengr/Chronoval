@@ -213,8 +213,8 @@ export const albums = sqliteTable('albums', {
   uid: text('uid'),
   // 自定义公开URL别名（全局唯一）；设置后公开链接使用 /albums/s/{slug}
   slug: text('slug'),
-  // 照片展示布局：瀑布流 / 统一网格 / 沉浸式看图；null 视为默认（瀑布流）
-  layout: text('layout', { enum: ['waterfall', 'grid', 'immersive'] })
+  // 照片展示布局：瀑布流 / 统一网格 / 沉浸式看图 / 时间线；null 视为默认（瀑布流）
+  layout: text('layout', { enum: ['waterfall', 'grid', 'immersive', 'timeline'] })
     .default('waterfall')
     .notNull(),
   createdAt: integer('created_at', { mode: 'timestamp' })
@@ -279,8 +279,8 @@ export const scanAlbumMeta = sqliteTable(
     // /albums/scan/{urlKey} 访问。与扫描库级 urlKey 分离，可被管理员手动重置；
     // 不参与库级 backfill（那些仅针对 scan_libraries.url_key）。
     urlKey: text('url_key'),
-    // 照片展示布局：瀑布流 / 统一网格 / 沉浸式看图；null 视为默认（瀑布流）
-    layout: text('layout', { enum: ['waterfall', 'grid', 'immersive'] })
+    // 照片展示布局：瀑布流 / 统一网格 / 沉浸式看图 / 时间线；null 视为默认（瀑布流）
+    layout: text('layout', { enum: ['waterfall', 'grid', 'immersive', 'timeline'] })
       .default('waterfall')
       .notNull(),
     createdAt: integer('created_at', { mode: 'timestamp' })

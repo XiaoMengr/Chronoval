@@ -483,7 +483,10 @@
       "switchLabel": "Layout",
       "waterfall": "Waterfall",
       "grid": "Grid",
-      "immersive": "Immersive"
+      "immersive": "Immersive",
+      "timeline": "Timeline",
+      "unknownDate": "Unknown date",
+      "photoCount": "photos"
     }
   },
   "auth": {
@@ -1085,7 +1088,9 @@
         "layoutWaterfallDesc": "Cards keep their aspect ratio and flow into a staggered waterfall",
         "layoutGridDesc": "Uniform cards neatly fill a grid",
         "layoutImmersive": "Immersive viewer",
-        "layoutImmersiveDesc": "Single full-width column; scroll down to browse photo by photo"
+        "layoutImmersiveDesc": "Single full-width column; scroll down to browse photo by photo",
+        "layoutTimeline": "Timeline",
+        "layoutTimelineDesc": "Group by taken date, arranged in a grid and browsed along a time axis"
       },
       "table": {
         "columns": {

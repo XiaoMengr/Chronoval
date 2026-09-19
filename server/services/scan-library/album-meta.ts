@@ -19,7 +19,7 @@ export interface ScanAlbumMetaInput {
   /** 相簿自身公开 URL 标识（随机）；null=清除改用默认，undefined=保持不变 */
   urlKey?: string | null
   /** 照片展示布局；undefined=保持不变 */
-  layout?: 'waterfall' | 'grid' | 'immersive'
+  layout?: 'waterfall' | 'grid' | 'immersive' | 'timeline'
 }
 
 const cleanRelPath = (p: string): string =>

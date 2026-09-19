@@ -36,8 +36,8 @@ interface AlbumFormState {
   hideFromGallery: boolean
   slug: string
   password: string
-  // 照片展示布局：瀑布流 / 统一网格 / 沉浸式看图
-  layout: 'waterfall' | 'grid' | 'immersive'
+  // 照片展示布局：瀑布流 / 统一网格 / 沉浸式看图 / 时间线
+  layout: 'waterfall' | 'grid' | 'immersive' | 'timeline'
 }
 
 const albums = ref<AlbumItem[]>([])
@@ -250,7 +250,9 @@ const openEditSlideover = async (album: AlbumItem) => {
     formData.slug = album.slug || ''
     formData.password = (album as any).password || ''
     formData.layout =
-      (album as any).layout === 'grid' || (album as any).layout === 'immersive'
+      (album as any).layout === 'grid' ||
+      (album as any).layout === 'immersive' ||
+      (album as any).layout === 'timeline'
         ? (album as any).layout
         : 'waterfall'
     passwordToggle.value = !!(album as any).passwordProtected
@@ -272,7 +274,9 @@ const openEditSlideover = async (album: AlbumItem) => {
     // 明文密码在管理端回填，可在输入框内用眼睛查看/编辑
     formData.password = albumDetail.password || ''
     formData.layout =
-      albumDetail.layout === 'grid' || albumDetail.layout === 'immersive'
+      albumDetail.layout === 'grid' ||
+      albumDetail.layout === 'immersive' ||
+      albumDetail.layout === 'timeline'
         ? albumDetail.layout
         : 'waterfall'
     passwordToggle.value = !!albumDetail.passwordProtected
@@ -1161,7 +1165,7 @@ const openAlbum = (album: AlbumItem) => {
                     <span class="h-px flex-1 bg-neutral-100 dark:bg-neutral-800" />
                   </header>
 
-                  <div class="grid grid-cols-2 gap-3 lg:grid-cols-3">
+                  <div class="grid grid-cols-2 gap-3 lg:grid-cols-2 xl:grid-cols-4">
                     <button
                       v-for="opt in [
                         {
@@ -1182,6 +1186,12 @@ const openAlbum = (album: AlbumItem) => {
                           desc: $t('dashboard.albums.form.layoutImmersiveDesc'),
                           icon: 'tabler:photo',
                         },
+                        {
+                          value: 'timeline',
+                          label: $t('dashboard.albums.form.layoutTimeline'),
+                          desc: $t('dashboard.albums.form.layoutTimelineDesc'),
+                          icon: 'tabler:timeline',
+                        },
                       ]"
                       :key="opt.value"
                       type="button"
@@ -1191,7 +1201,7 @@ const openAlbum = (album: AlbumItem) => {
                           ? 'border-primary-400 bg-primary-50 ring-1 ring-primary-400 dark:border-primary-500 dark:bg-primary-500/10'
                           : 'border-neutral-200 hover:border-neutral-300 dark:border-neutral-800 dark:hover:border-neutral-700'
                       "
-                      @click="formData.layout = opt.value as 'waterfall' | 'grid' | 'immersive'"
+                      @click="formData.layout = opt.value as 'waterfall' | 'grid' | 'immersive' | 'timeline'"
                     >
                       <Icon
                         :name="opt.icon"
