@@ -23,7 +23,6 @@ interface AlbumItem extends Album {
   link?: string
   /** 扫描库公开 URL 标识（sha256 短前缀），无自定义 slug 时的 UID/公开链接 */
   urlKey?: string | null
-  slug?: string | null
   hasCustom?: boolean
   hasChildren?: boolean
   children?: AlbumItem[]
@@ -236,6 +235,7 @@ const openEditSlideover = async (album: AlbumItem) => {
     formData.title = album.title
     formData.description = album.description || ''
     formData.isHidden = album.isHidden || false
+    formData.slug = album.slug || ''
     selectedPhotoIds.value = (albumDetail.photos || []).map((p: Photo) => p.id)
     coverPhotoId.value = album.coverPhotoId || ''
     // 密码为单向哈希，编辑时不回填；有密码时用占位提示现有状态
@@ -272,16 +272,20 @@ const scanAlbumPublicUrl = computed(() => {
   return ''
 })
 
-// 普通相簿（手动相册）的 UID 与公开链接：以数据库整数 id 为对外标识
+// 普通相簿（手动相册）的 UID 与公开链接：使用不透明 uid；设了自定义别名则走 slug
 const manualAlbumUid = computed(() => {
   const album = currentAlbum.value
-  if (!album || isScanAlbum(album)) return ''
-  return String(album.id)
+  return album && !isScanAlbum(album)
+    ? album.uid || String(album.id)
+    : ''
 })
 const manualAlbumPublicUrl = computed(() => {
   const album = currentAlbum.value
   if (!album || isScanAlbum(album)) return ''
-  return `/albums/${album.id}`
+  if (formData.slug?.trim()) {
+    return `/albums/s/${encodeURIComponent(formData.slug.trim())}`
+  }
+  return album.uid ? `/albums/${album.uid}` : `/albums/${album.id}`
 })
 
 // 统一的「相簿 UID」与「公开链接」：普通相簿 / 外部库相簿共用同一套只读字段
@@ -363,6 +367,7 @@ const onFormSubmit = async (event: FormSubmitEvent<AlbumFormState>) => {
           isHidden: event.data.isHidden,
           password: event.data.password?.trim() || undefined,
           clearPassword: clearPassword.value || undefined,
+          slug: event.data.slug?.trim() || null,
         },
       })
 
@@ -382,6 +387,7 @@ const onFormSubmit = async (event: FormSubmitEvent<AlbumFormState>) => {
           photoIds: selectedPhotoIds.value,
           isHidden: event.data.isHidden,
           password: event.data.password?.trim() || undefined,
+          slug: event.data.slug?.trim() || null,
         },
       })
 
@@ -611,9 +617,14 @@ const albumKey = (album: AlbumItem) =>
     : `manual:${album.id}`
 
 const openAlbum = (album: AlbumItem) => {
-  const link = isScanAlbum(album)
-    ? album.link || `/albums/scan/${album.libId}`
-    : `/albums/${album.id}`
+  let link: string
+  if (isScanAlbum(album)) {
+    link = album.link || `/albums/scan/${album.libId}`
+  } else if (album.slug) {
+    link = `/albums/s/${encodeURIComponent(album.slug)}`
+  } else {
+    link = `/albums/${album.uid ?? album.id}`
+  }
   window.open(link, '_blank', 'noopener')
 }
 </script>
@@ -996,7 +1007,6 @@ const openAlbum = (album: AlbumItem) => {
                   </div>
                 </UFormField>
 
-                <template v-if="isScanAlbum(currentAlbum)">
                 <UFormField
                   :label="$t('dashboard.albums.form.customUrl')"
                   name="slug"
@@ -1031,7 +1041,6 @@ const openAlbum = (album: AlbumItem) => {
                     :label="$t('dashboard.albums.form.clearPassword')"
                   />
                 </UFormField>
-              </template>
 
               <UFormField
                 :label="$t('dashboard.albums.form.isHidden')"

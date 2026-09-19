@@ -3,6 +3,7 @@ export default eventHandler(async (event) => {
   const { listScanAlbumRoots } = await import(
     '~~/server/services/scan-library/manager'
   )
+  const { ensureAlbumUid } = await import('~~/server/utils/albumUid')
 
   // 管理端（登录管理员）返回完整树状二级相簿并包含隐藏的外部库相簿；
   // 公开访问时过滤掉设置为“隐藏”的外部库相簿。
@@ -29,8 +30,13 @@ export default eventHandler(async (event) => {
         ...restAlbum
       } = album
 
+      // 惰性补全公开 UID（存量相簿首次返回时自动落库）。
+      // 同时保证公开链接使用不透明 uid，而非暴露自增 id。
+      const uid = await ensureAlbumUid(db, album)
+
       return {
         ...restAlbum,
+        uid,
         kind: 'manual',
         // 密码类型：是否有访问密码（不暴露真实哈希）
         passwordProtected: Boolean(album.passwordHash),

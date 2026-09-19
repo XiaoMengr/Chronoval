@@ -5,10 +5,8 @@ const route = useRoute()
 const router = useRouter()
 const dayjs = useDayjs()
 
-const albumId = computed(() => {
-  const id = route.params.albumId as string
-  return parseInt(id, 10)
-})
+// 相簿公开标识：可接受的数字 id（兼容存量链接）或不透明 uid，直接交由 API 解析
+const albumId = computed(() => route.params.albumId as string)
 
 const {
   data: album,

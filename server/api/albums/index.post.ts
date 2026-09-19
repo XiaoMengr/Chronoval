@@ -1,5 +1,7 @@
 import z from 'zod'
 import { hashAlbumPassword } from '~~/server/utils/scanAlbumPassword'
+import { generateAlbumUid } from '~~/server/utils/albumUid'
+import { eq, tables } from '~~/server/utils/db'
 
 export default eventHandler(async (event) => {
   await requireUserSession(event)
@@ -14,6 +16,13 @@ export default eventHandler(async (event) => {
       isHidden: z.boolean().optional(),
       // 相簿访问密码（明文）：非空设置新密码
       password: z.string().max(128).optional(),
+      // 自定义公开URL别名（可选）：全局唯一、URL 安全
+      slug: z
+        .string()
+        .max(120)
+        .nullable()
+        .optional()
+        .transform((v) => (v ? v.replace(/[^a-zA-Z0-9-_]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') : v)),
     }).parse,
   )
 
@@ -24,6 +33,19 @@ export default eventHandler(async (event) => {
     ? hashAlbumPassword(body.password.trim())
     : null
 
+  // 自定义 URL 别名全局唯一；命中已有记录时回 409
+  const slug = body.slug?.trim() || null
+  if (slug) {
+    const dup = db
+      .select({ id: tables.albums.id })
+      .from(tables.albums)
+      .where(eq(tables.albums.slug, slug))
+      .get()
+    if (dup) {
+      throw createError({ statusCode: 409, statusMessage: 'Slug already in use' })
+    }
+  }
+
   const album = db.transaction((tx) => {
     const newAlbum = tx
       .insert(tables.albums)
@@ -33,6 +55,9 @@ export default eventHandler(async (event) => {
         coverPhotoId: body.coverPhotoId || null,
         isHidden: body.isHidden || false,
         passwordHash,
+        // 创建即分配不透明 UID
+        uid: generateAlbumUid(),
+        slug,
       })
       .returning()
       .get()

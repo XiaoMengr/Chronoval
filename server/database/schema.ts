@@ -204,13 +204,22 @@ export const albums = sqliteTable('albums', {
   isHidden: integer('is_hidden', { mode: 'boolean' }).default(false).notNull(),
   // 相簿访问密码哈希（单向存储）；null=未设置密码（开放）
   passwordHash: text('password_hash'),
+  // 相簿公开标识（不透明 UID，替代自增 id 暴露在公网链接中）；
+  // 惰性生成：存量相簿首次返回时自动补全并落库。
+  uid: text('uid'),
+  // 自定义公开URL别名（全局唯一）；设置后公开链接使用 /albums/s/{slug}
+  slug: text('slug'),
   createdAt: integer('created_at', { mode: 'timestamp' })
     .notNull()
     .default(sql`(unixepoch())`),
   updatedAt: integer('updated_at', { mode: 'timestamp' })
     .notNull()
     .default(sql`(unixepoch())`),
-})
+}, (table) => [
+  // uid 是公开标识，须全局唯一；slug 是自定义URL别名，亦须全局唯一
+  uniqueIndex('albums_uid_unique').on(table.uid),
+  uniqueIndex('albums_slug_unique').on(table.slug),
+])
 
 // 相簿-照片 多对多关系表
 export const albumPhotos = sqliteTable(

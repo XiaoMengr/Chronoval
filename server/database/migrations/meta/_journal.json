@@ -183,6 +183,13 @@
       "when": 1789785946594,
       "tag": "0025_login-log-geo",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "6",
+      "when": 1789807220555,
+      "tag": "0026_magenta_big_bertha",
+      "breakpoints": true
     }
   ]
 }

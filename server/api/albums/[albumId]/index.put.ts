@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { hashAlbumPassword } from '~~/server/utils/scanAlbumPassword'
+import { ensureAlbumUid } from '~~/server/utils/albumUid'
 
 export default eventHandler(async (event) => {
   await requireUserSession(event)
@@ -25,6 +26,13 @@ export default eventHandler(async (event) => {
       // 相簿访问密码（明文）：配合 clearPassword 完成 设置/清除/保持
       password: z.string().max(128).optional(),
       clearPassword: z.boolean().optional(),
+      // 自定义公开URL别名：可选；未传则保持，null/空串则清除
+      slug: z
+        .string()
+        .max(120)
+        .nullable()
+        .optional()
+        .transform((v) => (v ? v.replace(/[^a-zA-Z0-9-_]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') : v)),
     }).parse,
   )
 
@@ -44,11 +52,33 @@ export default eventHandler(async (event) => {
     })
   }
 
+  // 自定义 URL 别名：未传则保持；null/空串则清除；非空则查重后设置
+  let nextSlug: string | null | undefined
+  if (body.slug !== undefined) {
+    nextSlug = body.slug?.trim() || null
+    if (nextSlug) {
+      const dup = db
+        .select({ id: tables.albums.id })
+        .from(tables.albums)
+        .where(eq(tables.albums.slug, nextSlug))
+        .all()
+        .find((r) => r.id !== albumId)
+      if (dup) {
+        throw createError({ statusCode: 409, statusMessage: 'Slug already in use' })
+      }
+    }
+  }
+
   // 使用事务更新相簿
   const updatedAlbum = db.transaction((tx) => {
     // 更新基本信息
     const updateData: Record<string, any> = {
       updatedAt: new Date(),
+    }
+
+
+    if (nextSlug !== undefined) {
+      updateData.slug = nextSlug
     }
 
     if (body.title !== undefined) {
@@ -117,7 +147,15 @@ export default eventHandler(async (event) => {
       .get()
   })
 
+  // 事务后相簿应必然存在；防御性兜底
+  if (!updatedAlbum) {
+    throw createError({ statusCode: 404, statusMessage: 'Album not found' })
+  }
+
+  // 惰性补全并返回公开 UID
+  const uid = await ensureAlbumUid(db, updatedAlbum)
+
   // 不回传密码哈希
-  const { passwordHash: _ph, ...safeAlbum } = updatedAlbum
+  const { passwordHash: _ph, ...safeAlbum } = { ...updatedAlbum, uid }
   return safeAlbum
 })

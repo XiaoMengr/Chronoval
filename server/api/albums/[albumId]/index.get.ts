@@ -1,16 +1,15 @@
-import { and, asc, getTableColumns, isNull } from 'drizzle-orm'
+import { and, asc, eq, getTableColumns, isNull } from 'drizzle-orm'
 import z from 'zod'
 import { hasAlbumAccess } from '~~/server/utils/manualAlbumAuth'
 import { settingsManager } from '~~/server/services/settings/settingsManager'
+import { ensureAlbumUid } from '~~/server/utils/albumUid'
 
 export default eventHandler(async (event) => {
+  // 支持两种公开访问标识：数字 id（兼容存量链接）与不透明 uid
   const { albumId } = await getValidatedRouterParams(
     event,
     z.object({
-      albumId: z
-        .string()
-        .regex(/^\d+$/)
-        .transform((val) => parseInt(val, 10)),
+      albumId: z.string().min(1),
     }).parse,
   )
 
@@ -24,11 +23,19 @@ export default eventHandler(async (event) => {
 
   const db = useDB()
 
-  const album = db
-    .select()
-    .from(tables.albums)
-    .where(eq(tables.albums.id, albumId))
-    .get()
+  // 纯数字 → 按 id；否则按 uid
+  const albumIdNum = /^\d+$/.test(albumId) ? parseInt(albumId, 10) : null
+  const album = albumIdNum != null
+    ? db
+        .select()
+        .from(tables.albums)
+        .where(eq(tables.albums.id, albumIdNum))
+        .get()
+    : db
+        .select()
+        .from(tables.albums)
+        .where(eq(tables.albums.uid, albumId))
+        .get()
 
   if (!album) {
     throw createError({
@@ -36,6 +43,9 @@ export default eventHandler(async (event) => {
       statusMessage: 'Album not found',
     })
   }
+
+  // 整套相簿公开逻辑以整数 id 为内部主键，统一定位内部 id
+  const albumPk = album.id
 
   // 检查相册是否隐藏，如果隐藏则需要用户登录才能访问
   if (album.isHidden && !album.passwordHash) {
@@ -59,22 +69,26 @@ export default eventHandler(async (event) => {
     (await settingsManager.get<boolean>('system', 'scanAlbum.adminBypass', false))
   const authorized = manageMode || hasAlbumAccess(
     event,
-    { albumId, passwordHash: album.passwordHash },
+    { albumId: albumPk, passwordHash: album.passwordHash },
     Boolean(adminBypass),
   )
 
   const passwordProtected = Boolean(album.passwordHash)
+
+  // 惰性补全并返回公开 UID
+  const uid = await ensureAlbumUid(db, album)
 
   // 公共字段（不暴露哈希）
   const {
     passwordHash: _passwordHash,
     ...publicAlbum
   } = album
+  const safeAlbum = { ...publicAlbum, uid }
 
   // 未解锁的受保护相簿：仅返回标题/介绍/封面等元数据用于加锁界面，不返回照片
   if (passwordProtected && !authorized) {
     return {
-      ...publicAlbum,
+      ...safeAlbum,
       passwordProtected: true,
       authorized: false,
       photos: [],
@@ -94,7 +108,7 @@ export default eventHandler(async (event) => {
     )
     .where(
       and(
-        eq(tables.albumPhotos.albumId, albumId),
+        eq(tables.albumPhotos.albumId, albumPk),
         isNull(tables.photos.deletedAt),
       ),
     )
@@ -105,7 +119,7 @@ export default eventHandler(async (event) => {
   if (!photos || !Array.isArray(photos)) {
     // 空相册也是合法的，只需要返回空数组
     return {
-      ...publicAlbum,
+      ...safeAlbum,
       passwordProtected,
       authorized,
       photos: [],
@@ -121,7 +135,7 @@ export default eventHandler(async (event) => {
   })
 
   return {
-    ...publicAlbum,
+    ...safeAlbum,
     passwordProtected,
     authorized,
     photos: uniquePhotos,

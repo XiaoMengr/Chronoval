@@ -38,7 +38,9 @@ const visibleAlbums = computed(() => {
 const albumLink = (album: AlbumItem) =>
   album.kind === 'scan'
     ? album.link || `/albums/scan/${album.libId}`
-    : `/albums/${album.id}`
+    : album.slug
+      ? `/albums/s/${encodeURIComponent(album.slug)}`
+      : `/albums/${album.uid ?? album.id}`
 
 interface WaterfallPhoto {
   thumbnailUrl: string
