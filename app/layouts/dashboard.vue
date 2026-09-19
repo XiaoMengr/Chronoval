@@ -74,6 +74,12 @@ const navItems = computed<NavigationMenuItem[][]>(() => [
           class: '[&_.iconify]:!text-violet-500',
         },
         {
+          label: $t('title.securitySettings'),
+          icon: 'tabler:user-shield',
+          to: '/dashboard/settings/security',
+          class: '[&_.iconify]:!text-pink-500',
+        },
+        {
           label: $t('title.mapAndLocation'),
           icon: 'tabler:map-pin',
           to: '/dashboard/settings/map',

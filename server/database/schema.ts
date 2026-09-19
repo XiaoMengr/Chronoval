@@ -5,6 +5,7 @@ import {
   integer,
   real,
   uniqueIndex,
+  index,
 } from 'drizzle-orm/sqlite-core'
 import type { NeededExif } from '~~/shared/types/photo'
 import type { StorageConfig } from '../services/storage'
@@ -38,7 +39,46 @@ export const users = sqliteTable('users', {
   avatar: text('avatar'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
   isAdmin: integer('is_admin').default(0).notNull(),
+  // 两次验证（TOTP）：secret 在开启前先生成并暂存，用户用验证器扫码确认后才置 enabled
+  totpSecret: text('totp_secret'),
+  totpEnabled: integer('totp_enabled', { mode: 'boolean' })
+    .default(false)
+    .notNull(),
 })
+
+// 登入记录：记录每次登入尝试（成功/失败/待两步验证），用于账户安全审计。
+// userId 对未知账户（登录邮箱不存在）为 null，此时以 email 留存失败足迹。
+export const loginLogs = sqliteTable(
+  'login_logs',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    // 关联用户；登入邮箱不存在时（失败尝试）为 null
+    userId: integer('user_id').references(() => users.id, {
+      onDelete: 'set null',
+    }),
+    // 尝试登入的邮箱（冗余保存，便于未知账户失败记录定位）
+    email: text('email').notNull(),
+    ip: text('ip'),
+    userAgent: text('user_agent'),
+    // 认证途径：password 邮箱密码 / two-factor 两步验证 / github OAuth
+    method: text('method', {
+      enum: ['password', 'two-factor', 'github'],
+    })
+      .default('password')
+      .notNull(),
+    // 结果：challenge=密码正确但需两步验证（待验证）
+    status: text('status', {
+      enum: ['success', 'failed', 'challenge'],
+    }).notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp' })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => [
+    index('idx_login_logs_user_created').on(table.userId, table.createdAt),
+    index('idx_login_logs_email_created').on(table.email, table.createdAt),
+  ],
+)
 
 export const photos = sqliteTable('photos', {
   id: text('id').primaryKey().unique(),

@@ -1,7 +1,7 @@
-import type { User as DBUser } from '../../server/utils/db'
+import type { SessionUser } from '../../server/utils/auth'
 
 declare module '#auth-utils' {
-  interface User extends DBUser {}
+  interface User extends SessionUser {}
 }
 
 export {}

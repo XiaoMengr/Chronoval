@@ -162,6 +162,20 @@
       "when": 1789575510634,
       "tag": "0022_album_password_hash",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "6",
+      "when": 1789782291414,
+      "tag": "0023_tired_luke_cage",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1789784144374,
+      "tag": "0024_unique_nightshade",
+      "breakpoints": true
     }
   ]
 }

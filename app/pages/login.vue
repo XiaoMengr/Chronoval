@@ -31,6 +31,9 @@ const router = useRouter()
 
 const isLoading = ref(false)
 
+// 登录步骤：login=邮箱密码；verify=两步验证码（TOTP）
+const step = ref<'login' | 'verify'>('login')
+
 // AuthForm 实例引用：登录接口失败时复用它的顶部浮动通知卡片（不在卡片内插错误条）
 const authFormRef = ref<{ showNotice: (text: string) => void } | null>(null)
 
@@ -49,38 +52,64 @@ const onAuthSubmit = async (event: any) => {
     method: 'POST',
     body: event.data,
   })
-    .then(async () => {
-      await fetchUserSession()
-      // 登入成功反馈：全局 Toast（UApp 内置 Toaster）在 SPA 跳转后依旧可见，
-      // 让用户点一下就明确看到"登录成功"，避免"点了没动静"的观感。
-      toast.add({
-        color: 'success',
-        icon: 'tabler:circle-check',
-        title: $t('auth.messages.loginSuccess.title'),
-        description: $t('auth.messages.loginSuccess.description'),
-      })
-      // 登入成功后默认直达后台管理面板（而非回到画廊）。
-      // 指定了 redirect 参数时优先跳转到目标页，否则进 /dashboard。
-      router.push(route.query.redirect?.toString() || '/dashboard')
+    .then(async (res: any) => {
+      // 账号启用了两步验证：先切换成本地第二步（TOTP 验证码）表单
+      if (res?.requires2fa) {
+        step.value = 'verify'
+        return
+      }
+      await afterAuthenticated()
     })
     .catch((error) => {
-      console.error('Login error:', error)
-      const status = error?.statusCode || error?.status
-      const isInvalid = status === 401
-      const message = isInvalid
-        ? $t('auth.messages.loginInvalid')
-        : (error?.data?.message || $t('auth.messages.loginFailed.description'))
-      // 顶部浮动通知卡片：作为失败反馈的唯一入口（不再使用页面内错误条）
-      authFormRef.value?.showNotice(message)
-      toast.add({
-        color: 'error',
-        title: $t('auth.messages.loginFailed.title'),
-        description: message,
-      })
+      handleAuthError(error)
     })
     .finally(() => {
       isLoading.value = false
     })
+}
+
+const onVerifySubmit = async (event: any) => {
+  isLoading.value = true
+  await $fetch('/api/login/2fa', {
+    method: 'POST',
+    body: { code: event.data.code },
+  })
+    .then(async () => {
+      await afterAuthenticated()
+    })
+    .catch((error) => {
+      handleAuthError(error)
+    })
+    .finally(() => {
+      isLoading.value = false
+    })
+}
+
+// 认证成功后的统一收尾：刷新会话 + 成功提示 + 跳转
+const afterAuthenticated = async () => {
+  await fetchUserSession()
+  toast.add({
+    color: 'success',
+    icon: 'tabler:circle-check',
+    title: $t('auth.messages.loginSuccess.title'),
+    description: $t('auth.messages.loginSuccess.description'),
+  })
+  router.push(route.query.redirect?.toString() || '/dashboard')
+}
+
+const handleAuthError = (error: any) => {
+  console.error('Login error:', error)
+  const status = error?.statusCode || error?.status
+  const isInvalid = status === 401
+  const message = isInvalid
+    ? $t('auth.messages.loginInvalid')
+    : (error?.data?.message || $t('auth.messages.loginFailed.description'))
+  authFormRef.value?.showNotice(message)
+  toast.add({
+    color: 'error',
+    title: $t('auth.messages.loginFailed.title'),
+    description: message,
+  })
 }
 </script>
 
@@ -149,24 +178,31 @@ const onAuthSubmit = async (event: any) => {
     <section class="relative z-20 flex w-full flex-1 items-center justify-center px-5 py-6 min-h-0 lg:w-1/2 lg:min-h-auto lg:py-0 lg:px-0 lg:pr-14 xl:pr-20">
       <div class="auth-glass w-full max-w-[24rem] rounded-[1.375rem] px-7 py-9 max-h-[88svh] overflow-y-auto sm:px-10 lg:max-w-md lg:rounded-[2rem] lg:px-10 lg:py-12 lg:max-h-none lg:overflow-visible">
         <AuthForm
-          ref="authFormRef"
-          :title="$t('auth.form.signin.title')"
-          :subtitle="$t('auth.form.signin.subtitle', [config.public.app.title])"
-          :loading="isLoading"
-          :providers="[
-            githubOauthEnabled && {
-              icon: 'tabler:brand-github',
-              size: 'lg',
-              color: 'neutral',
-              variant: 'outline',
-              block: true,
-              label: 'GitHub',
-              to: '/api/auth/github',
-              external: true,
-            },
-          ]"
-          @submit="onAuthSubmit"
-        />
+              ref="authFormRef"
+              :verify="step === 'verify'"
+              :title="$t(step === 'verify' ? 'auth.form.signin.twoFactorTitle' : 'auth.form.signin.title')"
+              :subtitle="$t(
+                step === 'verify'
+                  ? 'auth.form.signin.twoFactorSubtitle'
+                  : 'auth.form.signin.subtitle',
+                [config.public.app.title],
+              )"
+              :loading="isLoading"
+              :providers="[
+                githubOauthEnabled && {
+                  icon: 'tabler:brand-github',
+                  size: 'lg',
+                  color: 'neutral',
+                  variant: 'outline',
+                  block: true,
+                  label: 'GitHub',
+                  to: '/api/auth/github',
+                  external: true,
+                },
+              ]"
+              @submit="step === 'verify' ? onVerifySubmit : onAuthSubmit"
+              @cancel="step = 'login'"
+            />
       </div>
     </section>
   </main>

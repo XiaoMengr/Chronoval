@@ -453,7 +453,8 @@
     "mapAndLocation": "Map & Location",
     "storageSettings": "Storage Settings",
     "systemSettings": "System Settings",
-    "analyticsSettings": "Analytics & Tracking"
+    "analyticsSettings": "Analytics & Tracking",
+    "securitySettings": "Security"
   },
   "albums": {
     "scan": {
@@ -485,20 +486,27 @@
         "invalidPassword": "Password must be at least 6 characters",
         "emailAndPasswordMissing": "Please enter your email and password",
         "emailMissing": "Please enter your email",
-        "passwordMissing": "Please enter your password"
+        "passwordMissing": "Please enter your password",
+        "codeMissing": "Please enter your verification code",
+        "invalidCode": "The verification code must be 6–8 digits"
       },
       "signin": {
         "title": "Sign In",
-        "subtitle": "Log in to {0}"
+        "subtitle": "Log in to {0}",
+        "twoFactorTitle": "Two-Step Verification",
+        "twoFactorSubtitle": "Enter the 6-digit code from your authenticator app"
       },
       "action": {
         "backToHome": "Back to Home",
         "or": "OR",
-        "continue": "Login"
+        "continue": "Login",
+        "verify": "Verify",
+        "back": "Back"
       },
       "labels": {
         "email": "Email",
-        "password": "Password"
+        "password": "Password",
+        "verifyCode": "Verification Code"
       }
     },
     "messages": {
@@ -1815,6 +1823,68 @@
         "label": "Body Scripts",
         "description": "HTML fragment with script tags to inject at the top of the page body.",
         "help": "Paste full script tags (multiple allowed). Suitable for scripts that should run after the body opens."
+      }
+    },
+    "security": {
+      "sectionTitle": "Account Security",
+      "sectionDescription": "Manage two-step verification to protect your account.",
+      "twoFactor": {
+        "title": "Two-Step Verification",
+        "description": "Require a one-time code from an authenticator app in addition to your password when signing in.",
+        "enabledBadge": "Enabled",
+        "enabledNotice": "Two-step verification is on. You must enter a code from your authenticator app when signing in.",
+        "disabledBadge": "Disabled",
+        "disabledNotice": "Two-step verification is off. Consider enabling it to secure your account.",
+        "enableAction": "Enable 2FA",
+        "disableAction": "Disable 2FA",
+        "cutoffHint": "Important: Save a recovery note before disabling. You will be locked out if you cannot provide a valid code.",
+        "setupTitle": "Set Up Two-Step Verification",
+        "setupScanHint": "Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.), or enter the setup key manually.",
+        "secretLabel": "Setup Key",
+        "codeLabel": "Verification Code",
+        "codeHint": "Enter the 6-digit code from your app to confirm setup.",
+        "confirmAction": "Enable & Confirm",
+        "cancelAction": "Cancel",
+        "confirmSuccess": "Two-step verification is now enabled.",
+        "confirmError": "Invalid code. Please check and try again.",
+        "disableTitle": "Disable Two-Step Verification",
+        "disableHint": "Enter the current verification code to confirm disabling 2FA.",
+        "disableSuccess": "Two-step verification has been disabled.",
+        "disableError": "Invalid code. Please verify and try again.",
+        "copySecret": "Copy",
+        "copied": "Copied"
+      },
+      "loadFailed": "Failed to load security settings",
+      "actions": {
+        "cancel": "Cancel",
+        "confirm": "Confirm"
+      },
+      "loginRecords": {
+        "title": "Login Records",
+        "description": "Recent sign-in activity on your account, including successful attempts, failed ones, and steps awaiting two-step verification.",
+        "loadFailed": "Failed to load login records",
+        "refresh": "Refresh",
+        "empty": "No sign-in records yet.",
+        "timeAgo": "ago",
+        "justNow": "just now",
+        "column": {
+          "status": "Status",
+          "method": "Method",
+          "ip": "IP Address",
+          "device": "Device",
+          "time": "Time"
+        },
+        "status": {
+          "success": "Success",
+          "failed": "Failed",
+          "challenge": "Awaiting verification"
+        },
+        "method": {
+          "password": "Password",
+          "two-factor": "Two-Step",
+          "github": "OAuth"
+        },
+        "unknownIp": "Unknown"
       }
     },
     "general": {

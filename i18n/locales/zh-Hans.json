@@ -451,6 +451,7 @@
     "privacySettings": "隐私设置",
     "systemSettings": "系统设置",
     "analyticsSettings": "分析与追踪",
+    "securitySettings": "安全设置",
     "mapAndLocation": "地图和位置",
     "location": "位置服务"
   },
@@ -485,20 +486,27 @@
         "invalidPassword": "密码至少需要6个字符",
         "emailAndPasswordMissing": "请输入邮箱和密码",
         "emailMissing": "请输入邮箱",
-        "passwordMissing": "请输入密码"
+        "passwordMissing": "请输入密码",
+        "codeMissing": "请输入验证码",
+        "invalidCode": "验证码需为 6–8 位数字"
       },
       "action": {
         "backToHome": "回到首页",
         "or": "或",
-        "continue": "登录"
+        "continue": "登录",
+        "verify": "验证",
+        "back": "返回"
       },
       "signin": {
         "title": "登录",
-        "subtitle": "登录到 {0}"
+        "subtitle": "登录到 {0}",
+        "twoFactorTitle": "双重验证",
+        "twoFactorSubtitle": "请输入验证器应用中的 6 位动态验证码"
       },
       "labels": {
         "email": "电子邮箱",
-        "password": "密码"
+        "password": "密码",
+        "verifyCode": "验证码"
       }
     },
     "messages": {
@@ -1813,6 +1821,68 @@
         "label": "Body 脚本",
         "description": "包含 script 标签的 HTML 片段，注入到 body 开头。",
         "help": "粘贴完整的 script 标签（支持多个）。适用于需要在 body 开始处执行的脚本。"
+      }
+    },
+    "security": {
+      "sectionTitle": "账户安全",
+      "sectionDescription": "管理两步验证，保护你的账户安全。",
+      "twoFactor": {
+        "title": "两步验证",
+        "description": "登录时在密码之外，再要求输入验证器应用生成的一次性验证码。",
+        "enabledBadge": "已开启",
+        "enabledNotice": "两步验证已开启。登录时需要输入验证器应用中的验证码。",
+        "disabledBadge": "未开启",
+        "disabledNotice": "两步验证未开启。建议开启以增强账户安全性。",
+        "enableAction": "开启两步验证",
+        "disableAction": "关闭两步验证",
+        "cutoffHint": "重要提示：关闭前请妥善保存备用信息。若无法提供有效验证码，关闭后将无法继续操作。",
+        "setupTitle": "设置两步验证",
+        "setupScanHint": "使用验证器应用（Google Authenticator、Authy 等）扫描下方二维码，或手动输入设置的密钥。",
+        "secretLabel": "设置密钥",
+        "codeLabel": "验证码",
+        "codeHint": "输入应用中显示的 6 位验证码以确认设置。",
+        "confirmAction": "开启并确认",
+        "cancelAction": "取消",
+        "confirmSuccess": "两步验证已成功开启。",
+        "confirmError": "验证码无效，请检查后重试。",
+        "disableTitle": "关闭两步验证",
+        "disableHint": "输入当前验证码以确认关闭两步验证。",
+        "disableSuccess": "两步验证已关闭。",
+        "disableError": "验证码无效，请确认后重试。",
+        "copySecret": "复制",
+        "copied": "已复制"
+      },
+      "loadFailed": "加载安全设置失败",
+      "actions": {
+        "cancel": "取消",
+        "confirm": "确认"
+      },
+      "loginRecords": {
+        "title": "登入记录",
+        "description": "你账户近期的登入记录，包括成功、失败以及等待两步验证的登录尝试。",
+        "loadFailed": "加载登入记录失败",
+        "refresh": "刷新",
+        "empty": "暂无登入记录。",
+        "timeAgo": "前",
+        "justNow": "刚刚",
+        "column": {
+          "status": "状态",
+          "method": "方式",
+          "ip": "IP 地址",
+          "device": "设备",
+          "time": "时间"
+        },
+        "status": {
+          "success": "成功",
+          "failed": "失败",
+          "challenge": "待验证"
+        },
+        "method": {
+          "password": "密码",
+          "two-factor": "两步验证",
+          "github": "OAuth"
+        },
+        "unknownIp": "未知"
       }
     },
     "general": {

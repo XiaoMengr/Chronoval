@@ -3,17 +3,20 @@ import { z } from 'zod'
 import type { ButtonProps } from '@nuxt/ui'
 import { twMerge } from 'tailwind-merge'
 
-defineProps<{
+const props = defineProps<{
   icon?: string
   title?: string
   subtitle?: string
   providers?: Array<ButtonProps | false | undefined>
   class?: string
   loading?: boolean
+  /** 两步验证步骤：true 时只显示 TOTP 验证码输入，代替邮箱/密码表单 */
+  verify?: boolean
 }>()
 
 const emit = defineEmits<{
   submit: [event: any]
+  cancel: []
 }>()
 
 const schema = z.object({
@@ -27,6 +30,9 @@ const state = reactive<Partial<Schema>>({
   email: undefined,
   password: '',
 })
+
+// 第二步：TOTP 验证码
+const verifyCode = ref('')
 
 // 邮箱/密码的“无效”提示统一交给页面顶部居中的浮动通知展示（showNotice），
 // 不再在卡片内字段下方穿插行内提示，避免错误信息挤在卡片里。
@@ -43,6 +49,20 @@ const showNotice = (text: string) => {
 // 细分校验提示：区分“没输入”与“格式错误”，让提示更贴近实际情况。
 const sEmail = z.email()
 const onSubmit = () => {
+  if (props.verify) {
+    const code = (verifyCode.value ?? '').trim()
+    if (!code) {
+      showNotice($t('auth.form.errors.codeMissing'))
+      return
+    }
+    if (!/^\d{6,8}$/.test(code)) {
+      showNotice($t('auth.form.errors.invalidCode'))
+      return
+    }
+    emit('submit', { data: { code } })
+    return
+  }
+
   const email = (state.email ?? '').trim()
   const password = state.password ?? ''
   const msgs: string[] = []
@@ -126,9 +146,9 @@ const inputUi = {
       {{ subtitle }}
     </p>
 
-    <!-- OAuth providers -->
+    <!-- OAuth providers (两步验证步骤不展示) -->
     <div
-      v-if="providers && providers.filter((item) => !!item).length > 0"
+      v-if="!$props.verify && providers && providers.filter((item) => !!item).length > 0"
       class="mt-6 lg:mt-8 flex flex-col gap-2.5"
     >
       <UButton
@@ -152,6 +172,7 @@ const inputUi = {
       class="mt-5 lg:mt-7 space-y-3.5 lg:space-y-4"
       @submit.prevent="onSubmit"
     >
+      <template v-if="!$props.verify">
       <UFormField
         :label="$t('auth.form.labels.email')"
         name="email"
@@ -179,6 +200,27 @@ const inputUi = {
           :ui="inputUi"
         />
       </UFormField>
+    </template>
+
+    <!-- 第二步：两步验证码（TOTP） -->
+    <template v-else>
+      <UFormField
+        :label="$t('auth.form.labels.verifyCode')"
+        name="code"
+        :ui="{ label: 'mb-1.5 text-[0.6rem] lg:text-[0.65rem] font-medium uppercase tracking-[0.2em] text-neutral-600' }"
+      >
+        <UInput
+          v-model="verifyCode"
+          inputmode="numeric"
+          autofocus
+          maxlength="8"
+          placeholder="••••••"
+          class="w-full text-center [&>input]:!text-center [&>input]:!tracking-[0.5em] [&>input]:!text-[1.1rem] [&>input]:lg:!text-[1.2rem]"
+          :ui="inputUi"
+          @keyup.enter="onSubmit"
+        />
+      </UFormField>
+    </template>
 
       <UButton
         type="button"
@@ -190,11 +232,20 @@ const inputUi = {
         class="group relative mt-1 !h-12 overflow-hidden !rounded-[0.9rem] !bg-gradient-to-b !from-neutral-800 !to-neutral-950 !font-semibold !text-white !text-[0.95rem] !tracking-wide lg:!h-13 lg:!text-[1rem] !shadow-[0_18px_40px_-14px_rgba(20,20,24,0.7),inset_0_1px_0_rgba(255,255,255,0.18)] transition-all duration-300 hover:!-translate-y-[1px] hover:!shadow-[0_24px_50px_-16px_rgba(20,20,24,0.85),inset_0_1px_0_rgba(255,255,255,0.24)] hover:!brightness-110 active:!translate-y-0 active:!scale-[0.99] active:!brightness-100"
         @click="onSubmit"
       >
-        {{ $t('auth.form.action.continue') }}
+        {{ $props.verify ? $t('auth.form.action.verify') : $t('auth.form.action.continue') }}
       </UButton>
 
       <div class="flex items-center justify-between pt-1 lg:pt-2">
+        <button
+          v-if="$props.verify"
+          type="button"
+          class="text-[0.7rem] uppercase tracking-[0.25em] text-neutral-500 transition-colors hover:text-neutral-900"
+          @click="emit('cancel')"
+        >
+          {{ $t('auth.form.action.back') }}
+        </button>
         <NuxtLink
+          v-else
           to="/"
           class="text-[0.7rem] uppercase tracking-[0.25em] text-neutral-500 transition-colors hover:text-neutral-900"
         >
