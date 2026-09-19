@@ -271,6 +271,10 @@ export const scanAlbumMeta = sqliteTable(
     password: text('password'),
     // 自定义公开URL别名（全局唯一）；设置后公开链接使用 /albums/s/{slug}
     slug: text('slug'),
+    // 相簿自身的公开 URL 标识（随机生成、全局唯一）：设置后该相簿（含子目录）使用
+    // /albums/scan/{urlKey} 访问。与扫描库级 urlKey 分离，可被管理员手动重置；
+    // 不参与库级 backfill（那些仅针对 scan_libraries.url_key）。
+    urlKey: text('url_key'),
     createdAt: integer('created_at', { mode: 'timestamp' })
       .notNull()
       .default(sql`(unixepoch())`),
@@ -284,6 +288,9 @@ export const scanAlbumMeta = sqliteTable(
       table.relPath,
     ),
     slugUnique: uniqueIndex('scan_album_meta_slug_unique').on(table.slug),
+    albumUrlKeyUnique: uniqueIndex('scan_album_meta_url_key_unique').on(
+      table.urlKey,
+    ),
   }),
 )
 

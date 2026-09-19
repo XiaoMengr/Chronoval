@@ -81,6 +81,9 @@ const isLoadingPhotos = ref(false)
 const isAlbumSlideoverOpen = ref(false)
 const isDeleteConfirmOpen = ref(false)
 const isPhotoSelectorOpen = ref(false)
+// 手动重置相簿 UID 的确认弹窗（仅普通相簿）
+const isResetUidConfirmOpen = ref(false)
+const isResettingUid = ref(false)
 
 const currentAlbum = ref<AlbumItem | null>(null)
 
@@ -331,6 +334,46 @@ const copyPublicUrl = async () => {
     })
   } catch {
     /* 忽略剪贴板权限异常 */
+  }
+}
+
+// 手动重置相簿 UID：普通相簿重置 uid，外部库相簿重置其独立 urlKey；
+// 重置后旧公开链接失效，返回新标识并更新当前展示
+const confirmResetUid = async () => {
+  const album = currentAlbum.value
+  if (!album) return
+  isResettingUid.value = true
+  try {
+    if (isScanAlbum(album)) {
+      const updated = await $fetch('/api/albums/scan-reset-uid', {
+        method: 'POST',
+        body: { libId: album.libId, path: album.relPath || '' },
+      }) as any
+      if (currentAlbum.value) {
+        currentAlbum.value.urlKey = updated?.urlKey
+      }
+    } else {
+      const updated = await $fetch(`/api/albums/${album.id}/reset-uid`, {
+        method: 'POST',
+      }) as any
+      if (currentAlbum.value) {
+        currentAlbum.value.uid = updated?.uid
+      }
+    }
+    useToast().add({
+      title: $t('dashboard.albums.form.uidResetSuccess'),
+      color: 'success',
+    })
+    await loadAlbums()
+  } catch (error) {
+    console.error('Failed to reset album uid:', error)
+    useToast().add({
+      title: $t('dashboard.albums.form.uidResetError'),
+      color: 'error',
+    })
+  } finally {
+    isResettingUid.value = false
+    isResetUidConfirmOpen.value = false
   }
 }
 
@@ -1026,11 +1069,27 @@ const openAlbum = (album: AlbumItem) => {
                       :label="$t('dashboard.albums.form.albumUidLabel')"
                       name="albumUid"
                     >
-                      <div class="flex w-full items-center gap-2 rounded-md border border-dashed border-gray-300 bg-gray-50 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900">
-                        <Icon name="tabler:hash" class="size-4 shrink-0 text-gray-400" />
-                        <code class="truncate font-mono text-gray-700 dark:text-gray-200">
-                          {{ albumUid }}
-                        </code>
+                      <div class="flex w-full items-center gap-2">
+                        <div
+                          class="flex min-w-0 flex-1 items-center gap-2 rounded-md border border-dashed border-gray-300 bg-gray-50 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+                        >
+                          <Icon name="tabler:hash" class="size-4 shrink-0 text-gray-400" />
+                          <code class="truncate font-mono text-gray-700 dark:text-gray-200">
+                            {{ albumUid }}
+                          </code>
+                        </div>
+                        <UTooltip
+                          :text="$t('dashboard.albums.form.resetUid')"
+                        >
+                          <UButton
+                            icon="tabler:refresh"
+                            size="sm"
+                            color="danger"
+                            variant="soft"
+                            :loading="isResettingUid"
+                            @click="isResetUidConfirmOpen = true"
+                          />
+                        </UTooltip>
                       </div>
                     </UFormField>
 
@@ -1697,6 +1756,47 @@ const openAlbum = (album: AlbumItem) => {
                       ? $t('dashboard.albums.reset.confirm')
                       : $t('dashboard.albums.delete.confirm')
                   }}
+                </UButton>
+              </div>
+            </div>
+          </template>
+        </UModal>
+
+        <UModal v-model:open="isResetUidConfirmOpen">
+          <template #content>
+            <div class="p-6 space-y-4">
+              <div class="flex items-center gap-3">
+                <div
+                  class="shrink-0 w-10 h-10 bg-error-100 dark:bg-error-900/30 rounded-full flex items-center justify-center"
+                >
+                  <Icon name="tabler:refresh" class="text-error-500" />
+                </div>
+                <div>
+                  <h3 class="text-lg font-semibold">
+                    {{ $t('dashboard.albums.form.resetUid') }}
+                  </h3>
+                  <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    {{ $t('dashboard.albums.form.resetUidMessage') }}
+                  </p>
+                </div>
+              </div>
+
+              <div class="flex justify-end gap-2 pt-4">
+                <UButton
+                  variant="ghost"
+                  color="neutral"
+                  :disabled="isResettingUid"
+                  @click="isResetUidConfirmOpen = false"
+                >
+                  {{ $t('dashboard.albums.delete.cancel') }}
+                </UButton>
+                <UButton
+                  color="error"
+                  :icon="isResettingUid ? '' : 'tabler:refresh'"
+                  :loading="isResettingUid"
+                  @click="confirmResetUid"
+                >
+                  {{ $t('dashboard.albums.form.resetUidConfirm') }}
                 </UButton>
               </div>
             </div>

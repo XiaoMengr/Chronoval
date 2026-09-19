@@ -3,6 +3,7 @@ import {
   getScanLibraryByKey,
   getScanAlbumEffectivePasswordHash,
 } from '~~/server/services/scan-library/manager'
+import { getScanAlbumMetaByUrlKey } from '~~/server/services/scan-library/album-meta'
 import { authorizeScanAlbum } from '~~/server/utils/scanAlbumAuth'
 import { verifyAlbumPassword } from '~~/server/utils/scanAlbumPassword'
 import { settingsManager } from '~~/server/services/settings/settingsManager'
@@ -21,15 +22,33 @@ export default eventHandler(async (event) => {
     z.object({ password: z.string() }).parse,
   )
 
-  const lib = getScanLibraryByKey(libId)
-  if (!lib || !lib.asAlbum || !lib.enabled) {
-    throw createError({ statusCode: 404, statusMessage: 'Not Found' })
+  // 与 GET 一致：先按相簿自身 urlKey 定位，命中则用其 mount/relPath
+  const byMetaUrl = await getScanAlbumMetaByUrlKey(libId)
+  let libIdNum: number
+  let relPath: string
+  if (byMetaUrl) {
+    const parsed = Number(byMetaUrl.mount.replace(/^scan_/, ''))
+    if (!Number.isFinite(parsed)) {
+      throw createError({ statusCode: 404, statusMessage: 'Not Found' })
+    }
+    const lib = getScanLibraryByKey(String(parsed))
+    if (!lib || !lib.asAlbum || !lib.enabled) {
+      throw createError({ statusCode: 404, statusMessage: 'Not Found' })
+    }
+    libIdNum = lib.id
+    relPath = byMetaUrl.relPath || ''
+  } else {
+    const lib = getScanLibraryByKey(libId)
+    if (!lib || !lib.asAlbum || !lib.enabled) {
+      throw createError({ statusCode: 404, statusMessage: 'Not Found' })
+    }
+    libIdNum = lib.id
+    relPath = query.path
   }
-  const libIdNum = lib.id
 
   const passwordHash = await getScanAlbumEffectivePasswordHash(
     libIdNum,
-    query.path,
+    relPath,
   )
 
   // 管理员的「免密访问」只有在显式开启对应系统设置时才放行；
@@ -43,7 +62,7 @@ export default eventHandler(async (event) => {
   if (adminBypass) {
     authorizeScanAlbum(event, {
       libId: libIdNum,
-      relPath: query.path,
+      relPath,
       passwordHash,
     })
     return { authorized: true }
@@ -53,6 +72,6 @@ export default eventHandler(async (event) => {
     throw createError({ statusCode: 401, statusMessage: 'Incorrect password' })
   }
 
-  authorizeScanAlbum(event, { libId: libIdNum, relPath: query.path, passwordHash })
+  authorizeScanAlbum(event, { libId: libIdNum, relPath, passwordHash })
   return { authorized: true }
 })

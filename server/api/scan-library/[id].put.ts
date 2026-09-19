@@ -17,7 +17,12 @@ export default eventHandler(async (event) => {
     z.object({ id: z.string().transform((v) => parseInt(v, 10)) }).parse,
   )
 
-  const body = await readValidatedBody(event, scanLibraryInputSchema.parse)
+  // 更新支持局部字段（如启停开关只传 { enabled }），无需 rootPath；
+  // 新建（index.post.ts）仍然要求 rootPath 必填。
+  const body = await readValidatedBody(
+    event,
+    scanLibraryInputSchema.partial().parse,
+  )
   await updateScanLibrary(id, body)
 
   // 更新后立即扫描一次

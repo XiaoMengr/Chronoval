@@ -16,6 +16,8 @@ export interface ScanAlbumMetaInput {
   /** 相簿访问密码明文（仅管理端回显）；null=清除，undefined=保持不变 */
   password?: string | null
   slug?: string | null
+  /** 相簿自身公开 URL 标识（随机）；null=清除改用默认，undefined=保持不变 */
+  urlKey?: string | null
 }
 
 const cleanRelPath = (p: string): string =>
@@ -77,6 +79,8 @@ export const upsertScanAlbumMeta = async (
     if (input.password !== undefined)
       updateData.password = input.password || null
     if (input.slug !== undefined) updateData.slug = input.slug || null
+    if (input.urlKey !== undefined)
+      updateData.urlKey = (input.urlKey && input.urlKey.trim()) || null
 
     await db
       .update(tables.scanAlbumMeta)
@@ -103,6 +107,7 @@ export const upsertScanAlbumMeta = async (
       passwordHash: input.passwordHash ?? null,
       password: input.password ?? null,
       slug: input.slug || null,
+      urlKey: (input.urlKey && input.urlKey.trim()) || null,
     })
     .returning()
     .get()
@@ -134,6 +139,19 @@ export const getScanAlbumMetaBySlug = async (
     .select()
     .from(tables.scanAlbumMeta)
     .where(eq(tables.scanAlbumMeta.slug, slug))
+    .get()
+  return row ?? null
+}
+
+/** 按相簿自身的公开 URL 标识读取元数据（用于 /albums/scan/{urlKey} 反查） */
+export const getScanAlbumMetaByUrlKey = async (
+  urlKey: string,
+): Promise<ScanAlbumMetaRow | null> => {
+  if (!urlKey) return null
+  const row = await useDB()
+    .select()
+    .from(tables.scanAlbumMeta)
+    .where(eq(tables.scanAlbumMeta.urlKey, urlKey))
     .get()
   return row ?? null
 }
@@ -187,7 +205,13 @@ export const applyScanAlbumMeta = async (
     password: meta.password || undefined,
     coverPhotoId,
     covers,
-    link: meta.slug ? `/albums/s/${encodeURIComponent(meta.slug)}` : node.link,
+    urlKey: meta.urlKey || node.urlKey,
+    // 公开链接优先级：自定义 slug > 相簿自身 urlKey > 库级默认
+    link: meta.slug
+      ? `/albums/s/${encodeURIComponent(meta.slug)}`
+      : meta.urlKey
+        ? `/albums/scan/${encodeURIComponent(meta.urlKey)}`
+        : node.link,
     slug: meta.slug || null,
     hasCustom: true,
   }

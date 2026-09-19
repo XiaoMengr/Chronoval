@@ -211,6 +211,13 @@
       "when": 1789816000000,
       "tag": "0029_scan_album_meta_password_plain",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "6",
+      "when": 1789826293595,
+      "tag": "0030_worthless_ares",
+      "breakpoints": true
     }
   ]
 }
