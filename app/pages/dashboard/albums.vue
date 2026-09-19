@@ -272,8 +272,32 @@ const scanAlbumPublicUrl = computed(() => {
   return ''
 })
 
+// 普通相簿（手动相册）的 UID 与公开链接：以数据库整数 id 为对外标识
+const manualAlbumUid = computed(() => {
+  const album = currentAlbum.value
+  if (!album || isScanAlbum(album)) return ''
+  return String(album.id)
+})
+const manualAlbumPublicUrl = computed(() => {
+  const album = currentAlbum.value
+  if (!album || isScanAlbum(album)) return ''
+  return `/albums/${album.id}`
+})
+
+// 统一的「相簿 UID」与「公开链接」：普通相簿 / 外部库相簿共用同一套只读字段
+const albumUid = computed(() =>
+  isScanAlbum(currentAlbum.value)
+    ? scanAlbumUid.value
+    : manualAlbumUid.value,
+)
+const albumPublicUrl = computed(() =>
+  isScanAlbum(currentAlbum.value)
+    ? scanAlbumPublicUrl.value
+    : manualAlbumPublicUrl.value,
+)
+
 const copyPublicUrl = async () => {
-  const url = scanAlbumPublicUrl.value
+  const url = albumPublicUrl.value
   if (!url) return
   try {
     await navigator.clipboard.writeText(`${window.location.origin}${url}`)
@@ -929,33 +953,21 @@ const openAlbum = (album: AlbumItem) => {
                   />
                 </UFormField>
 
-                <template v-if="isScanAlbum(currentAlbum)">
                 <UFormField
-                  :label="$t('dashboard.albums.form.customUrl')"
-                  name="slug"
-                  :help="$t('dashboard.albums.form.customUrlHint')"
-                >
-                  <UInput
-                    v-model="formData.slug"
-                    class="w-full"
-                    :placeholder="$t('dashboard.albums.form.customUrlPlaceholder')"
-                  />
-                </UFormField>
-
-                <UFormField
+                  v-if="currentAlbum"
                   :label="$t('dashboard.albums.form.albumUidLabel')"
                   name="albumUid"
                 >
                   <div class="flex w-full items-center gap-2 rounded-md border border-dashed border-gray-300 bg-gray-50 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900">
                     <Icon name="tabler:hash" class="size-4 shrink-0 text-gray-400" />
                     <code class="truncate font-mono text-gray-700 dark:text-gray-200">
-                      {{ scanAlbumUid }}
+                      {{ albumUid }}
                     </code>
                   </div>
                 </UFormField>
 
                 <UFormField
-                  v-if="isScanAlbum(currentAlbum)"
+                  v-if="currentAlbum"
                   :label="$t('dashboard.albums.form.publicLinkLabel')"
                   name="publicLink"
                 >
@@ -964,8 +976,8 @@ const openAlbum = (album: AlbumItem) => {
                       class="flex min-w-0 flex-1 items-center gap-2 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
                     >
                       <Icon name="tabler:link" class="size-4 shrink-0 text-gray-400" />
-                      <span v-if="scanAlbumPublicUrl" class="truncate text-primary-500 dark:text-primary-400">
-                        {{ scanAlbumPublicUrl }}
+                      <span v-if="albumPublicUrl" class="truncate text-primary-500 dark:text-primary-400">
+                        {{ albumPublicUrl }}
                       </span>
                       <span v-else class="truncate text-neutral-400 dark:text-neutral-500">
                         {{ $t('dashboard.albums.form.publicLinkFallback') }}
@@ -977,11 +989,24 @@ const openAlbum = (album: AlbumItem) => {
                         size="sm"
                         color="neutral"
                         variant="soft"
-                        :disabled="!scanAlbumPublicUrl"
+                        :disabled="!albumPublicUrl"
                         @click="copyPublicUrl"
                       />
                     </UTooltip>
                   </div>
+                </UFormField>
+
+                <template v-if="isScanAlbum(currentAlbum)">
+                <UFormField
+                  :label="$t('dashboard.albums.form.customUrl')"
+                  name="slug"
+                  :help="$t('dashboard.albums.form.customUrlHint')"
+                >
+                  <UInput
+                    v-model="formData.slug"
+                    class="w-full"
+                    :placeholder="$t('dashboard.albums.form.customUrlPlaceholder')"
+                  />
                 </UFormField>
 
                 <UFormField
