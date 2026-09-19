@@ -2,7 +2,6 @@
 import type { NuxtApp } from 'nuxt/app'
 import dayjsLocale_zhCN from 'dayjs/locale/zh-cn'
 import dayjsLocale_zhTW from 'dayjs/locale/zh-tw'
-import dayjsLocale_zhHK from 'dayjs/locale/zh-hk'
 
 const router = useRouter()
 const dayjs = useDayjs()
@@ -271,7 +270,6 @@ const handleClose = () => {
 watchEffect(() => {
   dayjs.locale('zh-Hans', dayjsLocale_zhCN)
   dayjs.locale('zh-Hant-TW', dayjsLocale_zhTW)
-  dayjs.locale('zh-Hant-HK', dayjsLocale_zhHK)
   dayjs.locale(localeRef.value)
 })
 

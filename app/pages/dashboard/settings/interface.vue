@@ -11,23 +11,45 @@ useHead({
 
 const colorMode = useColorMode()
 
-// 界面语言：locale 代码 → 国旗（emoji，离线可用）
-const { locale, setLocale } = useI18n()
-const langFlagMap: Record<string, string> = {
-  'zh-Hans': '🇨🇳',
-  'zh-Hant-TW': '🇹🇼',
-  'zh-Hant-HK': '🇭🇰',
-  'en': '🇺🇸',
-  'ja': '🇯🇵',
-  'ru': '🇷🇺',
+// 界面语言：locale 代码 → 简写（如 CN/HK/US/RU，离线可用的文本徽章），胶囊切换
+const { locale, setLocale, t } = useI18n()
+const toast = useToast()
+const langCodeMap: Record<string, string> = {
+  'zh-Hans': 'CN',
+  'zh-Hant-TW': 'HK',
+  'en': 'US',
+  'ko': 'KO',
+  'ru': 'RU',
+  'vi': 'VN',
 }
 const langOptions = localeMeta.map((l) => ({
-  label: l.name ?? l.code,
   code: l.code,
-  flag: langFlagMap[l.code] ?? '🌐',
+  short: langCodeMap[l.code] ?? l.code.slice(0, 2).toUpperCase(),
+  name: l.name ?? l.code,
+  sub: l.label && l.label !== l.name ? l.label : undefined,
 }))
 
+// 当前选中语言（供胶囊显示），切换时调用 setLocale 真正应用，并弹出系统通知
+const selectedLang = ref(locale.value)
+const selectedItem = computed(
+  () => langOptions.find((o) => o.code === selectedLang.value),
+)
+watch(selectedLang, async (val) => {
+  if (!val || val === locale.value) return
+  await setLocale(val)
+  toast.add({
+    title: t('settings.interface.languageChanged'),
+    color: 'success',
+    icon: 'tabler:check',
+    duration: 3000,
+  })
+})
+
 const { fields, state, submit, loading } = useSettingsForm('app')
+
+// 保存中的独立状态：区分“表单数据加载中”与“正在保存”，
+// 避免初始加载时（loading=true）保存按钮也一直转圈。
+const isSaving = ref(false)
 
 const sameValue = (left: any, right: any) =>
   JSON.stringify(left ?? null) === JSON.stringify(right ?? null)
@@ -56,9 +78,13 @@ const isAppearanceDirty = computed(() =>
 )
 
 const resetAppearanceSettings = () => {
+  // 重置 = 还原「出厂默认值」（defaultValue），而非回到上次保存值。
+  // 例如卡片圆角开关恢复为关、半径恢复为默认数值、主题恢复为默认主题。
   appearanceFields.value.forEach((field) => {
-    state[field.key] = getDefaultFieldValue(field)
+    state[field.key] = field.defaultValue ?? null
   })
+  // 同步当前主题到默认
+  colorMode.preference = state['appearance.theme'] ?? 'dark'
 }
 
 const handleAppearanceSettingsSubmit = async () => {
@@ -66,12 +92,15 @@ const handleAppearanceSettingsSubmit = async () => {
     appearanceFields.value.map((f) => [f.key, state[f.key]]),
   )
   try {
+    isSaving.value = true
     await submit(appearanceData)
     if (state['appearance.theme']) {
       colorMode.preference = state['appearance.theme']
     }
   } catch {
     /* empty */
+  } finally {
+    isSaving.value = false
   }
 }
 
@@ -98,13 +127,15 @@ const isLoaderDirty = computed(() =>
 )
 
 const resetLoaderImages = () => {
-  state['loader.images'] = getLoaderSavedValue('loader.images') ?? [...LOADER_DEFAULT_IMAGES]
-  state['loader.cardStyle'] = getLoaderSavedValue('loader.cardStyle') ?? LOADER_DEFAULT_CARD_STYLE
-  state['loader.animation'] = getLoaderSavedValue('loader.animation') ?? LOADER_DEFAULT_ANIMATION
+  // 重置 = 还原出厂默认加载配置（默认三张图、liquid 卡片、stack 动画）
+  state['loader.images'] = [...LOADER_DEFAULT_IMAGES]
+  state['loader.cardStyle'] = LOADER_DEFAULT_CARD_STYLE
+  state['loader.animation'] = LOADER_DEFAULT_ANIMATION
 }
 
 const handleLoaderImagesSubmit = async () => {
   try {
+    isSaving.value = true
     await submit({
       'loader.images': state['loader.images'],
       'loader.cardStyle': state['loader.cardStyle'],
@@ -112,6 +143,8 @@ const handleLoaderImagesSubmit = async () => {
     })
   } catch {
     /* empty */
+  } finally {
+    isSaving.value = false
   }
 }
 </script>
@@ -134,9 +167,9 @@ const handleLoaderImagesSubmit = async () => {
         </section>
 
         <!-- 外观设置 -->
-        <section class="rounded-md border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
+        <section class="rounded-2xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
           <header class="border-b border-neutral-200 px-5 py-4 dark:border-neutral-800">
-            <h3 class="text-base font-semibold text-neutral-900 dark:text-neutral-100">
+            <h3 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
               {{ $t('title.appearanceSettings') }}
             </h3>
           </header>
@@ -182,7 +215,7 @@ const handleLoaderImagesSubmit = async () => {
                 {{ $t('common.actions.reset') }}
               </UButton>
               <UButton
-                :loading="loading"
+                :loading="isSaving"
                 type="submit"
                 form="appearanceSettingsForm"
                 :disabled="!isAppearanceDirty"
@@ -195,40 +228,55 @@ const handleLoaderImagesSubmit = async () => {
         </section>
 
         <!-- 界面语言 -->
-        <section class="rounded-md border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
-          <header class="border-b border-neutral-200 px-5 py-4 dark:border-neutral-800">
-            <h3 class="text-base font-semibold text-neutral-900 dark:text-neutral-100">
-              {{ $t('title.language') }}
-            </h3>
+        <section class="rounded-2xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
+          <header class="flex items-center gap-3 border-b border-neutral-200 px-5 py-4 dark:border-neutral-800">
+            <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary-500/10 text-primary-600 dark:bg-primary-400/10 dark:text-primary-400">
+              <UIcon name="tabler:language" class="h-5 w-5" />
+            </span>
+            <div class="min-w-0">
+              <h3 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+                {{ $t('title.language') }}
+              </h3>
+              <p class="text-sm text-neutral-600 dark:text-neutral-400">
+                {{ $t('settings.interface.description') }}
+              </p>
+            </div>
           </header>
-          <div class="grid grid-cols-1 gap-2 px-5 py-5 sm:grid-cols-2 lg:grid-cols-3">
-            <button
-              v-for="opt in langOptions"
-              :key="opt.code"
-              type="button"
-              class="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2.5 text-sm font-medium transition"
-              :class="
-                locale === opt.code
-                  ? 'border-neutral-900 bg-neutral-900 text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900'
-                  : 'border-neutral-200 text-neutral-600 hover:border-neutral-400 hover:text-neutral-900 dark:border-neutral-800 dark:text-neutral-400 dark:hover:border-neutral-600 dark:hover:text-neutral-100'
-              "
-              @click="setLocale(opt.code)"
-            >
-              <span class="shrink-0 text-lg leading-none">{{ opt.flag }}</span>
-              <span class="flex-1 text-left">{{ opt.label }}</span>
-              <Icon
-                v-if="locale === opt.code"
-                name="tabler:check"
-                class="size-4 shrink-0"
-              />
-            </button>
+
+          <div class="px-5 py-6">
+            <div class="mx-auto flex w-full max-w-xl flex-wrap items-center justify-center gap-2">
+              <button
+                v-for="opt in langOptions"
+                :key="opt.code"
+                type="button"
+                :title="opt.name"
+                :aria-pressed="selectedLang === opt.code"
+                class="inline-flex h-10 items-center gap-2 rounded-full border px-3 text-sm font-medium transition-colors"
+                :class="
+                  selectedLang === opt.code
+                    ? 'border-primary-500 bg-primary-500 text-white'
+                    : 'border-neutral-200 bg-neutral-50 text-neutral-700 hover:border-neutral-300 hover:bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800'
+                "
+                @click="selectedLang = opt.code"
+              >
+                <span
+                  class="grid h-6 min-w-7 shrink-0 place-items-center rounded-md px-1 text-[11px] font-bold"
+                  :class="
+                    selectedLang === opt.code
+                      ? 'bg-white/20 text-white'
+                      : 'bg-primary-500/15 text-primary-600 dark:bg-primary-400/15 dark:text-primary-400'
+                  "
+                >{{ opt.short }}</span>
+                <span class="whitespace-nowrap">{{ opt.name }}</span>
+              </button>
+            </div>
           </div>
         </section>
 
         <!-- 加载配置 -->
-        <section class="rounded-md border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
+        <section class="rounded-2xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
           <header class="border-b border-neutral-200 px-5 py-4 dark:border-neutral-800">
-            <h3 class="text-base font-semibold text-neutral-900 dark:text-neutral-100">
+            <h3 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
               {{ $t('title.loaderSettings') }}
             </h3>
             <p class="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
@@ -273,7 +321,7 @@ const handleLoaderImagesSubmit = async () => {
                 {{ $t('common.actions.reset') }}
               </UButton>
               <UButton
-                :loading="loading"
+                :loading="isSaving"
                 :disabled="!isLoaderDirty"
                 icon="tabler:device-floppy"
                 @click="handleLoaderImagesSubmit"

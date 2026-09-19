@@ -10,10 +10,10 @@ type DayjsLocale = NonNullable<DayjsModuleOptions['locales']>[number]
 type AppLocaleCode =
   | 'zh-Hans'
   | 'zh-Hant-TW'
-  | 'zh-Hant-HK'
   | 'en'
-  | 'ja'
+  | 'ko'
   | 'ru'
+  | 'vi'
 
 type AppLocaleObject = LocaleObject<AppLocaleCode> & {
   label: string
@@ -30,17 +30,10 @@ export const locales: AppLocaleObject[] = [
   },
   {
     code: 'zh-Hant-TW',
-    name: '繁体中文(台湾)',
-    label: '繁體中文 (Traditional Chinese, Taiwan)',
+    name: '繁體中文',
+    label: '繁體中文 (Traditional Chinese)',
     file: 'zh-Hant-TW.json',
     language: 'zh-TW',
-  },
-  {
-    code: 'zh-Hant-HK',
-    name: '繁体中文(香港)',
-    label: '繁體中文 (Traditional Chinese, Hong Kong)',
-    file: 'zh-Hant-HK.json',
-    language: 'zh-HK',
   },
   {
     code: 'en',
@@ -50,11 +43,11 @@ export const locales: AppLocaleObject[] = [
     language: 'en',
   },
   {
-    code: 'ja',
-    name: '日本語',
-    label: '日本語 (Japanese)',
-    file: 'ja.json',
-    language: 'ja',
+    code: 'ko',
+    name: '한국어',
+    label: '한국어 (Korean)',
+    file: 'ko.json',
+    language: 'ko',
   },
   {
     code: 'ru',
@@ -63,16 +56,23 @@ export const locales: AppLocaleObject[] = [
     file: 'ru.json',
     language: 'ru',
   },
+  {
+    code: 'vi',
+    name: 'Tiếng Việt',
+    label: 'Tiếng Việt (Vietnamese)',
+    file: 'vi.json',
+    language: 'vi',
+  },
 ]
 
 export const localeLanguages = locales.map(({ language }) => language)
 export const dayjsLocales: DayjsLocale[] = [
   'zh-cn',
   'zh-tw',
-  'zh-hk',
   'en',
-  'ja',
-  'ru'
+  'ko',
+  'ru',
+  'vi'
 ]
 
 export default {
@@ -91,10 +91,14 @@ export default {
     'zh-CN': ['zh-Hans'],
     'zh-SG': ['zh-Hans'],
     zh: ['zh-Hans'],
-    'zh-Hant': ['zh-Hant-TW', 'zh-Hant-HK'],
+    'zh-Hant': ['zh-Hant-TW'],
     'zh-TW': ['zh-Hant-TW'],
-    'zh-HK': ['zh-Hant-HK'],
-    'zh-MO': ['zh-Hant-HK'],
+    'zh-HK': ['zh-Hant-TW'],
+    'zh-MO': ['zh-Hant-TW'],
+    ko: ['en'],
+    'ko-KR': ['ko'],
+    vi: ['en'],
+    'vi-VN': ['vi'],
     default: [defaultLocale],
   },
 } satisfies I18nOptions & NuxtI18nOptions

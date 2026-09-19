@@ -1520,7 +1520,8 @@
       "description": "管理站點基礎資訊與展示外觀。更改會立即影響控制台和前台展示。"
     },
     "interface": {
-      "description": "管理介面展示相關的設定：外觀主題與進入畫廊時的載入配置。"
+      "description": "管理介面展示相關的設定：外觀主題與進入畫廊時的載入配置。",
+      "languageChanged": "語言已切換"
     },
     "form": {
       "loadFailed": "載入設定失敗",

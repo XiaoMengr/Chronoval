@@ -1,15 +1,23 @@
 export default defineAppConfig({
   ui: {
-    colors: {
-      primary: 'neutral',
-      secondary: 'slate',
-      neutral: 'neutral',
-      info: 'sky',
-      success: 'emerald',
-      warning: 'amber',
-      danger: 'rose',
-    },
-    button: {
+      colors: {
+        primary: 'neutral',
+        secondary: 'slate',
+        neutral: 'neutral',
+        info: 'sky',
+        success: 'emerald',
+        warning: 'amber',
+        danger: 'rose',
+        },
+        // 通知（Toast）：仅精修外观，保留默认配色/状态色与底部进度条。
+          // 四角圆弧加大；进度条改为贴合底部的细色线（浅色轨道 + 圆角流畅填充），更精致。
+          toast: {
+            slots: {
+              root: 'relative group overflow-hidden bg-default shadow-lg rounded-2xl ring ring-default p-4 flex gap-2.5 focus:outline-none',
+              progress: 'absolute bottom-0 inset-x-0 h-1 overflow-hidden rounded-none bg-neutral-200/60 dark:bg-neutral-800/60',
+            },
+          },
+        button: {
       slots: {
         base: 'cursor-pointer',
       },

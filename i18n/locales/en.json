@@ -1894,7 +1894,8 @@
       "description": "Manage the site's basic information and display appearance. Changes will immediately affect the dashboard and public-facing display."
     },
     "interface": {
-      "description": "Manage settings related to interface display: appearance theme and the loading configuration when entering the gallery."
+      "description": "Manage settings related to interface display: appearance theme and the loading configuration when entering the gallery.",
+      "languageChanged": "Language switched"
     },
     "loader": {
       "description": "Customize the three card images used in the loading animation when entering the gallery. Defaults to built-in sample images; you can restore defaults at any time."

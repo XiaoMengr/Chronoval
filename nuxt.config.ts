@@ -226,7 +226,6 @@ export default defineNuxtConfig({
         'dayjs',
         'dayjs/plugin/updateLocale',
         'dayjs/locale/zh-cn',
-        'dayjs/locale/zh-hk',
         'dayjs/locale/zh-tw',
         'dayjs/locale/en',
         'dayjs/plugin/relativeTime',

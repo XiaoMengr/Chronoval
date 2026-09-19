@@ -1,0 +1,2070 @@
+{
+  "plural": {
+    "photo": "사진 없음 | 사진 1장 | 사진 {count}장"
+  },
+  "ui": {
+    "action": {
+      "filter": {
+        "tooltip": "사진 필터",
+        "title": "사진 필터",
+        "clearAll": "모두 지우기",
+        "tabs": {
+          "tags": "태그",
+          "cameras": "카메라",
+          "lenses": "렌즈",
+          "cities": "도시",
+          "ratings": "별점"
+        },
+        "empty": {
+          "tags": "태그 없음",
+          "cameras": "카메라 정보 없음",
+          "lenses": "렌즈 정보 없음",
+          "cities": "도시 정보 없음"
+        },
+        "rating": {
+          "showAll": "모든 사진 보기",
+          "showStarsAndAbove": "{count}개 이상 별점 사진 보기"
+        },
+        "searchPlaceholder": "파일명 등 검색...",
+        "shuffleTooltip": "목록 셔플"
+      },
+      "sort": {
+        "tooltip": "사진 정렬",
+        "title": "정렬 기준",
+        "options": {
+          "dateTakenDesc": "촬영일 (최신순)",
+          "dateTakenAsc": "촬영일 (오래된순)",
+          "fileSizeAsc": "파일 크기 (오름차순)",
+          "fileSizeDesc": "파일 크기 (내림차순)",
+          "titleAsc": "제목 (오름차순)",
+          "titleDesc": "제목 (내림차순)",
+          "shuffle": "셔플"
+        }
+      },
+      "theme": {
+        "tooltip": "색상 테마"
+      },
+      "dashboard": {
+        "tooltip": "대시보드"
+      },
+      "logout": {
+        "tooltip": "로그아웃"
+      },
+      "globe": {
+        "tooltip": "지구본"
+      },
+      "home": {
+        "tooltip": "홈으로 돌아가기"
+      },
+      "share": {
+        "tooltip": "사진 공유",
+        "title": "사진 공유",
+        "tabs": {
+          "social": "소셜 공유",
+          "advanced": "고급 공유"
+        },
+        "platforms": {
+          "twitter": "Twitter",
+          "telegram": "Telegram",
+          "weibo": "Weibo",
+          "facebook": "Facebook",
+          "whatsapp": "WhatsApp",
+          "linkedin": "LinkedIn"
+        },
+        "actions": {
+          "nativeShare": "시스템 공유 사용",
+          "copyLink": "링크 복사",
+          "copyImage": "이미지 복사",
+          "downloadImage": "원본 다운로드",
+          "generateShareImage": "공유 이미지 생성",
+          "shareUrl": "URL 공유",
+          "downloadOgImage": "미리보기 다운로드",
+          "downloadOriginal": "원본 다운로드",
+          "downloadOriginalImage": "원본 이미지 다운로드"
+        },
+        "success": {
+          "linkCopied": "링크가 클립보드에 복사되었습니다",
+          "imageCopied": "이미지가 클립보드에 복사되었습니다",
+          "ogImageDownloaded": "미리보기 이미지가 성공적으로 다운로드되었습니다",
+          "originalImageDownloaded": "원본 이미지가 성공적으로 다운로드되었습니다"
+        },
+        "error": {
+          "copyNotSupported": "이 브라우저는 복사를 지원하지 않습니다",
+          "shareFailed": "공유 실패",
+          "nativeShareFailed": "시스템 공유 실패",
+          "linkCopyFailed": "링크를 복사하지 못했습니다",
+          "ogImageDownloadFailed": "미리보기 이미지를 다운로드하지 못했습니다",
+          "originalImageDownloadFailed": "원본 이미지를 다운로드하지 못했습니다"
+        },
+        "ogImage": {
+          "title": "공유 미리보기",
+          "alt": "사진 공유 미리보기 이미지",
+          "loading": "불러오는 중...",
+          "loadError": "불러오기 실패"
+        },
+        "fallback": {
+          "photoTitle": "아름다운 사진"
+        },
+        "text": {
+          "prefix": "이 사진을 확인해 보세요:"
+        },
+        "embed": {
+          "title": "사진 삽입",
+          "copy": "삽입 코드 복사",
+          "description": "이 사진을 삽입하려면 이 코드를 웹사이트에 붙여넣으세요.",
+          "copied": "삽입 코드가 클립보드에 복사되었습니다",
+          "copyFailed": "삽입 코드를 복사하지 못했습니다"
+        }
+      },
+      "backtotop": {
+        "tooltip": "맨 위로",
+        "ariaLabel": "맨 위로"
+      },
+      "more": {
+        "label": "더 많은 작업"
+      }
+    },
+    "activeFiltersHero": {
+      "headline": "결과 {count}건",
+      "results": "사진",
+      "search": "검색:",
+      "clearAll": "모든 필터 지우기"
+    },
+    "stats": {
+      "totalPhotosWithRange": "{range}, @:plural.photo 총합",
+      "noPhotosTip": "아직 사진이 없습니다. 지금 업로드해 보세요!"
+    },
+    "livePhoto": "Live Photo",
+    "indexPanelCountCity": "그 외 도시 {count}개 더",
+    "album": {
+      "noImage": "빈 앨범",
+      "emptyAlbumTip": "사진을 추가해 시작하세요",
+      "noDescription": "설명 없음",
+      "scanPhotos": "사진"
+    },
+    "loading": "불러오는 중",
+    "photo": {
+      "untitled": "제목 없음",
+      "altFallback": "사진",
+      "loadError": "이미지 불러오기 실패",
+      "retry": "다시 시도",
+      "avatarAlt": "작성자의 아바타"
+    },
+    "authForm": {
+      "logoAlt": "앱 로고"
+    },
+    "histogram": {
+      "rendering": "렌더링 중",
+      "loadError": "히스토그램 불러오기 실패"
+    },
+    "calendarHeatmap": {
+      "on": "에",
+      "contributions": "기여"
+    }
+  },
+  "album": {
+    "notFound": "앨범을 찾을 수 없습니다",
+    "empty": "이 앨범은 비어 있습니다",
+    "noDateInfo": "날짜 정보 없음",
+    "noPhotosTip": "아직 이 앨범에 사진이 없습니다",
+    "emptyAlbumTitle": "이 앨범은 비어 있습니다",
+    "emptyAlbumDescription": "더 멋진 순간들이 여기에 담길 것입니다.",
+    "failedToLoadTitle": "앨범 불러오기 실패",
+    "failedToLoadDescription": "앨범을 불러오는 중 오류가 발생했습니다.",
+    "failedToLoad": "앨범을 불러오지 못했습니다",
+    "backToAlbums": "앨범으로 돌아가기",
+    "noDescription": "설명이 제공되지 않았습니다",
+    "photo": "사진 없음 | 사진 1장 | 사진 {count}장",
+    "createdAt": "{time}에 생성됨",
+    "metadata": {
+      "photos": "사진",
+      "dateRange": "날짜 범위",
+      "created": "생성됨"
+    },
+    "createdTooltip": "생성일: {date}"
+  },
+  "map": {
+    "cluster": {
+      "details": "상세 내용을 보려면 클릭하세요",
+      "nearbyPhotos": "근처 사진 {0}장",
+      "altFallback": "클러스터 {id}"
+    },
+    "photo": {
+      "altFallback": "사진 {id}",
+      "unknownCoord": "알 수 없음"
+    }
+  },
+  "minimap": {
+    "loading": "미니맵 불러오는 중..."
+  },
+  "viewer": {
+    "hint": {
+      "livePhoto": {
+        "mobile": "길게 눌러 Live Photo 재생 · 더블클릭 또는 핀치 확대",
+        "desktop": "재생 아이콘에 마우스 올리기 · 더블클릭/스크롤 확대"
+      },
+      "mobile": "더블클릭 또는 핀치 확대",
+      "desktop": "더블클릭 또는 마우스 휠로 확대"
+    },
+    "reaction": {
+      "add": "반응",
+      "change": "반응함",
+      "count": "반응 없음 | 반응 {count}개 | 반응 {count}개",
+      "like": "멋진 사진",
+      "love": "사랑해요",
+      "amazing": "놀라워요",
+      "funny": "하하",
+      "wow": "와우",
+      "sad": "감동적인",
+      "fire": "대단해요",
+      "sparkle": "반짝이는",
+      "error": {
+        "title": "반응 실패",
+        "rateLimited": "요청이 너무 많습니다. 나중에 다시 시도해 주세요"
+      }
+    },
+    "share": "사진 공유",
+    "close": "닫기",
+    "photoload": {
+      "loadError": "이미지 불러오기 실패",
+      "loading": "이미지 불러오는 중",
+      "converting": "변환 중...",
+      "loadingWebGL": "WebGL 불러오는 중...",
+      "loadingHEIC": "HEIC 이미지 불러오는 중...",
+      "loadingTexture": "텍스처 생성 중"
+    }
+  },
+  "exif": {
+    "sections": {
+      "info": "사진 정보",
+      "basic": "기본 정보",
+      "deviceInfomation": "촬영 장비 정보",
+      "specification": "기술 파라미터",
+      "rating": "별점",
+      "tags": "키워드",
+      "albums": "포함된 앨범",
+      "histogram": "히스토그램",
+      "capture": {},
+      "shooting": {
+        "parameters": "촬영 파라미터",
+        "mode": "촬영 모드"
+      }
+    },
+    "aperture": "조리개 값",
+    "dateTaken": {
+      "title": "촬영 시각"
+    },
+    "filename": "파일명",
+    "format": "포맷",
+    "dimensions": "크기",
+    "fileSize": "파일 크기",
+    "resolution": "해상도",
+    "pixels": "픽셀",
+    "copyright": "저작권",
+    "exposureBias": "노출 보정",
+    "colorSpace": {
+      "title": "색 공간"
+    },
+    "artist": "작성자",
+    "software": "소프트웨어",
+    "tz": "시간대",
+    "country": "국가",
+    "city": "도시",
+    "gps": {
+      "title": "좌표",
+      "latitude": "위도",
+      "longitude": "경도",
+      "altitude": "고도",
+      "address": "주소",
+      "location": "위치 정보"
+    },
+    "focal": {
+      "length": {
+        "actual": "초점 거리",
+        "equivalent": "35mm 환산"
+      },
+      "plane": {
+        "resolution": "초점면 해상도"
+      }
+    },
+    "exposure": {
+      "time": "노출 시간",
+      "program": "노출 프로그램",
+      "mode": "노출 모드"
+    },
+    "camera": "카메라",
+    "lens": "렌즈",
+    "maxAperture": "최대 조리개",
+    "wb": {
+      "title": "화이트 밸런스",
+      "shiftAB": "WB 오프셋(호박-파랑)",
+      "shiftGM": "WB 오프셋(초록-자홍)",
+      "bias": "WB 바이어스",
+      "fineTune": "WB 미세조정"
+    },
+    "metering": {
+      "title": "측광 모드"
+    },
+    "flash": {
+      "title": "플래시",
+      "meteringMode": "플래시 측광 모드"
+    },
+    "scene": {
+      "captureType": "장면 캡처 유형"
+    },
+    "brightness": {
+      "value": "밝기"
+    },
+    "sensing": {
+      "method": "센싱 방식"
+    },
+    "histogram": {
+      "title": "히스토그램"
+    },
+    "tone": {
+      "analysis": "톤 분석",
+      "toneType": "톤 유형",
+      "brightness": "밝기",
+      "contrast": "대비",
+      "shadowRatio": "그림자 비율",
+      "highlightRatio": "하이라이트 비율",
+      "low-key": "로우 키",
+      "high-key": "하이 키",
+      "normal": "보통",
+      "high-contrast": "고대비"
+    },
+    "lightSource": {
+      "title": "광원"
+    },
+    "values": {
+      "exposureProgram": {
+        "notDefined": "정의되지 않음",
+        "manual": "수동",
+        "programAe": "프로그램 AE",
+        "aperturePriorityAe": "조리개 우선 AE",
+        "shutterSpeedPriorityAe": "셔터 속도 우선 AE",
+        "creativeSlowSpeed": "창의적(저속 셔터)",
+        "actionHighSpeed": "액션(고속 셔터)",
+        "portrait": "인물",
+        "landscape": "풍경",
+        "bulb": "벌브"
+      },
+      "exposureMode": {
+        "auto": "자동",
+        "manual": "수동",
+        "autoBracket": "자동 브라켓"
+      },
+      "flash": {
+        "noFlash": "플래시 안 터짐",
+        "fired": "발광됨",
+        "firedReturnNotDetected": "발광됨, 반사광 감지 안 됨",
+        "firedReturnDetected": "발광됨, 반사광 감지됨",
+        "onDidNotFire": "켜짐, 발광 안 됨",
+        "onFired": "켜짐, 발광됨",
+        "onReturnNotDetected": "켜짐, 반사광 감지 안 됨",
+        "onReturnDetected": "켜짐, 반사광 감지됨",
+        "offDidNotFire": "꺼짐, 발광 안 됨",
+        "offDidNotFireReturnNotDetected": "꺼짐, 발광 안 됨, 반사광 감지 안 됨",
+        "autoDidNotFire": "자동, 발광 안 됨",
+        "autoFired": "자동, 발광됨",
+        "autoFiredReturnNotDetected": "자동, 발광됨, 반사광 감지 안 됨",
+        "autoFiredReturnDetected": "자동, 발광됨, 반사광 감지됨",
+        "noFlashFunction": "플래시 기능 없음",
+        "offNoFlashFunction": "꺼짐, 플래시 기능 없음",
+        "firedRedEyeReduction": "발광됨, 적목 감소",
+        "firedRedEyeReductionReturnNotDetected": "발광됨, 적목 감소, 반사광 감지 안 됨",
+        "firedRedEyeReductionReturnDetected": "발광됨, 적목 감소, 반사광 감지됨",
+        "onRedEyeReduction": "켜짐, 적목 감소",
+        "onRedEyeReductionReturnNotDetected": "켜짐, 적목 감소, 반사광 감지 안 됨",
+        "onRedEyeReductionReturnDetected": "켜짐, 적목 감소, 반사광 감지됨",
+        "offRedEyeReduction": "꺼짐, 적목 감소",
+        "autoDidNotFireRedEyeReduction": "자동, 발광 안 됨, 적목 감소",
+        "autoFiredRedEyeReduction": "자동, 발광됨, 적목 감소",
+        "autoFiredRedEyeReductionReturnNotDetected": "자동, 발광됨, 적목 감소, 반사광 감지 안 됨",
+        "autoFiredRedEyeReductionReturnDetected": "자동, 발광됨, 적목 감소, 반사광 감지됨"
+      },
+      "meteringMode": {
+        "unknown": "알 수 없음",
+        "average": "평균",
+        "centerWeightedAverage": "중앙 중점 평균",
+        "spot": "스팟",
+        "multiSpot": "멀티 스팟",
+        "multiSegment": "멀티 세그먼트",
+        "partial": "부분",
+        "other": "기타"
+      },
+      "whiteBalance": {
+        "auto": "자동",
+        "manual": "수동",
+        "auto1": "일반 보정, 중립",
+        "auto2": "주변 따뜻한 톤 유지"
+      },
+      "sceneCaptureType": {
+        "standard": "표준",
+        "landscape": "풍경",
+        "portrait": "인물",
+        "night": "야경",
+        "other": "기타"
+      },
+      "sensingMethod": {
+        "notDefined": "정의되지 않음",
+        "monochromeArea": "단색 영역",
+        "oneChipColorArea": "단일 칩 컬러 영역",
+        "twoChipColorArea": "이중 칩 컬러 영역",
+        "threeChipColorArea": "삼중 칩 컬러 영역",
+        "colorSequentialArea": "색상 순차 영역",
+        "monochromeLinear": "단색 선형",
+        "trilinear": "삼선형",
+        "colorSequentialLinear": "색상 순차 선형"
+      },
+      "colorSpace": {
+        "srgb": "sRGB",
+        "adobeRgb": "Adobe RGB",
+        "wideGamutRgb": "Wide Gamut RGB",
+        "displayP3": "Display P3",
+        "iccProfile": "ICC Profile",
+        "uncalibrated": "보정 안 됨",
+        "rgb": "RGB"
+      }
+    },
+    "iso": "ISO",
+    "metadataButton": "사진 메타데이터"
+  },
+  "title": {
+    "gallery": "갤러리",
+    "language": "언어",
+    "fallback": {
+      "photo": "사진"
+    },
+    "dashboard": "대시보드",
+    "photos": "사진",
+    "trash": "휴지통",
+    "locations": "위치",
+    "globe": "사진 지구본",
+    "queue": "큐 관리",
+    "logs": "시스템 로그",
+    "albums": "앨범",
+    "siteAdministration": "사이트 설정",
+    "location": "위치 서비스",
+    "generalSettings": "일반 설정",
+    "interfaceSettings": "인터페이스 설정",
+    "loaderSettings": "로더 설정",
+    "appearanceSettings": "외관 설정",
+    "privacySettings": "개인정보 설정",
+    "mapAndLocation": "지도 및 위치",
+    "storageSettings": "스토리지 설정",
+    "systemSettings": "시스템 설정",
+    "analyticsSettings": "분석 및 추적",
+    "securitySettings": "보안"
+  },
+  "albums": {
+    "scan": {
+      "loading": "불러오는 중...",
+      "notFound": "앨범을 찾을 수 없습니다",
+      "lockedTitle": "이 앨범은 잠겨 있습니다",
+      "lockedHint": "이 앨범을 보려면 비밀번호를 입력하세요.",
+      "passwordPlaceholder": "비밀번호 입력",
+      "unlock": "잠금 해제",
+      "unlocking": "잠금 해제 중…",
+      "wrongPassword": "비밀번호가 올바르지 않습니다. 다시 시도해 주세요",
+      "unlockError": "잠금을 해제하지 못했습니다. 나중에 다시 시도해 주세요.",
+      "passwordRequired": "비밀번호를 입력해 주세요",
+      "passwordCorrect": "비밀번호가 확인되었습니다. 앨범 잠금 해제 중…",
+      "subAlbums": "하위 앨범",
+      "photos": "사진",
+      "close": "닫기",
+      "prev": "이전",
+      "next": "다음",
+      "redirecting": "앨범으로 이동 중…",
+      "customUrlRedirect": "앨범 리디렉션",
+      "backToAlbums": "앨범으로 돌아가기"
+    }
+  },
+  "auth": {
+    "form": {
+      "errors": {
+        "invalidEmail": "올바르지 않은 이메일 주소",
+        "invalidPassword": "비밀번호는 최소 6자 이상이어야 합니다",
+        "emailAndPasswordMissing": "이메일과 비밀번호를 입력해 주세요",
+        "emailMissing": "이메일을 입력해 주세요",
+        "passwordMissing": "비밀번호를 입력해 주세요",
+        "codeMissing": "인증 코드를 입력해 주세요",
+        "invalidCode": "인증 코드는 6~8자리 숫자여야 합니다"
+      },
+      "signin": {
+        "title": "로그인",
+        "subtitle": "{0}에 로그인",
+        "twoFactorTitle": "2단계 인증",
+        "twoFactorSubtitle": "인증 앱의 6자리 코드를 입력하세요"
+      },
+      "action": {
+        "backToHome": "홈으로 돌아가기",
+        "or": "또는",
+        "continue": "로그인",
+        "verify": "확인",
+        "back": "뒤로"
+      },
+      "labels": {
+        "email": "이메일",
+        "password": "비밀번호",
+        "verifyCode": "인증 코드"
+      }
+    },
+    "messages": {
+      "loginInvalid": "계정 또는 비밀번호가 올바르지 않습니다",
+      "loginFailed": {
+        "title": "로그인 실패",
+        "description": "예기치 않은 오류가 발생했습니다. 다시 시도해 주세요."
+      },
+      "loginSuccess": {
+        "title": "로그인됨",
+        "description": "다시 오신 것을 환영합니다. 대시보드로 이동합니다."
+      }
+    },
+    "poster": {
+      "title": "남겨두고 싶은 모든 빛의 순간"
+    },
+    "footer": {
+      "hint": "나만의 컬렉션 · 갤러리로 들어가세요"
+    }
+  },
+  "common": {
+    "unknown": "알 수 없음",
+    "unsavedChanges": "저장되지 않은 변경 사항이 있습니다.",
+    "months": {
+      "jan": "1월",
+      "feb": "2월",
+      "mar": "3월",
+      "apr": "4월",
+      "may": "5월",
+      "jun": "6월",
+      "jul": "7월",
+      "aug": "8월",
+      "sep": "9월",
+      "oct": "10월",
+      "nov": "11월",
+      "dec": "12월"
+    },
+    "days": {
+      "sun": "일",
+      "mon": "월",
+      "tue": "화",
+      "wed": "수",
+      "thu": "목",
+      "fri": "금",
+      "sat": "토"
+    },
+    "heatmap": {
+      "legend": {
+        "less": "적음",
+        "more": "많음",
+        "recentlyYear": "지난 1년"
+      },
+      "tooltip": {
+        "data": "{0}님이 사진 {1}장을 찍었습니다",
+        "noData": "{0}님의 사진이 없습니다"
+      }
+    },
+    "actions": {
+      "save": "저장",
+      "saveSettings": "설정 저장",
+      "reset": "초기화",
+      "cancel": "취소",
+      "continue": "계속",
+      "delete": "삭제",
+      "close": "닫기"
+    },
+    "unknownError": "알 수 없는 오류"
+  },
+  "upload": {
+    "duplicate": {
+      "block": {
+        "title": "파일이 이미 존재함",
+        "message": "사진 \"{fileName}\"이(가) 이미 존재하며 중복 업로드는 허용되지 않습니다",
+        "suggestion": "다음을 할 수 있습니다: 1) 파일 이름을 바꾸고 다시 업로드; 2) 설정에서 \"경고 모드\"로 전환하여 덮어쓰기 허용"
+      },
+      "skip": {
+        "title": "중복 파일 건너뜀",
+        "message": "사진 \"{fileName}\"이(가) 이미 존재하여 자동으로 건너뛰었습니다",
+        "info": "기존 사진 촬영일: {dateTaken}"
+      },
+      "warn": {
+        "title": "중복 파일 감지됨",
+        "message": "사진 \"{fileName}\"이(가) 이미 존재합니다. 계속하면 기존 사진을 덮어씁니다",
+        "warning": "기존 사진 파일 덮어쓰기",
+        "info": "기존 사진: {title}, 촬영일: {dateTaken}"
+      }
+    },
+    "success": {
+      "upload": {
+        "single": "사진이 성공적으로 업로드되었습니다. 처리 중...",
+        "multiple": "사진 {count}장이 성공적으로 업로드되었습니다. 처리 중..."
+      },
+      "check": {
+        "title": "검사 완료",
+        "message": "파일 {total}개를 검사하여 중복 {duplicates}개를 발견했습니다"
+      }
+    },
+    "error": {
+      "required": {
+        "title": "필수 파라미터 누락",
+        "message": "{field} 파라미터를 제공해 주세요"
+      },
+      "invalidType": {
+        "title": "지원되지 않는 파일 형식",
+        "message": "지원되지 않는 미디어 유형: {type}",
+        "suggestion": "허용 형식: {allowed}"
+      },
+      "tooLarge": {
+        "title": "파일이 너무 큼",
+        "message": "파일 크기 {size}MB가 한도를 초과했습니다",
+        "suggestion": "최대 허용: {maxSize}MB"
+      },
+      "uploadFailed": {
+        "title": "업로드 실패",
+        "message": "업로드 중 오류가 발생했습니다. 나중에 다시 시도해 주세요"
+      }
+    },
+    "runtimeError": {
+      "networkFailed": "네트워크 연결 실패",
+      "clientError": "클라이언트 오류 ({status})",
+      "serverError": "서버 오류 ({status})",
+      "networkError": "네트워크 오류 (상태: {status})",
+      "timeout": "업로드 시간 초과 ({timeout}ms)",
+      "aborted": "업로드 중단됨",
+      "badRequest": "잘못된 요청 형식",
+      "unauthorized": "인증되지 않은 접근",
+      "forbidden": "접근 금지",
+      "notFound": "업로드 엔드포인트를 찾을 수 없음",
+      "conflict": "파일 충돌",
+      "fileTooLarge": "파일이 너무 큼",
+      "unsupportedType": "지원되지 않는 파일 형식",
+      "rateLimited": "업로드 요청 한도 초과",
+      "internalServerError": "내부 서버 오류",
+      "serviceUnavailable": "서버를 일시적으로 사용할 수 없음",
+      "httpError": "HTTP 오류: {status}",
+      "retrying": "{message} (시도 {attempt}/{max})"
+    },
+    "progress": {
+      "calculating": "계산 중...",
+      "seconds": "{seconds}초"
+    }
+  },
+  "dashboard": {
+    "photos": {
+      "title": "사진 업로드",
+      "subtitle": "사진은 자동으로 처리되어 라이브러리에 추가됩니다. 이후 {0} 섹션에서 사진을 정리할 수 있습니다.",
+      "supportedFormats": "JPEG / PNG / HEIC / Live Photo / Motion Photo",
+      "maxFileSize": "최대 {size}MB",
+      "buttons": {
+        "upload": "사진 업로드",
+        "queue": "작업 큐"
+      },
+      "uploader": {
+        "label": "사진을 끌어다 놓거나 클릭하여 선택하세요",
+        "description": "JPEG, PNG, HEIC 형식의 사진과 MOV 형식의 Live Photo 동영상을 지원합니다. 파일당 최대 크기: {maxSize}MB"
+      },
+      "toolbar": {
+        "title": "사진 관리",
+        "filter": "필터",
+        "refresh": "새로고침"
+      },
+      "photoFilter": {
+        "all": "모든 사진",
+        "livephoto": "Live Photo",
+        "static": "일반 사진"
+      },
+      "stats": {
+        "photos": "사진",
+        "livePhotos": "Live Photo"
+      },
+      "pagination": {
+        "showing": "{total}개 중 {start}–{end} 표시"
+      },
+      "table": {
+        "columns": {
+          "thumbnail": {
+            "title": "썸네일",
+            "action": "새 탭에서 사진 열기"
+          },
+          "id": "사진 ID",
+          "title": "사진 제목",
+          "tags": "키워드",
+          "rating": "별점",
+          "isLivePhoto": "Live Photo",
+          "location": "위치",
+          "dateTaken": "촬영일",
+          "lastModified": "수정일",
+          "fileSize": "파일 크기",
+          "colorSpace": "색 공간",
+          "reactions": "반응",
+          "actions": "작업"
+        },
+        "cells": {
+          "noTags": "태그 없음",
+          "noRating": "별점 없음",
+          "noGps": "GPS 정보 없음",
+          "unknown": "알 수 없음",
+          "staticPhoto": "일반 사진",
+          "noReactions": "반응 없음"
+        },
+        "columnVisibility": {
+          "button": "열",
+          "description": "열 표시/숨기기 토글"
+        },
+        "selectAllAria": "전체 선택",
+        "selectRowAria": "행 선택",
+        "thumbnailAlt": "사진 썸네일"
+      },
+      "actions": {
+        "reprocess": "재처리",
+        "refreshLocation": "도시 다시 가져오기",
+        "eraseLocationInfo": "위치 정보 삭제",
+        "delete": "삭제",
+        "editMetadata": "메타데이터 편집",
+        "previewPhoto": "사진 미리보기"
+      },
+      "selection": {
+        "selected": "{count} / {total}개 행 선택됨",
+        "batchReprocess": "재처리",
+        "batchEraseLocation": "위치 정보 삭제",
+        "batchDownload": "다운로드",
+        "batchDelete": "일괄 삭제",
+        "enterSelectMode": "사진 선택",
+        "exitSelectMode": "선택 종료"
+      },
+      "slideover": {
+        "title": "사진 업로드",
+        "description": "파일을 끌어다 놓거나 선택하세요. 사진은 자동으로 처리되어 라이브러리에 추가됩니다.",
+        "options": {
+          "eraseLocation": {
+            "label": "업로드 시 위치 정보 삭제",
+            "description": "이 업로드는 시스템 기본값을 재정의할 수 있으며 언제든지 켜거나 끌 수 있습니다."
+          },
+          "uploadTarget": {
+            "label": "업로드 위치",
+            "description": "파일을 로컬 스토리지에 저장할지 외부 스캔 라이브러리에 저장할지 선택하세요.",
+            "localStorage": "로컬 스토리지",
+            "defaultHint": "기본 업로드 위치"
+          },
+          "duplicateCheck": {
+            "label": "중복 파일 처리 전략",
+            "descriptionEnabled": "중복 감지가 활성화되어 있으며 동일한 이름의 파일은 선택한 처리 모드에 따라 처리됩니다.",
+            "descriptionDisabled": "중복 감지가 비활성화되어 있어 동일한 이름의 파일은 업로드를 통해 그대로 진행됩니다.",
+            "enabled": "감지 활성화됨",
+            "disabled": "감지 비활성화됨",
+            "currentMode": "현재 모드: {mode}"
+          }
+        },
+        "buttons": {
+          "clear": "선택 지우기",
+          "upload": "파일 {count}개 업로드"
+        },
+        "footer": {
+          "noSelection": "업로드할 사진을 선택해 주세요",
+          "prepared": "파일 {count}개 · {size}"
+        }
+      },
+      "delete": {
+        "single": {
+          "title": "사진 삭제",
+          "message": "이 사진을 삭제하시겠습니까?"
+        },
+        "batch": {
+          "title": "사진 일괄 삭제",
+          "message": "선택한 사진 {count}장을 삭제하시겠습니까?"
+        },
+        "warning": "삭제된 사진은 휴지통으로 이동됩니다. 나중에 복원하거나 영구 삭제할 수 있습니다.",
+        "buttons": {
+          "cancel": "취소",
+          "confirm": "삭제 확인"
+        }
+      },
+      "trash": {
+        "title": "사진 휴지통",
+        "subtitle": "삭제된 사진이 일시적으로 여기에 이동됩니다. 복원하거나 영구 삭제할 수 있습니다.",
+        "version": "휴지통 열기",
+        "empty": "휴지통이 비어 있습니다",
+        "emptyHint": "삭제한 사진이 여기에 표시됩니다.",
+        "deletedAtColumn": "삭제일",
+        "originalInLibrary": "라이브러리 사진",
+        "countTooltip": "휴지통에 있는 사진 수",
+        "actions": {
+          "restore": "복원",
+          "restoreAll": "모두 복원",
+          "empty": "휴지통 비우기",
+          "deleteForever": "영구 삭제",
+          "deleteForeverAll": "전체 영구 삭제"
+        },
+        "confirm": {
+          "restore": {
+            "title": "사진 복원",
+            "message": "이 사진을 복원하시겠습니까? 원래 위치로 돌아갑니다."
+          },
+          "restoreAll": {
+            "title": "모두 복원",
+            "message": "휴지통의 사진 {count}장을 모두 복원하시겠습니까?"
+          },
+          "deleteForever": {
+            "title": "영구 삭제",
+            "message": "이 작업은 원본, 썸네일 및 Live Photo 동영상을 영구 삭제합니다. 되돌릴 수 없습니다. 계속하시겠습니까?"
+          },
+          "deleteForeverAll": {
+            "title": "휴지통 비우기",
+            "message": "이 작업은 사진 {count}장과 해당 파일을 모두 영구 삭제합니다. 되돌릴 수 없습니다. 계속하시겠습니까?"
+          }
+        },
+        "messages": {
+          "restoreSuccess": "사진이 복원되었습니다",
+          "restoreAllSuccess": "사진 {count}장을 복원했습니다",
+          "deleteForeverSuccess": "사진이 영구 삭제되었습니다",
+          "deleteForeverAllSuccess": "휴지통이 비워졌습니다",
+          "empty": "휴지통이 비워졌습니다",
+          "confirm": "확인",
+          "cancel": "취소"
+        }
+      },
+      "livePhotoModal": {
+        "title": "Live Photo: {title}",
+        "staticImage": "정지 이미지",
+        "livePhotoVideo": "Live Photo 동영상",
+        "buttons": {
+          "openVideo": "새 창에서 동영상 열기",
+          "downloadVideo": "동영상 다운로드",
+          "close": "닫기"
+        },
+        "notSupported": "브라우저가 동영상 재생을 지원하지 않습니다"
+      },
+      "messages": {
+        "uploadSuccess": "사진이 성공적으로 업로드되었습니다. 처리 중...",
+        "uploadMultipleSuccess": "사진 {count}장이 성공적으로 업로드되었습니다. 처리 중...",
+        "reprocessSuccess": "재처리 작업이 추가되었습니다",
+        "batchReprocessSuccess": "사진 {count}장을 재처리 큐에 성공적으로 제출했습니다",
+        "batchReprocessing": "재처리 작업을 제출하는 중...",
+        "reprocessTaskId": "작업 ID: {taskId}",
+        "deleteSuccess": "사진이 성공적으로 삭제되었습니다",
+        "batchDeleteSuccess": "사진 {count}장을 성공적으로 삭제했습니다",
+        "batchSelectRequired": "이 작업을 수행하려면 사진을 최소 1장 선택해 주세요",
+        "noStorageKey": "처리할 수 없음: 스토리지 정보 누락",
+        "batchNoStorageKey": "사진 {count}장에 스토리지 정보가 없어 처리할 수 없습니다",
+        "batchNoUrl": "다운로드 URL이 있는 사진이 없습니다",
+        "batchPartialUrl": "사진 {total}장 중 {count}장만 다운로드 URL이 있습니다",
+        "downloadStarted": "다운로드 시작됨",
+        "downloadingCount": "사진 {count}장 다운로드 중...",
+        "batchDownloadSuccess": "일괄 다운로드가 성공적으로 완료되었습니다",
+        "batchDownloadFailed": "일괄 다운로드 실패",
+        "batchDownloadPartial": "일부 실패가 있었지만 일괄 다운로드가 완료되었습니다",
+        "downloadedCount": "사진 {count}장을 다운로드했습니다",
+        "downloadFailedCount": "사진 {count}장을 다운로드하지 못했습니다",
+        "downloadPartialCount": "사진 {success}장 다운로드 성공, {failed}장 실패",
+        "warning": "경고",
+        "error": "오류가 발생했습니다",
+        "deleteFailed": "사진 삭제 실패",
+        "batchDeleteFailed": "일괄 삭제 실패",
+        "batchReprocessFailed": "일괄 재처리 실패",
+        "reprocessFailed": "사진 재처리 실패",
+        "livePhotoNotFound": "Live Photo가 아닙니다",
+        "livePhotoLoadError": "Live Photo 정보를 불러올 수 없습니다",
+        "metadataUpdateSuccess": "사진 메타데이터가 업데이트되었습니다",
+        "metadataUpdateFailed": "사진 메타데이터 업데이트 실패",
+        "photoNotFound": "사진을 찾을 수 없습니다",
+        "photoFileMissing": "사진 파일이 없습니다",
+        "noChangesProvided": "적용할 변경 사항이 없습니다",
+        "queueUnavailable": "작업 큐를 사용할 수 없습니다",
+        "reverseGeocodeQueued": "역지오코딩 작업이 큐에 추가되었습니다",
+        "reverseGeocodeFailed": "역지오코딩 작업을 큐에 추가하지 못했습니다",
+        "eraseLocationQueued": "위치 정보 삭제 작업이 큐에 추가되었습니다",
+        "eraseLocationFailed": "위치 정보 삭제 작업을 큐에 추가하지 못했습니다",
+        "batchEraseLocationQueued": "위치 삭제 작업 {count}개를 큐에 추가했습니다",
+        "batchEraseLocationFailed": "일괄 위치 삭제 작업을 큐에 추가하지 못했습니다",
+        "taskSubmitFailed": "작업 제출 실패",
+        "taskStatusCheckFailed": "작업 상태 확인 실패",
+        "uploadFailed": "업로드 실패"
+      },
+      "errors": {
+        "noSelection": "업로드할 사진을 선택해 주세요",
+        "fileValidationFailed": "파일 검증 실패",
+        "allFilesValidationFailed": "모든 파일의 검증에 실패했습니다",
+        "allFilesTooLarge": "선택한 파일 {count}개 모두 최대 크기 제한({maxSize}MB)을 초과했습니다.",
+        "filesTooLargeSkipped": "크기가 초과된 파일 {count}개를 건너뛰었습니다(제한 {maxSize}MB). 나머지 파일은 계속 업로드됩니다.",
+        "filesUnsupportedSkipped": "지원되지 않는 형식의 파일 {count}개를 건너뛰었습니다. 나머지 파일은 계속 업로드됩니다.",
+        "unsupportedFormat": "지원되지 않는 파일 형식: {type}. JPEG, PNG, HEIC 사진 또는 MOV 형식의 Live Photo 동영상을 선택해 주세요.",
+        "fileTooLarge": "파일이 너무 큽니다: {size}MB. 최대 지원: {maxSize}MB.",
+        "uploadFailed": "업로드 실패",
+        "uploadNetworkError": "네트워크 연결 실패 또는 CORS 오류. 네트워크 및 스토리지 구성을 확인해 주세요.",
+        "uploadCorsError": "CORS 요청에 실패했습니다. 스토리지 CORS 구성을 확인해 주세요.",
+        "uploadUnauthorized": "인증되지 않았습니다. 다시 로그인해 주세요.",
+        "taskSubmitFailed": "처리 작업 제출 실패",
+        "taskStatusCheckFailed": "작업 상태 확인에 실패했습니다. 페이지를 새로고침하고 다시 시도해 주세요."
+      },
+      "processing": {
+        "preparing": "준비 중",
+        "uploading": "업로드 중",
+        "processing": "처리 중",
+        "completed": "완료됨",
+        "error": "오류",
+        "skipped": "건너뜀",
+        "blocked": "차단됨"
+      },
+      "uploadQueue": {
+        "clearCompleted": "완료된 작업 지우기",
+        "clearAll": "모든 작업 지우기",
+        "taskCleared": "완료된 작업을 지웠습니다",
+        "allTasksCleared": "모든 업로드 작업을 지웠습니다",
+        "tasksCleared": "작업 {count}개를 지웠습니다"
+      },
+      "editModal": {
+        "title": "사진 세부 정보 편집",
+        "description": "제목, 설명, 태그 및 촬영 위치를 업데이트합니다.",
+        "fields": {
+          "title": "제목",
+          "description": "설명",
+          "tags": "태그",
+          "tagsHint": "각 태그를 추가하려면 Enter를 누르세요.",
+          "location": "위치",
+          "locationHint": "촬영 위치를 설정하려면 지도를 클릭하세요.",
+          "clearLocation": "위치 정보 삭제",
+          "coordinates": "좌표",
+          "noLocation": "선택된 위치가 없습니다",
+          "rating": "별점",
+          "ratingHint": "별을 클릭하여 사진 별점을 설정하세요(0-5점).",
+          "noRating": "별점 없음",
+          "panoramaTitle": "360° 파노라마",
+          "panoramaHint": "360으로 자동 감지되지 않는 사진에 대해 구형 보기를 강제로 활성화합니다.",
+          "panoramaAuto": "자동",
+          "panoViewTitle": "고정 초기 뷰",
+          "panoViewHint": "이 뷰를 가리키며 파노라마를 엽니다. 비워두면 기본값을 사용합니다.",
+          "panoViewClear": "고정 뷰 지우기",
+          "panoYaw": "요 (°)",
+          "panoPitch": "피치 (°)"
+        },
+        "actions": {
+          "cancel": "취소",
+          "save": "변경 사항 저장"
+        }
+      },
+      "uploadQueueItem": {
+        "status": {
+          "waiting": "대기 중",
+          "preparing": "준비 중",
+          "uploading": "업로드 중 {0}%",
+          "pendingProcessing": "처리 대기 중",
+          "completed": "완료됨",
+          "error": "오류",
+          "skipped": "건너뜀",
+          "blocked": "차단됨",
+          "unknown": "알 수 없음"
+        },
+        "stage": {
+          "preprocessing": "전처리",
+          "metadata": "메타데이터 추출",
+          "thumbnail": "썸네일 생성",
+          "exif": "EXIF 처리",
+          "reverseGeocoding": "역지오코딩",
+          "livePhoto": "Live Photo 감지"
+        },
+        "actions": {
+          "abort": "중단",
+          "clear": "지우기"
+        },
+        "progress": {
+          "upload": "업로드 진행률",
+          "remainingTime": "남은 시간: {0}",
+          "processing": "처리 상태"
+        },
+        "alerts": {
+          "longProcessing": "대용량 파일은 처리하는 데 더 오래 걸릴 수 있으며, 이는 정상입니다.",
+          "success": "파일이 업로드되고 처리되었습니다"
+        }
+      },
+      "uploadQueuePanel": {
+        "title": "파일 업로드 큐",
+        "stats": {
+          "waiting": "대기 중",
+          "active": "진행 중",
+          "completed": "완료됨",
+          "error": "실패",
+          "skipped": "건너뜀",
+          "blocked": "차단됨"
+        },
+        "summary": "완료 {completed}, 실패 {error}, 건너뜀 {skipped}, 차단 {blocked}",
+        "actions": {
+          "clearCompleted": "완료 항목 지우기",
+          "clearAll": "모두 지우기",
+          "goToQueue": "큐 관리"
+        }
+      },
+      "previewTitle": "사진 미리보기"
+    },
+    "albums": {
+      "title": "앨범 관리",
+      "subtitle": "사진 앨범을 만들고 관리하세요",
+      "createButton": "앨범 만들기",
+      "noAlbums": "아직 앨범이 없습니다",
+      "noAlbumsTip": "사진을 정리하려면 첫 번째 앨범을 만들어 보세요",
+      "searchPlaceholder": "앨범 검색…",
+      "totalCount_one": "앨범",
+      "totalCount_other": "앨범",
+      "searchResult_one": "검색 결과",
+      "searchResult_other": "검색 결과",
+      "searchEmpty": "일치하는 앨범이 없습니다",
+      "searchEmptyTip": "\"{keyword}\"와 관련된 앨범이 없습니다",
+      "viewGrid": "그리드 보기",
+      "viewList": "목록 보기",
+      "viewMedium": "중간 보기",
+      "subAlbums": "하위 앨범",
+      "searchClear": "검색 지우기",
+      "card": {
+        "locked": "잠김",
+        "actions": {
+          "view": "앨범 보기",
+          "edit": "편집",
+          "reset": "사용자 지정 초기화",
+          "delete": "삭제"
+        }
+      },
+      "form": {
+        "title": "제목",
+        "titlePlaceholder": "앨범 제목 입력",
+        "titleRequired": "앨범 제목을 입력해 주세요",
+        "description": "설명",
+        "descriptionPlaceholder": "앨범 설명 입력(선택)",
+        "coverPhoto": "앨범 커버",
+        "addCoverPhoto": "커버 사진 추가",
+        "selectPhotos": "사진 선택",
+        "editPhotos": "사진 선택 편집",
+        "selectedCount": "사진 {count}장 선택됨",
+        "clearAll": "모두 지우기",
+        "isHidden": "앨범 숨기기",
+        "isHiddenHint": "숨겨진 앨범의 사진은 홈 페이지에 표시되지 않습니다",
+        "customUrl": "사용자 지정 URL 슬러그",
+        "customUrlHint": "설정하면 앨범이 /albums/s/{slug} 경로로 접근됩니다. 그렇지 않으면 자동 생성된 스캔 경로가 사용됩니다.",
+        "customUrlPlaceholder": "예: my-trip-2024 (기본 경로를 사용하려면 비워 두세요)",
+        "albumUidLabel": "앨범 UID",
+        "publicLinkLabel": "공개 링크",
+        "publicLinkFallback": "사용자 지정 링크가 설정되지 않았습니다. 기본 경로가 사용됩니다.",
+        "publicLinkEmptyTip": "위의 사용자 지정 링크를 입력하면 여기에 공개 URL이 표시됩니다.",
+        "copied": "복사됨",
+        "copyLink": "링크 복사",
+        "password": "접근 비밀번호",
+        "passwordHint": "방문자는 이 앨범과 비밀번호를 재정의하지 않는 하위 앨범을 열려면 이 비밀번호를 입력해야 합니다.",
+        "passwordPlaceholder": "접근 비밀번호 설정(선택)",
+        "passwordPlaceholderSet": "현재 비밀번호를 유지하려면 비워 두세요",
+        "clearPassword": "이 앨범의 비밀번호 지우기"
+      },
+      "table": {
+        "columns": {
+          "cover": "커버",
+          "title": "제목",
+          "description": "설명",
+          "photoCount": "사진",
+          "createdAt": "생성일",
+          "actions": "작업"
+        },
+        "external": "외부",
+        "customized": "사용자 지정됨",
+        "hidden": "숨김",
+        "resetCustom": "사용자 지정 설정 지우기",
+        "expand": "하위 앨범 펼치기"
+      },
+      "modal": {
+        "selectPhotos": "사진 선택",
+        "totalPhotos": "총 {count}장",
+        "selectedPhotos": "사진 {count}장 선택됨",
+        "searchPlaceholder": "사진 검색...",
+        "searchResults": "결과: {current} / {total}",
+        "selectAll": "전체 선택",
+        "setCover": "커버로 설정",
+        "noPhotos": "사진 없음",
+        "noResults": "일치하는 사진을 찾을 수 없습니다",
+        "tryOtherKeywords": "다른 키워드를 시도해 보세요",
+        "confirm": "확인 ({count})",
+        "selectedInfo": "선택됨:",
+        "coverSetInfo": "커버가 설정되었습니다"
+      },
+      "slideover": {
+        "create": {
+          "title": "앨범 만들기",
+          "description": "사진을 정리하기 위해 새 앨범을 만드세요"
+        },
+        "edit": {
+          "title": "앨범 편집",
+          "description": "앨범 정보와 사진을 수정합니다"
+        },
+        "submitCreate": "만들기",
+        "submitEdit": "저장",
+        "cancel": "취소"
+      },
+      "delete": {
+        "title": "앨범 삭제",
+        "message": "앨범 \"{title}\"을(를) 삭제하시겠습니까? 앨범을 삭제해도 내부의 사진은 삭제되지 않으며 앨범 자체만 삭제됩니다.",
+        "cancel": "취소",
+        "confirm": "삭제 확인"
+      },
+      "reset": {
+        "title": "사용자 지정 설정 지우기",
+        "message": "\"{title}\"의 사용자 지정 설정을 지우시겠습니까? 폴더의 기본 모양이 복원됩니다. 사진이나 폴더는 삭제되지 않습니다.",
+        "confirm": "사용자 지정 설정 지우기"
+      },
+      "messages": {
+        "createSuccess": "앨범이 성공적으로 생성되었습니다",
+        "updateSuccess": "앨범이 성공적으로 업데이트되었습니다",
+        "deleteSuccess": "앨범이 성공적으로 삭제되었습니다",
+        "createError": "앨범 생성 실패",
+        "updateError": "앨범 업데이트 실패",
+        "deleteError": "앨범 삭제 실패",
+        "loadError": "앨범을 불러오지 못했습니다",
+        "loadDetailError": "앨범 세부 정보를 불러오지 못했습니다",
+        "loadPhotosError": "사진을 불러오지 못했습니다",
+        "resetSuccess": "사용자 지정 설정이 지워졌습니다",
+        "resetError": "사용자 지정 설정을 지우지 못했습니다"
+      },
+      "photoCount": "사진 {count}장"
+    },
+    "overview": {
+      "title": "개요",
+      "refreshData": "새로고침",
+      "indicator": {
+        "totalPhotos": "전체 사진",
+        "thisMonth": "이번 달 신규",
+        "queueStatus": {
+          "title": "큐 상태",
+          "processing": "처리 중",
+          "pending": "대기 중"
+        },
+        "storageUsage": "스토리지 사용량"
+      },
+      "section": {
+        "runtimeInfo": {
+          "title": "런타임 정보",
+          "version": "버전",
+          "image": "Docker 이미지",
+          "uptime": "가동 시간",
+          "environment": "환경",
+          "lastUpdate": "최종 업데이트",
+          "systems": {
+            "windows": "Microsoft Windows",
+            "windows10": "Microsoft Windows 10",
+            "windows11": "Microsoft Windows 11",
+            "ubuntu": "Ubuntu",
+            "debian": "Debian",
+            "centos": "CentOS",
+            "redhat": "Red Hat Enterprise Linux",
+            "fedora": "Fedora",
+            "arch": "Arch Linux",
+            "alpine": "Alpine Linux",
+            "opensuse": "openSUSE",
+            "macos": "macOS",
+            "docker": "Docker 컨테이너",
+            "unknown": "알 수 없는 시스템"
+          }
+        },
+        "memory": {
+          "title": "메모리 사용량"
+        },
+        "cpu": {
+          "title": "CPU 부하",
+          "label": "현재 시스템 부하"
+        },
+        "storage": {
+          "title": "스토리지",
+          "local": "로컬 스토리지",
+          "library": "외부 라이브러리"
+        },
+        "queue": {
+          "title": "큐 상태",
+          "activeWorkers": "활성 워커",
+          "totalWorkers": "전체 워커",
+          "totalProcessed": "처리됨",
+          "totalFailed": "실패 횟수",
+          "avgSuccessRate": "성공률"
+        },
+        "recentUploads": {
+          "title": "최근 업로드",
+          "empty": "아직 사진이 없습니다",
+          "viewAll": "모두 보기",
+          "previewTitle": "사진 미리보기"
+        },
+        "mediaTypes": {
+          "title": "콘텐츠 및 출처",
+          "empty": "데이터 없음",
+          "typeLabel": "유형",
+          "sourceLabel": "출처",
+          "image": "이미지",
+          "video": "동영상",
+          "upload": "업로드",
+          "library": "라이브러리"
+        }
+      },
+      "shareSite": {
+        "label": "사이트 공유",
+        "button": "사이트 공유"
+      },
+      "memoryUnavailable": "메모리 정보를 사용할 수 없음",
+      "storageUnavailable": "스토리지 정보를 사용할 수 없음",
+      "storageNetwork": "네트워크 스토리지입니다. 로컬 디스크 공간을 보고할 수 없습니다",
+      "storagePhotos": "사진 사용량"
+    },
+    "queue": {
+      "title": "큐 관리",
+      "indicator": {
+        "pending": "대기 중",
+        "processing": "처리 중",
+        "completed": "완료",
+        "failed": "실패"
+      },
+      "actions": {
+        "refresh": "데이터 새로고침",
+        "clearCompleted": "완료된 항목 지우기",
+        "clearFailed": "실패 항목 지우기",
+        "clearAll": "모두 지우기",
+        "retrySelected": "선택 항목 재시도",
+        "retryAll": "실패한 항목 모두 재시도",
+        "clearNonActive": "비활성 항목 지우기"
+      },
+      "table": {
+        "id": "작업 ID",
+        "type": "유형",
+        "status": "상태",
+        "attempts": "시도 횟수",
+        "priority": "우선순위",
+        "stage": "단계",
+        "error": "오류",
+        "errorMessage": "오류 메시지",
+        "createdAt": "생성 시각",
+        "completedAt": "완료 시각",
+        "actions": "작업",
+        "expandAria": "펼치기",
+        "detail": {
+          "photoId": "사진 ID",
+          "payload": "페이로드"
+        }
+      },
+      "status": {
+        "pending": "대기 중",
+        "in-stages": "처리 중",
+        "completed": "완료됨",
+        "failed": "실패"
+      },
+      "types": {
+        "photo": "사진 처리",
+        "live-photo-video": "LivePhoto 동영상",
+        "photo-reverse-geocoding": "사진 역지오코딩",
+        "photo-erase-location": "사진 위치 삭제"
+      },
+      "stages": {
+        "preprocessing": "전처리",
+        "metadata": "메타데이터",
+        "thumbnail": "썸네일",
+        "exif": "EXIF 처리",
+        "motion-photo": "Motion Photo 처리",
+        "reverse-geocoding": "지오코딩",
+        "live-photo": "LivePhoto 처리",
+        "location-erase": "위치 삭제"
+      },
+      "buttons": {
+        "retry": "재시도",
+        "delete": "삭제"
+      },
+      "messages": {
+        "noTasks": "작업을 찾을 수 없습니다",
+        "retrySuccess": "작업 재시도에 성공했습니다",
+        "retryFailed": "작업 재시도 실패",
+        "deleteSuccess": "작업이 성공적으로 삭제되었습니다",
+        "batchRetrySuccess": "일괄 재시도에 성공했습니다",
+        "clearSuccess": "완료 항목 지우기",
+        "operationFailed": "작업 실패",
+        "clearSuccessDescription": "작업 {count}개를 지웠습니다",
+        "clearFailed": "작업을 지우지 못했습니다",
+        "batchRetrySuccessDescription": "작업 {count}개를 재시도했습니다",
+        "batchRetryFailed": "일괄 재시도 실패",
+        "deleteFailed": "작업 삭제 실패"
+      },
+      "filters": {
+        "all": "전체",
+        "status": "상태별 필터",
+        "type": "유형별 필터"
+      },
+      "taskListTitle": "작업 큐"
+    },
+    "logs": {
+      "connectionStatus": {
+        "idle": "연결 끊김",
+        "connecting": "연결 중...",
+        "loadingHistory": "기록 불러오는 중...",
+        "live": "실시간",
+        "error": "연결 오류"
+      },
+      "search": {
+        "placeholder": "로그 내용 검색...",
+        "clearAriaLabel": "검색 입력 지우기"
+      },
+      "filter": {
+        "levelPlaceholder": "레벨 필터",
+        "tagPlaceholder": "태그 필터",
+        "all": "전체"
+      },
+      "countLabel": "전체/표시: {total}/{shown}",
+      "tagCount": "태그: {count}",
+      "empty": {
+        "waiting": "로그 데이터 대기 중...",
+        "noMatch": "일치하는 로그 항목이 없습니다"
+      },
+      "historyHint": "최신 로그 항목 {count}개 표시",
+      "loadHistory": "기록 불러오기"
+    },
+    "access": {
+      "pleaseLogin": "대시보드를 보려면 로그인해 주세요",
+      "noAccess": "이 페이지에 대한 접근 권한이 없습니다."
+    },
+    "nav": {
+      "home": "홈으로 돌아가기",
+      "documentation": "문서",
+      "albums": "앨범"
+    }
+  },
+  "settings": {
+    "app": {
+      "trash": {
+        "retention": {
+          "label": "휴지통 보존 기간",
+          "description": "사진이 영구 삭제되기 전에 휴지통에 보관되는 기간",
+          "help": "휴지통으로 이동된 사진은 이 시간이 지나면 영구 삭제됩니다. \"삭제 안 함\"을 선택하면 수동으로 삭제할 때까지 보관됩니다.",
+          "options": {
+            "never": "삭제 안 함",
+            "7": "7일",
+            "14": "14일",
+            "30": "30일",
+            "60": "60일",
+            "90": "90일",
+            "180": "180일",
+            "365": "1년"
+          }
+        }
+      },
+      "title": {
+        "label": "인스턴스 이름",
+        "description": "인스턴스의 제목"
+      },
+      "slogan": {
+        "label": "슬로건",
+        "description": "인스턴스의 슬로건",
+        "help": "홈페이지에서 제목 아래에 표시되는 슬로건"
+      },
+      "author": {
+        "label": "소유자",
+        "description": "인스턴스의 소유자 이름"
+      },
+      "avatarUrl": {
+        "label": "아바타 URL",
+        "description": "소유자의 아바타 이미지 링크",
+        "help": "아바타는 로딩 페이지와 홈페이지에 표시됩니다"
+      },
+      "siteUrl": {
+        "label": "사이트 URL (OG / 공유)",
+        "description": "공유 링크와 OG 미리보기 이미지에 사용되는 공개 주소",
+        "help": "비워두면 현재 접속 도메인을 따릅니다. LAN/IP 배포이거나 특정 도메인에 공유 링크를 고정하려면 여기에 설정하세요. 예: https://dev.1xc.top"
+      },
+      "allowedHosts": {
+        "label": "허용 호스트 (호스트 허용 목록)",
+        "description": "허용된 호스트, 도메인 또는 LAN IP의 쉼표 구분 목록",
+        "help": "허용된 소스 호스트, 도메인 또는 LAN IP의 쉼표 구분 목록으로, 저장 즉시 적용되며 재시작이 필요하지 않습니다. *.example.com 같은 와일드카드를 지원합니다. 모든 호스트를 허용하려면 *을 사용하세요 (LAN/멀티 도메인 설정에서 일반적). LAN/IP 배포에서는 *을 사용하거나 여기에 LAN IP를 추가하세요. 그렇지 않으면 OG 이미지/사이트가 차단될 수 있습니다."
+      },
+      "loader": {
+        "images": {
+          "label": "로딩 화면 카드 이미지",
+          "description": "갤러리가 로드되는 동안 로딩 카드에 표시되는 세 개의 이미지를 사용자 지정합니다",
+          "help": "비워두면 기본 리퀴드 글래스 카드를 사용합니다. 직접 이미지를 업로드할 수도 있으며, 업로드한 이미지는 직접 내장되어 별도 파일로 제공되지 않습니다.",
+          "liquid": "리퀴드 카드(기본)",
+          "preset": "내장 샘플 사진 사용",
+          "upload": "업로드",
+          "useUrl": "URL 사용",
+          "urlPlaceholder": "이미지 URL 붙여넣기…",
+          "urlEmpty": "이미지 URL을 입력해 주세요",
+          "slotLabel": "카드 {n}"
+        },
+        "cardStyle": {
+          "label": "카드 스타일",
+          "description": "로딩 카드의 시각적 스타일을 선택합니다",
+          "help": "리퀴드 글래스: 반투명 유리 카드. 스큐어모픽: 실제 액자 사진처럼 보이는 인화 사진 카드.",
+          "liquid": "리퀴드 글래스(기본)",
+          "skeuo": "스큐어모픽 카드"
+        },
+        "animation": {
+          "label": "애니메이션 스타일",
+          "description": "로딩 애니메이션 재생 방식을 선택합니다",
+          "help": "스택: 카드가 겹쳐져 좌우로 반복됩니다. 팬: 카드가 카드 분배처럼 펼쳐집니다.",
+          "stack": "스택(기본)",
+          "fan": "팬 펼침"
+        }
+      },
+      "appearance": {
+        "theme": {
+          "label": "테마",
+          "description": "애플리케이션 테마를 선택합니다",
+          "help": "사용자는 자신의 브라우저에서 이를 재정의할 수 있습니다",
+          "light": "라이트",
+          "dark": "다크",
+          "system": "시스템"
+        },
+        "themeToggle": {
+          "label": "헤더에 테마 전환 표시",
+          "description": "갤러리 헤더에 라이트/다크 전환 버튼을 표시합니다",
+          "help": "활성화하면 방문자가 헤더에서 테마를 전환할 수 있으며, 비활성화하면 방문자는 위에서 설정한 테마를 사용합니다"
+        },
+        "cardCornerRadius": {
+          "label": "사진 카드 모서리 반경",
+          "description": "갤러리 사진 카드의 둥근 모서리를 활성화합니다",
+          "help": "기본적으로 비활성화됨 (직각 모서리). 활성화하면 아래에서 설정한 반경을 사용합니다"
+        },
+        "cardCornerRadiusValue": {
+          "label": "모서리 반경 크기",
+          "description": "갤러리 사진 카드 모서리 반경 (픽셀)",
+          "help": "범위 0 - 64 px, 0은 직각 모서리를 의미합니다"
+        }
+      },
+      "upload": {
+        "maxFileSize": {
+          "label": "최대 업로드 파일 크기",
+          "description": "단일 업로드 파일의 최대 크기 (MB)",
+          "help": "즉시 적용되며 모든 사용자에게 적용됩니다"
+        }
+      }
+    },
+    "system": {
+      "sections": {
+        "thirdPartyLogin": "타사 로그인",
+        "fileProcessing": "파일 처리",
+        "debugSettings": "디버그 설정"
+      },
+      "upload": {
+        "duplicateCheck": {
+          "enabled": {
+            "label": "업로드 시 중복 파일 감지",
+            "description": "파일 이름으로 중복 사진을 감지하고 선택한 전략을 적용합니다",
+            "help": "비활성화하면 중복 사전 검사를 건너뛰고 동일한 이름의 파일이 업로드를 통해 계속됩니다"
+          },
+          "mode": {
+            "label": "중복 파일 처리 모드",
+            "description": "중복으로 감지된 파일을 처리하는 방법",
+            "help": "중복 감지가 활성화된 경우에만 적용됩니다",
+            "options": {
+              "skip": "건너뛰기",
+              "warn": "경고 후 덮어쓰기",
+              "block": "업로드 차단"
+            }
+          }
+        }
+      },
+      "webglImageViewerDebug": {
+        "label": "WebGL 이미지 뷰어 디버그 모드",
+        "description": "WebGL 이미지 뷰어가 운영 환경에서 디버그 정보를 표시할지 제어합니다",
+        "help": "활성화하면 로그인한 사용자가 모든 환경에서 WebGL 디버그 패널을 볼 수 있으며, 비활성화하면 디버그 정보는 개발 환경에서만 표시됩니다"
+      },
+      "scanAlbum": {
+        "adminBypass": {
+          "label": "관리자의 보호된 앨범 무비밀번호 접근",
+          "description": "활성화하면 로그인한 관리자가 비밀번호를 입력하지 않고 비밀번호로 보호된 앨범을 열 수 있습니다",
+          "help": "기본적으로 꺼져 있으며, 관리자도 올바른 앨범 비밀번호를 입력해야 합니다. 활성화하면 관리자가 비밀번호를 건너뛸 수 있습니다 (로그인한 관리자에게만 적용)"
+        }
+      },
+      "auth": {
+        "github": {
+          "enabled": {
+            "label": "GitHub 로그인 활성화",
+            "description": "GitHub OAuth 로그인을 활성화할지 여부"
+          },
+          "clientId": {
+            "label": "GitHub 클라이언트 ID",
+            "description": "GitHub OAuth 앱의 클라이언트 ID"
+          },
+          "clientSecret": {
+            "label": "GitHub 클라이언트 시크릿",
+            "description": "GitHub OAuth 앱의 클라이언트 시크릿"
+          }
+        }
+      },
+      "sectionDescription": "시스템 수준 동작 파라미터를 구성합니다. 여기서 변경하면 전역 업로드 및 서비스 동작에 영향을 줍니다."
+    },
+    "map": {
+      "provider": {
+        "label": "지도 제공자",
+        "description": "지도 서비스 제공자를 선택합니다"
+      },
+      "mapbox": {
+        "token": {
+          "label": "Mapbox 토큰",
+          "description": "Mapbox API 액세스 토큰",
+          "help": "도메인 제한이 없는 토큰을 사용해야 합니다"
+        },
+        "style": {
+          "label": "Mapbox 스타일",
+          "description": "Mapbox 지도 스타일 URL"
+        }
+      },
+      "maplibre": {
+        "token": {
+          "label": "MapTiler 토큰",
+          "description": "MapTiler API 액세스 토큰",
+          "help": "MapLibre는 기본적으로 무료 지도 서비스 제공자 MapTiler를 사용합니다"
+        },
+        "style": {
+          "label": "MapLibre 스타일",
+          "description": "MapLibre 지도 스타일 URL"
+        }
+      },
+      "sectionDescription": "지도 표시 및 지오코딩 서비스를 구성합니다. 지도 제공자는 지도 스타일과 액세스 자격 증명에 영향을 줍니다."
+    },
+    "location": {
+      "language": {
+        "label": "위치 언어",
+        "description": "지오코딩 위치 이름의 언어",
+        "help": "사진 위치 역지오코딩에 사용할 언어를 선택합니다. 기본값은 영어입니다."
+      },
+      "mapbox": {
+        "token": {
+          "label": "Mapbox 토큰",
+          "description": "Mapbox API 액세스 토큰",
+          "help": "설정하면 Nominatim을 대체하여 위치 서비스로 사용합니다"
+        }
+      },
+      "nominatim": {
+        "baseUrl": {
+          "label": "Nominatim 기본 URL",
+          "description": "Nominatim 역지오코딩 API의 기본 URL",
+          "help": "비워두면 공개 Nominatim 서비스를 기본으로 사용합니다"
+        }
+      }
+    },
+    "privacy": {
+      "upload": {
+        "autoEraseLocation": {
+          "label": "업로드 시 위치 정보 자동 삭제",
+          "description": "업로드된 사진을 처리하는 동안 EXIF GPS 메타데이터를 자동으로 제거하고 위치 필드를 지웁니다",
+          "help": "활성화하면 위치 삭제가 처리 큐에서 비동기적으로 실행됩니다"
+        }
+      },
+      "sectionDescription": "사진 업로드의 데이터 개인정보 정책을 관리합니다. 공개 사이트에서는 위치 데이터 제거를 활성화하는 것이 좋습니다."
+    },
+    "storage": {
+      "name": {
+        "label": "제공자 이름",
+        "description": "스토리지 제공자 구성의 이름"
+      },
+      "provider": {
+        "label": "스토리지 제공자",
+        "description": "스토리지 서비스 제공자를 선택합니다",
+        "options": {
+          "local": {
+            "label": "로컬 스토리지",
+            "description": "사진을 서버의 파일 시스템에 직접 저장합니다."
+          },
+          "s3": {
+            "label": "S3 호환",
+            "description": "AWS S3, Cloudflare R2 또는 기타 S3 호환 서비스를 사용합니다."
+          },
+          "openlist": {
+            "label": "OpenList",
+            "description": "스토리지용 Alist 또는 OpenList 인스턴스에 연결합니다."
+          }
+        }
+      },
+      "s3": {
+        "bucket": {
+          "label": "버킷 이름",
+          "description": "사진 저장용 S3 버킷 이름"
+        },
+        "region": {
+          "label": "리전",
+          "description": "S3 버킷의 AWS 리전"
+        },
+        "endpoint": {
+          "label": "S3 엔드포인트",
+          "description": "사용자 지정 S3 호환 엔드포인트 URL (예: MinIO용)"
+        },
+        "prefix": {
+          "label": "스토리지 접두사",
+          "description": "버킷 내 객체의 접두사 경로"
+        },
+        "cdnUrl": {
+          "label": "CDN URL",
+          "description": "이미지 접근용 사용자 지정 CDN URL"
+        },
+        "accessKeyId": {
+          "label": "액세스 키 ID",
+          "description": "AWS 액세스 키 ID 또는 동급"
+        },
+        "secretAccessKey": {
+          "label": "시크릿 액세스 키",
+          "description": "AWS 시크릿 액세스 키 또는 동급"
+        },
+        "forcePathStyle": {
+          "label": "경로 스타일 강제",
+          "description": "가상 호스트 스타일 대신 경로 스타일 URL을 사용합니다"
+        },
+        "maxKeys": {
+          "label": "최대 키 수",
+          "description": "요청당 검색할 최대 키 수"
+        }
+      },
+      "local": {
+        "basePath": {
+          "label": "스토리지 기본 경로",
+          "description": "사진 저장용 로컬 파일 시스템 경로"
+        },
+        "baseUrl": {
+          "label": "기본 URL",
+          "description": "저장된 사진에 접근하기 위한 공개 URL 기본"
+        },
+        "prefix": {
+          "label": "스토리지 접두사",
+          "description": "스토리지에서 사진을 정리하기 위한 접두사 경로"
+        }
+      },
+      "openlist": {
+        "baseUrl": {
+          "label": "OpenList 기본 URL",
+          "description": "OpenList 서버의 기본 URL"
+        },
+        "rootPath": {
+          "label": "루트 경로",
+          "description": "OpenList에서 사진을 저장할 루트 경로"
+        },
+        "token": {
+          "label": "인증 토큰",
+          "description": "OpenList API 인증 토큰"
+        },
+        "uploadEndpoint": {
+          "label": "업로드 엔드포인트",
+          "description": "파일 업로드용 API 엔드포인트 (기본: /api/fs/put)"
+        },
+        "downloadEndpoint": {
+          "label": "다운로드 엔드포인트",
+          "description": "파일 다운로드용 API 엔드포인트 (선택)"
+        },
+        "listEndpoint": {
+          "label": "목록 엔드포인트",
+          "description": "파일 목록 조회용 API 엔드포인트 (선택)"
+        },
+        "deleteEndpoint": {
+          "label": "삭제 엔드포인트",
+          "description": "파일 삭제용 API 엔드포인트 (기본: /api/fs/remove)"
+        },
+        "metaEndpoint": {
+          "label": "메타 엔드포인트",
+          "description": "파일 메타데이터 조회용 API 엔드포인트 (기본: /api/fs/get)"
+        },
+        "pathField": {
+          "label": "경로 필드 이름",
+          "description": "API 요청에서 파일 경로의 파라미터 이름 (기본: path)"
+        },
+        "cdnUrl": {
+          "label": "CDN URL",
+          "description": "이미지 접근용 사용자 지정 CDN URL"
+        }
+      },
+      "sectionDescription": "기본 스토리지 방식과 사용 가능한 스토리지 제공자를 관리합니다. 이 페이지의 설정은 이후의 파일 업로드에만 적용됩니다.",
+      "table": {
+        "columns": {
+          "name": "스토리지 이름",
+          "type": "스토리지 유형",
+          "actions": "작업"
+        }
+      },
+      "messages": {
+        "saved": "설정이 저장되었습니다",
+        "saveError": "설정 저장 오류",
+        "created": "스토리지 방식이 생성되었습니다",
+        "createError": "스토리지 방식 생성 오류",
+        "deleted": "스토리지 방식이 삭제되었습니다",
+        "deleteError": "스토리지 방식 삭제 실패"
+      },
+      "providers": {
+        "s3": "AWS S3 호환 스토리지",
+        "local": "로컬 스토리지",
+        "openlist": "OpenList"
+      },
+      "sections": {
+        "currentDefault": "현재 기본 스토리지",
+        "management": "스토리지 방식 관리"
+      },
+      "form": {
+        "schemeLabel": "스토리지 방식",
+        "schemePlaceholder": "스토리지 방식 선택",
+        "typeLabel": "스토리지 유형",
+        "typePlaceholder": "스토리지 유형 선택",
+        "nameLabel": "스토리지 이름"
+      },
+      "changeModal": {
+        "title": "스토리지 방식 변경",
+        "alertTitle": "참고",
+        "alertDescription": "스토리지 방식을 변경한 후 업로드된 파일은 새 방식에 저장됩니다. 기존 방식에 이미 있는 파일은 마이그레이션되지 않습니다."
+      },
+      "slideover": {
+        "title": "스토리지 방식 만들기"
+      },
+      "actions": {
+        "add": "스토리지 추가",
+        "create": "스토리지 만들기",
+        "info": "정보"
+      },
+      "info": {
+        "title": "스토리지 방식 정보",
+        "name": "이름",
+        "type": "유형",
+        "createdAt": "생성 시각",
+        "updatedAt": "업데이트 시각",
+        "config": {
+          "basePath": "스토리지 기본 경로",
+          "baseUrl": "기본 URL",
+          "prefix": "접두사",
+          "bucket": "버킷",
+          "region": "리전",
+          "endpoint": "엔드포인트",
+          "cdnUrl": "CDN URL",
+          "rootPath": "루트 경로",
+          "token": "토큰"
+        }
+      },
+      "scanLibrary": {
+        "sectionTitle": "로컬 스캔 라이브러리",
+        "sectionDescription": "별도의 스토리지 방식입니다. 일반 사진이나 동영상을 폴더에 넣으면 자동으로 스캔되어 썸네일이 생성됩니다. 암호화된 업로드 스토리지와 완전히 독립적입니다.",
+        "table": {
+          "photoCount": "색인됨",
+          "notScanned": "아직 스캔되지 않음",
+          "lastScanAt": "마지막 스캔",
+          "lastScanResult": "결과"
+        },
+        "empty": "아직 스캔 라이브러리가 없습니다. 폴더를 추가하여 시작하세요.",
+        "result": {
+          "new": "새로 추가",
+          "updated": "업데이트됨",
+          "failed": "실패",
+          "noChange": "이번 스캔에서 변경 없음"
+        },
+        "dotStatus": {
+          "ok": "정상 · 썸네일 최신",
+          "error": "마지막 스캔에서 실패 발생",
+          "off": "비활성화됨"
+        },
+        "messages": {
+          "saved": "스캔 라이브러리가 저장되었습니다",
+          "created": "스캔 라이브러리가 생성되었습니다",
+          "updated": "스캔 라이브러리가 업데이트되었습니다",
+          "deleted": "스캔 라이브러리가 삭제되었습니다",
+          "saveError": "스캔 라이브러리 저장 오류",
+          "deleteError": "스캔 라이브러리 삭제 실패",
+          "scanned": "스캔이 시작되었습니다:",
+          "scanError": "스캔 시작 실패"
+        },
+        "form": {
+          "nameLabel": "라이브러리 이름",
+          "namePlaceholder": "비워두면 폴더 이름을 사용합니다",
+          "pathLabel": "폴더 경로",
+          "pathPlaceholder": "감시할 폴더의 절대 경로, 예: /photos",
+          "intervalLabel": "감시 간격",
+          "intervalMsSuffix": "ms",
+          "intervalHint": "이 폴더가 자동 스캔되는 주기",
+          "intervalSeconds": "{value}초",
+          "intervalMinutes": "{value}분",
+          "intervalMixed": "{minutes}분 {seconds}초",
+          "enabledLabel": "외부 라이브러리 활성화",
+          "enabledStateOn": "켜짐",
+          "enabledStateOff": "꺼짐",
+          "enabledHint": "활성화하면 이 외부 폴더가 마운트되어 라이브러리로 스캔됩니다. 비활성화하면 보기에서 숨겨지고 스캔이 중지됩니다.",
+          "asAlbumLabel": "앨범으로 표시",
+          "asAlbumStateOn": "앨범",
+          "asAlbumStateOff": "갤러리",
+          "asAlbumHint": "이 라이브러리를 앨범 페이지의 앨범으로 표시하고 홈 갤러리에서는 사진을 숨깁니다. 하위 폴더는 중첩 앨범으로 표시됩니다."
+        },
+        "info": {
+          "title": "스캔 라이브러리 정보",
+          "name": "이름",
+          "path": "폴더 경로",
+          "provider": "소스 유형",
+          "status": "상태",
+          "enabled": "활성화됨",
+          "disabled": "비활성화됨",
+          "interval": "감시 간격",
+          "intervalMs": "{value} ms",
+          "notScanned": "아직 스캔되지 않음",
+          "scannedAt": "마지막 스캔 시각",
+          "scanResult": "마지막 결과",
+          "photoIndexed": "색인된 사진",
+          "displayMode": "표시 모드",
+          "modeAlbum": "앨범",
+          "modeGallery": "갤러리",
+          "thumbnailDirHint": "썸네일이 제자리에 작성됩니다",
+          "thumbnailDir": "라이브러리 폴더 내의 썸네일 하위 폴더",
+          "scanIntervalHint": "이 폴더가 자동 폴링되는 주기",
+          "createdAt": "생성일",
+          "updatedAt": "업데이트일"
+        },
+        "slideover": {
+          "title": "스캔 라이브러리 추가",
+          "editTitle": "스캔 라이브러리 편집",
+          "infoTitle": "스캔 라이브러리 정보"
+        },
+        "actions": {
+          "add": "스캔 라이브러리 추가",
+          "save": "저장",
+          "edit": "편집",
+          "info": "정보",
+          "delete": "삭제"
+        }
+      }
+    },
+    "analytics": {
+      "sectionDescription": "분석, 추적 또는 구조화 데이터를 위해 페이지 head와 body에 사용자 지정 스크립트 태그를 삽입합니다. 스크립트는 모든 방문자에게 실행됩니다. 신뢰할 수 있는 코드만 붙여넣으세요.",
+      "headScripts": {
+        "label": "Head 스크립트",
+        "description": "페이지 head에 삽입할 스크립트 태그가 포함된 HTML 조각.",
+        "help": "전체 스크립트 태그를 붙여넣으세요 (여러 개 허용). GA, Baidu, Plausible, Umami, JSON-LD 등. 기존 Matomo 연동은 독립적으로 실행됩니다."
+      },
+      "bodyScripts": {
+        "label": "Body 스크립트",
+        "description": "페이지 body 상단에 삽입할 스크립트 태그가 포함된 HTML 조각.",
+        "help": "전체 스크립트 태그를 붙여넣으세요 (여러 개 허용). body가 열린 후 실행되어야 하는 스크립트에 적합합니다."
+      }
+    },
+    "security": {
+      "sectionTitle": "계정 보안",
+      "sectionDescription": "계정을 보호하기 위해 2단계 인증을 관리합니다.",
+      "twoFactor": {
+        "title": "2단계 인증",
+        "description": "로그인 시 비밀번호 외에 인증 앱의 일회용 코드를 요구합니다.",
+        "enabledBadge": "활성화됨",
+        "enabledNotice": "2단계 인증이 켜져 있습니다. 로그인 시 인증 앱의 코드를 입력해야 합니다.",
+        "disabledBadge": "비활성화됨",
+        "disabledNotice": "2단계 인증이 꺼져 있습니다. 계정 보안을 위해 활성화하는 것을 고려해 보세요.",
+        "enableAction": "2FA 활성화",
+        "disableAction": "2FA 비활성화",
+        "cutoffHint": "중요: 비활성화하기 전에 복구 메모를 저장하세요. 유효한 코드를 제공할 수 없으면 잠겨버립니다.",
+        "setupTitle": "2단계 인증 설정",
+        "setupScanHint": "인증 앱 (Google Authenticator, Authy 등)으로 이 QR 코드를 스캔하거나 설정 키를 수동으로 입력하세요.",
+        "secretLabel": "설정 키",
+        "codeLabel": "인증 코드",
+        "codeHint": "설정을 확인하려면 앱에서 6자리 코드를 입력하세요.",
+        "confirmAction": "활성화 및 확인",
+        "cancelAction": "취소",
+        "confirmSuccess": "2단계 인증이 이제 활성화되었습니다.",
+        "confirmError": "잘못된 코드입니다. 확인 후 다시 시도해 주세요.",
+        "disableTitle": "2단계 인증 비활성화",
+        "disableHint": "2FA 비활성화를 확인하려면 현재 인증 코드를 입력하세요.",
+        "disableSuccess": "2단계 인증이 비활성화되었습니다.",
+        "disableError": "잘못된 코드입니다. 확인 후 다시 시도해 주세요.",
+        "copySecret": "복사",
+        "copied": "복사됨"
+      },
+      "loadFailed": "보안 설정을 불러오지 못했습니다",
+      "actions": {
+        "cancel": "취소",
+        "confirm": "확인"
+      },
+      "loginRecords": {
+        "title": "로그인 기록",
+        "description": "성공한 시도, 실패한 시도, 2단계 인증 대기 단계를 포함한 계정의 최근 로그인 활동.",
+        "loadFailed": "로그인 기록을 불러오지 못했습니다",
+        "refresh": "새로고침",
+        "empty": "아직 로그인 기록이 없습니다.",
+        "timeAgo": "전",
+        "justNow": "방금 전",
+        "column": {
+          "status": "상태",
+          "method": "방식",
+          "ip": "IP 주소",
+          "device": "기기",
+          "time": "시간"
+        },
+        "status": {
+          "success": "성공",
+          "failed": "실패",
+          "challenge": "인증 대기 중"
+        },
+        "method": {
+          "password": "비밀번호",
+          "two-factor": "2단계",
+          "github": "OAuth"
+        },
+        "unknownIp": "알 수 없음",
+        "locationUnknown": "알 수 없는 위치"
+      }
+    },
+    "general": {
+      "description": "사이트의 기본 정보와 표시 외관을 관리합니다. 변경 사항은 대시보드와 공개 표시에 즉시 반영됩니다."
+    },
+    "interface": {
+      "description": "인터페이스 표시 관련 설정을 관리합니다: 외관 테마와 갤러리 진입 시 로딩 구성.",
+      "languageChanged": "언어가 전환되었습니다"
+    },
+    "loader": {
+      "description": "갤러리 진입 시 로딩 애니메이션에 사용되는 세 개의 카드 이미지를 사용자 지정합니다. 기본적으로 내장 샘플 이미지가 사용되며 언제든지 기본값으로 복원할 수 있습니다."
+    },
+    "form": {
+      "loadFailed": "설정을 불러오지 못했습니다",
+      "saveSuccess": "설정이 저장되었습니다",
+      "saveFailed": "설정을 저장하지 못했습니다"
+    }
+  },
+  "wizard": {
+    "admin": {
+      "username": {
+        "label": "사용자 이름"
+      },
+      "email": {
+        "label": "이메일"
+      },
+      "password": {
+        "label": "비밀번호"
+      },
+      "confirmPassword": {
+        "label": "비밀번호 확인"
+      }
+    },
+    "map": {
+      "provider": {
+        "mapbox": {
+          "label": "Mapbox",
+          "description": "풍부한 스타일링 옵션을 갖춘 고성능 지도."
+        },
+        "maplibre": {
+          "label": "MapLibre",
+          "description": "Mapbox GL JS의 오픈소스 포크."
+        }
+      }
+    },
+    "form": {
+      "loadSchemaFailed": "마법사 스키마를 불러오지 못했습니다"
+    }
+  },
+  "onboarding": {
+    "layout": {
+      "steps": {
+        "welcome": "환영합니다",
+        "admin": "관리자 계정",
+        "site": "사이트 정보",
+        "storage": "스토리지",
+        "map": "지도 서비스",
+        "complete": "완료"
+      },
+      "current": "진행 중",
+      "stepCounter": "{0} / {1} 단계",
+      "logoAlt": "ChronoFrame Logo"
+    },
+    "actions": {
+      "next": "다음",
+      "completeSetup": "설정 완료"
+    },
+    "welcome": {
+      "title": "ChronoFrame에 오신 것을 환영합니다",
+      "description": "마법사를 따라 몇 분 안에 갤러리를 설정하세요.",
+      "intro": "ChronoFrame은 다용도 개인 갤러리 앱입니다. 사진을 업로드하기 전에 몇 가지 필수 사항을 구성해야 합니다:",
+      "cards": {
+        "admin": {
+          "title": "관리자 계정",
+          "description": "관리자 콘솔에 로그인하는 데 사용됩니다"
+        },
+        "site": {
+          "title": "사이트 정보",
+          "description": "갤러리를 개인화합니다"
+        },
+        "storage": {
+          "title": "스토리지",
+          "description": "사진을 로컬 또는 클라우드에 저장합니다"
+        },
+        "map": {
+          "title": "지도 서비스",
+          "description": "위치를 시각화하고 촬영 지점을 표시합니다"
+        }
+      },
+      "privacyNotice": "ChronoFrame은 사용자의 어떤 데이터도 수집하지 않습니다.",
+      "start": "시작하기"
+    },
+    "admin": {
+      "title": "관리자 계정",
+      "description": "관리자 계정을 만듭니다"
+    },
+    "site": {
+      "title": "사이트 정보",
+      "description": "기본 사이트 정보를 구성합니다"
+    },
+    "storage": {
+      "title": "스토리지",
+      "description": "사진을 저장할 위치를 선택합니다"
+    },
+    "map": {
+      "title": "지도 서비스",
+      "description": "지구본 보기와 사진 미니맵용 지도 서비스를 구성합니다"
+    },
+    "complete": {
+      "title": "거의 완료되었습니다!",
+      "description": "ChronoFrame 갤러리를 사용할 준비가 되었습니다.",
+      "body": "모든 필수 설정 단계를 완료했습니다. 이제 관리자 계정으로 로그인하여 사진 업로드를 시작할 수 있습니다.",
+      "sessionSecretNote": "세션 암호화 키가 자동 생성되어 저장되었으므로 수동으로 설정할 필요가 없습니다.",
+      "goToDashboard": "대시보드로 이동",
+      "setupFailedTitle": "설정 실패",
+      "setupFailedDescription": "설정을 완료하지 못했습니다"
+    }
+  },
+  "globe": {
+    "analysis": {
+      "annotation": "촬영 파라미터 주석",
+      "annotationDescription": "촬영 파라미터별 지리적 분포를 봅니다",
+      "mode": {
+        "none": {
+          "label": "기본",
+          "description": "주석 비활성화"
+        },
+        "focalLength": {
+          "label": "초점 거리",
+          "description": "광각 / 표준 / 망원"
+        },
+        "shutterSpeed": {
+          "label": "셔터 속도",
+          "description": "빠름 / 보통 / 느림"
+        },
+        "altitude": {
+          "label": "고도",
+          "description": "낮음 / 보통 / 높음"
+        }
+      },
+      "legend": {
+        "focalLength": {
+          "title": "초점 거리 분포",
+          "wide": "광각",
+          "standard": "표준",
+          "telephoto": "망원"
+        },
+        "shutterSpeed": {
+          "title": "셔터 속도 분포",
+          "fast": "빠름",
+          "medium": "보통",
+          "slow": "느림"
+        },
+        "altitude": {
+          "title": "고도 분포",
+          "low": "낮은 고도",
+          "medium": "중간 고도",
+          "high": "높은 고도"
+        }
+      }
+    },
+    "timeline": {
+      "toggle": "타임라인 활성화/비활성화",
+      "playPause": "타임라인 재생/일시정지",
+      "title": "타임라인"
+    }
+  },
+  "photo": {
+    "image": {
+      "loadError": "이미지 불러오기 실패"
+    }
+  },
+  "panorama": {
+    "previewTitle": "360° 파노라마",
+    "dragHintShort": "끌어서 둘러보기",
+    "dragHint": "끌어서 보기",
+    "zoomHint": "스크롤 / 핀치로 확대",
+    "resetHint": "더블클릭으로 초기화"
+  }
+}

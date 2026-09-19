@@ -85,6 +85,15 @@ const onVerifySubmit = async (event: any) => {
     })
 }
 
+// 统一的表单提交入口：按当前步骤分发到对应处理函数（用方法名引用而非三元表达式内联，
+// 避免 Vue 把 `cond ? fnA : fnB` 编译成“仅求值不调用”导致点击无反应）。
+const onFormSubmit = (event: any) => {
+  if (step.value === 'verify') {
+    return onVerifySubmit(event)
+  }
+  return onAuthSubmit(event)
+}
+
 // 认证成功后的统一收尾：刷新会话 + 成功提示 + 跳转
 const afterAuthenticated = async () => {
   await fetchUserSession()
@@ -200,7 +209,7 @@ const handleAuthError = (error: any) => {
                   external: true,
                 },
               ]"
-              @submit="step === 'verify' ? onVerifySubmit : onAuthSubmit"
+              @submit="onFormSubmit"
               @cancel="step = 'login'"
             />
       </div>

@@ -1,0 +1,2070 @@
+{
+  "plural": {
+    "photo": "không có ảnh | 1 ảnh | {count} ảnh"
+  },
+  "ui": {
+    "action": {
+      "filter": {
+        "tooltip": "Lọc ảnh",
+        "title": "Lọc ảnh",
+        "clearAll": "Xóa tất cả",
+        "tabs": {
+          "tags": "Thẻ",
+          "cameras": "Máy ảnh",
+          "lenses": "Ống kính",
+          "cities": "Thành phố",
+          "ratings": "Xếp hạng"
+        },
+        "empty": {
+          "tags": "Không có thẻ",
+          "cameras": "Không có thông tin máy ảnh",
+          "lenses": "Không có thông tin ống kính",
+          "cities": "Không có thông tin thành phố"
+        },
+        "rating": {
+          "showAll": "Hiển thị tất cả ảnh",
+          "showStarsAndAbove": "Hiển thị ảnh {count} sao trở lên"
+        },
+        "searchPlaceholder": "Tìm kiếm tên tệp, v.v...",
+        "shuffleTooltip": "Trộn danh sách"
+      },
+      "sort": {
+        "tooltip": "Sắp xếp ảnh",
+        "title": "Sắp xếp theo",
+        "options": {
+          "dateTakenDesc": "Ngày chụp (Mới nhất trước)",
+          "dateTakenAsc": "Ngày chụp (Cũ nhất trước)",
+          "fileSizeAsc": "Kích thước tệp (Tăng dần)",
+          "fileSizeDesc": "Kích thước tệp (Giảm dần)",
+          "titleAsc": "Tiêu đề (Tăng dần)",
+          "titleDesc": "Tiêu đề (Giảm dần)",
+          "shuffle": "Trộn"
+        }
+      },
+      "theme": {
+        "tooltip": "Giao diện màu"
+      },
+      "dashboard": {
+        "tooltip": "Bảng điều khiển"
+      },
+      "logout": {
+        "tooltip": "Đăng xuất"
+      },
+      "globe": {
+        "tooltip": "Quả địa cầu"
+      },
+      "home": {
+        "tooltip": "Về trang chủ"
+      },
+      "share": {
+        "tooltip": "Chia sẻ ảnh",
+        "title": "Chia sẻ ảnh",
+        "tabs": {
+          "social": "Chia sẻ mạng xã hội",
+          "advanced": "Chia sẻ nâng cao"
+        },
+        "platforms": {
+          "twitter": "Twitter",
+          "telegram": "Telegram",
+          "weibo": "Weibo",
+          "facebook": "Facebook",
+          "whatsapp": "WhatsApp",
+          "linkedin": "LinkedIn"
+        },
+        "actions": {
+          "nativeShare": "Dùng chia sẻ hệ thống",
+          "copyLink": "Sao chép liên kết",
+          "copyImage": "Sao chép ảnh",
+          "downloadImage": "Tải ảnh gốc",
+          "generateShareImage": "Tạo ảnh chia sẻ",
+          "shareUrl": "Chia sẻ URL",
+          "downloadOgImage": "Tải ảnh xem trước",
+          "downloadOriginal": "Tải ảnh gốc",
+          "downloadOriginalImage": "Tải ảnh gốc"
+        },
+        "success": {
+          "linkCopied": "Đã sao chép liên kết vào bộ nhớ tạm",
+          "imageCopied": "Đã sao chép ảnh vào bộ nhớ tạm",
+          "ogImageDownloaded": "Đã tải ảnh xem trước thành công",
+          "originalImageDownloaded": "Đã tải ảnh gốc thành công"
+        },
+        "error": {
+          "copyNotSupported": "Trình duyệt này không hỗ trợ sao chép",
+          "shareFailed": "Chia sẻ thất bại",
+          "nativeShareFailed": "Chia sẻ hệ thống thất bại",
+          "linkCopyFailed": "Không thể sao chép liên kết",
+          "ogImageDownloadFailed": "Không thể tải ảnh xem trước",
+          "originalImageDownloadFailed": "Không thể tải ảnh gốc"
+        },
+        "ogImage": {
+          "title": "Xem trước chia sẻ",
+          "alt": "Ảnh xem trước chia sẻ",
+          "loading": "Đang tải...",
+          "loadError": "Tải thất bại"
+        },
+        "fallback": {
+          "photoTitle": "Ảnh đẹp"
+        },
+        "text": {
+          "prefix": "Xem bức ảnh này:"
+        },
+        "embed": {
+          "title": "Nhúng ảnh",
+          "copy": "Sao chép mã nhúng",
+          "description": "Dán đoạn mã này vào website của bạn để nhúng ảnh.",
+          "copied": "Đã sao chép mã nhúng vào bộ nhớ tạm",
+          "copyFailed": "Không thể sao chép mã nhúng"
+        }
+      },
+      "backtotop": {
+        "tooltip": "Về đầu trang",
+        "ariaLabel": "Về đầu trang"
+      },
+      "more": {
+        "label": "Thao tác khác"
+      }
+    },
+    "activeFiltersHero": {
+      "headline": "{count} kết quả",
+      "results": "ảnh",
+      "search": "Tìm kiếm:",
+      "clearAll": "Xóa tất cả bộ lọc"
+    },
+    "stats": {
+      "totalPhotosWithRange": "{range}, tổng cộng @:plural.photo",
+      "noPhotosTip": "Chưa có ảnh nào, hãy tải lên ngay!"
+    },
+    "livePhoto": "Live Photo",
+    "indexPanelCountCity": "và {count} thành phố khác",
+    "album": {
+      "noImage": "Album trống",
+      "emptyAlbumTip": "Thêm ảnh để bắt đầu",
+      "noDescription": "Không có mô tả",
+      "scanPhotos": "ảnh"
+    },
+    "loading": "Đang tải",
+    "photo": {
+      "untitled": "Chưa đặt tên",
+      "altFallback": "Ảnh",
+      "loadError": "Không thể tải ảnh",
+      "retry": "Thử lại",
+      "avatarAlt": "Ảnh đại diện của tác giả"
+    },
+    "authForm": {
+      "logoAlt": "Logo ứng dụng"
+    },
+    "histogram": {
+      "rendering": "Đang dựng",
+      "loadError": "Không thể tải biểu đồ"
+    },
+    "calendarHeatmap": {
+      "on": "vào",
+      "contributions": "đóng góp"
+    }
+  },
+  "album": {
+    "notFound": "Không tìm thấy album",
+    "empty": "Album này trống",
+    "noDateInfo": "Không có thông tin ngày",
+    "noPhotosTip": "Chưa có ảnh trong album này",
+    "emptyAlbumTitle": "Album này trống",
+    "emptyAlbumDescription": "Những khoảnh khắc tuyệt vời hơn sẽ được hiển thị tại đây.",
+    "failedToLoadTitle": "Không thể tải album",
+    "failedToLoadDescription": "Có lỗi xảy ra khi tải album này.",
+    "failedToLoad": "Không thể tải album",
+    "backToAlbums": "Quay lại Album",
+    "noDescription": "Không có mô tả",
+    "photo": "không có ảnh | 1 ảnh | {count} ảnh",
+    "createdAt": "Tạo {time}",
+    "metadata": {
+      "photos": "Ảnh",
+      "dateRange": "Khoảng thời gian",
+      "created": "Đã tạo"
+    },
+    "createdTooltip": "Đã tạo: {date}"
+  },
+  "map": {
+    "cluster": {
+      "details": "Bấm để xem chi tiết",
+      "nearbyPhotos": "{0} ảnh gần đây",
+      "altFallback": "Cụm {id}"
+    },
+    "photo": {
+      "altFallback": "Ảnh {id}",
+      "unknownCoord": "Không xác định"
+    }
+  },
+  "minimap": {
+    "loading": "Đang tải bản đồ thu nhỏ..."
+  },
+  "viewer": {
+    "hint": {
+      "livePhoto": {
+        "mobile": "Nhấn giữ để phát ảnh Live Photo · Chạm kép hoặc chụm để phóng to",
+        "desktop": "Di chuột vào biểu tượng phát · Nhấp đúp/cuộn để phóng to"
+      },
+      "mobile": "Nhấp đúp hoặc chụm để phóng to",
+      "desktop": "Nhấp đúp hoặc cuộn chuột để phóng to"
+    },
+    "reaction": {
+      "add": "Bày tỏ cảm xúc",
+      "change": "Đã bày tỏ",
+      "count": "không có phản ứng | {count} phản ứng | {count} phản ứng",
+      "like": "Ảnh đẹp",
+      "love": "Yêu thích",
+      "amazing": "Tuyệt đẹp",
+      "funny": "Haha",
+      "wow": "Ồ",
+      "sad": "Cảm động",
+      "fire": "Sôi động",
+      "sparkle": "Tỏa sáng",
+      "error": {
+        "title": "Không thể bày tỏ cảm xúc",
+        "rateLimited": "Quá nhiều yêu cầu, vui lòng thử lại sau"
+      }
+    },
+    "share": "Chia sẻ ảnh",
+    "close": "Đóng",
+    "photoload": {
+      "loadError": "Không thể tải ảnh",
+      "loading": "Đang tải ảnh",
+      "converting": "Đang chuyển đổi...",
+      "loadingWebGL": "Đang tải WebGL...",
+      "loadingHEIC": "Đang tải ảnh HEIC...",
+      "loadingTexture": "Đang dựng họa tiết"
+    }
+  },
+  "exif": {
+    "sections": {
+      "info": "Thông tin ảnh",
+      "basic": "Thông tin cơ bản",
+      "deviceInfomation": "Thông tin thiết bị",
+      "specification": "Thông số kỹ thuật",
+      "rating": "Xếp hạng",
+      "tags": "Từ khóa",
+      "albums": "Album chứa",
+      "histogram": "Biểu đồ mức xám",
+      "capture": {},
+      "shooting": {
+        "parameters": "Thông số chụp",
+        "mode": "Chế độ chụp"
+      }
+    },
+    "aperture": "Khẩu độ",
+    "dateTaken": {
+      "title": "Thời gian chụp"
+    },
+    "filename": "Tên tệp",
+    "format": "Định dạng",
+    "dimensions": "Kích thước",
+    "fileSize": "Kích thước tệp",
+    "resolution": "Độ phân giải",
+    "pixels": "Số điểm ảnh",
+    "copyright": "Bản quyền",
+    "exposureBias": "Bù phơi sáng",
+    "colorSpace": {
+      "title": "Không gian màu"
+    },
+    "artist": "Nghệ sĩ",
+    "software": "Phần mềm",
+    "tz": "Múi giờ",
+    "country": "Quốc gia",
+    "city": "Thành phố",
+    "gps": {
+      "title": "Tọa độ",
+      "latitude": "Vĩ độ",
+      "longitude": "Kinh độ",
+      "altitude": "Độ cao",
+      "address": "Địa chỉ",
+      "location": "Thông tin vị trí"
+    },
+    "focal": {
+      "length": {
+        "actual": "Tiêu cự",
+        "equivalent": "Tương đương 35mm"
+      },
+      "plane": {
+        "resolution": "Độ phân giải mặt phẳng tiêu cự"
+      }
+    },
+    "exposure": {
+      "time": "Thời gian phơi sáng",
+      "program": "Chương trình phơi sáng",
+      "mode": "Chế độ phơi sáng"
+    },
+    "camera": "Máy ảnh",
+    "lens": "Ống kính",
+    "maxAperture": "Khẩu độ tối đa",
+    "wb": {
+      "title": "Cân bằng trắng",
+      "shiftAB": "Hiệu chỉnh WB (hổ phách-xanh)",
+      "shiftGM": "Hiệu chỉnh WB (xanh lục-đỏ tía)",
+      "bias": "Độ lệch WB",
+      "fineTune": "Tinh chỉnh WB"
+    },
+    "metering": {
+      "title": "Chế độ đo sáng"
+    },
+    "flash": {
+      "title": "Đèn flash",
+      "meteringMode": "Chế độ đo sáng đèn flash"
+    },
+    "scene": {
+      "captureType": "Loại chụp cảnh"
+    },
+    "brightness": {
+      "value": "Độ sáng"
+    },
+    "sensing": {
+      "method": "Phương pháp cảm biến"
+    },
+    "histogram": {
+      "title": "Biểu đồ mức xám"
+    },
+    "tone": {
+      "analysis": "Phân tích tông màu",
+      "toneType": "Loại tông màu",
+      "brightness": "Độ sáng",
+      "contrast": "Độ tương phản",
+      "shadowRatio": "Tỷ lệ vùng tối",
+      "highlightRatio": "Tỷ lệ vùng sáng",
+      "low-key": "Tông tối",
+      "high-key": "Tông sáng",
+      "normal": "Bình thường",
+      "high-contrast": "Tương phản cao"
+    },
+    "lightSource": {
+      "title": "Nguồn sáng"
+    },
+    "values": {
+      "exposureProgram": {
+        "notDefined": "Không xác định",
+        "manual": "Thủ công",
+        "programAe": "Chương trình AE",
+        "aperturePriorityAe": "Ưu tiên khẩu độ AE",
+        "shutterSpeedPriorityAe": "Ưu tiên tốc độ cửa trập AE",
+        "creativeSlowSpeed": "Sáng tạo (tốc độ chậm)",
+        "actionHighSpeed": "Chuyển động (tốc độ cao)",
+        "portrait": "Chân dung",
+        "landscape": "Phong cảnh",
+        "bulb": "Bulb"
+      },
+      "exposureMode": {
+        "auto": "Tự động",
+        "manual": "Thủ công",
+        "autoBracket": "Chụp bù trừ tự động"
+      },
+      "flash": {
+        "noFlash": "Không có đèn flash",
+        "fired": "Đã phát sáng",
+        "firedReturnNotDetected": "Đã phát sáng, không phát hiện phản hồi",
+        "firedReturnDetected": "Đã phát sáng, phát hiện phản hồi",
+        "onDidNotFire": "Bật, không phát sáng",
+        "onFired": "Bật, đã phát sáng",
+        "onReturnNotDetected": "Bật, không phát hiện phản hồi",
+        "onReturnDetected": "Bật, phát hiện phản hồi",
+        "offDidNotFire": "Tắt, không phát sáng",
+        "offDidNotFireReturnNotDetected": "Tắt, không phát sáng, không phát hiện phản hồi",
+        "autoDidNotFire": "Tự động, không phát sáng",
+        "autoFired": "Tự động, đã phát sáng",
+        "autoFiredReturnNotDetected": "Tự động, đã phát sáng, không phát hiện phản hồi",
+        "autoFiredReturnDetected": "Tự động, đã phát sáng, phát hiện phản hồi",
+        "noFlashFunction": "Không có chức năng đèn flash",
+        "offNoFlashFunction": "Tắt, không có chức năng đèn flash",
+        "firedRedEyeReduction": "Đã phát sáng, giảm mắt đỏ",
+        "firedRedEyeReductionReturnNotDetected": "Đã phát sáng, giảm mắt đỏ, không phát hiện phản hồi",
+        "firedRedEyeReductionReturnDetected": "Đã phát sáng, giảm mắt đỏ, phát hiện phản hồi",
+        "onRedEyeReduction": "Bật, giảm mắt đỏ",
+        "onRedEyeReductionReturnNotDetected": "Bật, giảm mắt đỏ, không phát hiện phản hồi",
+        "onRedEyeReductionReturnDetected": "Bật, giảm mắt đỏ, phát hiện phản hồi",
+        "offRedEyeReduction": "Tắt, giảm mắt đỏ",
+        "autoDidNotFireRedEyeReduction": "Tự động, không phát sáng, giảm mắt đỏ",
+        "autoFiredRedEyeReduction": "Tự động, đã phát sáng, giảm mắt đỏ",
+        "autoFiredRedEyeReductionReturnNotDetected": "Tự động, đã phát sáng, giảm mắt đỏ, không phát hiện phản hồi",
+        "autoFiredRedEyeReductionReturnDetected": "Tự động, đã phát sáng, giảm mắt đỏ, phát hiện phản hồi"
+      },
+      "meteringMode": {
+        "unknown": "Không xác định",
+        "average": "Trung bình",
+        "centerWeightedAverage": "Trung bình trọng tâm",
+        "spot": "Điểm",
+        "multiSpot": "Đa điểm",
+        "multiSegment": "Đa phân đoạn",
+        "partial": "Một phần",
+        "other": "Khác"
+      },
+      "whiteBalance": {
+        "auto": "Tự động",
+        "manual": "Thủ công",
+        "auto1": "Hiệu chỉnh chuẩn, trung tính",
+        "auto2": "Giữ tông ấm của môi trường"
+      },
+      "sceneCaptureType": {
+        "standard": "Tiêu chuẩn",
+        "landscape": "Phong cảnh",
+        "portrait": "Chân dung",
+        "night": "Ban đêm",
+        "other": "Khác"
+      },
+      "sensingMethod": {
+        "notDefined": "Không xác định",
+        "monochromeArea": "Vùng đơn sắc",
+        "oneChipColorArea": "Vùng màu một chip",
+        "twoChipColorArea": "Vùng màu hai chip",
+        "threeChipColorArea": "Vùng màu ba chip",
+        "colorSequentialArea": "Vùng màu tuần tự",
+        "monochromeLinear": "Đơn sắc tuyến tính",
+        "trilinear": "Ba tuyến",
+        "colorSequentialLinear": "Tuần tự màu tuyến tính"
+      },
+      "colorSpace": {
+        "srgb": "sRGB",
+        "adobeRgb": "Adobe RGB",
+        "wideGamutRgb": "RGB gamut rộng",
+        "displayP3": "Display P3",
+        "iccProfile": "ICC Profile",
+        "uncalibrated": "Không hiệu chuẩn",
+        "rgb": "RGB"
+      }
+    },
+    "iso": "ISO",
+    "metadataButton": "Siêu dữ liệu ảnh"
+  },
+  "title": {
+    "gallery": "Thư viện ảnh",
+    "language": "Ngôn ngữ",
+    "fallback": {
+      "photo": "Ảnh"
+    },
+    "dashboard": "Bảng điều khiển",
+    "photos": "Ảnh",
+    "trash": "Thùng rác",
+    "locations": "Vị trí",
+    "globe": "Bản đồ địa cầu ảnh",
+    "queue": "Quản lý hàng đợi",
+    "logs": "Nhật ký hệ thống",
+    "albums": "Album",
+    "siteAdministration": "Cài đặt trang web",
+    "location": "Dịch vụ vị trí",
+    "generalSettings": "Cài đặt chung",
+    "interfaceSettings": "Cài đặt giao diện",
+    "loaderSettings": "Cài đặt màn hình tải",
+    "appearanceSettings": "Cài đặt giao diện hiển thị",
+    "privacySettings": "Cài đặt quyền riêng tư",
+    "mapAndLocation": "Bản đồ & Vị trí",
+    "storageSettings": "Cài đặt lưu trữ",
+    "systemSettings": "Cài đặt hệ thống",
+    "analyticsSettings": "Phân tích & Theo dõi",
+    "securitySettings": "Bảo mật"
+  },
+  "albums": {
+    "scan": {
+      "loading": "Đang tải...",
+      "notFound": "Không tìm thấy album",
+      "lockedTitle": "Album này đã khóa",
+      "lockedHint": "Nhập mật khẩu để xem album này.",
+      "passwordPlaceholder": "Nhập mật khẩu",
+      "unlock": "Mở khóa",
+      "unlocking": "Đang mở khóa…",
+      "wrongPassword": "Mật khẩu sai, vui lòng thử lại",
+      "unlockError": "Không thể mở khóa. Vui lòng thử lại sau.",
+      "passwordRequired": "Vui lòng nhập mật khẩu",
+      "passwordCorrect": "Mật khẩu chính xác, đang mở khóa album…",
+      "subAlbums": "Album con",
+      "photos": "Ảnh",
+      "close": "Đóng",
+      "prev": "Trước",
+      "next": "Tiếp",
+      "redirecting": "Đang chuyển đến album…",
+      "customUrlRedirect": "Chuyển hướng album",
+      "backToAlbums": "Quay lại album"
+    }
+  },
+  "auth": {
+    "form": {
+      "errors": {
+        "invalidEmail": "Địa chỉ email không hợp lệ",
+        "invalidPassword": "Mật khẩu phải có ít nhất 6 ký tự",
+        "emailAndPasswordMissing": "Vui lòng nhập email và mật khẩu",
+        "emailMissing": "Vui lòng nhập email",
+        "passwordMissing": "Vui lòng nhập mật khẩu",
+        "codeMissing": "Vui lòng nhập mã xác minh",
+        "invalidCode": "Mã xác minh phải có 6–8 chữ số"
+      },
+      "signin": {
+        "title": "Đăng nhập",
+        "subtitle": "Đăng nhập vào {0}",
+        "twoFactorTitle": "Xác minh hai bước",
+        "twoFactorSubtitle": "Nhập mã 6 chữ số từ ứng dụng xác thực của bạn"
+      },
+      "action": {
+        "backToHome": "Về trang chủ",
+        "or": "HOẶC",
+        "continue": "Đăng nhập",
+        "verify": "Xác minh",
+        "back": "Quay lại"
+      },
+      "labels": {
+        "email": "Email",
+        "password": "Mật khẩu",
+        "verifyCode": "Mã xác minh"
+      }
+    },
+    "messages": {
+      "loginInvalid": "Sai tài khoản hoặc mật khẩu",
+      "loginFailed": {
+        "title": "Đăng nhập thất bại",
+        "description": "Đã xảy ra lỗi không mong muốn. Vui lòng thử lại."
+      },
+      "loginSuccess": {
+        "title": "Đã đăng nhập",
+        "description": "Chào mừng trở lại. Đang đưa bạn đến bảng điều khiển."
+      }
+    },
+    "poster": {
+      "title": "Mỗi khoảnh khắc ánh sáng đều đáng lưu giữ"
+    },
+    "footer": {
+      "hint": "Bộ sưu tập riêng tư của bạn · bước vào thư viện ảnh của bạn"
+    }
+  },
+  "common": {
+    "unknown": "không xác định",
+    "unsavedChanges": "Có những thay đổi chưa được lưu.",
+    "months": {
+      "jan": "Th1",
+      "feb": "Th2",
+      "mar": "Th3",
+      "apr": "Th4",
+      "may": "Th5",
+      "jun": "Th6",
+      "jul": "Th7",
+      "aug": "Th8",
+      "sep": "Th9",
+      "oct": "Th10",
+      "nov": "Th11",
+      "dec": "Th12"
+    },
+    "days": {
+      "sun": "CN",
+      "mon": "T2",
+      "tue": "T3",
+      "wed": "T4",
+      "thu": "T5",
+      "fri": "T6",
+      "sat": "T7"
+    },
+    "heatmap": {
+      "legend": {
+        "less": "Ít",
+        "more": "Nhiều",
+        "recentlyYear": "Năm qua"
+      },
+      "tooltip": {
+        "data": "{0} đã chụp {1} ảnh",
+        "noData": "{0} không có ảnh nào"
+      }
+    },
+    "actions": {
+      "save": "Lưu",
+      "saveSettings": "Lưu cài đặt",
+      "reset": "Đặt lại",
+      "cancel": "Hủy",
+      "continue": "Tiếp tục",
+      "delete": "Xóa",
+      "close": "Đóng"
+    },
+    "unknownError": "Lỗi không xác định"
+  },
+  "upload": {
+    "duplicate": {
+      "block": {
+        "title": "Tệp đã tồn tại",
+        "message": "Ảnh \"{fileName}\" đã tồn tại và không cho phép tải lên trùng lặp",
+        "suggestion": "Bạn có thể: 1) Đổi tên tệp và tải lên lại; 2) Chuyển sang \"chế độ cảnh báo\" trong cài đặt để cho phép ghi đè"
+      },
+      "skip": {
+        "title": "Đã bỏ qua tệp trùng lặp",
+        "message": "Ảnh \"{fileName}\" đã tồn tại và đã tự động bỏ qua",
+        "info": "Ảnh hiện có được chụp vào {dateTaken}"
+      },
+      "warn": {
+        "title": "Đã phát hiện tệp trùng lặp",
+        "message": "Ảnh \"{fileName}\" đã tồn tại. Tiếp tục sẽ ghi đè ảnh hiện có",
+        "warning": "Ghi đè tệp ảnh hiện có",
+        "info": "Ảnh hiện có: {title}, chụp vào {dateTaken}"
+      }
+    },
+    "success": {
+      "upload": {
+        "single": "Ảnh đã tải lên thành công, đang xử lý...",
+        "multiple": "{count} ảnh đã tải lên thành công, đang xử lý..."
+      },
+      "check": {
+        "title": "Kiểm tra hoàn tất",
+        "message": "Đã kiểm tra {total} tệp, phát hiện {duplicates} tệp trùng lặp"
+      }
+    },
+    "error": {
+      "required": {
+        "title": "Thiếu tham số bắt buộc",
+        "message": "Vui lòng cung cấp tham số {field}"
+      },
+      "invalidType": {
+        "title": "Loại tệp không được hỗ trợ",
+        "message": "Loại phương tiện không được hỗ trợ: {type}",
+        "suggestion": "Các loại được phép: {allowed}"
+      },
+      "tooLarge": {
+        "title": "Tệp quá lớn",
+        "message": "Kích thước tệp {size}MB vượt giới hạn",
+        "suggestion": "Tối đa cho phép: {maxSize}MB"
+      },
+      "uploadFailed": {
+        "title": "Tải lên thất bại",
+        "message": "Đã xảy ra lỗi khi tải lên, vui lòng thử lại sau"
+      }
+    },
+    "runtimeError": {
+      "networkFailed": "Kết nối mạng thất bại",
+      "clientError": "Lỗi máy khách ({status})",
+      "serverError": "Lỗi máy chủ ({status})",
+      "networkError": "Lỗi mạng (trạng thái: {status})",
+      "timeout": "Tải lên hết thời gian ({timeout}ms)",
+      "aborted": "Tải lên bị hủy",
+      "badRequest": "Định dạng yêu cầu không hợp lệ",
+      "unauthorized": "Truy cập không được ủy quyền",
+      "forbidden": "Truy cập bị từ chối",
+      "notFound": "Không tìm thấy điểm cuối tải lên",
+      "conflict": "Xung đột tệp",
+      "fileTooLarge": "Tệp quá lớn",
+      "unsupportedType": "Loại tệp không được hỗ trợ",
+      "rateLimited": "Đã vượt giới hạn tốc độ tải lên",
+      "internalServerError": "Lỗi máy chủ nội bộ",
+      "serviceUnavailable": "Máy chủ tạm thời không khả dụng",
+      "httpError": "Lỗi HTTP: {status}",
+      "retrying": "{message} (lần thử {attempt}/{max})"
+    },
+    "progress": {
+      "calculating": "Đang tính toán...",
+      "seconds": "{seconds}s"
+    }
+  },
+  "dashboard": {
+    "photos": {
+      "title": "Tải ảnh lên",
+      "subtitle": "Ảnh sẽ được tự động xử lý và thêm vào thư viện. Bạn có thể sắp xếp ảnh trong mục {0} sau đó.",
+      "supportedFormats": "JPEG / PNG / HEIC / Live Photo / Motion Photo",
+      "maxFileSize": "Tối đa {size}MB",
+      "buttons": {
+        "upload": "Tải ảnh lên",
+        "queue": "Hàng đợi tác vụ"
+      },
+      "uploader": {
+        "label": "Kéo thả hoặc bấm để chọn ảnh",
+        "description": "Hỗ trợ ảnh định dạng JPEG, PNG, HEIC và video Live Photo định dạng MOV. Kích thước tệp tối đa: {maxSize}MB mỗi tệp"
+      },
+      "toolbar": {
+        "title": "Quản lý ảnh",
+        "filter": "Lọc",
+        "refresh": "Làm mới"
+      },
+      "photoFilter": {
+        "all": "Tất cả ảnh",
+        "livephoto": "Live Photo",
+        "static": "Ảnh tĩnh"
+      },
+      "stats": {
+        "photos": "ảnh",
+        "livePhotos": "Live Photo"
+      },
+      "pagination": {
+        "showing": "Hiển thị {start}–{end} trong {total}"
+      },
+      "table": {
+        "columns": {
+          "thumbnail": {
+            "title": "Hình thu nhỏ",
+            "action": "Mở ảnh trong tab mới"
+          },
+          "id": "ID ảnh",
+          "title": "Tiêu đề ảnh",
+          "tags": "Từ khóa",
+          "rating": "Xếp hạng",
+          "isLivePhoto": "Live Photo",
+          "location": "Vị trí",
+          "dateTaken": "Ngày chụp",
+          "lastModified": "Chỉnh sửa lần cuối",
+          "fileSize": "Kích thước tệp",
+          "colorSpace": "Không gian màu",
+          "reactions": "Cảm xúc",
+          "actions": "Thao tác"
+        },
+        "cells": {
+          "noTags": "Không có thẻ",
+          "noRating": "Không xếp hạng",
+          "noGps": "Không có thông tin GPS",
+          "unknown": "Không xác định",
+          "staticPhoto": "Ảnh tĩnh",
+          "noReactions": "Không có cảm xúc"
+        },
+        "columnVisibility": {
+          "button": "Cột",
+          "description": "Bật/tắt hiển thị cột"
+        },
+        "selectAllAria": "Chọn tất cả",
+        "selectRowAria": "Chọn dòng",
+        "thumbnailAlt": "Hình thu nhỏ của ảnh"
+      },
+      "actions": {
+        "reprocess": "Xử lý lại",
+        "refreshLocation": "Truy xuất lại thành phố",
+        "eraseLocationInfo": "Xóa thông tin vị trí",
+        "delete": "Xóa",
+        "editMetadata": "Chỉnh sửa siêu dữ liệu",
+        "previewPhoto": "Xem trước ảnh"
+      },
+      "selection": {
+        "selected": "Đã chọn {count} / {total} dòng",
+        "batchReprocess": "Xử lý lại",
+        "batchEraseLocation": "Xóa thông tin vị trí",
+        "batchDownload": "Tải xuống",
+        "batchDelete": "Xóa hàng loạt",
+        "enterSelectMode": "Chọn ảnh",
+        "exitSelectMode": "Thoát chế độ chọn"
+      },
+      "slideover": {
+        "title": "Tải ảnh lên",
+        "description": "Kéo thả hoặc chọn tệp. Ảnh sẽ được tự động xử lý và thêm vào thư viện.",
+        "options": {
+          "eraseLocation": {
+            "label": "Xóa thông tin vị trí khi tải lên",
+            "description": "Lần tải lên này có thể ghi đè cài đặt mặc định của hệ thống và có thể bật/tắt bất cứ lúc nào."
+          },
+          "uploadTarget": {
+            "label": "Vị trí tải lên",
+            "description": "Chọn lưu tệp trong bộ lưu trữ cục bộ hay thư viện quét bên ngoài.",
+            "localStorage": "Bộ lưu trữ cục bộ",
+            "defaultHint": "Vị trí tải lên mặc định"
+          },
+          "duplicateCheck": {
+            "label": "Chiến lược tệp trùng lặp",
+            "descriptionEnabled": "Đã bật phát hiện trùng lặp và các tệp trùng tên sẽ tuân theo chế độ xử lý đã chọn.",
+            "descriptionDisabled": "Đã tắt phát hiện trùng lặp và các tệp trùng tên sẽ tiếp tục tải lên bình thường.",
+            "enabled": "Đã bật phát hiện",
+            "disabled": "Đã tắt phát hiện",
+            "currentMode": "Chế độ hiện tại: {mode}"
+          }
+        },
+        "buttons": {
+          "clear": "Xóa lựa chọn",
+          "upload": "Tải lên {count} tệp"
+        },
+        "footer": {
+          "noSelection": "Vui lòng chọn ảnh để tải lên",
+          "prepared": "{count} tệp · {size}"
+        }
+      },
+      "delete": {
+        "single": {
+          "title": "Xóa ảnh",
+          "message": "Bạn chắc chắn muốn xóa ảnh này?"
+        },
+        "batch": {
+          "title": "Xóa hàng loạt ảnh",
+          "message": "Bạn chắc chắn muốn xóa {count} ảnh đã chọn?"
+        },
+        "warning": "Ảnh đã xóa sẽ được chuyển vào thùng rác. Bạn có thể khôi phục hoặc xóa vĩnh viễn chúng sau đó.",
+        "buttons": {
+          "cancel": "Hủy",
+          "confirm": "Xác nhận xóa"
+        }
+      },
+      "trash": {
+        "title": "Thùng rác ảnh",
+        "subtitle": "Ảnh đã xóa tạm thời được chuyển đến đây. Bạn có thể khôi phục hoặc xóa vĩnh viễn chúng.",
+        "version": "Mở thùng rác",
+        "empty": "Thùng rác trống",
+        "emptyHint": "Ảnh bạn xóa sẽ xuất hiện tại đây.",
+        "deletedAtColumn": "Đã xóa lúc",
+        "originalInLibrary": "Ảnh trong thư viện",
+        "countTooltip": "Số ảnh trong thùng rác",
+        "actions": {
+          "restore": "Khôi phục",
+          "restoreAll": "Khôi phục tất cả",
+          "empty": "Dọn thùng rác",
+          "deleteForever": "Xóa vĩnh viễn",
+          "deleteForeverAll": "Xóa tất cả vĩnh viễn"
+        },
+        "confirm": {
+          "restore": {
+            "title": "Khôi phục ảnh",
+            "message": "Bạn chắc chắn muốn khôi phục ảnh này? Nó sẽ trở về vị trí ban đầu."
+          },
+          "restoreAll": {
+            "title": "Khôi phục tất cả",
+            "message": "Khôi phục tất cả {count} ảnh trong thùng rác?"
+          },
+          "deleteForever": {
+            "title": "Xóa vĩnh viễn",
+            "message": "Thao tác này xóa vĩnh viễn ảnh gốc, hình thu nhỏ và video Live Photo. Không thể hoàn tác. Tiếp tục?"
+          },
+          "deleteForeverAll": {
+            "title": "Dọn thùng rác",
+            "message": "Thao tác này sẽ xóa vĩnh viễn tất cả {count} ảnh và tệp của chúng. Không thể hoàn tác. Tiếp tục?"
+          }
+        },
+        "messages": {
+          "restoreSuccess": "Đã khôi phục ảnh",
+          "restoreAllSuccess": "Đã khôi phục {count} ảnh",
+          "deleteForeverSuccess": "Đã xóa ảnh vĩnh viễn",
+          "deleteForeverAllSuccess": "Đã dọn thùng rác",
+          "empty": "Đã dọn thùng rác",
+          "confirm": "Xác nhận",
+          "cancel": "Hủy"
+        }
+      },
+      "livePhotoModal": {
+        "title": "Live Photo: {title}",
+        "staticImage": "Ảnh tĩnh",
+        "livePhotoVideo": "Video Live Photo",
+        "buttons": {
+          "openVideo": "Mở video trong cửa sổ mới",
+          "downloadVideo": "Tải video",
+          "close": "Đóng"
+        },
+        "notSupported": "Trình duyệt của bạn không hỗ trợ phát video"
+      },
+      "messages": {
+        "uploadSuccess": "Ảnh đã tải lên thành công, đang xử lý...",
+        "uploadMultipleSuccess": "{count} ảnh đã tải lên thành công, đang xử lý...",
+        "reprocessSuccess": "Đã thêm tác vụ xử lý lại",
+        "batchReprocessSuccess": "Đã gửi thành công {count} ảnh vào hàng đợi xử lý lại",
+        "batchReprocessing": "Đang gửi các tác vụ xử lý lại...",
+        "reprocessTaskId": "ID tác vụ: {taskId}",
+        "deleteSuccess": "Đã xóa ảnh thành công",
+        "batchDeleteSuccess": "Đã xóa thành công {count} ảnh",
+        "batchSelectRequired": "Vui lòng chọn ít nhất một ảnh cho thao tác này",
+        "noStorageKey": "Không thể xử lý: thiếu thông tin lưu trữ",
+        "batchNoStorageKey": "{count} ảnh thiếu thông tin lưu trữ và không thể xử lý",
+        "batchNoUrl": "Không có ảnh nào có sẵn URL tải xuống",
+        "batchPartialUrl": "Chỉ {count} trong số {total} ảnh có sẵn URL tải xuống",
+        "downloadStarted": "Đã bắt đầu tải xuống",
+        "downloadingCount": "Đang tải xuống {count} ảnh...",
+        "batchDownloadSuccess": "Tải xuống hàng loạt hoàn tất thành công",
+        "batchDownloadFailed": "Tải xuống hàng loạt thất bại",
+        "batchDownloadPartial": "Tải xuống hàng loạt hoàn tất nhưng có một số lỗi",
+        "downloadedCount": "Đã tải xuống {count} ảnh",
+        "downloadFailedCount": "Không thể tải xuống {count} ảnh",
+        "downloadPartialCount": "Đã tải xuống {success} ảnh, {failed} thất bại",
+        "warning": "Cảnh báo",
+        "error": "Đã xảy ra lỗi",
+        "deleteFailed": "Không thể xóa ảnh",
+        "batchDeleteFailed": "Xóa hàng loạt thất bại",
+        "batchReprocessFailed": "Xử lý lại hàng loạt thất bại",
+        "reprocessFailed": "Không thể xử lý lại ảnh",
+        "livePhotoNotFound": "Không phải Live Photo",
+        "livePhotoLoadError": "Không thể tải thông tin Live Photo",
+        "metadataUpdateSuccess": "Đã cập nhật siêu dữ liệu ảnh",
+        "metadataUpdateFailed": "Không thể cập nhật siêu dữ liệu ảnh",
+        "photoNotFound": "Không tìm thấy ảnh",
+        "photoFileMissing": "Tệp ảnh bị thiếu",
+        "noChangesProvided": "Không có thay đổi nào để áp dụng",
+        "queueUnavailable": "Hàng đợi tác vụ không khả dụng",
+        "reverseGeocodeQueued": "Đã đưa tác vụ mã hóa ngược vị trí vào hàng đợi",
+        "reverseGeocodeFailed": "Không thể đưa tác vụ mã hóa ngược vị trí vào hàng đợi",
+        "eraseLocationQueued": "Đã đưa tác vụ xóa thông tin vị trí vào hàng đợi",
+        "eraseLocationFailed": "Không thể đưa tác vụ xóa thông tin vị trí vào hàng đợi",
+        "batchEraseLocationQueued": "Đã đưa {count} tác vụ xóa vị trí vào hàng đợi",
+        "batchEraseLocationFailed": "Không thể đưa các tác vụ xóa vị trí hàng loạt vào hàng đợi",
+        "taskSubmitFailed": "Không thể gửi tác vụ",
+        "taskStatusCheckFailed": "Không thể kiểm tra trạng thái tác vụ",
+        "uploadFailed": "Tải lên thất bại"
+      },
+      "errors": {
+        "noSelection": "Vui lòng chọn ảnh để tải lên",
+        "fileValidationFailed": "Xác thực tệp thất bại",
+        "allFilesValidationFailed": "Tất cả tệp đều không qua xác thực",
+        "allFilesTooLarge": "Tất cả {count} tệp đã chọn đều vượt giới hạn kích thước tối đa ({maxSize}MB).",
+        "filesTooLargeSkipped": "Đã bỏ qua {count} tệp vượt kích thước (giới hạn {maxSize}MB). Các tệp còn lại sẽ tiếp tục tải lên.",
+        "filesUnsupportedSkipped": "Đã bỏ qua {count} tệp có định dạng không được hỗ trợ. Các tệp còn lại sẽ tiếp tục tải lên.",
+        "unsupportedFormat": "Định dạng tệp không được hỗ trợ: {type}. Vui lòng chọn ảnh JPEG, PNG hoặc HEIC, hoặc video Live Photo định dạng MOV.",
+        "fileTooLarge": "Tệp quá lớn: {size}MB. Kích thước tối đa được hỗ trợ: {maxSize}MB.",
+        "uploadFailed": "Tải lên thất bại",
+        "uploadNetworkError": "Kết nối mạng thất bại hoặc lỗi CORS. Vui lòng kiểm tra cấu hình mạng và lưu trữ.",
+        "uploadCorsError": "Yêu cầu CORS thất bại. Vui lòng kiểm tra cấu hình CORS của bộ lưu trữ.",
+        "uploadUnauthorized": "Không được ủy quyền. Vui lòng đăng nhập lại.",
+        "taskSubmitFailed": "Không thể gửi tác vụ xử lý",
+        "taskStatusCheckFailed": "Không thể kiểm tra trạng thái tác vụ. Vui lòng làm mới trang và thử lại."
+      },
+      "processing": {
+        "preparing": "Đang chuẩn bị",
+        "uploading": "Đang tải lên",
+        "processing": "Đang xử lý",
+        "completed": "Hoàn tất",
+        "error": "Lỗi",
+        "skipped": "Đã bỏ qua",
+        "blocked": "Đã chặn"
+      },
+      "uploadQueue": {
+        "clearCompleted": "Xóa các tác vụ hoàn tất",
+        "clearAll": "Xóa tất cả tác vụ",
+        "taskCleared": "Đã xóa các tác vụ hoàn tất",
+        "allTasksCleared": "Đã xóa tất cả tác vụ tải lên",
+        "tasksCleared": "Đã xóa {count} tác vụ"
+      },
+      "editModal": {
+        "title": "Chỉnh sửa chi tiết ảnh",
+        "description": "Cập nhật tiêu đề, mô tả, thẻ và vị trí chụp.",
+        "fields": {
+          "title": "Tiêu đề",
+          "description": "Mô tả",
+          "tags": "Thẻ",
+          "tagsHint": "Nhấn Enter để thêm từng thẻ.",
+          "location": "Vị trí",
+          "locationHint": "Bấm lên bản đồ để đặt vị trí chụp.",
+          "clearLocation": "Xóa thông tin vị trí",
+          "coordinates": "Tọa độ",
+          "noLocation": "Chưa chọn vị trí",
+          "rating": "Xếp hạng",
+          "ratingHint": "Bấm vào ngôi sao để đặt xếp hạng cho ảnh (0-5 sao).",
+          "noRating": "Không xếp hạng",
+          "panoramaTitle": "Toàn cảnh 360°",
+          "panoramaHint": "Với ảnh không thể tự động nhận diện là 360, hãy buộc bật chế độ xem hình cầu.",
+          "panoramaAuto": "Tự động",
+          "panoViewTitle": "Chế độ xem ban đầu cố định",
+          "panoViewHint": "Mở toàn cảnh hướng về chế độ xem này. Để trống để dùng mặc định.",
+          "panoViewClear": "Xóa chế độ xem cố định",
+          "panoYaw": "Xoay ngang (°)",
+          "panoPitch": "Xoay dọc (°)"
+        },
+        "actions": {
+          "cancel": "Hủy",
+          "save": "Lưu thay đổi"
+        }
+      },
+      "uploadQueueItem": {
+        "status": {
+          "waiting": "Đang chờ",
+          "preparing": "Đang chuẩn bị",
+          "uploading": "Đang tải lên {0}%",
+          "pendingProcessing": "Đang chờ xử lý",
+          "completed": "Hoàn tất",
+          "error": "Lỗi",
+          "skipped": "Đã bỏ qua",
+          "blocked": "Đã chặn",
+          "unknown": "Không xác định"
+        },
+        "stage": {
+          "preprocessing": "Tiền xử lý",
+          "metadata": "Trích xuất siêu dữ liệu",
+          "thumbnail": "Tạo hình thu nhỏ",
+          "exif": "Xử lý EXIF",
+          "reverseGeocoding": "Mã hóa ngược vị trí",
+          "livePhoto": "Phát hiện Live Photo"
+        },
+        "actions": {
+          "abort": "Hủy bỏ",
+          "clear": "Xóa"
+        },
+        "progress": {
+          "upload": "Tiến trình tải lên",
+          "remainingTime": "Thời gian còn lại: {0}",
+          "processing": "Trạng thái xử lý"
+        },
+        "alerts": {
+          "longProcessing": "Tệp lớn có thể mất nhiều thời gian hơn để xử lý, điều này là bình thường.",
+          "success": "Đã tải lên và xử lý tệp thành công"
+        }
+      },
+      "uploadQueuePanel": {
+        "title": "Hàng đợi tải tệp lên",
+        "stats": {
+          "waiting": "đang chờ",
+          "active": "đang thực hiện",
+          "completed": "hoàn tất",
+          "error": "thất bại",
+          "skipped": "đã bỏ qua",
+          "blocked": "đã chặn"
+        },
+        "summary": "{completed} hoàn tất, {error} thất bại, {skipped} đã bỏ qua, {blocked} đã chặn",
+        "actions": {
+          "clearCompleted": "Xóa đã hoàn tất",
+          "clearAll": "Xóa tất cả",
+          "goToQueue": "Quản lý hàng đợi"
+        }
+      },
+      "previewTitle": "Xem trước ảnh"
+    },
+    "albums": {
+      "title": "Quản lý album",
+      "subtitle": "Tạo và quản lý các album ảnh của bạn",
+      "createButton": "Tạo album",
+      "noAlbums": "Chưa có album nào",
+      "noAlbumsTip": "Tạo album đầu tiên để sắp xếp ảnh của bạn",
+      "searchPlaceholder": "Tìm kiếm album…",
+      "totalCount_one": "album",
+      "totalCount_other": "album",
+      "searchResult_one": "kết quả tìm kiếm",
+      "searchResult_other": "kết quả tìm kiếm",
+      "searchEmpty": "Không có album phù hợp",
+      "searchEmptyTip": "Không có album liên quan đến \"{keyword}\"",
+      "viewGrid": "Chế độ lưới",
+      "viewList": "Chế độ danh sách",
+      "viewMedium": "Chế độ xem vừa",
+      "subAlbums": "album con",
+      "searchClear": "Xóa tìm kiếm",
+      "card": {
+        "locked": "Đã khóa",
+        "actions": {
+          "view": "Xem album",
+          "edit": "Chỉnh sửa",
+          "reset": "Đặt lại tùy chỉnh",
+          "delete": "Xóa"
+        }
+      },
+      "form": {
+        "title": "Tiêu đề",
+        "titlePlaceholder": "Nhập tiêu đề album",
+        "titleRequired": "Vui lòng nhập tiêu đề album",
+        "description": "Mô tả",
+        "descriptionPlaceholder": "Nhập mô tả album (tùy chọn)",
+        "coverPhoto": "Ảnh bìa album",
+        "addCoverPhoto": "Thêm ảnh bìa",
+        "selectPhotos": "Chọn ảnh",
+        "editPhotos": "Chỉnh sửa lựa chọn ảnh",
+        "selectedCount": "Đã chọn {count} ảnh",
+        "clearAll": "Xóa tất cả",
+        "isHidden": "Ẩn album",
+        "isHiddenHint": "Ảnh trong album ẩn không được hiển thị trên trang chủ",
+        "customUrl": "Đường dẫn URL tùy chỉnh",
+        "customUrlHint": "Khi được đặt, album được truy cập qua /albums/s/{slug}; nếu không sẽ dùng đường dẫn quét tự động.",
+        "customUrlPlaceholder": "ví dụ: my-trip-2024 (để trống để dùng đường dẫn mặc định)",
+        "albumUidLabel": "UID album",
+        "publicLinkLabel": "Liên kết công khai",
+        "publicLinkFallback": "Chưa đặt liên kết tùy chỉnh; đường dẫn mặc định sẽ được sử dụng.",
+        "publicLinkEmptyTip": "Điền liên kết tùy chỉnh ở trên để xem URL công khai tại đây.",
+        "copied": "Đã sao chép",
+        "copyLink": "Sao chép liên kết",
+        "password": "Mật khẩu truy cập",
+        "passwordHint": "Khách truy cập phải nhập mật khẩu này để mở album này và mọi album con không ghi đè nó.",
+        "passwordPlaceholder": "Đặt mật khẩu truy cập (tùy chọn)",
+        "passwordPlaceholderSet": "Để trống để giữ mật khẩu hiện tại",
+        "clearPassword": "Xóa mật khẩu của album này"
+      },
+      "table": {
+        "columns": {
+          "cover": "Ảnh bìa",
+          "title": "Tiêu đề",
+          "description": "Mô tả",
+          "photoCount": "Ảnh",
+          "createdAt": "Tạo lúc",
+          "actions": "Thao tác"
+        },
+        "external": "Bên ngoài",
+        "customized": "Đã tùy chỉnh",
+        "hidden": "Ẩn",
+        "resetCustom": "Xóa cài đặt tùy chỉnh",
+        "expand": "Mở rộng album con"
+      },
+      "modal": {
+        "selectPhotos": "Chọn ảnh",
+        "totalPhotos": "Tổng cộng {count} ảnh",
+        "selectedPhotos": "Đã chọn {count} ảnh",
+        "searchPlaceholder": "Tìm kiếm ảnh...",
+        "searchResults": "Kết quả: {current} / {total}",
+        "selectAll": "Chọn tất cả",
+        "setCover": "Đặt làm ảnh bìa",
+        "noPhotos": "Không có ảnh",
+        "noResults": "Không tìm thấy ảnh phù hợp",
+        "tryOtherKeywords": "Thử từ khóa khác",
+        "confirm": "Xác nhận ({count})",
+        "selectedInfo": "Đã chọn:",
+        "coverSetInfo": "Đã đặt ảnh bìa"
+      },
+      "slideover": {
+        "create": {
+          "title": "Tạo album",
+          "description": "Tạo album mới để sắp xếp ảnh của bạn"
+        },
+        "edit": {
+          "title": "Chỉnh sửa album",
+          "description": "Sửa thông tin và ảnh của album"
+        },
+        "submitCreate": "Tạo",
+        "submitEdit": "Lưu",
+        "cancel": "Hủy"
+      },
+      "delete": {
+        "title": "Xóa album",
+        "message": "Bạn chắc chắn muốn xóa album \"{title}\"? Xóa album sẽ không xóa các ảnh bên trong, chỉ xóa riêng album.",
+        "cancel": "Hủy",
+        "confirm": "Xác nhận xóa"
+      },
+      "reset": {
+        "title": "Xóa cài đặt tùy chỉnh",
+        "message": "Bạn chắc chắn muốn xóa cài đặt tùy chỉnh cho \"{title}\"? Thao tác này khôi phục giao diện mặc định của thư mục. Không xóa ảnh hay thư mục nào.",
+        "confirm": "Xóa cài đặt tùy chỉnh"
+      },
+      "messages": {
+        "createSuccess": "Đã tạo album thành công",
+        "updateSuccess": "Đã cập nhật album thành công",
+        "deleteSuccess": "Đã xóa album thành công",
+        "createError": "Không thể tạo album",
+        "updateError": "Không thể cập nhật album",
+        "deleteError": "Không thể xóa album",
+        "loadError": "Không thể tải album",
+        "loadDetailError": "Không thể tải chi tiết album",
+        "loadPhotosError": "Không thể tải ảnh",
+        "resetSuccess": "Đã xóa cài đặt tùy chỉnh",
+        "resetError": "Không thể xóa cài đặt tùy chỉnh"
+      },
+      "photoCount": "{count} ảnh"
+    },
+    "overview": {
+      "title": "Tổng quan",
+      "refreshData": "Làm mới",
+      "indicator": {
+        "totalPhotos": "Tổng số ảnh",
+        "thisMonth": "Mới trong tháng này",
+        "queueStatus": {
+          "title": "Trạng thái hàng đợi",
+          "processing": "Đang xử lý",
+          "pending": "Chờ"
+        },
+        "storageUsage": "Dung lượng lưu trữ"
+      },
+      "section": {
+        "runtimeInfo": {
+          "title": "Thông tin thời gian chạy",
+          "version": "Phiên bản",
+          "image": "Hình ảnh Docker",
+          "uptime": "Thời gian hoạt động",
+          "environment": "Môi trường",
+          "lastUpdate": "Cập nhật lần cuối",
+          "systems": {
+            "windows": "Microsoft Windows",
+            "windows10": "Microsoft Windows 10",
+            "windows11": "Microsoft Windows 11",
+            "ubuntu": "Ubuntu",
+            "debian": "Debian",
+            "centos": "CentOS",
+            "redhat": "Red Hat Enterprise Linux",
+            "fedora": "Fedora",
+            "arch": "Arch Linux",
+            "alpine": "Alpine Linux",
+            "opensuse": "openSUSE",
+            "macos": "macOS",
+            "docker": "Vùng chứa Docker",
+            "unknown": "Hệ thống không xác định"
+          }
+        },
+        "memory": {
+          "title": "Dung lượng bộ nhớ"
+        },
+        "cpu": {
+          "title": "Tải CPU",
+          "label": "Tải hệ thống hiện tại"
+        },
+        "storage": {
+          "title": "Lưu trữ",
+          "local": "Bộ lưu trữ cục bộ",
+          "library": "Thư viện bên ngoài"
+        },
+        "queue": {
+          "title": "Trạng thái hàng đợi",
+          "activeWorkers": "Công nhân đang hoạt động",
+          "totalWorkers": "Tổng số công nhân",
+          "totalProcessed": "Đã xử lý",
+          "totalFailed": "Số lần thất bại",
+          "avgSuccessRate": "Tỷ lệ thành công"
+        },
+        "recentUploads": {
+          "title": "Tải lên gần đây",
+          "empty": "Chưa có ảnh",
+          "viewAll": "Xem tất cả",
+          "previewTitle": "Xem trước ảnh"
+        },
+        "mediaTypes": {
+          "title": "Nội dung & nguồn",
+          "empty": "Không có dữ liệu",
+          "typeLabel": "Loại",
+          "sourceLabel": "Nguồn",
+          "image": "Ảnh",
+          "video": "Video",
+          "upload": "Tải lên",
+          "library": "Thư viện"
+        }
+      },
+      "shareSite": {
+        "label": "Chia sẻ trang web của bạn",
+        "button": "Chia sẻ trang web của bạn"
+      },
+      "memoryUnavailable": "không có sẵn thông tin bộ nhớ",
+      "storageUnavailable": "không có sẵn thông tin lưu trữ",
+      "storageNetwork": "Lưu trữ mạng; không thể báo cáo dung lượng ổ đĩa cục bộ",
+      "storagePhotos": "Mức sử dụng ảnh"
+    },
+    "queue": {
+      "title": "Quản lý hàng đợi",
+      "indicator": {
+        "pending": "Đang chờ",
+        "processing": "Đang xử lý",
+        "completed": "Hoàn tất",
+        "failed": "Thất bại"
+      },
+      "actions": {
+        "refresh": "Làm mới dữ liệu",
+        "clearCompleted": "Xóa đã hoàn tất",
+        "clearFailed": "Xóa các mục thất bại",
+        "clearAll": "Xóa tất cả",
+        "retrySelected": "Thử lại các mục đã chọn",
+        "retryAll": "Thử lại tất cả các mục thất bại",
+        "clearNonActive": "Xóa các mục không hoạt động"
+      },
+      "table": {
+        "id": "ID tác vụ",
+        "type": "Loại",
+        "status": "Trạng thái",
+        "attempts": "Số lần thử",
+        "priority": "Ưu tiên",
+        "stage": "Giai đoạn",
+        "error": "Lỗi",
+        "errorMessage": "Thông báo lỗi",
+        "createdAt": "Tạo lúc",
+        "completedAt": "Hoàn tất lúc",
+        "actions": "Thao tác",
+        "expandAria": "Mở rộng",
+        "detail": {
+          "photoId": "ID ảnh",
+          "payload": "Tải trọng"
+        }
+      },
+      "status": {
+        "pending": "Đang chờ",
+        "in-stages": "Đang xử lý",
+        "completed": "Hoàn tất",
+        "failed": "Thất bại"
+      },
+      "types": {
+        "photo": "Xử lý ảnh",
+        "live-photo-video": "Video LivePhoto",
+        "photo-reverse-geocoding": "Mã hóa ngược vị trí ảnh",
+        "photo-erase-location": "Xóa vị trí ảnh"
+      },
+      "stages": {
+        "preprocessing": "Tiền xử lý",
+        "metadata": "Siêu dữ liệu",
+        "thumbnail": "Hình thu nhỏ",
+        "exif": "Xử lý EXIF",
+        "motion-photo": "Xử lý ảnh chuyển động",
+        "reverse-geocoding": "Mã hóa vị trí",
+        "live-photo": "Xử lý LivePhoto",
+        "location-erase": "Xóa vị trí"
+      },
+      "buttons": {
+        "retry": "Thử lại",
+        "delete": "Xóa"
+      },
+      "messages": {
+        "noTasks": "Không tìm thấy tác vụ",
+        "retrySuccess": "Thử lại tác vụ thành công",
+        "retryFailed": "Không thể thử lại tác vụ",
+        "deleteSuccess": "Đã xóa tác vụ thành công",
+        "batchRetrySuccess": "Thử lại hàng loạt thành công",
+        "clearSuccess": "Đã xóa các mục hoàn tất",
+        "operationFailed": "Thao tác thất bại",
+        "clearSuccessDescription": "Đã xóa {count} tác vụ",
+        "clearFailed": "Không thể xóa các tác vụ",
+        "batchRetrySuccessDescription": "Đã thử lại {count} tác vụ",
+        "batchRetryFailed": "Thử lại hàng loạt thất bại",
+        "deleteFailed": "Không thể xóa tác vụ"
+      },
+      "filters": {
+        "all": "Tất cả",
+        "status": "Lọc theo trạng thái",
+        "type": "Lọc theo loại"
+      },
+      "taskListTitle": "Hàng đợi tác vụ"
+    },
+    "logs": {
+      "connectionStatus": {
+        "idle": "Đã ngắt kết nối",
+        "connecting": "Đang kết nối...",
+        "loadingHistory": "Đang tải lịch sử...",
+        "live": "Trực tiếp",
+        "error": "Lỗi kết nối"
+      },
+      "search": {
+        "placeholder": "Tìm kiếm nội dung nhật ký...",
+        "clearAriaLabel": "Xóa ô tìm kiếm"
+      },
+      "filter": {
+        "levelPlaceholder": "Lọc mức độ",
+        "tagPlaceholder": "Lọc thẻ",
+        "all": "Tất cả"
+      },
+      "countLabel": "Tổng/Hiển thị: {total}/{shown}",
+      "tagCount": "Thẻ: {count}",
+      "empty": {
+        "waiting": "Đang chờ dữ liệu nhật ký...",
+        "noMatch": "Không có mục nhật ký phù hợp"
+      },
+      "historyHint": "Đang hiển thị {count} mục nhật ký mới nhất",
+      "loadHistory": "Tải lịch sử"
+    },
+    "access": {
+      "pleaseLogin": "Vui lòng đăng nhập để xem bảng điều khiển",
+      "noAccess": "Xin lỗi, bạn không có quyền truy cập trang này."
+    },
+    "nav": {
+      "home": "Về trang chủ",
+      "documentation": "Tài liệu",
+      "albums": "Album"
+    }
+  },
+  "settings": {
+    "app": {
+      "trash": {
+        "retention": {
+          "label": "Thời gian lưu thùng rác",
+          "description": "Thời gian ảnh nằm trong thùng rác trước khi bị xóa vĩnh viễn",
+          "help": "Ảnh chuyển vào thùng rác sẽ bị xóa vĩnh viễn sau khoảng thời gian này. \"Không bao giờ xóa\" giữ chúng cho đến khi bạn xóa thủ công.",
+          "options": {
+            "7": "7 ngày",
+            "14": "14 ngày",
+            "30": "30 ngày",
+            "60": "60 ngày",
+            "90": "90 ngày",
+            "180": "180 ngày",
+            "365": "1 năm",
+            "never": "Không bao giờ xóa"
+          }
+        }
+      },
+      "title": {
+        "label": "Tên phiên bản",
+        "description": "Tiêu đề của phiên bản"
+      },
+      "slogan": {
+        "label": "Khẩu hiệu",
+        "description": "Khẩu hiệu của phiên bản",
+        "help": "Khẩu hiệu hiển thị bên dưới tiêu đề trên trang chủ"
+      },
+      "author": {
+        "label": "Chủ sở hữu",
+        "description": "Tên chủ sở hữu của phiên bản"
+      },
+      "avatarUrl": {
+        "label": "URL ảnh đại diện",
+        "description": "Liên kết đến ảnh đại diện của chủ sở hữu",
+        "help": "Ảnh đại diện được hiển thị trên trang tải và trang chủ"
+      },
+      "siteUrl": {
+        "label": "URL trang web (OG / Chia sẻ)",
+        "description": "Địa chỉ công khai chuẩn được dùng cho liên kết chia sẻ và ảnh xem trước OG",
+        "help": "Để trống để theo miền truy cập hiện tại. Đối với triển khai LAN/IP hoặc để khóa liên kết chia sẻ vào một miền cụ thể, hãy đặt tại đây, ví dụ: https://dev.1xc.top"
+      },
+      "allowedHosts": {
+        "label": "Các máy chủ được phép (Danh sách máy chủ trắng)",
+        "description": "Danh sách các máy chủ, miền hoặc IP LAN được phép, phân tách bằng dấu phẩy",
+        "help": "Danh sách máy chủ, miền hoặc IP LAN nguồn được phép, phân tách bằng dấu phẩy; có hiệu lực ngay khi lưu, không cần khởi động lại. Hỗ trợ ký tự đại diện như *.example.com. Dùng * để cho phép mọi máy chủ (thường cho thiết lập LAN/nhiều miền). Với triển khai LAN/IP, hãy dùng * hoặc thêm IP LAN của bạn vào đây, nếu không OG image/trang web có thể bị chặn"
+      },
+      "loader": {
+        "images": {
+          "label": "Ảnh thẻ màn hình tải",
+          "description": "Tùy chỉnh ba ảnh hiển thị trên các thẻ tải khi thư viện đang tải",
+          "help": "Để trống để dùng các thẻ kính lỏng mặc định. Bạn cũng có thể tải lên ảnh của riêng mình, chúng được nhúng trực tiếp và không được phục vụ như các tệp riêng.",
+          "liquid": "Thẻ kính lỏng (mặc định)",
+          "preset": "Dùng ảnh mẫu tích hợp sẵn",
+          "upload": "Tải lên",
+          "useUrl": "Dùng URL",
+          "urlPlaceholder": "Dán URL ảnh…",
+          "urlEmpty": "Vui lòng nhập URL ảnh",
+          "slotLabel": "Thẻ {n}"
+        },
+        "cardStyle": {
+          "label": "Kiểu thẻ",
+          "description": "Chọn kiểu thị giác của các thẻ tải",
+          "help": "Kính lỏng: thẻ kính mờ. Skeuomorphic: thẻ ảnh in trông như ảnh thật được đóng khung.",
+          "liquid": "Kính lỏng (mặc định)",
+          "skeuo": "Thẻ skeuomorphic"
+        },
+        "animation": {
+          "label": "Kiểu hoạt ảnh",
+          "description": "Chọn cách hoạt ảnh tải hiển thị",
+          "help": "Chồng: các thẻ chồng lên nhau và di chuyển qua lại. Xòe: các thẻ xòe ra như một bộ bài được chia.",
+          "stack": "Chồng (mặc định)",
+          "fan": "Xòe"
+        }
+      },
+      "appearance": {
+        "theme": {
+          "label": "Chủ đề",
+          "description": "Chọn chủ đề ứng dụng",
+          "help": "Người dùng có thể ghi đè điều này trong trình duyệt của họ",
+          "light": "Sáng",
+          "dark": "Tối",
+          "system": "Hệ thống"
+        },
+        "themeToggle": {
+          "label": "Hiển thị nút chuyển chủ đề trong tiêu đề",
+          "description": "Hiển thị nút chuyển sáng/tối trong tiêu đề thư viện",
+          "help": "Khi bật, khách truy cập có thể chuyển chủ đề trong tiêu đề; khi tắt, khách truy cập dùng chủ đề đã đặt ở trên"
+        },
+        "cardCornerRadius": {
+          "label": "Độ cong góc thẻ ảnh",
+          "description": "Bật các góc bo tròn cho thẻ ảnh trong thư viện",
+          "help": "Mặc định tắt (góc sắc). Khi bật, dùng bán kính được đặt bên dưới"
+        },
+        "cardCornerRadiusValue": {
+          "label": "Kích thước bán kính góc",
+          "description": "Bán kính góc thẻ ảnh thư viện (pixel)",
+          "help": "Phạm vi 0 - 64 px, 0 nghĩa là góc sắc"
+        }
+      },
+      "upload": {
+        "maxFileSize": {
+          "label": "Kích thước tệp tải lên tối đa",
+          "description": "Kích thước tối đa của một tệp tải lên (MB)",
+          "help": "Có hiệu lực ngay lập tức và áp dụng cho mọi người dùng"
+        }
+      }
+    },
+    "system": {
+      "sections": {
+        "thirdPartyLogin": "Đăng nhập bên thứ ba",
+        "fileProcessing": "Xử lý tệp",
+        "debugSettings": "Cài đặt gỡ lỗi"
+      },
+      "upload": {
+        "duplicateCheck": {
+          "enabled": {
+            "label": "Phát hiện tệp trùng lặp khi tải lên",
+            "description": "Phát hiện ảnh trùng lặp theo tên tệp và áp dụng chiến lược đã chọn",
+            "help": "Khi tắt, bỏ qua kiểm tra trước trùng lặp và các tệp trùng tên vẫn tiếp tục tải lên"
+          },
+          "mode": {
+            "label": "Chế độ xử lý tệp trùng lặp",
+            "description": "Cách xử lý các tệp được phát hiện là trùng lặp",
+            "help": "Chỉ có hiệu lực khi phát hiện trùng lặp được bật",
+            "options": {
+              "skip": "Bỏ qua",
+              "warn": "Cảnh báo và ghi đè",
+              "block": "Chặn tải lên"
+            }
+          }
+        }
+      },
+      "webglImageViewerDebug": {
+        "label": "Chế độ gỡ lỗi trình xem ảnh WebGL",
+        "description": "Kiểm soát việc trình xem ảnh WebGL hiển thị thông tin gỡ lỗi trong môi trường production",
+        "help": "Khi bật, người dùng đã đăng nhập có thể xem bảng gỡ lỗi WebGL trong mọi môi trường; khi tắt, thông tin gỡ lỗi chỉ hiển thị trong môi trường phát triển"
+      },
+      "scanAlbum": {
+        "adminBypass": {
+          "label": "Quản trị viên truy cập album được bảo vệ mà không cần mật khẩu",
+          "description": "Khi bật, quản trị viên đã đăng nhập có thể mở album được bảo vệ bằng mật khẩu mà không cần nhập mật khẩu",
+          "help": "Mặc định tắt: ngay cả quản trị viên cũng phải nhập mật khẩu album chính xác. Khi bật, quản trị viên có thể bỏ qua mật khẩu (chỉ áp dụng cho quản trị viên đã đăng nhập)"
+        }
+      },
+      "auth": {
+        "github": {
+          "enabled": {
+            "label": "Bật đăng nhập GitHub",
+            "description": "Có bật đăng nhập GitHub OAuth hay không"
+          },
+          "clientId": {
+            "label": "GitHub Client ID",
+            "description": "Client ID của ứng dụng GitHub OAuth của bạn"
+          },
+          "clientSecret": {
+            "label": "GitHub Client Secret",
+            "description": "Client Secret của ứng dụng GitHub OAuth của bạn"
+          }
+        }
+      },
+      "sectionDescription": "Cấu hình các tham số hành vi ở cấp hệ thống. Các thay đổi tại đây sẽ ảnh hưởng đến hành vi tải lên và dịch vụ toàn cục."
+    },
+    "map": {
+      "provider": {
+        "label": "Nhà cung cấp bản đồ",
+        "description": "Chọn nhà cung cấp dịch vụ bản đồ"
+      },
+      "mapbox": {
+        "token": {
+          "label": "Mapbox Token",
+          "description": "Mã truy cập API Mapbox",
+          "help": "Nên dùng mã thông báo không có giới hạn miền"
+        },
+        "style": {
+          "label": "Kiểu Mapbox",
+          "description": "URL kiểu bản đồ Mapbox"
+        }
+      },
+      "maplibre": {
+        "token": {
+          "label": "MapTiler Token",
+          "description": "Mã truy cập API MapTiler",
+          "help": "MapLibre mặc định dùng nhà cung cấp dịch vụ bản đồ miễn phí MapTiler"
+        },
+        "style": {
+          "label": "Kiểu MapLibre",
+          "description": "URL kiểu bản đồ MapLibre"
+        }
+      },
+      "sectionDescription": "Cấu hình dịch vụ hiển thị bản đồ và mã hóa vị trí. Nhà cung cấp bản đồ ảnh hưởng đến kiểu bản đồ và thông tin xác thực truy cập."
+    },
+    "location": {
+      "language": {
+        "label": "Ngôn ngữ vị trí",
+        "description": "Ngôn ngữ để mã hóa tên vị trí",
+        "help": "Chọn ngôn ngữ để mã hóa ngược vị trí ảnh. Mặc định là tiếng Anh."
+      },
+      "mapbox": {
+        "token": {
+          "label": "Mapbox Token",
+          "description": "Mã truy cập API Mapbox",
+          "help": "Khi được cấu hình, mã này sẽ thay thế Nominatim làm dịch vụ vị trí"
+        }
+      },
+      "nominatim": {
+        "baseUrl": {
+          "label": "URL cơ sở Nominatim",
+          "description": "URL cơ sở cho API mã hóa ngược vị trí Nominatim",
+          "help": "Để trống để dùng dịch vụ Nominatim công khai mặc định"
+        }
+      }
+    },
+    "privacy": {
+      "upload": {
+        "autoEraseLocation": {
+          "label": "Tự động xóa thông tin vị trí khi tải lên",
+          "description": "Tự động xóa siêu dữ liệu EXIF GPS và làm sạch các trường định vị khi xử lý ảnh tải lên",
+          "help": "Khi bật, việc xóa vị trí sẽ chạy không đồng bộ trong hàng đợi xử lý"
+        }
+      },
+      "sectionDescription": "Quản lý các chính sách quyền riêng tư dữ liệu cho việc tải ảnh lên. Nên bật xóa dữ liệu vị trí trên các trang web công khai."
+    },
+    "storage": {
+      "name": {
+        "label": "Tên nhà cung cấp",
+        "description": "Tên của cấu hình nhà cung cấp lưu trữ"
+      },
+      "provider": {
+        "label": "Nhà cung cấp lưu trữ",
+        "description": "Chọn nhà cung cấp dịch vụ lưu trữ",
+        "options": {
+          "local": {
+            "label": "Lưu trữ cục bộ",
+            "description": "Lưu ảnh trực tiếp trên hệ thống tệp của máy chủ."
+          },
+          "s3": {
+            "label": "Tương thích S3",
+            "description": "Dùng AWS S3, Cloudflare R2 hoặc các dịch vụ tương thích S3 khác."
+          },
+          "openlist": {
+            "label": "OpenList",
+            "description": "Kết nối đến một phiên bản Alist hoặc OpenList để lưu trữ."
+          }
+        }
+      },
+      "s3": {
+        "bucket": {
+          "label": "Tên Bucket",
+          "description": "Tên bucket S3 để lưu ảnh"
+        },
+        "region": {
+          "label": "Khu vực",
+          "description": "Khu vực AWS cho bucket S3"
+        },
+        "endpoint": {
+          "label": "Điểm cuối S3",
+          "description": "URL điểm cuối tương thích S3 tùy chỉnh (ví dụ: cho MinIO)"
+        },
+        "prefix": {
+          "label": "Tiền tố lưu trữ",
+          "description": "Đường dẫn tiền tố cho các đối tượng trong bucket"
+        },
+        "cdnUrl": {
+          "label": "URL CDN",
+          "description": "URL CDN tùy chỉnh để truy cập ảnh"
+        },
+        "accessKeyId": {
+          "label": "ID khóa truy cập",
+          "description": "ID khóa truy cập AWS hoặc tương đương"
+        },
+        "secretAccessKey": {
+          "label": "Khóa truy cập bí mật",
+          "description": "Khóa truy cập bí mật AWS hoặc tương đương"
+        },
+        "forcePathStyle": {
+          "label": "Buộc kiểu đường dẫn",
+          "description": "Dùng URL kiểu đường dẫn thay vì kiểu máy chủ ảo"
+        },
+        "maxKeys": {
+          "label": "Số khóa tối đa",
+          "description": "Số khóa tối đa để truy xuất mỗi yêu cầu"
+        }
+      },
+      "local": {
+        "basePath": {
+          "label": "Đường dẫn cơ sở lưu trữ",
+          "description": "Đường dẫn hệ thống tệp cục bộ để lưu ảnh"
+        },
+        "baseUrl": {
+          "label": "URL cơ sở",
+          "description": "URL cơ sở công khai để truy cập ảnh đã lưu"
+        },
+        "prefix": {
+          "label": "Tiền tố lưu trữ",
+          "description": "Đường dẫn tiền tố để tổ chức ảnh trong bộ lưu trữ"
+        }
+      },
+      "openlist": {
+        "baseUrl": {
+          "label": "URL cơ sở OpenList",
+          "description": "URL cơ sở của máy chủ OpenList"
+        },
+        "rootPath": {
+          "label": "Đường dẫn gốc",
+          "description": "Đường dẫn gốc để lưu ảnh trong OpenList"
+        },
+        "token": {
+          "label": "Mã xác thực",
+          "description": "Mã xác thực API OpenList"
+        },
+        "uploadEndpoint": {
+          "label": "Điểm cuối tải lên",
+          "description": "Điểm cuối API để tải tệp lên (mặc định: /api/fs/put)"
+        },
+        "downloadEndpoint": {
+          "label": "Điểm cuối tải xuống",
+          "description": "Điểm cuối API để tải tệp xuống (tùy chọn)"
+        },
+        "listEndpoint": {
+          "label": "Điểm cuối danh sách",
+          "description": "Điểm cuối API để liệt kê tệp (tùy chọn)"
+        },
+        "deleteEndpoint": {
+          "label": "Điểm cuối xóa",
+          "description": "Điểm cuối API để xóa tệp (mặc định: /api/fs/remove)"
+        },
+        "metaEndpoint": {
+          "label": "Điểm cuối siêu dữ liệu",
+          "description": "Điểm cuối API để truy xuất siêu dữ liệu tệp (mặc định: /api/fs/get)"
+        },
+        "pathField": {
+          "label": "Tên trường đường dẫn",
+          "description": "Tên tham số cho đường dẫn tệp trong các yêu cầu API (mặc định: path)"
+        },
+        "cdnUrl": {
+          "label": "URL CDN",
+          "description": "URL CDN tùy chỉnh để truy cập ảnh"
+        }
+      },
+      "sectionDescription": "Quản lý lược đồ lưu trữ mặc định và các nhà cung cấp lưu trữ có sẵn. Các cài đặt trên trang này chỉ ảnh hưởng đến các lần tải ảnh sau.",
+      "table": {
+        "columns": {
+          "name": "Tên lưu trữ",
+          "type": "Loại lưu trữ",
+          "actions": "Thao tác"
+        }
+      },
+      "messages": {
+        "saved": "Đã lưu cài đặt",
+        "saveError": "Lỗi khi lưu cài đặt",
+        "created": "Đã tạo lược đồ lưu trữ",
+        "createError": "Lỗi khi tạo lược đồ lưu trữ",
+        "deleted": "Đã xóa lược đồ lưu trữ",
+        "deleteError": "Không thể xóa lược đồ lưu trữ"
+      },
+      "providers": {
+        "s3": "Lưu trữ tương thích AWS S3",
+        "local": "Lưu trữ cục bộ",
+        "openlist": "OpenList"
+      },
+      "sections": {
+        "currentDefault": "Bộ lưu trữ mặc định hiện tại",
+        "management": "Quản lý lược đồ lưu trữ"
+      },
+      "form": {
+        "schemeLabel": "Lược đồ lưu trữ",
+        "schemePlaceholder": "Chọn lược đồ lưu trữ",
+        "typeLabel": "Loại lưu trữ",
+        "typePlaceholder": "Chọn loại lưu trữ",
+        "nameLabel": "Tên lưu trữ"
+      },
+      "changeModal": {
+        "title": "Thay đổi lược đồ lưu trữ",
+        "alertTitle": "Lưu ý",
+        "alertDescription": "Các tệp tải lên sau khi thay đổi lược đồ lưu trữ sẽ được lưu trong lược đồ mới. Các tệp đã có trong lược đồ gốc sẽ không được di chuyển."
+      },
+      "slideover": {
+        "title": "Tạo lược đồ lưu trữ"
+      },
+      "actions": {
+        "add": "Thêm bộ lưu trữ",
+        "create": "Tạo bộ lưu trữ",
+        "info": "Thông tin"
+      },
+      "info": {
+        "title": "Thông tin lược đồ lưu trữ",
+        "name": "Tên",
+        "type": "Loại",
+        "createdAt": "Tạo lúc",
+        "updatedAt": "Cập nhật lúc",
+        "config": {
+          "basePath": "Đường dẫn cơ sở lưu trữ",
+          "baseUrl": "URL cơ sở",
+          "prefix": "Tiền tố",
+          "bucket": "Bucket",
+          "region": "Khu vực",
+          "endpoint": "Điểm cuối",
+          "cdnUrl": "URL CDN",
+          "rootPath": "Đường dẫn gốc",
+          "token": "Mã thông báo"
+        }
+      },
+      "scanLibrary": {
+        "sectionTitle": "Thư viện quét cục bộ",
+        "sectionDescription": "Một phương pháp lưu trữ riêng: thả ảnh hoặc video thông thường vào một thư mục và chúng tự động được quét và tạo hình thu nhỏ. Hoàn toàn độc lập với bộ lưu trữ tải lên được mã hóa.",
+        "table": {
+          "photoCount": "Đã lập chỉ mục",
+          "notScanned": "Chưa được quét",
+          "lastScanAt": "Lần quét cuối",
+          "lastScanResult": "Kết quả"
+        },
+        "empty": "Chưa có thư viện quét nào. Thêm một thư mục để bắt đầu.",
+        "result": {
+          "new": "Mới",
+          "updated": "Đã cập nhật",
+          "failed": "Thất bại",
+          "noChange": "Không có thay đổi trong lần quét này"
+        },
+        "dotStatus": {
+          "ok": "Khỏe mạnh · hình thu nhỏ đã cập nhật",
+          "error": "Lần quét cuối có lỗi",
+          "off": "Đã tắt"
+        },
+        "messages": {
+          "saved": "Đã lưu thư viện quét",
+          "created": "Đã tạo thư viện quét",
+          "updated": "Đã cập nhật thư viện quét",
+          "deleted": "Đã xóa thư viện quét",
+          "saveError": "Lỗi khi lưu thư viện quét",
+          "deleteError": "Không thể xóa thư viện quét",
+          "scanned": "Đã kích hoạt quét:",
+          "scanError": "Không thể kích hoạt quét"
+        },
+        "form": {
+          "nameLabel": "Tên thư viện",
+          "namePlaceholder": "Để trống để dùng tên thư mục",
+          "pathLabel": "Đường dẫn thư mục",
+          "pathPlaceholder": "Đường dẫn tuyệt đối đến thư mục được theo dõi, ví dụ: /photos",
+          "intervalLabel": "Khoảng thời gian theo dõi",
+          "intervalMsSuffix": "ms",
+          "intervalHint": "Tần suất thư mục này được tự động quét",
+          "intervalSeconds": "{value} giây",
+          "intervalMinutes": "{value} phút",
+          "intervalMixed": "{minutes} phút {seconds} giây",
+          "enabledLabel": "Bật thư viện bên ngoài",
+          "enabledStateOn": "Bật",
+          "enabledStateOff": "Tắt",
+          "enabledHint": "Khi bật, thư mục bên ngoài này được gắn và quét vào thư viện. Khi tắt, nó bị ẩn khỏi chế độ xem và tạm dừng quét.",
+          "asAlbumLabel": "Hiển thị dưới dạng album",
+          "asAlbumStateOn": "Album",
+          "asAlbumStateOff": "Thư viện",
+          "asAlbumHint": "Hiển thị thư viện này như một album trên trang Album và ẩn ảnh của nó khỏi thư viện chính. Các thư mục con xuất hiện như các album lồng nhau."
+        },
+        "info": {
+          "title": "Thông tin thư viện quét",
+          "name": "Tên",
+          "path": "Đường dẫn thư mục",
+          "provider": "Loại nguồn",
+          "status": "Trạng thái",
+          "enabled": "Đã bật",
+          "disabled": "Đã tắt",
+          "interval": "Khoảng thời gian theo dõi",
+          "intervalMs": "{value} ms",
+          "notScanned": "Chưa được quét",
+          "scannedAt": "Quét lần cuối",
+          "scanResult": "Kết quả cuối",
+          "photoIndexed": "Ảnh đã lập chỉ mục",
+          "displayMode": "Chế độ hiển thị",
+          "modeAlbum": "Album",
+          "modeGallery": "Thư viện",
+          "thumbnailDirHint": "Hình thu nhỏ được ghi ngay tại chỗ",
+          "thumbnailDir": "Một thư mục con thumbnails bên trong thư mục thư viện",
+          "scanIntervalHint": "Khoảng thời gian thư mục này được tự động kiểm tra",
+          "createdAt": "Đã tạo",
+          "updatedAt": "Đã cập nhật"
+        },
+        "slideover": {
+          "title": "Thêm thư viện quét",
+          "editTitle": "Chỉnh sửa thư viện quét",
+          "infoTitle": "Thông tin thư viện quét"
+        },
+        "actions": {
+          "add": "Thêm thư viện quét",
+          "save": "Lưu",
+          "edit": "Chỉnh sửa",
+          "info": "Thông tin",
+          "delete": "Xóa"
+        }
+      }
+    },
+    "analytics": {
+      "sectionDescription": "Chèn các thẻ script tùy chỉnh vào head và body của trang để phân tích, theo dõi hoặc dữ liệu có cấu trúc. Script chạy cho mọi khách truy cập. Chỉ dán mã bạn tin tưởng.",
+      "headScripts": {
+        "label": "Script head",
+        "description": "Đoạn HTML chứa các thẻ script để chèn vào head của trang.",
+        "help": "Dán các thẻ script đầy đủ (cho phép nhiều thẻ). Dành cho GA, Baidu, Plausible, Umami, JSON-LD, v.v. Tích hợp Matomo hiện có chạy độc lập."
+      },
+      "bodyScripts": {
+        "label": "Script body",
+        "description": "Đoạn HTML chứa các thẻ script để chèn vào đầu body của trang.",
+        "help": "Dán các thẻ script đầy đủ (cho phép nhiều thẻ). Phù hợp cho các script cần chạy sau khi body mở ra."
+      }
+    },
+    "security": {
+      "sectionTitle": "Bảo mật tài khoản",
+      "sectionDescription": "Quản lý xác minh hai bước để bảo vệ tài khoản của bạn.",
+      "twoFactor": {
+        "title": "Xác minh hai bước",
+        "description": "Yêu cầu mã một lần từ ứng dụng xác thực ngoài mật khẩu của bạn khi đăng nhập.",
+        "enabledBadge": "Đã bật",
+        "enabledNotice": "Xác minh hai bước đang bật. Bạn phải nhập mã từ ứng dụng xác thực khi đăng nhập.",
+        "disabledBadge": "Đã tắt",
+        "disabledNotice": "Xác minh hai bước đang tắt. Hãy cân nhắc bật nó để bảo mật tài khoản của bạn.",
+        "enableAction": "Bật 2FA",
+        "disableAction": "Tắt 2FA",
+        "cutoffHint": "Quan trọng: Lưu giấy ghi khôi phục trước khi tắt. Bạn sẽ bị khóa nếu không thể cung cấp mã hợp lệ.",
+        "setupTitle": "Thiết lập xác minh hai bước",
+        "setupScanHint": "Quét mã QR này bằng ứng dụng xác thực của bạn (Google Authenticator, Authy, v.v.) hoặc nhập khóa thiết lập theo cách thủ công.",
+        "secretLabel": "Khóa thiết lập",
+        "codeLabel": "Mã xác minh",
+        "codeHint": "Nhập mã 6 chữ số từ ứng dụng của bạn để xác nhận thiết lập.",
+        "confirmAction": "Bật & Xác nhận",
+        "cancelAction": "Hủy",
+        "confirmSuccess": "Xác minh hai bước hiện đã được bật.",
+        "confirmError": "Mã không hợp lệ. Vui lòng kiểm tra và thử lại.",
+        "disableTitle": "Tắt xác minh hai bước",
+        "disableHint": "Nhập mã xác minh hiện tại để xác nhận tắt 2FA.",
+        "disableSuccess": "Xác minh hai bước đã được tắt.",
+        "disableError": "Mã không hợp lệ. Vui lòng kiểm tra và thử lại.",
+        "copySecret": "Sao chép",
+        "copied": "Đã sao chép"
+      },
+      "loadFailed": "Không thể tải cài đặt bảo mật",
+      "actions": {
+        "cancel": "Hủy",
+        "confirm": "Xác nhận"
+      },
+      "loginRecords": {
+        "title": "Nhật ký đăng nhập",
+        "description": "Hoạt động đăng nhập gần đây trên tài khoản của bạn, gồm các lần thành công, thất bại và các bước đang chờ xác minh hai bước.",
+        "loadFailed": "Không thể tải nhật ký đăng nhập",
+        "refresh": "Làm mới",
+        "empty": "Chưa có bản ghi đăng nhập nào.",
+        "timeAgo": "trước",
+        "justNow": "vừa xong",
+        "column": {
+          "status": "Trạng thái",
+          "method": "Phương thức",
+          "ip": "Địa chỉ IP",
+          "device": "Thiết bị",
+          "time": "Thời gian"
+        },
+        "status": {
+          "success": "Thành công",
+          "failed": "Thất bại",
+          "challenge": "Đang chờ xác minh"
+        },
+        "method": {
+          "password": "Mật khẩu",
+          "two-factor": "Hai bước",
+          "github": "OAuth"
+        },
+        "unknownIp": "Không xác định",
+        "locationUnknown": "Vị trí không xác định"
+      }
+    },
+    "general": {
+      "description": "Quản lý thông tin cơ bản và giao diện hiển thị của trang web. Các thay đổi sẽ ngay lập tức ảnh hưởng đến bảng điều khiển và giao diện công khai."
+    },
+    "interface": {
+      "description": "Quản lý các cài đặt liên quan đến hiển thị giao diện: chủ đề giao diện và cấu hình tải khi vào thư viện.",
+      "languageChanged": "Đã chuyển ngôn ngữ"
+    },
+    "loader": {
+      "description": "Tùy chỉnh ba ảnh thẻ dùng trong hoạt ảnh tải khi vào thư viện. Mặc định là các ảnh mẫu tích hợp; bạn có thể khôi phục mặc định bất cứ lúc nào."
+    },
+    "form": {
+      "loadFailed": "Không thể tải cài đặt",
+      "saveSuccess": "Đã lưu cài đặt",
+      "saveFailed": "Không thể lưu cài đặt"
+    }
+  },
+  "wizard": {
+    "admin": {
+      "username": {
+        "label": "Tên người dùng"
+      },
+      "email": {
+        "label": "Email"
+      },
+      "password": {
+        "label": "Mật khẩu"
+      },
+      "confirmPassword": {
+        "label": "Xác nhận mật khẩu"
+      }
+    },
+    "map": {
+      "provider": {
+        "mapbox": {
+          "label": "Mapbox",
+          "description": "Bản đồ hiệu năng cao với nhiều tùy chọn tạo kiểu phong phú."
+        },
+        "maplibre": {
+          "label": "MapLibre",
+          "description": "Phân nhánh mã nguồn mở của Mapbox GL JS."
+        }
+      }
+    },
+    "form": {
+      "loadSchemaFailed": "Không thể tải lược đồ trình hướng dẫn"
+    }
+  },
+  "onboarding": {
+    "layout": {
+      "steps": {
+        "welcome": "Chào mừng",
+        "admin": "Tài khoản quản trị",
+        "site": "Thông tin trang web",
+        "storage": "Lưu trữ",
+        "map": "Dịch vụ bản đồ",
+        "complete": "Hoàn tất"
+      },
+      "current": "Đang tiến hành",
+      "stepCounter": "Bước {0} / {1}",
+      "logoAlt": "Logo ChronoFrame"
+    },
+    "actions": {
+      "next": "Tiếp theo",
+      "completeSetup": "Hoàn tất thiết lập"
+    },
+    "welcome": {
+      "title": "Chào mừng đến với ChronoFrame",
+      "description": "Theo trình hướng dẫn để thiết lập thư viện ảnh của bạn trong vài phút.",
+      "intro": "ChronoFrame là ứng dụng thư viện ảnh cá nhân linh hoạt. Trước khi tải ảnh lên, chúng tôi cần cấu hình một số điều cần thiết:",
+      "cards": {
+        "admin": {
+          "title": "Tài khoản quản trị",
+          "description": "Dùng để đăng nhập vào bảng điều khiển quản trị"
+        },
+        "site": {
+          "title": "Thông tin trang web",
+          "description": "Cá nhân hóa thư viện của bạn"
+        },
+        "storage": {
+          "title": "Lưu trữ",
+          "description": "Lưu ảnh của bạn cục bộ hoặc trên đám mây"
+        },
+        "map": {
+          "title": "Dịch vụ bản đồ",
+          "description": "Trực quan hóa vị trí và đánh dấu các điểm chụp"
+        }
+      },
+      "privacyNotice": "ChronoFrame không thu thập bất kỳ dữ liệu nào của bạn.",
+      "start": "Bắt đầu"
+    },
+    "admin": {
+      "title": "Tài khoản quản trị",
+      "description": "Tạo tài khoản quản trị viên"
+    },
+    "site": {
+      "title": "Thông tin trang web",
+      "description": "Cấu hình thông tin cơ bản của trang web"
+    },
+    "storage": {
+      "title": "Lưu trữ",
+      "description": "Chọn nơi lưu trữ ảnh của bạn"
+    },
+    "map": {
+      "title": "Dịch vụ bản đồ",
+      "description": "Cấu hình dịch vụ bản đồ cho chế độ xem địa cầu và bản đồ thu nhỏ của ảnh"
+    },
+    "complete": {
+      "title": "Sắp hoàn tất!",
+      "description": "Thư viện ảnh ChronoFrame của bạn đã sẵn sàng để sử dụng.",
+      "body": "Bạn đã hoàn tất tất cả các bước thiết lập cần thiết. Giờ bạn có thể đăng nhập bằng tài khoản quản trị và bắt đầu tải ảnh lên.",
+      "sessionSecretNote": "Một khóa mã hóa phiên đã được tự động tạo và lưu để bạn không cần phải thiết lập thủ công.",
+      "goToDashboard": "Đi tới bảng điều khiển",
+      "setupFailedTitle": "Thiết lập thất bại",
+      "setupFailedDescription": "Không thể hoàn tất thiết lập"
+    }
+  },
+  "globe": {
+    "analysis": {
+      "annotation": "Chú thích thông số chụp",
+      "annotationDescription": "Xem phân bố địa lý theo thông số chụp",
+      "mode": {
+        "none": {
+          "label": "Mặc định",
+          "description": "Tắt chú thích"
+        },
+        "focalLength": {
+          "label": "Tiêu cự",
+          "description": "Góc rộng / Tiêu chuẩn / Ống kính xa"
+        },
+        "shutterSpeed": {
+          "label": "Tốc độ cửa trập",
+          "description": "Nhanh / Trung bình / Chậm"
+        },
+        "altitude": {
+          "label": "Độ cao",
+          "description": "Thấp / Trung bình / Cao"
+        }
+      },
+      "legend": {
+        "focalLength": {
+          "title": "Phân bố tiêu cự",
+          "wide": "Rộng",
+          "standard": "Tiêu chuẩn",
+          "telephoto": "Ống kính xa"
+        },
+        "shutterSpeed": {
+          "title": "Phân bố tốc độ cửa trập",
+          "fast": "Nhanh",
+          "medium": "Trung bình",
+          "slow": "Chậm"
+        },
+        "altitude": {
+          "title": "Phân bố độ cao",
+          "low": "Độ cao thấp",
+          "medium": "Độ cao trung bình",
+          "high": "Độ cao lớn"
+        }
+      }
+    },
+    "timeline": {
+      "toggle": "Bật/Tắt dòng thời gian",
+      "playPause": "Phát/Tạm dừng dòng thời gian",
+      "title": "Dòng thời gian"
+    }
+  },
+  "photo": {
+    "image": {
+      "loadError": "Không thể tải ảnh"
+    }
+  },
+  "panorama": {
+    "previewTitle": "Toàn cảnh 360°",
+    "dragHintShort": "Kéo để nhìn xung quanh",
+    "dragHint": "Kéo để nhìn",
+    "zoomHint": "Cuộn / chụm để phóng to",
+    "resetHint": "Nhấp đúp để đặt lại"
+  }
+}
