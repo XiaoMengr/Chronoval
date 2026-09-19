@@ -1064,7 +1064,8 @@
         "passwordReveal": "Hiển thị/ẩn mật khẩu",
         "passwordWarningTitle": "Mật khẩu album không được để trống",
         "passwordWarningMessage": "Nhập mật khẩu (không được để trống) để bật mật khẩu truy cập album.",
-        "passwordWarningGotIt": "Đã hiểu"
+        "passwordWarningGotIt": "Đã hiểu",
+        "passwordSaveError": "Lưu thất bại. Mật khẩu truy cập album đã đặt không được để trống."
       },
       "table": {
         "columns": {

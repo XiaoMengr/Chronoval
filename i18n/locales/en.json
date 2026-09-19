@@ -1064,7 +1064,8 @@
         "passwordReveal": "Show / hide password",
         "passwordWarningTitle": "Album password cannot be empty",
         "passwordWarningMessage": "Enter a non-empty password to enable access to this album.",
-        "passwordWarningGotIt": "Got it"
+        "passwordWarningGotIt": "Got it",
+        "passwordSaveError": "Save failed. The access password cannot be empty."
       },
       "table": {
         "columns": {

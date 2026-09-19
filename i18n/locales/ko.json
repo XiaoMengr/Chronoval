@@ -1064,7 +1064,8 @@
         "passwordReveal": "비밀번호 표시/숨기기",
         "passwordWarningTitle": "앨범 비밀번호는 비워둘 수 없습니다",
         "passwordWarningMessage": "이 앨범 접근 비밀번호를 켜려면 비밀번호를 입력하세요. 비밀번호는 비워둘 수 없습니다.",
-        "passwordWarningGotIt": "확인"
+        "passwordWarningGotIt": "확인",
+        "passwordSaveError": "저장에 실패했습니다. 설정한 앨범 접근 비밀번호는 비워둘 수 없습니다."
       },
       "table": {
         "columns": {

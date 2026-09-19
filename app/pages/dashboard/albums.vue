@@ -101,18 +101,29 @@ const hasStoredPassword = computed(() => {
 })
 // 眼睛开关：明文/密文显示密码输入框内容
 const passwordReveal = ref(false)
-// 「访问密码」卡片引用：用于「点击密码区之外 → 未输入密码时红色弹框警告」
+// 「访问密码」卡片引用：用于「点击密码区之外 → 未输入密码时系统提示警告」
 const passwordBoxRef = ref<HTMLElement | null>(null)
-// 访问密码警告弹框（红色提示）
-const isPasswordWarningOpen = ref(false)
+// 访问密码为空警告最近一次弹出时间（节流，避免与保存提示等重复弹出）
+const lastPasswordWarnAt = ref(0)
+
+const showPasswordWarningToast = () => {
+  const now = Date.now()
+  if (now - lastPasswordWarnAt.value < 500) return
+  lastPasswordWarnAt.value = now
+  useToast().add({
+    title: $t('dashboard.albums.form.passwordWarningTitle'),
+    description: $t('dashboard.albums.form.passwordWarningMessage'),
+    color: 'danger',
+  })
+}
 
 const handleOutsidePasswordClick = (event: MouseEvent) => {
   if (!passwordToggle.value) return
   const box = passwordBoxRef.value
   if (box && event.target instanceof Node && !box.contains(event.target)) {
-    // 开关已开启但未输入任何密码时，不自动关闭开关，而是弹出红色警告提示
-    if (!formData.password?.trim() && !isPasswordWarningOpen.value) {
-      isPasswordWarningOpen.value = true
+    // 开关已开启但未输入任何密码时，不自动关闭开关，改用系统提示警告
+    if (!formData.password?.trim()) {
+      showPasswordWarningToast()
     }
   }
 }
@@ -244,7 +255,6 @@ const openEditSlideover = async (album: AlbumItem) => {
   currentAlbum.value = album
   formData.slug = ''
   passwordReveal.value = false
-  isPasswordWarningOpen.value = false
 
   // 外部库相簿：不从 albums 表加载详情，直接使用列表节点携带的元数据
   if (isScanAlbum(album)) {
@@ -367,6 +377,12 @@ const confirmDestructive = () => {
 const onFormSubmit = async (event: FormSubmitEvent<AlbumFormState>) => {
   isSubmittingForm.value = true
   const newPassword = event.data.password?.trim() || ''
+  // 打开了访问密码开关、但未输入任何密码时：禁止保存，弹出系统失败提示
+  if (passwordToggle.value && !newPassword && !hasStoredPassword.value) {
+    isSubmittingForm.value = false
+    showPasswordWarningToast()
+    return
+  }
   // 依据「按钮式开关」推导密码载荷：
   // - 关闭开关 → 清除已设定的密码；
   // - 开关开启 → 输入了新密码则更新；未输入且原本已有密码则保持不变（无密码被校验拦截）。
@@ -1709,39 +1725,6 @@ const openAlbum = (album: AlbumItem) => {
                       ? $t('dashboard.albums.reset.confirm')
                       : $t('dashboard.albums.delete.confirm')
                   }}
-                </UButton>
-              </div>
-            </div>
-          </template>
-        </UModal>
-
-        <!-- 访问密码为空：红色警告提示 -->
-        <UModal v-model:open="isPasswordWarningOpen">
-          <template #content>
-            <div class="p-6 space-y-4">
-              <div class="flex items-center gap-3">
-                <div
-                  class="shrink-0 w-10 h-10 bg-error-100 dark:bg-error-900/30 rounded-full flex items-center justify-center"
-                >
-                  <Icon name="tabler:alert-circle" class="text-error-500" />
-                </div>
-                <div>
-                  <h3 class="text-lg font-semibold">
-                    {{ $t('dashboard.albums.form.passwordWarningTitle') }}
-                  </h3>
-                  <p class="text-sm text-error-600 dark:text-error-400 mt-1">
-                    {{ $t('dashboard.albums.form.passwordWarningMessage') }}
-                  </p>
-                </div>
-              </div>
-
-              <div class="flex justify-end gap-2 pt-4">
-                <UButton
-                  variant="ghost"
-                  color="neutral"
-                  @click="isPasswordWarningOpen = false"
-                >
-                  {{ $t('dashboard.albums.form.passwordWarningGotIt') }}
                 </UButton>
               </div>
             </div>
