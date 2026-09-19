@@ -176,10 +176,12 @@ const handleLoaderImagesSubmit = async () => {
 
           <div
             v-if="loading && appearanceFields.length === 0"
-            class="space-y-4 px-5 py-5"
+            class="flex items-center justify-center px-5 py-12"
           >
-            <USkeleton class="h-4 w-40" />
-            <USkeleton class="h-10 w-full" />
+            <UIcon
+              name="tabler:loader"
+              class="h-8 w-8 animate-spin text-primary-500"
+            />
           </div>
 
           <UForm
@@ -251,23 +253,40 @@ const handleLoaderImagesSubmit = async () => {
                 type="button"
                 :title="opt.name"
                 :aria-pressed="selectedLang === opt.code"
-                class="inline-flex h-10 items-center gap-2 rounded-full border px-3 text-sm font-medium transition-colors"
+                class="inline-flex h-9 items-center overflow-hidden rounded-full border text-sm font-medium transition-[background-color,border-color] antialiased will-change-[transform,opacity]"
                 :class="
                   selectedLang === opt.code
-                    ? 'border-primary-500 bg-primary-500 text-white'
-                    : 'border-neutral-200 bg-neutral-50 text-neutral-700 hover:border-neutral-300 hover:bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800'
+                    ? 'border-sky-500'
+                    : 'border-neutral-200 bg-neutral-50 hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-900 dark:hover:bg-neutral-800'
                 "
                 @click="selectedLang = opt.code"
               >
+                <!-- 左段：简写，选中时整段全高铺蓝色，自带左侧圆角与外层一致，避免被外层裁剪出锯齿发丝 -->
                 <span
-                  class="grid h-6 min-w-7 shrink-0 place-items-center rounded-md px-1 text-[11px] font-bold"
+                  class="-ml-px flex h-full items-center pl-3.5 pr-3 first:pl-4 last:pr-0 transition-colors"
                   :class="
                     selectedLang === opt.code
-                      ? 'bg-white/20 text-white'
-                      : 'bg-primary-500/15 text-primary-600 dark:bg-primary-400/15 dark:text-primary-400'
+                      ? 'rounded-l-full bg-sky-500 font-bold text-white'
+                      : 'rounded-l-full text-neutral-500 dark:text-neutral-400'
                   "
                 >{{ opt.short }}</span>
-                <span class="whitespace-nowrap">{{ opt.name }}</span>
+
+                <!-- 分隔直线：仅未选中时显示，选中时过渡淡出隐藏 -->
+                <span
+                  class="h-5 w-px shrink-0 self-center bg-neutral-200 transition-opacity duration-200 dark:bg-neutral-700"
+                  :class="selectedLang === opt.code ? 'opacity-0' : 'opacity-100'"
+                ></span>
+                <span
+                  class="flex h-full items-center gap-2 px-3 text-neutral-800 dark:text-neutral-100"
+                >
+                  <span class="whitespace-nowrap">{{ opt.name }}</span>
+                  <span
+                    class="grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full border border-emerald-500 bg-white text-emerald-500 transition-opacity"
+                    :class="selectedLang === opt.code ? 'opacity-100' : 'opacity-0'"
+                  >
+                    <UIcon name="tabler:check" class="h-3 w-3" />
+                  </span>
+                </span>
               </button>
             </div>
           </div>
@@ -286,10 +305,12 @@ const handleLoaderImagesSubmit = async () => {
 
           <div
             v-if="loading && state['loader.images'] === undefined"
-            class="space-y-4 px-5 py-5"
+            class="flex items-center justify-center px-5 py-12"
           >
-            <USkeleton class="h-4 w-32" />
-            <USkeleton class="h-10 w-full" />
+            <UIcon
+              name="tabler:loader"
+              class="h-8 w-8 animate-spin text-primary-500"
+            />
           </div>
 
           <div v-else class="px-5 py-5">
