@@ -202,6 +202,8 @@ export const albums = sqliteTable('albums', {
     onDelete: 'set null',
   }),
   isHidden: integer('is_hidden', { mode: 'boolean' }).default(false).notNull(),
+  // 首页照片画廊展示开关（仅普通相簿）：开启后该相簿的照片不进入首页全局照片流
+  hideFromGallery: integer('hide_from_gallery', { mode: 'boolean' }).default(false).notNull(),
   // 相簿访问密码哈希（单向存储）；null=未设置密码（开放）
   passwordHash: text('password_hash'),
   // 相簿公开标识（不透明 UID，替代自增 id 暴露在公网链接中）；

@@ -1036,7 +1036,9 @@
         "selectedCount": "Selected {count} photos",
         "clearAll": "Clear all",
         "isHidden": "Hide album",
-        "isHiddenHint": "Photos in hidden albums are not shown on the home page",
+        "isHiddenHint": "Hidden albums require sign-in to view and stay out of gallery lists",
+        "hideFromGallery": "Hide from home gallery",
+        "hideFromGalleryHint": "This album's photos won't appear in the home photo gallery",
         "customUrl": "Custom URL slug",
         "customUrlHint": "When set, the album is accessed via /albums/s/{slug}; otherwise the auto-generated scan path is used.",
         "customUrlPlaceholder": "e.g. my-trip-2024 (leave empty for default path)",
@@ -1054,7 +1056,11 @@
         "passwordHint": "Visitors must enter this password to open this album and any sub-album that doesn't override it.",
         "passwordPlaceholder": "Set an access password (optional)",
         "passwordPlaceholderSet": "Leave empty to keep current password",
-        "clearPassword": "Clear this album's password"
+        "clearPassword": "Clear this album's password",
+        "passwordNotSet": "No password is set",
+        "passwordSet": "Password set",
+        "passwordEnableHint": "Enter a password to enable access to this album",
+        "passwordRequiredToEnable": "Enter a password before enabling the album password"
       },
       "table": {
         "columns": {

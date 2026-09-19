@@ -1,0 +1,1 @@
+ALTER TABLE `albums` ADD `hide_from_gallery` integer DEFAULT false NOT NULL;

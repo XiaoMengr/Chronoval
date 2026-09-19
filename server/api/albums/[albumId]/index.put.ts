@@ -23,6 +23,8 @@ export default eventHandler(async (event) => {
       coverPhotoId: z.string().optional(),
       photoIds: z.array(z.string()).optional(),
       isHidden: z.boolean().optional(),
+      // 首页照片画廊隐藏：开启后照片不进首页照片流
+      hideFromGallery: z.boolean().optional(),
       // 相簿访问密码（明文）：配合 clearPassword 完成 设置/清除/保持
       password: z.string().max(128).optional(),
       clearPassword: z.boolean().optional(),
@@ -94,6 +96,9 @@ export default eventHandler(async (event) => {
     }
     if (body.isHidden !== undefined) {
       updateData.isHidden = body.isHidden
+    }
+    if (body.hideFromGallery !== undefined) {
+      updateData.hideFromGallery = body.hideFromGallery
     }
 
     // 密码处理：clearPassword=true → 清除；非空明文 → 设置新密码；否则保持不变

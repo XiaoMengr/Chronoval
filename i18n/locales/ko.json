@@ -1036,7 +1036,9 @@
         "selectedCount": "사진 {count}장 선택됨",
         "clearAll": "모두 지우기",
         "isHidden": "앨범 숨기기",
-        "isHiddenHint": "숨겨진 앨범의 사진은 홈 페이지에 표시되지 않습니다",
+        "isHiddenHint": "숨겨진 앨범은 로그인이 필요하며 앨범 목록에는 표시되지 않습니다",
+        "hideFromGallery": "홈 갤러리에서 숨기기",
+        "hideFromGalleryHint": "이 앨범의 사진은 홈 갤러리에 표시되지 않습니다",
         "customUrl": "사용자 지정 URL 슬러그",
         "customUrlHint": "설정하면 앨범이 /albums/s/{slug} 경로로 접근됩니다. 그렇지 않으면 자동 생성된 스캔 경로가 사용됩니다.",
         "customUrlPlaceholder": "예: my-trip-2024 (기본 경로를 사용하려면 비워 두세요)",
@@ -1054,7 +1056,11 @@
         "passwordHint": "방문자는 이 앨범과 비밀번호를 재정의하지 않는 하위 앨범을 열려면 이 비밀번호를 입력해야 합니다.",
         "passwordPlaceholder": "접근 비밀번호 설정(선택)",
         "passwordPlaceholderSet": "현재 비밀번호를 유지하려면 비워 두세요",
-        "clearPassword": "이 앨범의 비밀번호 지우기"
+        "clearPassword": "이 앨범의 비밀번호 지우기",
+        "passwordNotSet": "비밀번호가 설정되지 않음",
+        "passwordSet": "비밀번호 설정됨",
+        "passwordEnableHint": "이 앨범 접근 비밀번호를 켜려면 비밀번호를 입력하세요",
+        "passwordRequiredToEnable": "앨범 비밀번호를 켜기 전에 비밀번호를 입력하세요"
       },
       "table": {
         "columns": {

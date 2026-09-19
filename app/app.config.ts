@@ -57,5 +57,16 @@ export default defineAppConfig({
         help: 'mt-0.5',
       },
     },
+    // 开关（Switch）：「关闭态可辨识 + 尺寸统一」优化 ——
+    // 1) 固定轨道尺寸（h-5/w-9），使 checked 与 unchecked 的外框宽高完全一致，
+    //    避免原生开启态比关闭态更宽/更高的跳动感；
+    // 2) 只给未打开（unchecked）的开关加浅灰底 + 中性描边，使其在浅色背景上
+    //    也能一眼看出是一个按钮；开启态完全保持各开关自身的颜色样式
+    //    （info 蓝 / success 绿 / primary 等），不加任何额外边框与着色。
+    switch: {
+      slots: {
+        base: 'h-5 w-9 data-[state=unchecked]:border data-[state=unchecked]:border-neutral-300 dark:border-neutral-600 data-[state=unchecked]:bg-neutral-100 dark:data-[state=unchecked]:bg-neutral-800 focus-visible:outline-primary focus-visible:ring-0',
+      },
+    },
   },
 })

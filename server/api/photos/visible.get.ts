@@ -4,20 +4,28 @@ import {
   desc,
   isNull,
   notInArray,
+  or,
 } from 'drizzle-orm'
 import { getAlbumScanMountSet } from '~~/server/services/scan-library/manager'
 
 export default eventHandler(async (_event) => {
   const db = useDB()
 
-  // 获取所有隐藏相册中的照片ID
+  // 获取需要从首页照片画廊排除的照片ID：
+  // 1) 被标记「相簿隐藏」的相簿照片（整体隐藏，需登录才可见）；
+  // 2) 被单独开启「首页画廊隐藏」的相簿照片（仅不入首页照片流）
   const hiddenAlbumPhotos = db
     .select({
       photoId: tables.albumPhotos.photoId,
     })
     .from(tables.albumPhotos)
     .innerJoin(tables.albums, eq(tables.albumPhotos.albumId, tables.albums.id))
-    .where(eq(tables.albums.isHidden, true))
+    .where(
+      or(
+        eq(tables.albums.isHidden, true),
+        eq(tables.albums.hideFromGallery, true),
+      ),
+    )
     .all()
 
   const hiddenPhotoIds = hiddenAlbumPhotos.map((row) => row.photoId)

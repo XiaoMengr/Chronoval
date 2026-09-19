@@ -14,6 +14,8 @@ export default eventHandler(async (event) => {
       coverPhotoId: z.string().optional(),
       photoIds: z.array(z.string()).optional(),
       isHidden: z.boolean().optional(),
+      // 首页照片画廊隐藏：开启后照片不进首页照片流
+      hideFromGallery: z.boolean().optional(),
       // 相簿访问密码（明文）：非空设置新密码
       password: z.string().max(128).optional(),
       // 自定义公开URL别名（可选）：全局唯一、URL 安全
@@ -54,6 +56,7 @@ export default eventHandler(async (event) => {
         description: body.description || null,
         coverPhotoId: body.coverPhotoId || null,
         isHidden: body.isHidden || false,
+        hideFromGallery: body.hideFromGallery || false,
         passwordHash,
         // 创建即分配不透明 UID
         uid: generateAlbumUid(),

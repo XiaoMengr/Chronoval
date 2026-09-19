@@ -1036,7 +1036,9 @@
         "selectedCount": "Đã chọn {count} ảnh",
         "clearAll": "Xóa tất cả",
         "isHidden": "Ẩn album",
-        "isHiddenHint": "Ảnh trong album ẩn không được hiển thị trên trang chủ",
+        "isHiddenHint": "Album ẩn cần đăng nhập để xem và không xuất hiện trong danh sách album",
+        "hideFromGallery": "Ẩn khỏi bộ sưu tập trang chủ",
+        "hideFromGalleryHint": "Ảnh của album này sẽ không xuất hiện trong bộ sưu tập trang chủ",
         "customUrl": "Đường dẫn URL tùy chỉnh",
         "customUrlHint": "Khi được đặt, album được truy cập qua /albums/s/{slug}; nếu không sẽ dùng đường dẫn quét tự động.",
         "customUrlPlaceholder": "ví dụ: my-trip-2024 (để trống để dùng đường dẫn mặc định)",
@@ -1054,7 +1056,11 @@
         "passwordHint": "Khách truy cập phải nhập mật khẩu này để mở album này và mọi album con không ghi đè nó.",
         "passwordPlaceholder": "Đặt mật khẩu truy cập (tùy chọn)",
         "passwordPlaceholderSet": "Để trống để giữ mật khẩu hiện tại",
-        "clearPassword": "Xóa mật khẩu của album này"
+        "clearPassword": "Xóa mật khẩu của album này",
+        "passwordNotSet": "Chưa đặt mật khẩu",
+        "passwordSet": "Đã đặt mật khẩu",
+        "passwordEnableHint": "Nhập mật khẩu để bật mật khẩu truy cập album này",
+        "passwordRequiredToEnable": "Vui lòng nhập mật khẩu trước khi bật mật khẩu album"
       },
       "table": {
         "columns": {

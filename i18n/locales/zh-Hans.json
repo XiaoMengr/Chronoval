@@ -1034,7 +1034,9 @@
         "selectedCount": "已选择 {count} 张照片",
         "clearAll": "全部清除",
         "isHidden": "隐藏相簿",
-        "isHiddenHint": "隐藏的相簿中的照片不会在首页展示",
+        "isHiddenHint": "隐藏后需登录才能访问，且不会出现在相簿列表",
+        "hideFromGallery": "首页照片画廊隐藏",
+        "hideFromGalleryHint": "开启后该相簿的照片不会出现在首页照片画廊",
         "customUrl": "自定义访问链接",
         "customUrlHint": "设置后相簿将通过 /albums/s/{'{'}链接{'}'} 访问，否则使用由扫描库自动生成的路径。",
         "customUrlPlaceholder": "例如 my-trip-2024（留空则使用默认路径）",
@@ -1052,7 +1054,11 @@
         "passwordHint": "设置后，访问该相簿及其未单独设密码的二级相簿需输入此密码；二级相簿可自行覆盖。",
         "passwordPlaceholder": "设置相簿访问密码（选填）",
         "passwordPlaceholderSet": "留空则不修改现有密码",
-        "clearPassword": "清除该相簿的访问密码"
+        "clearPassword": "清除该相簿的访问密码",
+        "passwordNotSet": "当前未设定密码",
+        "passwordSet": "已设定密码",
+        "passwordEnableHint": "请输入密码以开启该相簿的访问密码",
+        "passwordRequiredToEnable": "开启相簿密码前请先输入密码"
       },
       "table": {
         "columns": {
