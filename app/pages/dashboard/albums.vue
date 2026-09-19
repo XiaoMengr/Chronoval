@@ -935,127 +935,167 @@ const openAlbum = (album: AlbumItem) => {
                 ref="formRef"
                 :state="formData"
                 :validate="validateForm"
-                class="space-y-4"
+                class="space-y-0"
                 @submit="onFormSubmit"
               >
-                <UFormField
-                  :label="$t('dashboard.albums.form.title')"
-                  name="title"
-                  required
-                >
-                  <UInput
-                    v-model="formData.title"
-                    class="w-full"
-                    :placeholder="$t('dashboard.albums.form.titlePlaceholder')"
-                  />
-                </UFormField>
+                <!-- 分区：基本信息 -->
+                <section class="space-y-4">
+                  <header class="flex items-center gap-2 pt-1">
+                    <p class="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">
+                      {{ $t('dashboard.albums.form.groupInfo') }}
+                    </p>
+                    <span class="h-px flex-1 bg-neutral-100 dark:bg-neutral-800" />
+                  </header>
+                  <UFormField
+                    :label="$t('dashboard.albums.form.title')"
+                    name="title"
+                    required
+                  >
+                    <UInput
+                      v-model="formData.title"
+                      class="w-full"
+                      :placeholder="$t('dashboard.albums.form.titlePlaceholder')"
+                    />
+                  </UFormField>
 
-                <UFormField
-                  :label="$t('dashboard.albums.form.description')"
-                  name="description"
-                >
-                  <UTextarea
-                    v-model="formData.description"
-                    class="w-full"
-                    :placeholder="
-                      $t('dashboard.albums.form.descriptionPlaceholder')
-                    "
-                    :rows="3"
-                  />
-                </UFormField>
+                  <UFormField
+                    :label="$t('dashboard.albums.form.description')"
+                    name="description"
+                  >
+                    <UTextarea
+                      v-model="formData.description"
+                      class="w-full"
+                      :placeholder="
+                        $t('dashboard.albums.form.descriptionPlaceholder')
+                      "
+                      :rows="3"
+                    />
+                  </UFormField>
+                </section>
 
-                <UFormField
-                  v-if="currentAlbum"
-                  :label="$t('dashboard.albums.form.albumUidLabel')"
-                  name="albumUid"
-                >
-                  <div class="flex w-full items-center gap-2 rounded-md border border-dashed border-gray-300 bg-gray-50 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900">
-                    <Icon name="tabler:hash" class="size-4 shrink-0 text-gray-400" />
-                    <code class="truncate font-mono text-gray-700 dark:text-gray-200">
-                      {{ albumUid }}
-                    </code>
-                  </div>
-                </UFormField>
+                <!-- 分区：公开访问 -->
+                <div class="my-5 h-px bg-neutral-100 dark:bg-neutral-800" />
+                <section class="space-y-4">
+                  <header class="flex items-center gap-2 pt-1">
+                    <p class="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">
+                      {{ $t('dashboard.albums.form.groupPublic') }}
+                    </p>
+                    <span class="h-px flex-1 bg-neutral-100 dark:bg-neutral-800" />
+                  </header>
 
-                <UFormField
-                  v-if="currentAlbum"
-                  :label="$t('dashboard.albums.form.publicLinkLabel')"
-                  name="publicLink"
-                >
-                  <div class="flex w-full items-center gap-2">
-                    <div
-                      class="flex min-w-0 flex-1 items-center gap-2 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+                  <div
+                    v-if="currentAlbum"
+                    class="grid grid-cols-1 gap-3 sm:grid-cols-2"
+                  >
+                    <UFormField
+                      :label="$t('dashboard.albums.form.albumUidLabel')"
+                      name="albumUid"
                     >
-                      <Icon name="tabler:link" class="size-4 shrink-0 text-gray-400" />
-                      <span v-if="albumPublicUrl" class="truncate text-primary-500 dark:text-primary-400">
-                        {{ albumPublicUrl }}
-                      </span>
-                      <span v-else class="truncate text-neutral-400 dark:text-neutral-500">
-                        {{ $t('dashboard.albums.form.publicLinkFallback') }}
-                      </span>
-                    </div>
-                    <UTooltip :text="$t('dashboard.albums.form.copyLink')">
-                      <UButton
-                        icon="tabler:copy"
-                        size="sm"
-                        color="neutral"
-                        variant="soft"
-                        :disabled="!albumPublicUrl"
-                        @click="copyPublicUrl"
-                      />
-                    </UTooltip>
+                      <div class="flex w-full items-center gap-2 rounded-md border border-dashed border-gray-300 bg-gray-50 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900">
+                        <Icon name="tabler:hash" class="size-4 shrink-0 text-gray-400" />
+                        <code class="truncate font-mono text-gray-700 dark:text-gray-200">
+                          {{ albumUid }}
+                        </code>
+                      </div>
+                    </UFormField>
+
+                    <UFormField
+                      :label="$t('dashboard.albums.form.publicLinkLabel')"
+                      name="publicLink"
+                    >
+                      <div class="flex w-full items-center gap-2">
+                        <div
+                          class="flex min-w-0 flex-1 items-center gap-2 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+                        >
+                          <Icon name="tabler:link" class="size-4 shrink-0 text-gray-400" />
+                          <span v-if="albumPublicUrl" class="truncate text-primary-500 dark:text-primary-400">
+                            {{ albumPublicUrl }}
+                          </span>
+                          <span v-else class="truncate text-neutral-400 dark:text-neutral-500">
+                            {{ $t('dashboard.albums.form.publicLinkFallback') }}
+                          </span>
+                        </div>
+                        <UTooltip :text="$t('dashboard.albums.form.copyLink')">
+                          <UButton
+                            icon="tabler:copy"
+                            size="sm"
+                            color="neutral"
+                            variant="soft"
+                            :disabled="!albumPublicUrl"
+                            @click="copyPublicUrl"
+                          />
+                        </UTooltip>
+                      </div>
+                    </UFormField>
                   </div>
-                </UFormField>
 
-                <UFormField
-                  :label="$t('dashboard.albums.form.customUrl')"
-                  name="slug"
-                  :help="$t('dashboard.albums.form.customUrlHint')"
-                >
-                  <UInput
-                    v-model="formData.slug"
-                    class="w-full"
-                    :placeholder="$t('dashboard.albums.form.customUrlPlaceholder')"
-                  />
-                </UFormField>
+                  <UFormField
+                    :label="$t('dashboard.albums.form.customUrl')"
+                    name="slug"
+                    :help="$t('dashboard.albums.form.customUrlHint')"
+                  >
+                    <UInput
+                      v-model="formData.slug"
+                      class="w-full"
+                      :placeholder="$t('dashboard.albums.form.customUrlPlaceholder')"
+                    />
+                  </UFormField>
+                </section>
 
-                <UFormField
-                  :label="$t('dashboard.albums.form.password')"
-                  name="password"
-                  :help="$t('dashboard.albums.form.passwordHint')"
-                >
-                  <UInput
-                    v-model="formData.password"
-                    class="w-full"
-                    type="password"
-                    autocomplete="new-password"
-                    :placeholder="
-                      currentAlbum && (currentAlbum as any).passwordProtected
-                        ? $t('dashboard.albums.form.passwordPlaceholderSet')
-                        : $t('dashboard.albums.form.passwordPlaceholder')
-                    "
-                  />
-                  <UCheckbox
-                    v-model="clearPassword"
-                    class="mt-3"
-                    :label="$t('dashboard.albums.form.clearPassword')"
-                  />
-                </UFormField>
+                <!-- 分区：访问控制 -->
+                <div class="my-5 h-px bg-neutral-100 dark:bg-neutral-800" />
+                <section class="space-y-4">
+                  <header class="flex items-center gap-2 pt-1">
+                    <p class="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">
+                      {{ $t('dashboard.albums.form.groupSecurity') }}
+                    </p>
+                    <span class="h-px flex-1 bg-neutral-100 dark:bg-neutral-800" />
+                  </header>
 
-              <UFormField
-                :label="$t('dashboard.albums.form.isHidden')"
-                name="isHidden"
-                :hint="$t('dashboard.albums.form.isHiddenHint')"
-              >
-                <UCheckbox
-                  v-model="formData.isHidden"
-                  :label="$t('dashboard.albums.form.isHidden')"
-                />
-              </UFormField>
+                  <UFormField
+                    :label="$t('dashboard.albums.form.password')"
+                    name="password"
+                    :help="$t('dashboard.albums.form.passwordHint')"
+                  >
+                    <UInput
+                      v-model="formData.password"
+                      class="w-full"
+                      type="password"
+                      autocomplete="new-password"
+                      :placeholder="
+                        currentAlbum && (currentAlbum as any).passwordProtected
+                          ? $t('dashboard.albums.form.passwordPlaceholderSet')
+                          : $t('dashboard.albums.form.passwordPlaceholder')
+                      "
+                    />
+                    <UCheckbox
+                      v-if="currentAlbum"
+                      v-model="clearPassword"
+                      class="mt-3"
+                      :label="$t('dashboard.albums.form.clearPassword')"
+                    />
+                  </UFormField>
+
+                  <UFormField
+                    :label="$t('dashboard.albums.form.isHidden')"
+                    name="isHidden"
+                  >
+                    <UCheckbox
+                      v-model="formData.isHidden"
+                      :label="$t('dashboard.albums.form.isHiddenHint')"
+                    />
+                  </UFormField>
+                </section>
               </UForm>
 
               <!-- 照片选择部分（仅手动相册） -->
               <div v-if="!isScanAlbum(currentAlbum)" class="space-y-3">
+                <header class="flex items-center gap-2 pt-1">
+                  <p class="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">
+                    {{ $t('dashboard.albums.form.groupPhotos') }}
+                  </p>
+                  <span class="h-px flex-1 bg-neutral-100 dark:bg-neutral-800" />
+                </header>
                 <UButton
                   variant="outline"
                   color="primary"
