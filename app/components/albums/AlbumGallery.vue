@@ -56,11 +56,25 @@ const timelineGroups = computed(() => {
       if (b[0] === '__unknown__') return -1
       return b[0] < a[0] ? -1 : 1
     })
-    .map(([key, items]) => ({
-      key,
-      dates: key === '__unknown__' ? null : dayjs(key),
-      photos: items,
-    }))
+    .map(([key, items]) => {
+      // 组内涉及的展示城市（去重、过滤缺失值），用于"时光线"组头标注
+      const citiesSet = new Set<string>()
+      for (const { photo } of items) {
+        const c = (
+          photo?.city ||
+          photo?.locationName ||
+          photo?.country ||
+          ''
+        ).trim()
+        if (c) citiesSet.add(c)
+      }
+      return {
+        key,
+        dates: key === '__unknown__' ? null : dayjs(key),
+        photos: items,
+        cities: [...citiesSet],
+      }
+    })
 })
 </script>
 
@@ -136,16 +150,26 @@ const timelineGroups = computed(() => {
       </div>
     </div>
 
-    <!-- 时间线：按拍摄日期分组，组内复用网格卡片 -->
+    <!-- 时光线：按拍摄日期分组，组头标注城市，组内复用网格卡片 -->
     <div v-else-if="layout === 'timeline'" class="space-y-10">
       <div v-for="group in timelineGroups" :key="group.key" class="space-y-3">
-        <!-- 日期头：吸顶便于滚动浏览大分组 -->
-        <div class="sticky top-0 z-10 -mx-1 flex items-baseline gap-2 rounded-md bg-white/90 px-1 py-2 backdrop-blur-sm dark:bg-neutral-950/90">
-          <span class="text-sm font-semibold text-neutral-800 dark:text-neutral-200">
-            {{ group.dates ? group.dates.format('YYYY-MM-DD') : t('albums.layout.unknownDate') }}
-          </span>
-          <span class="text-xs text-neutral-400 dark:text-neutral-500">
-            {{ group.photos.length }} {{ t('albums.layout.photoCount') }}
+        <!-- 日期/城市头：吸顶便于滚动浏览大分组 -->
+        <div class="sticky top-0 z-10 -mx-1 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md bg-white/90 px-1 py-2 backdrop-blur-sm dark:bg-neutral-950/90">
+          <div class="flex items-baseline gap-2">
+            <span class="text-sm font-semibold text-neutral-800 dark:text-neutral-200">
+              {{ group.dates ? group.dates.format('YYYY-MM-DD') : t('albums.layout.unknownDate') }}
+            </span>
+            <span class="text-xs text-neutral-400 dark:text-neutral-500">
+              {{ group.photos.length }} {{ t('albums.layout.photoCount') }}
+            </span>
+          </div>
+          <span
+            v-for="city in group.cities"
+            :key="city"
+            class="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300"
+          >
+            <Icon name="tabler:map-pin" class="size-3" />
+            {{ city }}
           </span>
         </div>
         <div class="grid grid-cols-2 gap-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 2xl:grid-cols-8">

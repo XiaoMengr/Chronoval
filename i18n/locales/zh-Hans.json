@@ -484,7 +484,7 @@
       "waterfall": "瀑布流",
       "grid": "网格",
       "immersive": "沉浸式看图",
-      "timeline": "时间线",
+      "timeline": "时光线",
       "unknownDate": "未知日期",
       "photoCount": "张"
     }
@@ -1083,8 +1083,8 @@
         "layoutGridDesc": "同尺寸卡片整齐铺满网格",
         "layoutImmersive": "沉浸式看图",
         "layoutImmersiveDesc": "单列全幅卡片，向下滚动逐张浏览",
-        "layoutTimeline": "时间线",
-        "layoutTimelineDesc": "按拍摄日期分组，组内网格排列并随时间轴浏览"
+        "layoutTimeline": "时光线",
+        "layoutTimelineDesc": "按拍摄日期分组、组头标注城市，随时间轴浏览"
       },
       "table": {
         "columns": {
