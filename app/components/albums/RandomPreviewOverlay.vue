@@ -21,7 +21,7 @@ const SPIN_MS = 8000 // 轮盘旋转时长（放慢，转动更平顺持久）
 const ZOOM_MS = 1700 // 停稳后：照片原尺寸出现 → 缓慢放大一点的时长
 const FINAL_HOLD = 1100 // 定格后短暂停顿再平滑过渡打开照片
 const MAX_CARDS = 16
-const EASING = 'cubic-bezier(0.2, 0.8, 0.22, 1)'
+const EASING = 'cubic-bezier(0.22, 0.5, 0.28, 1)'
 const GAP = 0.5
 
 const show = ref(false)
@@ -40,6 +40,9 @@ const slots = ref<number[]>([])
 const wheelTransform = ref('')
 const wheelTransition = ref('')
 const zoomActive = ref(false)
+
+// 命中照片按视口计算的放大倍率（适配屏幕、居中）
+const winScale = ref(1.6)
 
 const reducedMotion = ref(false)
 let timer: ReturnType<typeof setTimeout> | null = null
@@ -60,6 +63,17 @@ function measure() {
   cardW.value = w >= 640 ? 118 : w >= 420 ? 98 : 78
   cardH.value = Math.round(cardW.value * 1.28)
   perspective.value = Math.max(1100, w * 2.2)
+
+  // 命中照片放大到「适配屏幕、居中」：以视口高度/宽度为目标计算放大倍率。
+  // 加大比例（高度 0.85 / 宽度 0.92），让照片尽量铺满屏幕更出效果。
+  if (typeof window !== 'undefined') {
+    const vh = window.innerHeight
+    const vw = window.innerWidth
+    let s = (vh * 0.85) / cardH.value
+    const sw = (vw * 0.92) / cardW.value
+    if (sw < s) s = sw
+    winScale.value = Math.min(4.6, Math.max(1.5, s))
+  }
 }
 
 // 沿用「最大半径铺满舞台、往外扩」的策略。
@@ -210,9 +224,27 @@ function handleKeydown(e: KeyboardEvent) {
   }
 }
 
+// 轮盘开启时锁定页面滚动，防止手指/滚轮把底部内容带上来看穿"覆盖全屏"的假象
+function lockScroll(lock: boolean) {
+  const el = document.body
+  if (!el) return
+  if (lock) {
+    if (!('randLock' in el.dataset)) {
+      el.dataset.randLock = el.style.overflow || ''
+      el.style.overflow = 'hidden'
+    }
+  } else {
+    if ('randLock' in el.dataset) {
+      el.style.overflow = el.dataset.randLock || ''
+      delete el.dataset.randLock
+    }
+  }
+}
+
 watch(
   () => props.open,
   (v) => {
+    lockScroll(v)
     if (v) start()
     else {
       stop()
@@ -234,6 +266,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   stop()
+  lockScroll(false)
   window.removeEventListener('keydown', handleKeydown)
   ro?.disconnect()
 })
@@ -248,6 +281,7 @@ onBeforeUnmount(() => {
         role="status"
         aria-live="polite"
         :class="{ 'rand-overlay--zoom': zoomActive || phase === 'settled' }"
+        :style="{ '--rand-win-scale': winScale.value }"
       >
         <div class="rand-head">
           <Icon
@@ -346,6 +380,7 @@ onBeforeUnmount(() => {
   gap: 16px;
   padding: 18px;
   overflow: hidden;
+  overscroll-behavior: contain;
   /* 旋转期间：完全不透明的白色背景（绝不透出背后照片）+ 规则小圆点阵 */
   background: #f8f9fb;
   transition: background-color 0.7s ease;
@@ -368,7 +403,7 @@ onBeforeUnmount(() => {
    高不透明度白 + backdrop blur，绝不透明露图。backdrop-filter 仅作增强；
    不支持它的浏览器也因背景接近不透明而呈白色模糊观感。 */
 .rand-overlay--zoom {
-  background: rgba(248, 249, 251, 0.86);
+  background: rgba(248, 249, 251, 0.95);
   backdrop-filter: blur(36px) saturate(120%);
   -webkit-backdrop-filter: blur(36px) saturate(120%);
 }
@@ -425,6 +460,11 @@ onBeforeUnmount(() => {
   display: grid;
   place-items: center;
   overflow: hidden;
+}
+
+/* 选中放大阶段：允许命中照片超出舞台边界，配合居中放到适配屏幕大小 */
+.rand-overlay--zoom .rand-scene {
+  overflow: visible;
 }
 
 .rand-wheel {
@@ -515,7 +555,7 @@ onBeforeUnmount(() => {
   filter: none;
 }
 
-/* 中奖浮现：原尺寸柔和浮现后缓慢放大一点，丝滑缓动，随后过渡打开照片 */
+/* 中奖浮现：原尺寸柔和浮现后缓慢放大到适配屏幕尺寸（居中），再过渡打开照片 */
 .rand-card__inner--active {
   box-shadow: none;
   animation: randReveal 1.5s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
@@ -528,7 +568,7 @@ onBeforeUnmount(() => {
   }
   to {
     opacity: 1;
-    transform: scale(1.3);
+    transform: scale(var(--rand-win-scale, 1.6));
   }
 }
 
