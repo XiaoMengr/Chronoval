@@ -622,21 +622,6 @@ const remainingPercent = (key: string | number): number | null => {
   const used = usagePercent(key)
   return used === null ? null : 100 - used
 }
-// 进度条填充色：跟随「界面 → 外观 → 上传位置进度条颜色」设置，默认绿色(success)
-// 注意：不依赖任何 Tailwind 色类生成（如 bg-success-500 在部分构建下不会产出实际背景色，
-// 会导致绿色填充看似空白），而是直接用内联 hex/canvas 颜色，保证任何浏览器都必定渲染。
-const UPLOAD_PROGRESS_COLOR_HEX: Record<string, string> = {
-  success: '#16a34a',
-  warning: '#f59e0b',
-  error: '#dc2626',
-  info: '#2563eb',
-  primary: '#334155',
-}
-const uploadProgressColor = useSettingRef('app:appearance.uploadProgressColor')
-const progressBarColor = computed(() => {
-  const color = uploadProgressColor.value
-  return (typeof color === 'string' && UPLOAD_PROGRESS_COLOR_HEX[color]) || '#16a34a'
-})
 
 const hasSelectedFiles = computed(() => selectedFiles.value.length > 0)
 
@@ -2212,36 +2197,9 @@ onUnmounted(() => {
                           >
                             {{ availableLabel(targetAvailableBytes('storage')) }}
                           </span>
-                          <span
-                            v-if="usagePercent('storage') !== null"
-                            class="relative block overflow-hidden rounded-full"
-                            :style="{
-                              height: '14px',
-                              width: 'min(100%, 220px)',
-                              maxWidth: '100%',
-                              backgroundColor: 'rgba(15, 23, 42, 0.07)',
-                            }"
-                          >
-                            <span
-                              class="absolute inset-y-0 left-0 rounded-full transition-all duration-500 ease-out"
-                              :style="{
-                                width: `${remainingPercent('storage')}%`,
-                                backgroundColor: progressBarColor,
-                              }"
-                            />
-                            <span
-                              class="absolute inset-0 flex items-center justify-center text-[10px] font-medium leading-none tabular-nums"
-                              :class="
-                                (remainingPercent('storage') ?? 0) >= 50
-                                  ? 'text-white'
-                                  : 'text-(--ui-text)'
-                              "
-                            >
-                              {{
-                                Math.round(remainingPercent('storage') ?? 0)
-                              }}%
-                            </span>
-                          </span>
+                          <UploadStorageBar
+                            :remaining="remainingPercent('storage')"
+                          />
                         </span>
                       </span>
                       <UBadge
@@ -2252,7 +2210,7 @@ onUnmounted(() => {
                             'dashboard.photos.slideover.options.uploadTarget.defaultBadge',
                           )
                         "
-                        class="ml-auto shrink-0"
+                        class="ml-auto shrink-0 min-w-[4rem] justify-center"
                       />
                     </button>
 
@@ -2301,47 +2259,20 @@ onUnmounted(() => {
                           >
                             {{ availableLabel(targetAvailableBytes(lib.id)) }}
                           </span>
-                          <span
-                            v-if="usagePercent(lib.id) !== null"
-                            class="relative block overflow-hidden rounded-full"
-                            :style="{
-                              height: '14px',
-                              width: 'min(100%, 220px)',
-                              maxWidth: '100%',
-                              backgroundColor: 'rgba(15, 23, 42, 0.07)',
-                            }"
-                          >
-                            <span
-                              class="absolute inset-y-0 left-0 rounded-full transition-all duration-500 ease-out"
-                              :style="{
-                                width: `${remainingPercent(lib.id)}%`,
-                                backgroundColor: progressBarColor,
-                              }"
-                            />
-                            <span
-                              class="absolute inset-0 flex items-center justify-center text-[10px] font-medium leading-none tabular-nums"
-                              :class="
-                                (remainingPercent(lib.id) ?? 0) >= 50
-                                  ? 'text-white'
-                                  : 'text-(--ui-text)'
-                              "
-                            >
-                              {{
-                                Math.round(remainingPercent(lib.id) ?? 0)
-                            }}%
-                            </span>
-                          </span>
+                          <UploadStorageBar
+                            :remaining="remainingPercent(lib.id)"
+                          />
                         </span>
                         </span>
                         <UBadge
                           color="info"
-                        variant="soft"
-                        :label="
-                          $t(
-                            'dashboard.photos.slideover.options.uploadTarget.externalLibraryBadge',
-                          )
-                        "
-                        class="ml-auto shrink-0"
+                          variant="soft"
+                          :label="
+                            $t(
+                              'dashboard.photos.slideover.options.uploadTarget.externalLibraryBadge',
+                            )
+                          "
+                        class="ml-auto shrink-0 min-w-[4rem] justify-center"
                       />
                     </button>
                   </div>
