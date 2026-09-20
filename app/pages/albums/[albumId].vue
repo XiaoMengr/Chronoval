@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { motion } from 'motion-v'
 import AlbumUnlock from '~/components/albums/AlbumUnlock.vue'
+import RandomPreviewOverlay from '~/components/albums/RandomPreviewOverlay.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -128,6 +129,25 @@ const handleOpenViewer = (index: number) => {
     openViewer(index, albumRoute, photos as Photo[])
     router.push(`/${photos[index].id}`)
   }
+}
+
+// —— 随机一张照片：先展示过渡动画页，落定后再跳转 ——
+const randomOpen = ref(false)
+const randomTarget = ref(-1)
+
+const handleOpenRandom = (index: number) => {
+  if (!sortedAlbumPhotos.value.length) return
+  randomTarget.value = index
+  randomOpen.value = true
+}
+
+const handleRandomDone = (index: number) => {
+  randomOpen.value = false
+  handleOpenViewer(index)
+}
+
+const handleRandomCancel = () => {
+  randomOpen.value = false
 }
 
 const coverPhoto = computed(() => {
@@ -353,7 +373,7 @@ onBeforeMount(() => {
             v-else
             v-model:layout="layout"
             :photos="sortedAlbumPhotos"
-            @open-random="handleOpenViewer($event)"
+            @open-random="handleOpenRandom($event)"
           >
             <template #waterfall-card="{ photo, index }">
               <MasonryItem
@@ -433,6 +453,15 @@ onBeforeMount(() => {
         />
       </UTooltip>
     </motion.div>
+
+    <!-- 随机一张照片：过渡动画页 -->
+    <RandomPreviewOverlay
+      :open="randomOpen"
+      :photos="sortedAlbumPhotos"
+      :target="randomTarget"
+      @done="handleRandomDone"
+      @cancel="handleRandomCancel"
+    />
   </div>
 </template>
 

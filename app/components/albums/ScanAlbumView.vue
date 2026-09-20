@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import type { ScanPhoto } from '~/components/albums/scanPhoto'
+import RandomPreviewOverlay from '~/components/albums/RandomPreviewOverlay.vue'
 
 interface ScanChildNode {
   kind: 'scan'
@@ -162,6 +163,25 @@ const closeViewer = () => {
 }
 const onViewerIndexChange = (index: number) => {
   viewer.value.index = index
+}
+
+// —— 随机一张照片：先展示过渡动画页，停顿倒计时后自动打开该照片 ——
+const randomOpen = ref(false)
+const randomTarget = ref(-1)
+
+const handleOpenRandom = (index: number) => {
+  if (!data.value?.dirPhotos.length) return
+  randomTarget.value = index
+  randomOpen.value = true
+}
+
+const handleRandomDone = (index: number) => {
+  randomOpen.value = false
+  openPhoto(index)
+}
+
+const handleRandomCancel = () => {
+  randomOpen.value = false
 }
 
 // —— 相簿展示布局（瀑布流 / 统一网格 / 沉浸式 / 时间线）——
@@ -508,7 +528,7 @@ watch(
             v-model:layout="layout"
             :photos="data!.dirPhotos"
             class="px-6"
-            @open-random="openPhoto($event)"
+            @open-random="handleOpenRandom($event)"
           >
             <template #waterfall-card="{ photo, index }">
               <AlbumsAlbumFluidCard
@@ -550,6 +570,15 @@ watch(
         @index-change="onViewerIndexChange"
       />
     </ClientOnly>
+
+    <!-- 随机一张照片：过渡动画页 -->
+    <RandomPreviewOverlay
+      :open="randomOpen"
+      :photos="data?.dirPhotos ?? []"
+      :target="randomTarget"
+      @done="handleRandomDone"
+      @cancel="handleRandomCancel"
+    />
   </div>
 </template>
 

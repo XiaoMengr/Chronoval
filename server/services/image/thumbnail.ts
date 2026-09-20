@@ -12,10 +12,10 @@ export const generateThumbnailAndHash = async (
 
       // 根据文件大小调整缩略图质量
       const fileSizeMB = buffer.length / (1024 * 1024)
-      const quality = fileSizeMB > 5 ? 85 : 100
+      const quality = fileSizeMB > 5 ? 90 : 100
 
       const thumbnailBuffer = await sharpInst
-        .resize(600, null, {
+        .resize(1280, null, {
           withoutEnlargement: true,
           fastShrinkOnLoad: false, // 提高质量
         })
