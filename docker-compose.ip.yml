@@ -1,0 +1,78 @@
+name: chronoval-ip
+
+# ─────────────────────────────────────────────────────────────────────
+# Chronoval —— 独立 IP 网络模式（macvlan）
+#
+# 让 Chronoval 在局域网里拥有【自己独立的 IP】，不再占用宿主机端口，
+# 直接通过 http://<独立IP>:3000 访问，行为如同局域网内的一台独立小主机。
+# 适合：
+#   · 宿主机 3000 端口已被其他程序占用，想绕开端口冲突；
+#   · 想让 Chronoval 拥有一个稳定、好记的专属 IP 地址；
+#   · 需要把它当作独立地址对外分享、映射或反代。
+#
+# ▍前提
+#   仅支持 Linux（macvlan 依赖物理网卡）。
+#   👉 先建好一张 macvlan 网络（只执行一次），按你的局域网改三处：
+#        --subnet   局域网网段      如 192.168.1.0/24
+#        --gateway  路由器/网关 IP  如 192.168.1.1
+#        -o parent  物理网卡名      用 `ip addr` 查看，如 eth0 / enp2s0 / br0
+#   docker network create -d macvlan \
+#     --subnet=192.168.1.0/24 \
+#     --gateway=192.168.1.1 \
+#     --ip-range=192.168.1.200/28 \
+#     -o parent=eth0 \
+#     chronoval-net
+#   --ip-range 可选，用于限定自动分配池，避免与路由器 DHCP 冲突。
+#
+# ▍直接使用（在本项目根目录执行）
+#   1) mkdir -p data/storage/photos data/storage/videos
+#   2) cp .env.example .env   （按需编辑；管理员可在网页首次引导里填）
+#   3) 把下方 net_chronoval.ipv4_address 改成局域网内一个【空闲】IP，如 192.168.1.50
+#   4) docker compose -f docker-compose.ip.yml up -d --build
+#   5) 浏览器打开 http://192.168.1.50:3000
+#
+#   👉 已构建好镜像/改用 registry 时，把 build 段删掉、image 换成你的镜像即可。
+#
+# ▍注意事项
+#   · 本文件【没有 ports 端口映射】：macvlan 独立 IP 已直接监听 3000。
+#   · 更换 IP 无需重建：改 ipv4_address 后 `docker compose -f docker-compose.ip.yml up -d`。
+#   · macvlan 容器与宿主机之间的单向访问存在限制（容器默认较难主动访问宿主机）。
+#     若你需要容器主动访问宿主上的其他服务（如反代到宿主机进程），
+#     请改用「network_mode: host」模式，或另加一张宿主机回连接口。
+#   · max upper limit：一个物理网卡建议不要叠加太多 macvlan 地址段，避免互访异常。
+# ─────────────────────────────────────────────────────────────────────
+
+services:
+  chronoval:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: chronoval:latest
+    container_name: chronoval-ip
+    restart: unless-stopped
+    networks:
+      net_chronoval:
+        ipv4_address: 192.168.1.50   # ← 改成本局域网内一个空闲 IP
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./data/storage:/app/storage:ro
+      - ./data/library:/app/library
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - -q
+        - -O
+        - /dev/null
+        - http://localhost:3000/
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+networks:
+  net_chronoval:
+    external: true
+    name: chronoval-net

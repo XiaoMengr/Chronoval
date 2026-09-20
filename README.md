@@ -92,6 +92,40 @@ services:
 >
 > **③ 本地扫描库根**：见下文「本地扫描库」小节，适合按相册管理、需要缩略图跟随相册场景。该目录已挂载为**可写**（rw），缩略图可就地生成。
 
+### 独立 IP 访问（docker-compose.ip.yml）
+
+不想占用宿主机端口、想让 Chronoval 在局域网拥有**自己独立的 IP** 地址，直接用它——通过 **macvlan** 网络给容器分配专属 IP，浏览器访问 `http://<独立IP>:3000` 即可，行为如同一台局域网内独立的小主机。
+
+适合：宿主机 `3000` 端口被占用、想要稳定好记的专属地址、需要把这个地址对外分享或反代。
+
+```bash
+# 1. 建一张 macvlan 网络（只执行一次，按实际局域网改三处）
+docker network create -d macvlan \
+  --subnet=192.168.1.0/24 \      # 局域网网段
+  --gateway=192.168.1.1 \        # 路由器/网关 IP
+  -o parent=eth0 \               # 物理网卡名（ip addr 查看）
+  chronoval-net
+
+# 2. 在本项目根目录
+mkdir -p data/storage/photos data/storage/videos
+cp .env.example .env
+
+# 3. 把 docker-compose.ip.yml 里 ipv4_address 改成局域网空闲 IP（如 192.168.1.50）
+# 4. 启动
+docker compose -f docker-compose.ip.yml up -d --build
+
+# 5. 访问 http://192.168.1.50:3000
+```
+
+要点：
+
+- **无 `ports` 端口映射**：独立 IP 已直接监听 3000，不占宿主机端口。
+- 换 IP 无需重建：改 `ipv4_address` 后 `docker compose -f docker-compose.ip.yml up -d` 即可。
+- 仅支持 **Linux**（macvlan 依赖物理网卡）；数据目录、媒体库、扫描库挂载与默认 compose 完全一致。
+- 若还需容器**主动访问宿主机**（如反代到宿主进程），macvlan 对接回有限制，请改用 `network_mode: host`。
+
+完整独立 compose 见 [`docker-compose.ip.yml`](docker-compose.ip.yml)，主机网络模式的备选写法见 [`docs/deployment.md`](docs/deployment.md)。
+
 ### 本地扫描库（独立存储方式）
 
 除「后台上传（加密 blob 存储）」和「传统只读媒体库」外，Chronoval 提供第三种独立存储方式：**本地扫描库**。它把普通照片 / 视频按文件夹作为**可配置的引用源**，丢进去即自动扫描、自动生成缩略图，且与加密上传**完全分离**（数据库用 `source: 'library'` 区分，绝不混入上传 blob）。

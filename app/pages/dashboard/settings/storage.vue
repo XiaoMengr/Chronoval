@@ -953,6 +953,26 @@ const storageInfoConfigEntries = computed(() => {
 
               <template #body>
                 <div class="space-y-4">
+                  <UFormField :ui="{ container: 'sm:max-w-full' }">
+                    <div class="flex w-full items-center justify-between gap-4 rounded-md border border-neutral-200 dark:border-neutral-800 bg-neutral-50/60 dark:bg-neutral-900/40 px-3 py-2.5">
+                      <div class="flex flex-col gap-0.5">
+                        <span class="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                          {{ $t('settings.storage.scanLibrary.form.enabledLabel') }}
+                        </span>
+                        <span
+                          class="text-xs"
+                          :class="scanLibraryFormState.enabled
+                            ? 'text-emerald-600 dark:text-emerald-400'
+                            : 'text-neutral-400 dark:text-neutral-500'"
+                        >
+                          {{ scanLibraryFormState.enabled
+                            ? $t('settings.storage.scanLibrary.form.enabledStateOn')
+                            : $t('settings.storage.scanLibrary.form.enabledStateOff') }}
+                        </span>
+                      </div>
+                      <USwitch v-model="scanLibraryFormState.enabled" color="success" />
+                    </div>
+                  </UFormField>
                   <UFormField
                     :label="$t('settings.storage.scanLibrary.form.nameLabel')"
                     :ui="{ container: 'sm:max-w-full' }"
@@ -992,32 +1012,6 @@ const storageInfoConfigEntries = computed(() => {
                           {{ $t('settings.storage.scanLibrary.form.intervalHint') }}：{{ intervalHumanText }}
                         </p>
                       </UFormField>
-                      <UFormField
-                        :ui="{ container: 'sm:max-w-full' }"
-                      >
-                        <div class="flex w-full items-center justify-between gap-4 rounded-md border border-neutral-200 dark:border-neutral-800 bg-neutral-50/60 dark:bg-neutral-900/40 px-3 py-2.5">
-                          <div class="flex flex-col gap-0.5">
-                            <span class="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                              {{ $t('settings.storage.scanLibrary.form.enabledLabel') }}
-                            </span>
-                            <span
-                              class="text-xs"
-                              :class="scanLibraryFormState.enabled
-                                ? 'text-emerald-600 dark:text-emerald-400'
-                                : 'text-neutral-400 dark:text-neutral-500'"
-                            >
-                              {{ scanLibraryFormState.enabled
-                                ? $t('settings.storage.scanLibrary.form.enabledStateOn')
-                                : $t('settings.storage.scanLibrary.form.enabledStateOff') }}
-                            </span>
-                          </div>
-                          <USwitch v-model="scanLibraryFormState.enabled" color="success" />
-                        </div>
-                        <p class="mt-1.5 flex items-start gap-1 text-xs text-neutral-400 dark:text-neutral-500">
-                          <UIcon name="tabler:info-circle" class="size-3.5 shrink-0 mt-px" />
-                          {{ $t('settings.storage.scanLibrary.form.enabledHint') }}
-                        </p>
-                      </UFormField>
                 </div>
               </template>
 
@@ -1051,6 +1045,13 @@ const storageInfoConfigEntries = computed(() => {
               <div class="min-w-0 flex-1">
                 <div class="flex items-center gap-2">
                   <ScanStatusDot :enabled="lib.enabled" :raw="lib.lastScanResult" />
+                  <USwitch
+                    v-model="lib.enabled"
+                    size="sm"
+                    :loading="scanTogglingId === lib.id"
+                    :disabled="scanTogglingId !== null"
+                    @change="onScanLibraryToggle(lib)"
+                  />
                   <span class="font-medium text-neutral-900 dark:text-neutral-100">
                     {{ lib.name }}
                   </span>
@@ -1086,13 +1087,6 @@ const storageInfoConfigEntries = computed(() => {
                     @click="onScanLibraryScan(lib)"
                   />
                 </UTooltip>
-                <USwitch
-                  v-model="lib.enabled"
-                  size="sm"
-                  :loading="scanTogglingId === lib.id"
-                  :disabled="scanTogglingId !== null"
-                  @change="onScanLibraryToggle(lib)"
-                />
 
                 <UButton
                   size="sm"
