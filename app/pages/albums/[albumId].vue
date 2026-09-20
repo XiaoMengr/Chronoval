@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { motion } from 'motion-v'
 import AlbumUnlock from '~/components/albums/AlbumUnlock.vue'
+import RandomPreviewOverlay from '~/components/albums/RandomPreviewOverlay.vue'
 import { supportsWheel3D } from '~/utils/capability'
 
 const route = useRoute()
@@ -146,19 +147,29 @@ const handleOpenRandom = () => {
   const photos = sortedAlbumPhotos.value
   if (!photos.length) return
   const mode = randomMode.value
-  // compat：仅当浏览器支持 3D 轮盘时才走轮盘，否则回退到默认直接打开
+  // wheel/compat（支持 3D 时）：就地弹出全屏轮盘浮层（不改变 URL，同外部库的弹层体验）
   if (mode === 'wheel' || (mode === 'compat' && supportsWheel3D())) {
-    router.push(`/albums/${albumId.value}/random`)
+    randomWheelOpen.value = true
     return
   }
+  // default / compat 不支持 3D 时：直接随机打开一张照片
   const idx = Math.floor(Math.random() * photos.length)
   handleOpenViewer(idx)
 }
 
-// 当前是否处于相簿的嵌套子路由（如随机轮盘页 random.vue）。
-// Nuxt 文件路由里 [albumId].vue 与 [albumId]/random.vue 是父子关系：
-// 子页面需由父模板的 <NuxtPage /> 注入渲染，否则跳转后只显示父页面、子页面不生效。
-const isRandomChildRoute = computed(() => route.path.endsWith('/random'))
+// 全屏随机轮盘浮层开关（Teleport 到 body，全屏不透明覆盖，无需独立路由）
+const randomWheelOpen = ref(false)
+
+// 轮盘落定 → 关闭浮层并打开选中的照片（沿用相册内查看器的打开方式）
+const handleRandomDone = (index: number) => {
+  randomWheelOpen.value = false
+  handleOpenViewer(index)
+}
+
+// 按 ESC / 取消 → 关闭浮层回到相册
+const handleRandomCancel = () => {
+  randomWheelOpen.value = false
+}
 
 const coverPhoto = computed(() => {
   const album = albumData.value
@@ -442,13 +453,18 @@ onBeforeMount(() => {
       </div>
     </template>
 
-    <!-- 嵌套子路由挂载点：当访问 /albums/{id}/random 时渲染随机轮盘页 random.vue。
-         父模板需提供 <NuxtPage /> 子页面才会被注入，否则跳转后只有父页面、子页面不生效。 -->
-    <NuxtPage v-if="isRandomChildRoute" />
+    <!-- 全屏随机轮盘浮层：就地弹出（Teleport 到 body），不改变 URL -->
+    <RandomPreviewOverlay
+      :open="randomWheelOpen"
+      :photos="sortedAlbumPhotos"
+      :target="0"
+      @done="handleRandomDone"
+      @cancel="handleRandomCancel"
+    />
 
     <!-- Back to Top Button（仅桌面端显示，移动端右下角隐藏） -->
     <motion.div
-      v-if="showFloatingActions && !isRandomChildRoute"
+      v-if="showFloatingActions"
       class="hidden md:block fixed bottom-6 right-6 z-50"
       :initial="{ opacity: 0, scale: 0.8 }"
       :animate="{ opacity: 1, scale: 1 }"
