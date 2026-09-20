@@ -28,12 +28,83 @@ const masonryItems = computed(() =>
   props.photos.map((photo, index) => ({ id: photo.id, photo, originalIndex: index })),
 )
 
-const LAYOUT_OPTIONS: { value: AlbumLayout; label: string }[] = [
-  { value: 'waterfall', label: t('albums.layout.waterfall') },
-  { value: 'grid', label: t('albums.layout.grid') },
-  { value: 'immersive', label: t('albums.layout.immersive') },
-  { value: 'timeline', label: t('albums.layout.timeline') },
+const LAYOUT_OPTIONS: { value: AlbumLayout; label: string; icon: string }[] = [
+  // 图标与后台「管理相簿·编辑」的布局选项保持一致
+  { value: 'waterfall', label: t('albums.layout.waterfall'), icon: 'tabler:layout-collage' },
+  { value: 'grid', label: t('albums.layout.grid'), icon: 'tabler:layout-grid' },
+  { value: 'immersive', label: t('albums.layout.immersive'), icon: 'tabler:photo' },
+  { value: 'timeline', label: t('albums.layout.timeline'), icon: 'tabler:timeline' },
 ]
+
+// —— 收缩式布局切换控件 ——
+// 单一胶囊元素：收起态显示山体图标 + 照片数；点击后胶囊从中心向左右平滑展开，露出四个布局选项。
+const expanded = ref(false)
+const switchRoot = ref<HTMLElement | null>(null)
+const capsuleRef = ref<HTMLElement | null>(null)
+const innerRef = ref<HTMLElement | null>(null)
+
+const collapsedWidth = 88 // 收起态胶囊宽度（山体图标 + 数字）
+const expandedWidth = ref(0) // 展开态胶囊宽度（JS 测量）
+
+/** 收起态主胶囊图标：独立使用山体图标 */
+const activeIcon = 'tabler:mountain'
+
+// 测量展开态内容的实际宽度
+const measureWidth = () => {
+  if (innerRef.value) {
+    expandedWidth.value = innerRef.value.offsetWidth
+  }
+}
+
+// 组件挂载后测量展开态宽度
+onMounted(() => {
+  nextTick(() => measureWidth())
+})
+
+// 监听窗口大小变化重新测量
+useEventListener('resize', () => {
+  measureWidth()
+})
+
+const toggleSwitch = () => {
+  expanded.value = !expanded.value
+}
+
+const pickLayout = (v: AlbumLayout) => {
+  layout.value = v
+  expanded.value = false
+}
+
+// —— 点击面板外部任意区域自动收起 ——
+onClickOutside(switchRoot, () => {
+  if (expanded.value) expanded.value = false
+})
+
+// —— 中心展开动画：容器宽度从收起态平滑过渡到展开态；外层 rounded-full 保证两端始终为圆弧 ——
+const capsuleStyle = computed(() => {
+  const targetWidth = expanded.value && expandedWidth.value > 0
+    ? `${expandedWidth.value}px`
+    : `${collapsedWidth}px`
+  return {
+    width: targetWidth,
+    transition: 'width 340ms cubic-bezier(0.33, 1, 0.68, 1)',
+    transform: 'translateZ(0)',
+  }
+})
+
+// 收起态主按钮：展开时快速淡出，避免与浮现的选项图标在中心叠加闪烁；收拢时等胶囊合拢后淡入
+const collapseBtnStyle = computed(() => ({
+  transition: expanded.value
+    ? 'opacity 90ms ease-out 0ms'
+    : 'opacity 200ms ease-out 60ms',
+}))
+
+// 展开选项行：展开时山体先快速淡出、选项随即同步淡入（重叠极短，无闪烁无空窗）；收拢时与胶囊合拢同步淡出
+const optionsStyle = computed(() => ({
+  transition: expanded.value
+    ? 'opacity 300ms ease-out 30ms'
+    : 'opacity 150ms ease-out 0ms',
+}))
 
 // —— 时间线分组：按拍摄日期（dateTaken）归类，组内复用网格卡片 ——
 const dayjs = useDayjs()
@@ -81,32 +152,70 @@ const timelineGroups = computed(() => {
 <template>
   <div class="w-full">
     <!-- 顶部切换控件：仅在有照片且需要展示时渲染 -->
+    <!-- 单一胶囊：收起态显示山体+数量，点击后胶囊从中心向左右平滑展开，露出四个布局选项 -->
     <div
       v-if="photos.length > 0"
-      class="mb-4 flex items-center justify-end"
+      ref="switchRoot"
+      class="relative mb-4 flex h-9 items-center justify-center"
     >
+      <!-- 胶囊容器：宽度从收起态平滑过渡到展开态，居中定位，溢出隐藏 -->
       <div
-        class="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white/80 p-1 shadow-sm backdrop-blur-sm dark:border-neutral-800 dark:bg-neutral-900/80"
+        ref="capsuleRef"
+        class="absolute left-1/2 flex h-8 -translate-x-1/2 items-center overflow-hidden rounded-full border border-neutral-200 bg-white/95 shadow-sm will-change-[width] dark:border-neutral-800 dark:bg-neutral-900/95"
+        :style="capsuleStyle"
       >
-        <Icon
-          name="tabler:layout"
-          class="ml-2 size-4 text-neutral-400 dark:text-neutral-500"
-          :aria-label="t('albums.layout.switchLabel')"
-        />
+        <!-- 收起态内容：山体图标 + 照片数，居中显示 -->
         <button
-          v-for="opt in LAYOUT_OPTIONS"
-          :key="opt.value"
           type="button"
-          class="cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition-colors"
-          :class="
-            layout === opt.value
-              ? 'bg-neutral-900 text-white dark:bg-white dark:text-black'
-              : 'text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-100'
-          "
-          @click="layout = opt.value"
+          class="absolute inset-0 z-10 flex items-center justify-center gap-2 hover:bg-neutral-100/50 dark:hover:bg-neutral-800/50"
+          :style="[
+            collapseBtnStyle,
+            { opacity: expanded ? 0 : 1 },
+            { pointerEvents: expanded ? 'none' : 'auto' },
+          ]"
+          :title="t('albums.layout.switchLabel')"
+          :aria-label="t('albums.layout.switchLabel')"
+          :aria-expanded="expanded"
+          @click="toggleSwitch"
         >
-          {{ opt.label }}
+          <Icon
+            :name="activeIcon"
+            class="shrink-0 size-4 text-neutral-500 dark:text-neutral-400"
+          />
+          <span class="text-xs font-semibold tabular-nums text-neutral-600 dark:text-neutral-300">
+            {{ photos.length }}
+          </span>
         </button>
+
+        <!-- 展开态内容：四个布局选项，每个为独立胶囊，文字图标不挤压，一行排列 -->
+        <div
+          ref="innerRef"
+          class="absolute left-1/2 flex h-full -translate-x-1/2 items-center p-1 will-change-transform"
+          :class="expanded ? 'opacity-100' : 'opacity-0'"
+          :style="optionsStyle"
+        >
+          <button
+            v-for="opt in LAYOUT_OPTIONS"
+            :key="opt.value"
+            type="button"
+            class="group flex h-full shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full px-3 text-xs font-medium transition-colors duration-200"
+            :class="
+              layout === opt.value
+                ? 'bg-neutral-900 text-white shadow-sm dark:bg-white dark:text-black'
+                : 'text-neutral-500 hover:bg-neutral-200/60 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-white'
+            "
+            :aria-pressed="layout === opt.value"
+            @click="pickLayout(opt.value)"
+          >
+            <Icon
+              :name="opt.icon"
+              class="size-3.5 shrink-0"
+            />
+            <span class="shrink-0">
+              {{ opt.label }}
+            </span>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -182,4 +291,19 @@ const timelineGroups = computed(() => {
   </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+@keyframes switch-pulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.6;
+  }
+  70% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+</style>
