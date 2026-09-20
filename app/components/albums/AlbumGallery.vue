@@ -174,15 +174,16 @@ const timelineGroups = computed(() => {
       ref="switchRoot"
       class="relative z-[40] mb-4 flex h-9 items-center justify-center"
     >
-      <!-- 悬停彩虹光晕：四周柔和淡彩虹，仅桌面端悬停显示，展开态隐藏，覆盖到照片上层 -->
+      <!-- 悬停彩虹光晕：四周柔和彩虹，仅桌面端悬停显示，展开态隐藏，覆盖到照片上层 -->
       <div
         aria-hidden="true"
-        class="pointer-events-none absolute left-1/2 top-1/2 z-0 h-16 -translate-x-1/2 -translate-y-1/2 rounded-full blur-2xl"
+        class="pointer-events-none absolute left-1/2 top-1/2 z-0 h-24 -translate-x-1/2 -translate-y-1/2 rounded-full"
         :style="{
-          width: capsuleStyle.width,
-          opacity: hovered && canHover && !expanded ? 0.7 : 0,
+          width: `calc(${capsuleStyle.width} + 96px)`,
+          opacity: hovered && canHover && !expanded ? 1 : 0,
+          filter: 'blur(46px) saturate(1.7)',
           transition: 'width 320ms cubic-bezier(0.33, 1, 0.68, 1), opacity 500ms ease',
-          background: 'conic-gradient(from 0deg, #ffc9c9, #ffe0b3, #fff3b0, #c8f0d0, #bfe8ff, #d6c9ff, #ffc9f0, #ffc9c9)',
+          background: 'conic-gradient(from 0deg, #ff8a8a, #ffb65c, #ffd95e, #62d98a, #55b3ff, #a68bff, #ff7dd8, #ff8a8a)',
         }"
       ></div>
       <!-- 胶囊容器：宽度从收起态平滑过渡到展开态，居中定位，溢出隐藏 -->
