@@ -17,9 +17,9 @@ name: chronoval-ip
 #
 # ── 需要改的四个地方（按你的局域网）──
 #   ① driver_opts.parent    宿主机物理网卡名（ip addr 查看，如 eth0 / enp2s0 / br0）
-#   ② ipam gateway          路由器/网关 IP（默认 192.168.1.1）
-#   ③ ipam subnet           局域网网段（默认 192.168.1.0/24）
-#   ④ services.ipv4_addre   容器固定 IP（改成局域网内一个【空闲】IP，如 192.168.1.50）
+#   ② ipam gateway          路由器/网关 IP（本例专用固定 172.16.0.254）
+#   ③ ipam subnet           局域网网段（本网段为 172.16.0.0/24）
+#   ④ services.ipv4_addre   容器固定 IP（改成局域网内一个【空闲】IP，本例 172.16.0.80）
 #
 # ▍0. 前置：让 Docker 能拉取内网镜像（只需一次）
 #   内网镜像是 http 非 443，Docker 默认会拒绝 http 仓库，需先把
@@ -39,7 +39,7 @@ name: chronoval-ip
 #   2) cp .env.example .env   （按需编辑；管理员账号/站点信息可在网页首次引导里填）
 #   3) 按上文①②③④ 改成你的局域网参数
 #   4) docker compose -f docker-compose.ip.yml up -d        # ← 注意没有 --build
-#   5) 浏览器打开 http://192.168.1.50:3000
+#   5) 浏览器打开 http://172.16.0.80:3000
 #
 #      · 想要稳定版：把 image 的 :latest 换成 :1.0.0.4
 #      · 想要最新：保持 :latest 即可
@@ -65,7 +65,7 @@ services:
     restart: unless-stopped
     networks:
       net_chronoval:
-        ipv4_address: 192.168.1.50   # ④ ← 改成本局域网内一个空闲 IP
+        ipv4_address: 172.16.0.80    # ④ ← 容器固定 IP（改成局域网内一个空闲 IP）
     env_file:
       - .env
     volumes:
@@ -94,6 +94,5 @@ networks:
       parent: eth0                 # ① ← 宿主机物理网卡名（ip addr 查看）
     ipam:
       config:
-        - subnet: 192.168.1.0/24   # ③ ← 局域网网段
-          gateway: 192.168.1.1     # ② ← 路由器/网关 IP
-          ip_range: 192.168.1.200/28   # 可选：限定容器自动分配池，避免与 DHCP 冲突
+        - subnet: 172.16.0.0/24   # ③ ← 网段（与你要用的 IP 同一网段）
+          gateway: 172.16.0.254   # ② ← 路由器/网关 IP
