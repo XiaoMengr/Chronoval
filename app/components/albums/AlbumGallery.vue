@@ -43,7 +43,8 @@ const LAYOUT_OPTIONS: { value: AlbumLayout; label: string; icon: string }[] = [
 // —— 收缩式布局切换控件 ——
 // 单一胶囊元素：收起态显示山体图标 + 照片数；点击后胶囊从中心向左右平滑展开，露出四个布局选项。
 const expanded = ref(false)
-const hovered = ref(false) // 电脑端鼠标悬停胶囊时显示彩虹光晕
+const hovered = ref(false) // 桌面端鼠标悬停胶囊时显示彩虹光晕
+const canHover = useMediaQuery('(hover: hover)') // 仅电脑端（支持悬停）才显示光晕
 const switchRoot = ref<HTMLElement | null>(null)
 const capsuleRef = ref<HTMLElement | null>(null)
 const innerRef = ref<HTMLElement | null>(null)
@@ -173,15 +174,15 @@ const timelineGroups = computed(() => {
       ref="switchRoot"
       class="relative z-[40] mb-4 flex h-9 items-center justify-center"
     >
-      <!-- 悬停柔和淡色光晕：大模糊 + 低透明度，从胶囊四周大面积淡出，展开态隐藏，覆盖到照片上层 -->
+      <!-- 悬停彩虹光晕：四周柔和淡彩虹，仅桌面端悬停显示，展开态隐藏，覆盖到照片上层 -->
       <div
         aria-hidden="true"
         class="pointer-events-none absolute left-1/2 top-1/2 z-0 h-16 -translate-x-1/2 -translate-y-1/2 rounded-full blur-2xl"
         :style="{
           width: capsuleStyle.width,
-          opacity: hovered && !expanded ? 0.45 : 0,
+          opacity: hovered && canHover && !expanded ? 0.7 : 0,
           transition: 'width 320ms cubic-bezier(0.33, 1, 0.68, 1), opacity 500ms ease',
-          background: 'conic-gradient(from 0deg, rgba(120,168,255,0.9), rgba(120,255,220,0.9), rgba(255,240,150,0.9), rgba(255,180,150,0.9), rgba(190,150,255,0.9), rgba(120,168,255,0.9))',
+          background: 'conic-gradient(from 0deg, #ffc9c9, #ffe0b3, #fff3b0, #c8f0d0, #bfe8ff, #d6c9ff, #ffc9f0, #ffc9c9)',
         }"
       ></div>
       <!-- 胶囊容器：宽度从收起态平滑过渡到展开态，居中定位，溢出隐藏 -->
