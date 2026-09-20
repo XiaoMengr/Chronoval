@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import { motion } from 'motion-v'
 import AlbumUnlock from '~/components/albums/AlbumUnlock.vue'
-import RandomPreviewOverlay from '~/components/albums/RandomPreviewOverlay.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -131,23 +130,18 @@ const handleOpenViewer = (index: number) => {
   }
 }
 
-// —— 随机一张照片：先展示过渡动画页，落定后再跳转 ——
-const randomOpen = ref(false)
-const randomTarget = ref(-1)
-
-const handleOpenRandom = (index: number) => {
-  if (!sortedAlbumPhotos.value.length) return
-  randomTarget.value = index
-  randomOpen.value = true
-}
-
-const handleRandomDone = (index: number) => {
-  randomOpen.value = false
-  handleOpenViewer(index)
-}
-
-const handleRandomCancel = () => {
-  randomOpen.value = false
+// —— 随机一张照片 ——
+// 管理员在「编辑相簿 → 展示样式」开启「轮盘动画」后走独立随机页；
+// 默认（关闭）直接随机选一张照片打开查看器。
+const handleOpenRandom = () => {
+  const photos = sortedAlbumPhotos.value
+  if (!photos.length) return
+  if ((albumData.value as any)?.randomWheelAnimation) {
+    router.push(`/albums/${albumId.value}/random`)
+    return
+  }
+  const idx = Math.floor(Math.random() * photos.length)
+  handleOpenViewer(idx)
 }
 
 const coverPhoto = computed(() => {
@@ -453,15 +447,6 @@ onBeforeMount(() => {
         />
       </UTooltip>
     </motion.div>
-
-    <!-- 随机一张照片：过渡动画页 -->
-    <RandomPreviewOverlay
-      :open="randomOpen"
-      :photos="sortedAlbumPhotos"
-      :target="randomTarget"
-      @done="handleRandomDone"
-      @cancel="handleRandomCancel"
-    />
   </div>
 </template>
 

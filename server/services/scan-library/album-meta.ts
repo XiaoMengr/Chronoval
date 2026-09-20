@@ -20,6 +20,8 @@ export interface ScanAlbumMetaInput {
   urlKey?: string | null
   /** 照片展示布局；undefined=保持不变 */
   layout?: 'waterfall' | 'grid' | 'immersive' | 'timeline'
+  /** 「随机一张照片」是否使用 3D 轮盘动画；undefined=保持不变 */
+  randomWheelAnimation?: boolean
 }
 
 const cleanRelPath = (p: string): string =>
@@ -84,6 +86,8 @@ export const upsertScanAlbumMeta = async (
     if (input.urlKey !== undefined)
       updateData.urlKey = (input.urlKey && input.urlKey.trim()) || null
     if (input.layout !== undefined) updateData.layout = input.layout
+    if (input.randomWheelAnimation !== undefined)
+      updateData.randomWheelAnimation = Boolean(input.randomWheelAnimation)
 
     await db
       .update(tables.scanAlbumMeta)
@@ -112,6 +116,7 @@ export const upsertScanAlbumMeta = async (
       slug: input.slug || null,
       urlKey: (input.urlKey && input.urlKey.trim()) || null,
       layout: input.layout ?? 'waterfall',
+      randomWheelAnimation: input.randomWheelAnimation ? true : false,
     })
     .returning()
     .get()
@@ -212,6 +217,8 @@ export const applyScanAlbumMeta = async (
     urlKey: meta.urlKey || node.urlKey,
     // 布局：自定义元数据优先，否则使用节点默认
     layout: meta.layout ?? node.layout,
+    // 「随机一张照片」是否使用轮盘动画（默认关闭=直接打开）
+    randomWheelAnimation: meta.randomWheelAnimation ?? false,
     // 公开链接优先级：自定义 slug > 相簿自身 urlKey > 库级默认
     link: meta.slug
       ? `/albums/s/${encodeURIComponent(meta.slug)}`

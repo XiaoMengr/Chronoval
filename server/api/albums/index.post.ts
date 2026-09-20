@@ -18,6 +18,8 @@ export default eventHandler(async (event) => {
       hideFromGallery: z.boolean().optional(),
       // 照片展示布局：瀑布流 / 统一网格 / 沉浸式看图
       layout: z.enum(['waterfall', 'grid', 'immersive', 'timeline']).optional(),
+      // 「随机一张照片」是否使用 3D 轮盘动画
+      randomWheelAnimation: z.boolean().optional(),
       // 相簿访问密码（明文）：非空设置新密码
       password: z.string().max(128).optional(),
       // 自定义公开URL别名（可选）：全局唯一、URL 安全
@@ -60,6 +62,7 @@ export default eventHandler(async (event) => {
         isHidden: body.isHidden || false,
         hideFromGallery: body.hideFromGallery || false,
         layout: body.layout || 'waterfall',
+        randomWheelAnimation: body.randomWheelAnimation || false,
         passwordHash,
         password: body.password?.trim() || null,
         // 创建即分配不透明 UID

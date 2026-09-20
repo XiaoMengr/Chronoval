@@ -239,6 +239,13 @@
       "when": 1789874937235,
       "tag": "0033_dry_fixer",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "6",
+      "when": 1789905101174,
+      "tag": "0034_swift_stepford_cuckoos",
+      "breakpoints": true
     }
   ]
 }

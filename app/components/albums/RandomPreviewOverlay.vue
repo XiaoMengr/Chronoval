@@ -17,17 +17,17 @@ const emit = defineEmits<{
   (e: 'cancel'): void
 }>()
 
-const SPIN_MS = 5000 // 轮盘旋转时长
-const ZOOM_MS = 1600 // 停稳后放大+模糊时长
-const FINAL_HOLD = 3000 // 停顿倒计时时长
-const MAX_CARDS = 9
+const SPIN_MS = 8000 // 轮盘旋转时长（放慢，转动更平顺持久）
+const ZOOM_MS = 1400 // 停稳后背景模糊+照片渐入时长
+const FINAL_HOLD = 1200 // 定格后短暂停顿再打开（无倒计时）
+const MAX_CARDS = 16
 const EASING = 'cubic-bezier(0.2, 0.8, 0.22, 1)'
-const GAP = 0.3 // 卡片间距 = 卡片宽的倍数，用于保证轮盘不过于紧凑
+const GAP = 0.5
 
 const show = ref(false)
 const phase = ref<'idle' | 'spin' | 'zoom' | 'settled'>('idle')
-const remaining = ref(0)
-const order = ref<{ thumb: string; full?: string }[]>([])
+const order = ref<{ thumb: string; full?: string; index: number }[]>([])
+const winnerIndex = ref(0)
 const targetIndex = ref(0)
 
 const stageRef = ref<HTMLElement | null>(null)
@@ -43,62 +43,80 @@ const zoomActive = ref(false)
 
 const reducedMotion = ref(false)
 let timer: ReturnType<typeof setTimeout> | null = null
-let countdown: ReturnType<typeof setInterval> | null = null
+
+// —— 两阶段随机逻辑：
+// 阶段一：从整张相簿中随机抽出「足够多而不撑爆」的照片放入轮盘（数量有上限 MAX_CARDS）。
+// 阶段二：从轮盘内显示的照片里再随机选出一张作为本命照片 → emit 该照片在相簿中的下标。
+// 这样相簿照片再多，轮盘也只面对固定的少量候选，不会因海量照片而卡顿或穿模。
+
+// 卡片：携带其所属照片在相簿中的原始下标，命中后回传给父级打开正确照片。
+type WheelCard = { thumb: string; full?: string; index: number }
 
 function measure() {
   const el = stageRef.value
   if (!el) return
   const w = el.clientWidth
-  // 轮盘更大：卡片尺寸随屏幕自适应
-  cardW.value = w >= 640 ? 150 : w >= 420 ? 124 : 92
+  // 轮盘卡片尺寸随屏幕自适应（略小以容纳更多照片）
+  cardW.value = w >= 640 ? 118 : w >= 420 ? 98 : 78
   cardH.value = Math.round(cardW.value * 1.28)
   perspective.value = Math.max(1100, w * 2.2)
 }
 
-// 在保证「卡片间距不被压缩」的前提下，推算出当前屏幕能放下多少张卡片。
-// 半径由间距反推：radial(n) = (卡宽+间距) / (2·sin(π/n))，选出最大的 n 使其不超过舞台半径。
-function maxFitCount(totalCandidates: number): number {
-  const stageHalf = Math.max(0, ((stageRef.value?.clientWidth || 0) / 2) - 24)
-  if (stageHalf <= 0) return 1
-  const gap = cardW.value * GAP
-  const denom = (2 * stageHalf) / (cardW.value + gap)
-  if (denom <= 0) return 1
-  const sinHalf = Math.min(1, 1 / denom)
-  const radStep = Math.asin(sinHalf)
-  let n = Math.floor(Math.PI / radStep)
-  n = Math.min(MAX_CARDS, Math.max(1, n))
-  // 不能超过候选数（避免填充太多重复造成拥挤观感）
-  return Math.min(Math.max(1, totalCandidates), n)
+// 沿用「最大半径铺满舞台、往外扩」的策略。
+// 半径取舞台能容纳的最大值（RadiusMax = 舞台半径 - 卡宽/2），
+// 再反推在「相邻卡片弦距 >= 卡宽 + 间距」约束下最多能放几张。
+// 这样轮盘尽可能向外张大，卡片 3D 投影间距更大，不再在中心互相穿模。
+function radiusMax(): number {
+  const stageHalf = Math.max(0, ((stageRef.value?.clientWidth || 0) / 2) - 20)
+  return Math.max(40, stageHalf - cardW.value / 2)
 }
 
-function buildOrder(): { thumb: string; full?: string }[] {
-  // 候选按「缩略图 + 高清原图」成对收集
-  const pool: { thumb: string; full?: string }[] = []
+// 反推：以「相邻卡片弦距 = 卡宽 + 间距」排列在圆周上时的半径。
+function spacingRadius(n: number): number {
+  const gap = cardW.value * GAP
+  const deg = (360 / n) * (Math.PI / 180)
+  return (cardW.value + gap) / 2 / Math.sin(deg / 2)
+}
+
+// 完整 360° 均布轮盘的屏幕可容纳最大张数。
+// 从 MAX_CARDS 往下取：若某张数的「间距半径」仍 ≤ 舞台可容纳半径，就可用。
+// 照片多时据此铺到屏幕最多；照片少时取实际值（半径随之变小，密度与多张一致）。
+function maxFitCount(totalAvailable: number): number {
+  const R = radiusMax()
+  if (R <= 0) return 1
+  const limit = Math.min(MAX_CARDS, Math.max(1, totalAvailable))
+  for (let n = limit; n >= 1; n--) {
+    if (spacingRadius(n) <= R + 2) return n
+  }
+  return 1
+}
+
+// 阶段一：从全部照片中随机抽出 count 张（去重按缩略图），返回带原始下标的候选。
+function buildSample(count: number): WheelCard[] {
+  const pool: WheelCard[] = []
   const seen = new Set<string>()
-  const add = (p: (typeof props.photos)[number]) => {
+  props.photos.forEach((p, idx) => {
     if (!p?.thumbnailUrl || seen.has(p.thumbnailUrl)) return
     seen.add(p.thumbnailUrl)
-    pool.push({ thumb: p.thumbnailUrl, full: p.originalUrl || undefined })
+    pool.push({ thumb: p.thumbnailUrl, full: p.originalUrl || undefined, index: idx })
+  })
+  // 洗牌
+  for (let r = pool.length - 1; r > 0; r--) {
+    const j = Math.floor(Math.random() * (r + 1))
+    ;[pool[r], pool[j]] = [pool[j], pool[r]]
   }
-  add(props.photos[props.target])
-  for (const p of props.photos) add(p)
-  return pool
+  return pool.slice(0, Math.min(count, pool.length))
 }
 
 function recomputeRadius() {
   const n = order.value.length
-  const stageHalf = Math.max(0, ((stageRef.value?.clientWidth || 0) / 2) - 24)
   if (n <= 1) {
     radius.value = Math.max(40, cardW.value * 0.9)
     return
   }
-  // 由间距反推的最小半径（保证卡片不会相碰）
-  const gap = cardW.value * GAP
-  const step = (360 / n) * (Math.PI / 180)
-  const radial = (cardW.value + gap) / 2 / Math.sin(step / 2)
-  // 至少用上约 85% 的舞台半径：拉开轮盘、增大卡片间视线距离，避免旋转时穿模
-  const spread = stageHalf * 0.85
-  radius.value = Math.min(stageHalf, Math.max(radial, spread))
+  // 完整均布轮盘：半径由「相邻卡片弦距 = 卡宽 + 间距」反过来确定，
+  // 让卡片均匀分布在 360° 圆周上，无论照片多少间距都稳定一致。
+  radius.value = spacingRadius(n)
 }
 
 function start() {
@@ -113,24 +131,22 @@ function start() {
 
   nextTick(() => {
     measure()
-    const pool = buildOrder()
-    if (!pool.length) {
+    // 默认先取一个较大概率：若相簿照片小于 MAX_CARDS 也会自动收缩
+    const total = props.photos.length
+    const count = maxFitCount(total)
+    const sample = buildSample(count)
+    if (!sample.length) {
       emit('done', props.target)
       show.value = false
       return
     }
-    // 依据当前屏幕可容纳数量切出轮盘照片（自适应 + 保留间距）
-    const count = maxFitCount(pool.length)
-    const targetCard = pool[0]
-    // 目标始终放在下标 0（正前方命中位），其余按需截取并打乱
-    const rest = pool.slice(1)
-    for (let r = rest.length - 1; r > 0; r--) {
-      const j = Math.floor(Math.random() * (r + 1))
-      ;[rest[r], rest[j]] = [rest[j], rest[r]]
-    }
-    const take = rest.slice(0, Math.max(0, count - 1))
-    order.value = [targetCard, ...take]
-    targetIndex.value = 0
+    // 阶段二：从轮盘内显示的照片中随机选一张作为本命照片
+    const winnerIdx = Math.floor(Math.random() * sample.length)
+    const winner = sample[winnerIdx]
+    winnerIndex.value = winner.index
+    order.value = sample
+    targetIndex.value = winnerIdx
+    // 完整 360° 均布分列：所有卡片均匀铺满一整圈轮盘
     slots.value = order.value.length
       ? order.value.map((_, i) => (i / order.value.length) * 360)
       : []
@@ -138,8 +154,10 @@ function start() {
     recomputeRadius()
     const n = order.value.length
     const degPerCard = n ? 360 / n : 0
+    // 旋转使本命照片（targetIndex）恰好转到正前方 0°，落点无偏移
     const end = 720 - targetIndex.value * degPerCard
-    const startDeg = end - Math.round(1 + Math.random() * 2) * 360
+    // 留出 1~2 个整圈的余量，配合 ease-out 让轮盘转动更优雅、减速更自然
+    const startDeg = end - Math.round(2 + Math.random() * 2) * 360
     wheelTransform.value = `rotateY(${startDeg}deg)`
     requestAnimationFrame(() => {
       wheelTransition.value = reducedMotion.value ? 'none' : `transform ${SPIN_MS}ms ${EASING}`
@@ -161,40 +179,25 @@ function onZoom() {
 
 function finish() {
   phase.value = 'settled'
-  remaining.value = Math.round(FINAL_HOLD / 1000)
-  stopCountdown()
-  countdown = setInterval(() => {
-    remaining.value -= 1
-  }, 1000)
   timer = setTimeout(done, reducedMotion.value ? 30 : FINAL_HOLD)
 }
 
 function done() {
   reset()
-  emit('done', props.target)
+  emit('done', winnerIndex.value)
   show.value = false
 }
 
 function reset() {
   phase.value = 'idle'
   zoomActive.value = false
-  remaining.value = 0
   wheelTransition.value = ''
-  stopCountdown()
 }
 
 function stop() {
   if (timer) {
     clearTimeout(timer)
     timer = null
-  }
-  stopCountdown()
-}
-
-function stopCountdown() {
-  if (countdown) {
-    clearInterval(countdown)
-    countdown = null
   }
 }
 
@@ -266,13 +269,15 @@ onBeforeUnmount(() => {
           class="rand-scene"
           :style="{ perspective: `${perspective}px` }"
         >
-          <!-- 落定后的暖色光晕 -->
-          <div class="rand-halo" :class="{ 'rand-halo--on': zoomActive || phase === 'settled' }" />
           <div
             class="rand-wheel"
             :class="{ 'rand-wheel--quiet': zoomActive || phase === 'settled' }"
             :style="{ transform: wheelTransform, transition: wheelTransition }"
           >
+            <!-- 隐形的滚筒底座：照片像贴在滚筒表面随转盘旋转 -->
+            <div class="rand-drum" :style="{ '--drum-r': `${radius}px` }">
+              <div class="rand-drum__ring" />
+            </div>
             <div
               v-for="(card, i) in order"
               :key="`${i}-${card.thumb}`"
@@ -307,16 +312,6 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <Transition name="thumb" mode="out-in">
-          <div v-if="phase === 'settled'" class="rand-countdown">
-            <svg class="rand-countdown__ring" viewBox="0 0 44 44" aria-hidden="true">
-              <circle cx="22" cy="22" r="19" class="rand-countdown__track" />
-              <circle cx="22" cy="22" r="19" class="rand-countdown__bar" />
-            </svg>
-            <span class="rand-countdown__num">{{ remaining }}</span>
-          </div>
-        </Transition>
-
         <p class="rand-caption">
           <template v-if="phase === 'spin'">
             <Icon name="tabler:dots" class="rand-caption__dots" />
@@ -338,11 +333,9 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .rand-overlay {
-  --ink: #26282f;
-  --muted: #6d7280;
-  --amber: #f0913f;
-  --amber-soft: rgba(240, 145, 63, 0.42);
-  --line: rgba(38, 40, 47, 0.1);
+  --ink: #111318;
+  --muted: #6b7280;
+  --line: rgba(18, 22, 30, 0.10);
   position: fixed;
   inset: 0;
   z-index: 9999;
@@ -353,28 +346,42 @@ onBeforeUnmount(() => {
   gap: 16px;
   padding: 18px;
   overflow: hidden;
-  background:
-    radial-gradient(130% 130% at 50% 0%, rgba(240, 145, 63, 0.14), transparent 55%),
-    linear-gradient(180deg, #fafbfc, #f0f2f6 60%, #e9ecf1);
+  /* 旋转期间：完全不透明的白色背景（绝不透出背后照片）+ 规则小圆点阵 */
+  background: #f8f9fb;
+  transition: background-color 0.7s ease;
   user-select: none;
   font-family: ui-sans-serif, system-ui, 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  transition: background 0.7s ease;
 }
 
-/* 命中后背景柔化变暖 */
-.rand-overlay--zoom {
-  background:
-    radial-gradient(130% 130% at 50% 0%, rgba(240, 145, 63, 0.24), transparent 58%),
-    linear-gradient(180deg, #f3ece2, #e7dccd 60%, #ded1c0);
-}
-
+/* 规则的小点点网格底纹 */
 .rand-overlay::before {
   content: '';
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(var(--line) 1px, transparent 1px);
-  background-size: 42px 42px;
+  background-image: radial-gradient(var(--line) 1.2px, transparent 1.2px);
+  background-size: 46px 46px;
   pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+
+/* 选中的那一刻：白色底纹淡出，转为「白色高斯模糊(毛玻璃)」聚焦到照片。
+   高不透明度白 + backdrop blur，绝不透明露图。backdrop-filter 仅作增强；
+   不支持它的浏览器也因背景接近不透明而呈白色模糊观感。 */
+.rand-overlay--zoom {
+  background: rgba(248, 249, 251, 0.86);
+  backdrop-filter: blur(36px) saturate(120%);
+  -webkit-backdrop-filter: blur(36px) saturate(120%);
+}
+
+.rand-overlay--zoom::before {
+  opacity: 0;
+}
+
+/* 浏览器兜底：完全不支持 backdrop-filter 时直接用近不透明白，杜绝透明露图 */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .rand-overlay--zoom {
+    background: rgba(248, 249, 251, 0.97);
+  }
 }
 
 .rand-head {
@@ -386,14 +393,14 @@ onBeforeUnmount(() => {
 
 .rand-head__icon {
   font-size: 25px;
-  color: var(--amber);
+  color: var(--ink);
   animation: randSpin 1500ms linear infinite;
-  filter: drop-shadow(0 0 10px rgba(240, 145, 63, 0.35));
-  transition: filter 0.4s ease, transform 0.4s ease;
+  opacity: 0.9;
+  transition: opacity 0.4s ease, transform 0.4s ease;
 }
 
 .rand-head__icon--soft {
-  filter: none;
+  opacity: 0;
   animation: none;
   transform: scale(0.9);
 }
@@ -407,7 +414,7 @@ onBeforeUnmount(() => {
 }
 
 .rand-head__label--soft {
-  color: var(--amber);
+  color: var(--muted);
 }
 
 /* 3D 舞台：更大 */
@@ -420,22 +427,6 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 
-.rand-halo {
-  position: absolute;
-  inset: 8%;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(240, 145, 63, 0.28), rgba(240, 145, 63, 0.08) 55%, transparent 72%);
-  opacity: 0;
-  transform: scale(0.7);
-  transition: opacity 0.6s ease, transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
-  pointer-events: none;
-}
-
-.rand-halo--on {
-  opacity: 1;
-  transform: scale(1);
-}
-
 .rand-wheel {
   position: relative;
   width: 0;
@@ -443,11 +434,39 @@ onBeforeUnmount(() => {
   transform-style: preserve-3d;
 }
 
+/* 透明滚桶核心：一张极淡的 UV 环，提示照片像贴在滚筒表面旋转 */
+.rand-drum {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  transform-style: preserve-3d;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.rand-drum__ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 200px;
+  height: 260px;
+  margin-left: -100px;
+  margin-top: -130px;
+  border: 1px dashed rgba(38, 40, 47, 0.12);
+  border-radius: 34% / 12%;
+  transform: rotateY(90deg) translateX(var(--drum-r));
+}
+
 .rand-card {
   position: absolute;
   left: 50%;
   top: 50%;
   transform-style: preserve-3d;
+  /* 滚筒透明：两侧的照片都可见——
+     所有卡片贴在同一固定半径的滚筒表面，绕同一个轴旋转，
+     3D 投影下背面卡片自然落在前面卡片之后，不会交叉穿模。 */
   backface-visibility: visible;
 }
 
@@ -455,10 +474,10 @@ onBeforeUnmount(() => {
   position: relative;
   width: 100%;
   height: 100%;
-  border-radius: 16px;
+  border-radius: 14px;
   overflow: hidden;
   background: #fff;
-  box-shadow: 0 16px 34px rgba(38, 40, 47, 0.22), inset 0 0 0 1px rgba(255, 255, 255, 0.7);
+  box-shadow: 0 16px 34px rgba(38, 40, 47, 0.22);
 }
 
 .rand-card__img {
@@ -476,10 +495,18 @@ onBeforeUnmount(() => {
   color: #cdd2dd;
 }
 
-/* 命中：其余卡片转淡模糊，命中卡片保持清晰并放大 */
+/* 命中后只保留选中照片：其余卡片完全隐藏，不留任何残留轮廓 */
 .rand-wheel--quiet .rand-card:not(.rand-card--winner) {
-  opacity: 0.12;
-  filter: blur(4px);
+  opacity: 0;
+  filter: none;
+  visibility: hidden;
+  transition: opacity 0.45s ease;
+}
+
+/* 命中后隐藏滚筒虚线辅助环，界面只聚焦选中照片 */
+.rand-wheel--quiet .rand-drum {
+  opacity: 0;
+  transition: opacity 0.45s ease;
 }
 
 .rand-card--winner {
@@ -488,49 +515,23 @@ onBeforeUnmount(() => {
   filter: none;
 }
 
+/* 中奖浮现：干净放大、无阴影、带圆角，从小渐入放大到清晰原图 */
 .rand-card__inner--active {
-  transform: scale(1.28);
-  box-shadow: 0 40px 90px rgba(38, 40, 47, 0.5), 0 0 0 4px rgba(240, 145, 63, 0.7);
-  transition: transform 1.1s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.8s ease;
+  box-shadow: none;
+  animation: randReveal 1.1s cubic-bezier(0.22, 1, 0.36, 1) 0.05s both;
 }
 
-.rand-countdown {
-  position: relative;
-  display: grid;
-  width: 52px;
-  height: 52px;
-  place-items: center;
-}
-
-.rand-countdown__ring {
-  position: absolute;
-  inset: 0;
-  width: 52px;
-  height: 52px;
-  transform: rotate(-90deg);
-}
-
-.rand-countdown__track {
-  fill: none;
-  stroke: rgba(240, 145, 63, 0.2);
-  stroke-width: 3;
-}
-
-.rand-countdown__bar {
-  fill: none;
-  stroke: var(--amber);
-  stroke-width: 3;
-  stroke-linecap: round;
-  stroke-dasharray: 119.38;
-  stroke-dashoffset: 0;
-  animation: countdown 3s linear forwards;
-}
-
-.rand-countdown__num {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--ink);
-  font-variant-numeric: tabular-nums;
+@keyframes randReveal {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1.8);
+    filter: blur(0);
+  }
 }
 
 .rand-caption {
@@ -544,12 +545,12 @@ onBeforeUnmount(() => {
 
 .rand-caption__dots {
   font-size: 18px;
-  color: var(--amber);
+  color: var(--ink);
   animation: randPulse 1s ease-in-out infinite;
 }
 
 .rand-caption__accent {
-  color: var(--amber);
+  color: var(--ink);
   font-size: 16px;
 }
 
@@ -566,16 +567,6 @@ onBeforeUnmount(() => {
 }
 .rand-enter-active .rand-scene {
   animation: randSceneIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.thumb-enter-active,
-.thumb-leave-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
-}
-.thumb-enter-from,
-.thumb-leave-to {
-  opacity: 0;
-  transform: scale(0.7);
 }
 
 @keyframes randSceneIn {
@@ -602,14 +593,6 @@ onBeforeUnmount(() => {
   }
   50% {
     opacity: 1;
-  }
-}
-@keyframes countdown {
-  from {
-    stroke-dashoffset: 0;
-  }
-  to {
-    stroke-dashoffset: 119.38;
   }
 }
 

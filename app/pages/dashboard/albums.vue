@@ -38,6 +38,8 @@ interface AlbumFormState {
   password: string
   // 照片展示布局：瀑布流 / 统一网格 / 沉浸式看图 / 时间线
   layout: 'waterfall' | 'grid' | 'immersive' | 'timeline'
+  // 「随机一张照片」是否使用 3D 轮盘动画（样式功能，默认关闭=直接打开）
+  randomWheelAnimation: boolean
 }
 
 const albums = ref<AlbumItem[]>([])
@@ -97,6 +99,7 @@ const formData = reactive<AlbumFormState>({
   slug: '',
   password: '',
   layout: 'waterfall',
+  randomWheelAnimation: false,
 })
 
 // 相簿密码「按钮式开关」：是否开启访问密码（表单态）
@@ -255,6 +258,7 @@ const openEditSlideover = async (album: AlbumItem) => {
       (album as any).layout === 'timeline'
         ? (album as any).layout
         : 'waterfall'
+    formData.randomWheelAnimation = !!(album as any).randomWheelAnimation
     passwordToggle.value = !!(album as any).passwordProtected
     coverPhotoId.value = album.coverPhotoId || ''
     selectedPhotoIds.value = []
@@ -279,6 +283,7 @@ const openEditSlideover = async (album: AlbumItem) => {
       albumDetail.layout === 'timeline'
         ? albumDetail.layout
         : 'waterfall'
+    formData.randomWheelAnimation = !!albumDetail.randomWheelAnimation
     passwordToggle.value = !!albumDetail.passwordProtected
     formRef.value?.clear()
   } catch (error) {
@@ -440,6 +445,7 @@ const onFormSubmit = async (event: FormSubmitEvent<AlbumFormState>) => {
         coverPhotoId: coverPhotoId.value || null,
         isHidden: event.data.isHidden,
         layout: event.data.layout,
+        randomWheelAnimation: event.data.randomWheelAnimation,
         ...passwordPayload,
         slug: event.data.slug?.trim() || null,
       }
@@ -461,6 +467,7 @@ const onFormSubmit = async (event: FormSubmitEvent<AlbumFormState>) => {
           isHidden: event.data.isHidden,
           hideFromGallery: event.data.hideFromGallery,
           layout: event.data.layout,
+          randomWheelAnimation: event.data.randomWheelAnimation,
           ...passwordPayload,
           slug: event.data.slug?.trim() || null,
         },
@@ -483,6 +490,7 @@ const onFormSubmit = async (event: FormSubmitEvent<AlbumFormState>) => {
           isHidden: event.data.isHidden,
           hideFromGallery: event.data.hideFromGallery,
           layout: event.data.layout,
+          randomWheelAnimation: event.data.randomWheelAnimation,
           password: passwordToggle.value ? newPassword || undefined : undefined,
           slug: event.data.slug?.trim() || null,
         },
@@ -1237,6 +1245,25 @@ const openAlbum = (album: AlbumItem) => {
                   <p class="text-xs text-neutral-500 dark:text-neutral-400">
                     {{ $t('dashboard.albums.form.layoutHint') }}
                   </p>
+
+                  <!-- 随机一张照片：轮盘动画开关（样式功能，默认关闭=直接打开） -->
+                  <UFormField name="randomWheelAnimation" class="pt-1">
+                    <div
+                      class="overflow-hidden rounded-lg border border-neutral-200 bg-neutral-50/50 dark:border-neutral-800 dark:bg-neutral-900/40"
+                    >
+                      <div class="flex items-center justify-between gap-4 px-4 py-3">
+                        <div class="min-w-0 space-y-0.5">
+                          <p class="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                            {{ $t('dashboard.albums.form.randomAnimation') }}
+                          </p>
+                          <p class="text-xs text-neutral-500 dark:text-neutral-400">
+                            {{ $t('dashboard.albums.form.randomAnimationHint') }}
+                          </p>
+                        </div>
+                        <USwitch v-model="formData.randomWheelAnimation" color="info" />
+                      </div>
+                    </div>
+                  </UFormField>
                 </section>
 
                 <!-- 分区：访问控制 -->

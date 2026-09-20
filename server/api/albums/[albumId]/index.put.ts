@@ -30,6 +30,8 @@ export default eventHandler(async (event) => {
       clearPassword: z.boolean().optional(),
       // 照片展示布局：瀑布流 / 统一网格
       layout: z.enum(['waterfall', 'grid', 'immersive', 'timeline']).optional(),
+      // 「随机一张照片」是否使用 3D 轮盘动画
+      randomWheelAnimation: z.boolean().optional(),
       // 自定义公开URL别名：可选；未传则保持，null/空串则清除
       slug: z
         .string()
@@ -87,6 +89,10 @@ export default eventHandler(async (event) => {
 
     if (body.layout !== undefined) {
       updateData.layout = body.layout
+    }
+
+    if (body.randomWheelAnimation !== undefined) {
+      updateData.randomWheelAnimation = body.randomWheelAnimation
     }
 
     if (body.title !== undefined) {

@@ -217,6 +217,10 @@ export const albums = sqliteTable('albums', {
   layout: text('layout', { enum: ['waterfall', 'grid', 'immersive', 'timeline'] })
     .default('waterfall')
     .notNull(),
+  // 「随机一张照片」是否使用 3D 轮盘动画（样式功能）；false=直接随机打开一张照片
+  randomWheelAnimation: integer('random_wheel_animation', { mode: 'boolean' })
+    .default(false)
+    .notNull(),
   createdAt: integer('created_at', { mode: 'timestamp' })
     .notNull()
     .default(sql`(unixepoch())`),
@@ -282,6 +286,9 @@ export const scanAlbumMeta = sqliteTable(
     // 照片展示布局：瀑布流 / 统一网格 / 沉浸式看图 / 时间线；null 视为默认（瀑布流）
     layout: text('layout', { enum: ['waterfall', 'grid', 'immersive', 'timeline'] })
       .default('waterfall')
+      .notNull(),
+    randomWheelAnimation: integer('random_wheel_animation', { mode: 'boolean' })
+      .default(false)
       .notNull(),
     createdAt: integer('created_at', { mode: 'timestamp' })
       .notNull()

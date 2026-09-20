@@ -1090,6 +1090,8 @@
         "groupLayout": "Display style",
         "layout": "Album layout",
         "layoutHint": "Choose how photos are displayed in the album; visitors can switch it on the album page",
+        "randomAnimation": "Random photo: wheel animation",
+        "randomAnimationHint": "When enabled, the Random Photo button plays a 3D wheel; when off it directly opens a random photo",
         "layoutWaterfall": "Waterfall",
         "layoutGrid": "Uniform grid",
         "layoutWaterfallDesc": "Cards keep their aspect ratio and flow into a staggered waterfall",
