@@ -4,6 +4,7 @@ import { hasAlbumAccess } from '~~/server/utils/manualAlbumAuth'
 import { settingsManager } from '~~/server/services/settings/settingsManager'
 import { ensureAlbumUid } from '~~/server/utils/albumUid'
 import { getDisabledScanMountSet } from '~~/server/services/scan-library/manager'
+import { resolveRandomQuotesPool } from '~~/server/services/settings/quoteLibraries'
 
 export default eventHandler(async (event) => {
   // 支持两种公开访问标识：数字 id（兼容存量链接）与不透明 uid
@@ -91,10 +92,17 @@ export default eventHandler(async (event) => {
     ? { ...baseAlbum, password: album.password ?? undefined }
     : baseAlbum
 
+  // 「随机照片轮经典语录」最终生效语录池：标签优先（内置古诗/现代库），否则自定义，两者皆无则空（旋转时不显示）
+  const randomQuotesPool = await resolveRandomQuotesPool(
+    (album as any).randomQuotesTag,
+    (album as any).randomQuotes,
+  )
+
   // 未解锁的受保护相簿：仅返回标题/介绍/封面等元数据用于加锁界面，不返回照片
   if (passwordProtected && !authorized) {
     return {
       ...safeAlbum,
+      randomQuotesPool,
       passwordProtected: true,
       authorized: false,
       photos: [],
@@ -141,6 +149,7 @@ export default eventHandler(async (event) => {
     // 空相册也是合法的，只需要返回空数组
     return {
       ...safeAlbum,
+      randomQuotesPool,
       passwordProtected,
       authorized,
       photos: [],
@@ -157,6 +166,7 @@ export default eventHandler(async (event) => {
 
   return {
     ...safeAlbum,
+    randomQuotesPool,
     passwordProtected,
     authorized,
     photos: uniquePhotos,

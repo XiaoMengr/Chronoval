@@ -125,6 +125,27 @@ const handleSectionSettingsSubmit = async (
           </p>
         </section>
 
+        <!-- 「随机照片轮经典语录」内置语录库（古诗/现代）编辑 -->
+        <section
+          class="rounded-md border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950"
+        >
+          <header
+            class="border-b border-neutral-200 px-5 py-4 dark:border-neutral-800"
+          >
+            <h3
+              class="text-base font-semibold text-neutral-900 dark:text-neutral-100"
+            >
+              {{ $t('settings.system.quoteLibraries.title') }}
+            </h3>
+            <p class="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+              {{ $t('settings.system.quoteLibraries.description') }}
+            </p>
+          </header>
+          <div class="px-5 py-5">
+            <SettingQuoteLibrariesSetting />
+          </div>
+        </section>
+
         <template v-if="systemLoading && systemFieldSections.length === 0">
           <section
             v-for="index in 3"

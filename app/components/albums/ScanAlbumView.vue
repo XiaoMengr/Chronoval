@@ -180,6 +180,16 @@ const randomMode = computed<'default' | 'wheel' | 'compat'>(() => {
 const randomOpen = ref(false)
 const randomTarget = ref(-1)
 
+// 「随机照片轮经典语录」扩展配置（来自扫描相簿元数据节点；后端已按标签/自定义解析好生效语录池）
+const randomQuotesEnabled = computed(() =>
+  (data.value?.node as any)?.randomQuotesEnabled !== false,
+)
+const activeQuotes = computed<string[]>(() =>
+  Array.isArray((data.value?.node as any)?.randomQuotesPool)
+    ? (data.value?.node as any)?.randomQuotesPool
+    : [],
+)
+
 const handleOpenRandom = (index: number) => {
   if (!data.value?.dirPhotos.length) return
   const photos = data.value.dirPhotos
@@ -599,6 +609,8 @@ watch(
       :open="randomOpen"
       :photos="data?.dirPhotos ?? []"
       :target="randomTarget"
+      :quotes-enabled="randomQuotesEnabled"
+      :quotes="activeQuotes"
       @done="handleRandomDone"
       @cancel="handleRandomCancel"
     />

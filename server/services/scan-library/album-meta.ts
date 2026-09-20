@@ -27,6 +27,12 @@ export interface ScanAlbumMetaInput {
   randomWheelAnimation?: boolean
   /** 「随机一张照片」动画模式；undefined=保持不变 */
   randomAnimation?: RandomAnimationMode
+  /** 「随机照片轮经典语录」扩展功能是否开启；undefined=保持不变 */
+  randomQuotesEnabled?: boolean
+  /** 自定义语录（每行一条）；null=清除使用内置，undefined=保持不变 */
+  randomQuotes?: string | null
+  /** 「随机照片轮经典语录」标签来源：ancient=古诗语录 / modern=现代语录；undefined=保持不变 */
+  randomQuotesTag?: 'ancient' | 'modern' | null
 }
 
 const cleanRelPath = (p: string): string =>
@@ -95,6 +101,12 @@ export const upsertScanAlbumMeta = async (
       updateData.randomWheelAnimation = Boolean(input.randomWheelAnimation)
     if (input.randomAnimation !== undefined)
       updateData.randomAnimation = input.randomAnimation
+    if (input.randomQuotesEnabled !== undefined)
+      updateData.randomQuotesEnabled = Boolean(input.randomQuotesEnabled)
+    if (input.randomQuotes !== undefined)
+      updateData.randomQuotes = input.randomQuotes || null
+    if (input.randomQuotesTag !== undefined)
+      updateData.randomQuotesTag = input.randomQuotesTag || null
 
     await db
       .update(tables.scanAlbumMeta)
@@ -125,6 +137,9 @@ export const upsertScanAlbumMeta = async (
       layout: input.layout ?? 'waterfall',
       randomWheelAnimation: input.randomWheelAnimation ? true : false,
       randomAnimation: input.randomAnimation ?? 'default',
+      randomQuotesEnabled: input.randomQuotesEnabled ?? true,
+      randomQuotes: input.randomQuotes || null,
+      randomQuotesTag: input.randomQuotesTag ?? null,
     })
     .returning()
     .get()
@@ -229,6 +244,10 @@ export const applyScanAlbumMeta = async (
     randomWheelAnimation: meta.randomWheelAnimation ?? false,
     // 「随机一张照片」动画模式（default=直接打开 / wheel=轮盘 / compat=兼容动画）
     randomAnimation: meta.randomAnimation ?? 'default',
+    // 「随机照片轮经典语录」扩展功能
+    randomQuotesEnabled: meta.randomQuotesEnabled ?? true,
+    randomQuotes: meta.randomQuotes || null,
+    randomQuotesTag: meta.randomQuotesTag ?? null,
     // 公开链接优先级：自定义 slug > 相簿自身 urlKey > 库级默认
     link: meta.slug
       ? `/albums/s/${encodeURIComponent(meta.slug)}`

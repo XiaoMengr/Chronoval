@@ -7,6 +7,7 @@ import {
 import { getScanAlbumMetaByUrlKey } from '~~/server/services/scan-library/album-meta'
 import { hasScanAlbumAccess } from '~~/server/utils/scanAlbumAuth'
 import { settingsManager } from '~~/server/services/settings/settingsManager'
+import { resolveRandomQuotesPool } from '~~/server/services/settings/quoteLibraries'
 
 export default eventHandler(async (event) => {
   const { libId } = await getValidatedRouterParams(
@@ -69,6 +70,18 @@ export default eventHandler(async (event) => {
 
   const passwordProtected = Boolean(detail.node.passwordProtected)
 
+  // 「随机照片轮经典语录」最终生效语录池：标签优先（内置古诗/现代库），否则自定义，两者皆无则空（旋转时不显示）
+  const withRandomQuotePool = async (node: any): Promise<any> => {
+    const pool = await resolveRandomQuotesPool(
+      node.randomQuotesTag,
+      node.randomQuotes,
+    )
+    const { password: _pw, children, ...rest } = stripPassword(node)
+    return children?.length
+      ? { ...rest, children: await Promise.all(children.map(withRandomQuotePool)), randomQuotesPool: pool }
+      : { ...rest, randomQuotesPool: pool }
+  }
+
   // 无论解锁与否，公开返回的节点都不带明文密码（明文仅供管理端编辑面板回显）
   const stripPassword = (node: any): any => {
     const { password: _pw, children, ...rest } = node
@@ -80,7 +93,7 @@ export default eventHandler(async (event) => {
   // 未解锁的受保护相簿仅返回节点信息用于标题/封面展示，不返回目录照片与子相簿
   if (passwordProtected && !authorized) {
     return {
-      node: stripPassword(detail.node),
+      node: await withRandomQuotePool(detail.node),
       dirPhotos: [],
       children: [],
       passwordProtected: true,
@@ -90,8 +103,8 @@ export default eventHandler(async (event) => {
 
   return {
     ...detail,
-    node: stripPassword(detail.node),
-    children: detail.children.map(stripPassword),
+    node: await withRandomQuotePool(detail.node),
+    children: await Promise.all(detail.children.map(withRandomQuotePool)),
     passwordProtected,
     authorized,
   }

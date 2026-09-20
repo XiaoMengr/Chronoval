@@ -2,6 +2,7 @@
 import type { Album, Photo } from '~~/server/utils/db'
 import type { FormSubmitEvent, FormError } from '@nuxt/ui'
 import { useStorage } from '@vueuse/core'
+import { onMounted } from 'vue'
 
 definePageMeta({
   layout: 'dashboard',
@@ -40,6 +41,12 @@ interface AlbumFormState {
   layout: 'waterfall' | 'grid' | 'immersive' | 'timeline'
   // 「随机照片盒动画」模式：default=直接打开 / wheel=3D轮盘 / compat=兼容动画
   randomAnimation: 'default' | 'wheel' | 'compat'
+  // 「随机照片轮经典语录」扩展功能是否开启
+  randomQuotesEnabled: boolean
+  // 自定义语录（每行一条，空=内置语录）
+  randomQuotes: string
+  // 「随机照片轮经典语录」标签来源：ancient=古诗语录 / modern=现代语录；null=未选（使用自定义）
+  randomQuotesTag: 'ancient' | 'modern' | null
 }
 
 const albums = ref<AlbumItem[]>([])
@@ -100,6 +107,9 @@ const formData = reactive<AlbumFormState>({
   password: '',
   layout: 'waterfall',
   randomAnimation: 'default',
+  randomQuotesEnabled: true,
+  randomQuotes: '',
+  randomQuotesTag: null,
 })
 
 // 归一化「随机照片盒动画」模式：优先取新的三态值，缺省则回退旧布尔（开启=wheel）
@@ -109,6 +119,27 @@ const normalizeRandomAnimation = (d: any): 'default' | 'wheel' | 'compat' => {
   if ((d as any)?.randomWheelAnimation) return 'wheel'
   return 'default'
 }
+
+// 「随机照片轮经典语录」标签库条数（古诗/现代），供标签选择时展示
+const quoteTagCounts = ref<{ ancient: number; modern: number }>({
+  ancient: 0,
+  modern: 0,
+})
+const loadQuoteTagCounts = async () => {
+  try {
+    const res: any = await $fetch(
+      '/api/system/settings/quote-libraries',
+      { method: 'GET' },
+    )
+    quoteTagCounts.value = {
+      ancient: res?.libraries?.ancient?.length || 0,
+      modern: res?.libraries?.modern?.length || 0,
+    }
+  } catch {
+    /* 加载失败时保留 0，标签仍可选择 */
+  }
+}
+onMounted(loadQuoteTagCounts)
 
 // 当前选中的「随机照片盒动画」模式下标（0/1/2），驱动胶囊滑动指示条 translateX
 const randomModeIndex = computed(() =>
@@ -274,6 +305,9 @@ const openEditSlideover = async (album: AlbumItem) => {
         ? (album as any).layout
         : 'waterfall'
     formData.randomAnimation = normalizeRandomAnimation(album)
+    formData.randomQuotesEnabled = (album as any).randomQuotesEnabled !== false
+    formData.randomQuotes = (album as any)?.randomQuotes || ''
+    formData.randomQuotesTag = (album as any)?.randomQuotesTag || null
     passwordToggle.value = !!(album as any).passwordProtected
     coverPhotoId.value = album.coverPhotoId || ''
     selectedPhotoIds.value = []
@@ -299,6 +333,9 @@ const openEditSlideover = async (album: AlbumItem) => {
         ? albumDetail.layout
         : 'waterfall'
     formData.randomAnimation = normalizeRandomAnimation(albumDetail)
+    formData.randomQuotesEnabled = albumDetail.randomQuotesEnabled !== false
+    formData.randomQuotes = albumDetail.randomQuotes || ''
+    formData.randomQuotesTag = albumDetail.randomQuotesTag || null
     passwordToggle.value = !!albumDetail.passwordProtected
     formRef.value?.clear()
   } catch (error) {
@@ -461,6 +498,9 @@ const onFormSubmit = async (event: FormSubmitEvent<AlbumFormState>) => {
         isHidden: event.data.isHidden,
         layout: event.data.layout,
         randomAnimation: event.data.randomAnimation,
+        randomQuotesEnabled: event.data.randomQuotesEnabled,
+        randomQuotes: event.data.randomQuotes?.trim() || null,
+        randomQuotesTag: event.data.randomQuotesTag || null,
         ...passwordPayload,
         slug: event.data.slug?.trim() || null,
       }
@@ -483,6 +523,9 @@ const onFormSubmit = async (event: FormSubmitEvent<AlbumFormState>) => {
           hideFromGallery: event.data.hideFromGallery,
           layout: event.data.layout,
           randomAnimation: event.data.randomAnimation,
+          randomQuotesEnabled: event.data.randomQuotesEnabled,
+          randomQuotes: event.data.randomQuotes?.trim() || null,
+          randomQuotesTag: event.data.randomQuotesTag || null,
           ...passwordPayload,
           slug: event.data.slug?.trim() || null,
         },
@@ -506,6 +549,9 @@ const onFormSubmit = async (event: FormSubmitEvent<AlbumFormState>) => {
           hideFromGallery: event.data.hideFromGallery,
           layout: event.data.layout,
           randomAnimation: event.data.randomAnimation,
+          randomQuotesEnabled: event.data.randomQuotesEnabled,
+          randomQuotes: event.data.randomQuotes?.trim() || null,
+          randomQuotesTag: event.data.randomQuotesTag || null,
           password: passwordToggle.value ? newPassword || undefined : undefined,
           slug: event.data.slug?.trim() || null,
         },
@@ -1395,6 +1441,98 @@ const openAlbum = (album: AlbumItem) => {
                     <USwitch v-model="formData.hideFromGallery" color="info" />
                   </div>
                 </section>
+
+                <!-- 扩展功能（折叠收起、不突出）：随机照片轮经典语录 -->
+                <details class="group mt-5">
+                  <summary
+                    class="flex cursor-pointer select-none list-none items-center gap-2 py-1 [&::-webkit-details-marker]:hidden"
+                  >
+                    <Icon name="tabler:settings-2" class="size-4 text-neutral-400 dark:text-neutral-500" />
+                    <span class="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">
+                      {{ $t('dashboard.albums.form.groupAdvanced') }}
+                    </span>
+                    <span class="h-px flex-1 bg-neutral-100 dark:bg-neutral-800" />
+                    <Icon
+                      name="tabler:chevron-down"
+                      class="size-4 shrink-0 text-neutral-400 transition-transform duration-300 group-open:rotate-180"
+                    />
+                  </summary>
+                  <div class="mt-3 space-y-3">
+                    <div
+                      class="flex items-start justify-between gap-4 rounded-lg border border-neutral-200 bg-neutral-50/50 px-4 py-3 dark:border-neutral-800 dark:bg-neutral-900/40"
+                    >
+                      <div class="min-w-0 space-y-0.5">
+                        <p class="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                          {{ $t('dashboard.albums.form.randomQuotes') }}
+                        </p>
+                        <p class="text-xs text-neutral-500 dark:text-neutral-400">
+                          {{ $t('dashboard.albums.form.randomQuotesHint') }}
+                        </p>
+                      </div>
+                      <USwitch v-model="formData.randomQuotesEnabled" color="info" />
+                    </div>
+                    <UTextarea
+                      v-if="formData.randomQuotesEnabled"
+                      v-model="formData.randomQuotes"
+                      class="w-full"
+                      :placeholder="$t('dashboard.albums.form.randomQuotesPlaceholder')"
+                      :rows="4"
+                    />
+
+                    <!-- 语录标签来源：古诗 / 现代（各自显示内置条数）；不选且无自定义则旋转时不显示 -->
+                    <div
+                      v-if="formData.randomQuotesEnabled"
+                      class="space-y-2"
+                    >
+                      <p class="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                        {{ $t('dashboard.albums.form.randomQuotesTag') }}
+                      </p>
+                      <p class="text-xs text-neutral-500 dark:text-neutral-400">
+                        {{ $t('dashboard.albums.form.randomQuotesTagHint') }}
+                      </p>
+                      <div class="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          class="flex items-center justify-between gap-2 rounded-lg border px-3 py-2.5 text-sm transition
+                            "
+                          :class="
+                            formData.randomQuotesTag === 'modern'
+                              ? 'border-primary-500 bg-primary-50 dark:bg-primary-950/40'
+                              : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700'
+                          "
+                          @click="formData.randomQuotesTag = formData.randomQuotesTag === 'modern' ? null : 'modern'"
+                        >
+                          <span class="inline-flex items-center gap-1.5">
+                            <Icon name="tabler:camera" class="size-4 text-primary-500" />
+                            {{ $t('dashboard.albums.form.randomQuotesTagModern') }}
+                          </span>
+                          <span class="rounded-full bg-primary-50 px-1.5 py-0.5 text-xs font-medium text-primary-700 dark:bg-primary-950/40 dark:text-primary-300">
+                            {{ $t('dashboard.albums.form.randomQuotesTagCount', { count: quoteTagCounts.modern }) }}
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          class="flex items-center justify-between gap-2 rounded-lg border px-3 py-2.5 text-sm transition"
+                          :class="
+                            formData.randomQuotesTag === 'ancient'
+                              ? 'border-primary-500 bg-primary-50 dark:bg-primary-950/40'
+                              : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700'
+                          "
+                          @click="formData.randomQuotesTag = formData.randomQuotesTag === 'ancient' ? null : 'ancient'"
+                        >
+                          <span class="inline-flex items-center gap-1.5">
+                            <Icon name="tabler:book" class="size-4 text-primary-500" />
+                            {{ $t('dashboard.albums.form.randomQuotesTagAncient') }}
+                          </span>
+                          <span class="rounded-full bg-primary-50 px-1.5 py-0.5 text-xs font-medium text-primary-700 dark:bg-primary-950/40 dark:text-primary-300">
+                            {{ $t('dashboard.albums.form.randomQuotesTagCount', { count: quoteTagCounts.ancient }) }}
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </details>
               </UForm>
 
               <!-- 照片选择部分（仅手动相册） -->

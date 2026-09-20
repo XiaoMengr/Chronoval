@@ -227,6 +227,16 @@ export const albums = sqliteTable('albums', {
   })
     .default('default')
     .notNull(),
+  // 「随机照片轮经典语录」扩展功能：是否开启（扩展功能，默认开启，可在相簿编辑「扩展」中关闭）
+  randomQuotesEnabled: integer('random_quotes_enabled', { mode: 'boolean' })
+    .default(true)
+    .notNull(),
+  // 自定义语录（每行一条）；空=使用内置语录
+  randomQuotes: text('random_quotes'),
+  // 「随机照片轮经典语录」标签来源：ancient=古诗语录 / modern=现代语录；null=未选（使用自定义语录）
+  randomQuotesTag: text('random_quotes_tag', {
+    enum: ['ancient', 'modern'],
+  }),
   createdAt: integer('created_at', { mode: 'timestamp' })
     .notNull()
     .default(sql`(unixepoch())`),
@@ -302,6 +312,16 @@ export const scanAlbumMeta = sqliteTable(
     })
       .default('default')
       .notNull(),
+    // 「随机照片轮经典语录」扩展功能：是否开启（默认开启）
+    randomQuotesEnabled: integer('random_quotes_enabled', { mode: 'boolean' })
+      .default(true)
+      .notNull(),
+    // 自定义语录（每行一条）；空=使用内置语录
+    randomQuotes: text('random_quotes'),
+    // 「随机照片轮经典语录」标签来源：ancient=古诗语录 / modern=现代语录；null=未选（使用自定义语录）
+    randomQuotesTag: text('random_quotes_tag', {
+      enum: ['ancient', 'modern'],
+    }),
     createdAt: integer('created_at', { mode: 'timestamp' })
       .notNull()
       .default(sql`(unixepoch())`),

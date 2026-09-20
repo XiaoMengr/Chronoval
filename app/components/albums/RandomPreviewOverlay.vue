@@ -10,6 +10,10 @@ const props = defineProps<{
   open: boolean
   photos: { id: string; thumbnailUrl?: string | null; originalUrl?: string | null }[]
   target: number
+  /** 「随机照片轮经典语录」扩展功能是否开启；false=旋转时也不显示语录 */
+  quotesEnabled?: boolean
+  /** 最终生效的语录池（后端已按标签/自定义解析好）；空数组=不显示语录 */
+  quotes?: string[]
 }>()
 
 const emit = defineEmits<{
@@ -24,8 +28,15 @@ const MAX_CARDS = 16
 const EASING = 'cubic-bezier(0.22, 0.5, 0.28, 1)'
 const GAP = 0.5
 
+// 旋转期间轮播的经典语录：由后端解析好的生效语录池驱动（见 buildQuotePool）
+
 const show = ref(false)
 const phase = ref<'idle' | 'spin' | 'zoom' | 'settled'>('idle')
+// 当前展示的语录
+const shownQuote = ref('')
+// 本次旋转实际使用的语录池（相簿自定义优先，否则内置默认）
+let activeQuotes: string[] = []
+let quoteTimer: ReturnType<typeof setInterval> | null = null
 const order = ref<{ thumb: string; full?: string; index: number }[]>([])
 const winnerIndex = ref(0)
 const targetIndex = ref(0)
@@ -142,6 +153,8 @@ function start() {
   phase.value = 'spin'
   zoomActive.value = false
   show.value = true
+  buildQuotePool() // 旋转期间在下方轮播经典语录
+  if (props.quotesEnabled !== false && activeQuotes.length) startQuoteRotation()
 
   nextTick(() => {
     measure()
@@ -182,6 +195,7 @@ function start() {
 }
 
 function onZoom() {
+  stopQuoteRotation() // 已停稳，不再轮播语录
   if (reducedMotion.value) {
     finish()
     return
@@ -209,9 +223,35 @@ function reset() {
 }
 
 function stop() {
+  stopQuoteRotation()
   if (timer) {
     clearTimeout(timer)
     timer = null
+  }
+}
+
+// 旋转期间轮播语录：先随机展示一条，此后缓慢轮换（节奏舒缓，不抢戏）
+function startQuoteRotation() {
+  stopQuoteRotation()
+  const pick = () => {
+    if (!activeQuotes.length) return
+    shownQuote.value = activeQuotes[Math.floor(Math.random() * activeQuotes.length)] || ''
+  }
+  pick()
+  quoteTimer = setInterval(pick, 3800)
+}
+
+// 集结本次旋转实际使用的语录池：直接使用后端解析好的生效语录（空数组=不显示语录）
+function buildQuotePool() {
+  activeQuotes = (props.quotes || [])
+    .map((s) => (s || '').trim())
+    .filter(Boolean)
+}
+
+function stopQuoteRotation() {
+  if (quoteTimer) {
+    clearInterval(quoteTimer)
+    quoteTimer = null
   }
 }
 
@@ -359,6 +399,17 @@ onBeforeUnmount(() => {
             <Icon name="tabler:check" class="rand-caption__accent" />
             即将为你打开这张照片
           </template>
+        </p>
+
+        <!-- 旋转期间在轮盘下方轮播经典语录（扩展功能，可关闭） -->
+        <p
+          v-if="phase === 'spin' && props.quotesEnabled !== false && activeQuotes.length"
+          class="rand-quote"
+          aria-live="polite"
+        >
+          <Transition name="rand-quote" mode="out-in">
+            <span :key="shownQuote" class="rand-quote__text">{{ shownQuote }}</span>
+          </Transition>
         </p>
       </div>
     </Transition>
@@ -590,6 +641,59 @@ onBeforeUnmount(() => {
 .rand-caption__accent {
   color: var(--ink);
   font-size: 16px;
+}
+
+/* 轮盘下方轮播的经典语录 */
+.rand-quote {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: min(86vw, 560px);
+  min-height: 22px;
+  margin-top: 2px;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.7;
+  letter-spacing: 0.04em;
+  color: color-mix(in srgb, var(--ink) 50%, transparent);
+}
+
+.rand-quote__text {
+  position: relative;
+  padding: 0 18px;
+}
+
+/* 语录引号装饰 */
+.rand-quote__text::before,
+.rand-quote__text::after {
+  position: absolute;
+  top: 0;
+  font-size: 16px;
+  line-height: 1;
+  color: color-mix(in srgb, var(--ink) 26%, transparent);
+}
+.rand-quote__text::before {
+  content: '“';
+  left: 0;
+}
+.rand-quote__text::after {
+  content: '”';
+  right: 0;
+}
+
+/* 语录逐条淡入淡出（上下轻移） */
+.rand-quote-enter-active,
+.rand-quote-leave-active {
+  transition: opacity 0.38s ease, transform 0.38s ease;
+}
+.rand-quote-enter-from {
+  opacity: 0;
+  transform: translateY(7px);
+}
+.rand-quote-leave-to {
+  opacity: 0;
+  transform: translateY(-7px);
 }
 
 .rand-enter-active,

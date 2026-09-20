@@ -160,6 +160,16 @@ const handleOpenRandom = () => {
 // 全屏随机轮盘浮层开关（Teleport 到 body，全屏不透明覆盖，无需独立路由）
 const randomWheelOpen = ref(false)
 
+// 「随机照片轮经典语录」扩展配置：是否开启 + 后端解析好的生效语录池（按标签/自定义）
+const randomQuotesEnabled = computed(() =>
+  (albumData.value as any)?.randomQuotesEnabled !== false,
+)
+const activeQuotes = computed<string[]>(() =>
+  Array.isArray((albumData.value as any)?.randomQuotesPool)
+    ? (albumData.value as any)?.randomQuotesPool
+    : [],
+)
+
 // 轮盘落定 → 关闭浮层并打开选中的照片（沿用相册内查看器的打开方式）
 const handleRandomDone = (index: number) => {
   randomWheelOpen.value = false
@@ -458,6 +468,8 @@ onBeforeMount(() => {
       :open="randomWheelOpen"
       :photos="sortedAlbumPhotos"
       :target="0"
+      :quotes-enabled="randomQuotesEnabled"
+      :quotes="activeQuotes"
       @done="handleRandomDone"
       @cancel="handleRandomCancel"
     />

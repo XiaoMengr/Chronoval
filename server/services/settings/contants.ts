@@ -238,6 +238,42 @@ export const DEFAULT_SETTINGS = [
     description: 'settings.system.scanAlbum.adminBypass.description',
     isPublic: true,
   },
+  // 「随机照片轮经典语录」内置语录库（古诗/现代），可在 设置-系统 中编辑；相簿选择标签时轮盘使用对应库
+  {
+    namespace: 'system',
+    key: 'randomWheel.quoteLibraries',
+    type: 'json',
+    defaultValue: {
+      ancient: [
+        '人生得意须尽欢，莫使金樽空对月。',
+        '长风破浪会有时，直挂云帆济沧海。',
+        '山重水复疑无路，柳暗花明又一村。',
+        '行到水穷处，坐看云起时。',
+        '花有重开日，人无再少年。',
+        '海上生明月，天涯共此时。',
+        '但愿人长久，千里共婵娟。',
+        '落霞与孤鹜齐飞，秋水共长天一色。',
+        '会当凌绝顶，一览众山小。',
+        '众里寻他千百度，蓦然回首，那人却在灯火阑珊处。',
+      ],
+      modern: [
+        '按下快门的一瞬间，定格世间美好的瞬间。',
+        '相机是时间的收纳盒，快门是记忆的封缄。',
+        '把琐碎的日子，过成闪闪发光的照片。',
+        '光影绰绰，皆是人间温柔的注脚。',
+        '所有的相遇，都是久别重逢。',
+        '咔嚓一声，把片刻定格成永恒。',
+        '光是宇宙温柔的笔，照片是它写下的诗。',
+        '快门落下，世界为我暂停了那么一秒。',
+        '照片里藏着的，是回不去的旧日时光。',
+        '聚焦的那一瞬，平凡也开始闪闪发光。',
+      ],
+    },
+    label: 'settings.system.randomWheel.quoteLibraries.label',
+    description:
+      'settings.system.randomWheel.quoteLibraries.description',
+    isPublic: true,
+  },
   // NAMESPACE: privacy
   {
     namespace: 'privacy',

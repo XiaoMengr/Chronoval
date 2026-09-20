@@ -34,6 +34,12 @@ export default eventHandler(async (event) => {
       randomAnimation: z.enum(['default', 'wheel', 'compat']).optional(),
       // 「随机一张照片」是否使用 3D 轮盘动画（旧字段，兼容旧客户端）
       randomWheelAnimation: z.boolean().optional(),
+      // 「随机照片轮经典语录」扩展功能是否开启
+      randomQuotesEnabled: z.boolean().optional(),
+      // 自定义语录（每行一条）；空=使用内置语录
+      randomQuotes: z.string().max(5000).nullable().optional(),
+      // 「随机照片轮经典语录」标签来源：ancient=古诗语录 / modern=现代语录；null=未选（使用自定义）
+      randomQuotesTag: z.enum(['ancient', 'modern']).nullable().optional(),
       // 自定义公开URL别名：可选；未传则保持，null/空串则清除
       slug: z
         .string()
@@ -99,6 +105,18 @@ export default eventHandler(async (event) => {
 
     if (body.randomAnimation !== undefined) {
       updateData.randomAnimation = body.randomAnimation
+    }
+
+    if (body.randomQuotesEnabled !== undefined) {
+      updateData.randomQuotesEnabled = body.randomQuotesEnabled
+    }
+
+    if (body.randomQuotes !== undefined) {
+      updateData.randomQuotes = body.randomQuotes || null
+    }
+
+    if (body.randomQuotesTag !== undefined) {
+      updateData.randomQuotesTag = body.randomQuotesTag || null
     }
 
     if (body.title !== undefined) {

@@ -1098,6 +1098,15 @@
           "compat": "Compatible",
           "hint": "Default opens a random photo directly; Wheel uses a 3D wheel; Compatible prefers the wheel but falls back to Default when the browser lacks 3D support"
         },
+        "groupAdvanced": "Advanced",
+        "randomQuotes": "Random wheel quotes",
+        "randomQuotesHint": "When on, shows quotes under the wheel while it spins",
+        "randomQuotesPlaceholder": "One quote per line. Leave empty to use the built-in set, e.g.:\nA click of the shutter freezes a beautiful moment.",
+        "randomQuotesTag": "Quote tag",
+        "randomQuotesTagHint": "Pick a built-in quote library (Ancient / Modern). If none is selected and no custom quotes are below, quotes will not be shown while the wheel spins.",
+        "randomQuotesTagAncient": "Ancient quotes",
+        "randomQuotesTagModern": "Modern quotes",
+        "randomQuotesTagCount": "{count} lines",
         "layoutWaterfall": "Waterfall",
         "layoutGrid": "Uniform grid",
         "layoutWaterfallDesc": "Cards keep their aspect ratio and flow into a staggered waterfall",
@@ -1534,6 +1543,22 @@
           "description": "When enabled, the logged-in admin can open password-protected albums without entering the password",
           "help": "Off by default: even the admin must enter the correct album password. When enabled, admin can skip the password (applies to the logged-in admin only)"
         }
+      },
+      "randomWheel": {
+        "quoteLibraries": {
+          "label": "Random photo wheel quote library",
+          "description": "Built-in quotes for the Ancient / Modern tags, referenced from the album Advanced section"
+        }
+      },
+      "quoteLibraries": {
+        "title": "Random photo wheel quote library",
+        "description": "Edit the Ancient / Modern quote tags, one per line. Albums that select a tag will show these quotes on the wheel.",
+        "ancient": "Ancient quotes",
+        "modern": "Modern quotes",
+        "count": "{count} lines",
+        "placeholder": "One quote per line, e.g.:\nMay your life be as bright as a captured moment.",
+        "saved": "Quote library saved",
+        "saveFailed": "Failed to save quote library"
       },
       "auth": {
         "github": {

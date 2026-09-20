@@ -530,6 +530,12 @@ export interface ScanAlbumNode {
   layout: 'waterfall' | 'grid' | 'immersive' | 'timeline'
   /** 「随机一张照片」动画模式：default=直接打开 / wheel=3D轮盘 / compat=兼容动画 */
   randomAnimation: 'default' | 'wheel' | 'compat'
+  /** 「随机照片轮经典语录」扩展功能是否开启 */
+  randomQuotesEnabled: boolean
+  /** 自定义语录（每行一条）；空=使用内置语录 */
+  randomQuotes: string | null
+  /** 「随机照片轮经典语录」标签来源：ancient=古诗语录 / modern=现代语录；null=未选（使用自定义） */
+  randomQuotesTag: 'ancient' | 'modern' | null
   /** 该层目录直接包含的照片数（不含更深的子目录） */
   photoCount: number
   coverPhotoId: string | null
@@ -620,6 +626,9 @@ const buildScanAlbumNode = (
     link,
     layout: 'waterfall',
     randomAnimation: 'default',
+    randomQuotesEnabled: true,
+    randomQuotes: null,
+    randomQuotesTag: null,
     photoCount: dirPhotos.length,
     coverPhotoId: covers[0]?.id ?? null,
     covers,

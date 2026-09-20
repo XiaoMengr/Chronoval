@@ -1092,6 +1092,15 @@
           "compat": "兼容",
           "hint": "默认直接随机打开一张；动画轮盘为 3D 轮盘开箱；兼容为优先轮盘、浏览器不支持 3D 时自动回退到默认"
         },
+        "groupAdvanced": "扩展",
+        "randomQuotes": "随机照片轮经典语录",
+        "randomQuotesHint": "开启后，随机照片轮旋转时在轮盘下方轮播语录",
+        "randomQuotesPlaceholder": "每行一条，留空则使用内置语录，例如：\n按下快门的一瞬间，定格世间美好的瞬间。",
+        "randomQuotesTag": "语录标签",
+        "randomQuotesTagHint": "选择内置语录库（古诗 / 现代）。若未选择且下方无自定义语录，则轮盘旋转时不再显示语录。",
+        "randomQuotesTagAncient": "古诗语录",
+        "randomQuotesTagModern": "现代语录",
+        "randomQuotesTagCount": "{count} 条",
         "layoutWaterfall": "瀑布流",
         "layoutGrid": "统一网格",
         "layoutWaterfallDesc": "照片高度按原始比例参差，形成错落瀑布",
@@ -1528,6 +1537,22 @@
           "description": "开启后，登录管理员无需输入相簿密码即可直接查看受保护相簿",
           "help": "默认关闭：即使登录管理员也必须输入正确相簿密码；开启后管理员可跳过密码直接进入（仅对登录管理员生效）"
         }
+      },
+      "randomWheel": {
+        "quoteLibraries": {
+          "label": "随机照片轮经典语录库",
+          "description": "古诗 / 现代两个标签的内置语录，可在相簿的「扩展」中选择引用"
+        }
+      },
+      "quoteLibraries": {
+        "title": "随机照片轮经典语录库",
+        "description": "编辑「古诗 / 现代」两个语录标签的内容，每行一条；相簿选择对应标签时轮盘引用此处的语录。",
+        "ancient": "古诗语录",
+        "modern": "现代语录",
+        "count": "{count} 条",
+        "placeholder": "每行一条，例如：\n人生得意须尽欢，莫使金樽空对月。",
+        "saved": "语录库已保存",
+        "saveFailed": "语录库保存失败"
       },
       "auth": {
         "github": {

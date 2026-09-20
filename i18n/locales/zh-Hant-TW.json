@@ -886,7 +886,27 @@
         "publicLinkFallback": "尚未設定自訂連結，將使用預設路徑。",
         "publicLinkEmptyTip": "填寫上方自訂連結後，這裡會顯示公開網址。",
         "copied": "已複製",
-        "copyLink": "複製連結"
+        "copyLink": "複製連結",
+        "groupLayout": "展示樣式",
+        "layout": "相簿佈局",
+        "layoutHint": "選擇相簿內照片的展示佈局，訪客可在相簿頁切換",
+        "randomAnimation": "隨機照片盒動畫",
+        "randomAnimationHint": "點擊「隨機一張照片」時，選擇想要開箱的轉場方式",
+        "randomMode": {
+          "default": "預設",
+          "wheel": "動畫輪盤",
+          "compat": "相容",
+          "hint": "預設直接隨機開啟一張；動畫輪盤為 3D 輪盤開箱；相容為優先輪盤、瀏覽器不支援 3D 時自動回退到預設"
+        },
+        "groupAdvanced": "擴充",
+        "randomQuotes": "隨機照片輪經典語錄",
+        "randomQuotesHint": "開啟後，隨機照片輪轉動時在輪盤下方輪播語錄",
+        "randomQuotesPlaceholder": "每行一則，留空則使用內建語錄，例如：\n按下快門的一瞬間，定格世間美好的瞬間。",
+        "randomQuotesTag": "語錄標籤",
+        "randomQuotesTagHint": "選擇內建語錄庫（古詩 / 現代）。若未選擇且下方沒有自訂語錄，則輪盤轉動時不再顯示語錄。",
+        "randomQuotesTagAncient": "古詩語錄",
+        "randomQuotesTagModern": "現代語錄",
+        "randomQuotesTagCount": "{count} 則"
       },
       "table": {
         "columns": {
@@ -1280,6 +1300,22 @@
           "description": "開啟後，已登入管理員無需輸入相簿密碼即可直接查看受保護相簿",
           "help": "預設關閉：即使已登入管理員也必須輸入正確相簿密碼；開啟後管理員可跳過密碼直接進入（僅對已登入管理員生效）"
         }
+      },
+      "randomWheel": {
+        "quoteLibraries": {
+          "label": "隨機照片輪經典語錄庫",
+          "description": "古詩 / 現代兩個標籤的內建語錄，可在相簿的「進階」中選擇引用"
+        }
+      },
+      "quoteLibraries": {
+        "title": "隨機照片輪經典語錄庫",
+        "description": "編輯「古詩 / 現代」兩個語錄標籤的內容，每行一則；相簿選擇對應標籤時輪盤引用此處的語錄。",
+        "ancient": "古詩語錄",
+        "modern": "現代語錄",
+        "count": "{count} 則",
+        "placeholder": "每行一則，例如：\n人生得意須盡歡，莫使金樽空對月。",
+        "saved": "語錄庫已儲存",
+        "saveFailed": "語錄庫儲存失敗"
       },
       "auth": {
         "github": {

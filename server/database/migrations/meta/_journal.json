@@ -253,6 +253,20 @@
       "when": 1789911000000,
       "tag": "0035_random_animation_mode",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "6",
+      "when": 1789916000000,
+      "tag": "0036_random_wheel_quotes",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "6",
+      "when": 1789917000000,
+      "tag": "0037_random_quote_tag",
+      "breakpoints": true
     }
   ]
 }
