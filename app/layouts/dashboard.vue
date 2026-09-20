@@ -3,7 +3,7 @@ import type { NavigationMenuItem } from '@nuxt/ui'
 
 const route = useRoute()
 const router = useRouter()
-const { loggedIn, user } = useUserSession()
+const { loggedIn, user, clear } = useUserSession()
 const settingsStore = useSettingsStore()
 
 const appTitle = computed(() => {
@@ -153,6 +153,15 @@ const handleLogin = () => {
     query: { redirect: route.fullPath },
   })
 }
+
+// 退出登录：从管理后台跳回首页（登出后 loggedIn 为 false，管理端自动拒绝访问）
+const handleLogout = async () => {
+  try {
+    await clear()
+  } finally {
+    await router.push('/')
+  }
+}
 </script>
 
 <template>
@@ -219,34 +228,82 @@ const handleLogin = () => {
       </template>
 
       <template #default="{ collapsed }">
-        <UNavigationMenu
-          :collapsed="collapsed"
-          :items="navItems[0]"
-          orientation="vertical"
-        />
-        <UNavigationMenu
-          :collapsed="collapsed"
-          :items="navItems[1]"
-          orientation="vertical"
-          class="mt-auto"
-        />
+        <!-- 占满侧栏高度并把滚动收敛到内部：内容超高时只在导航区内部滚动，
+             不会顶动下方固定 footer；去掉底部组的 mt-auto，避免可视区域较高时
+             在两组导航之间出现"-大片空隙/底栏间隔过大" -->
+        <div class="flex min-h-0 flex-1 flex-col overflow-y-auto">
+          <UNavigationMenu
+            :collapsed="collapsed"
+            :items="navItems[0]"
+            orientation="vertical"
+          />
+          <UNavigationMenu
+            :collapsed="collapsed"
+            :items="navItems[1]"
+            orientation="vertical"
+            class="shrink-0"
+          />
+        </div>
       </template>
 
       <template #footer="{ collapsed }">
-        <div class="flex flex-col gap-0.5 px-2 pb-1">
-          <UButton
-            :avatar="{
-              src: user?.avatar || '',
-              alt: user?.username || user?.email || 'User Avatar',
-              icon: 'tabler:user',
-            }"
-            :label="collapsed ? undefined : user?.username || 'User'"
+        <!-- 用户信息卡片：显示头像/用户名/邮箱及管理员标识，并提供退出登录按钮。
+             折叠时仅保留头像与退出图标，节省空间 -->
+        <div
+          v-if="collapsed"
+          class="flex flex-col items-center gap-1 px-2 pb-1"
+        >
+          <UAvatar
+            :src="user?.avatar || undefined"
+            :icon="user?.avatar ? undefined : 'tabler:user'"
+            :alt="user?.username || user?.email || 'User'"
             size="lg"
-            color="neutral"
-            variant="ghost"
-            class="w-full"
-            :block="collapsed"
           />
+          <UTooltip :text="$t('ui.action.logout.tooltip')">
+            <UButton
+              icon="tabler:logout"
+              size="sm"
+              color="neutral"
+              variant="ghost"
+              aria-label="Logout"
+              @click="handleLogout"
+            />
+          </UTooltip>
+        </div>
+
+        <div
+          v-else
+          class="flex items-center gap-2 px-2 py-1.5"
+        >
+          <UAvatar
+            :src="user?.avatar || undefined"
+            :icon="user?.avatar ? undefined : 'tabler:user'"
+            :alt="user?.username || user?.email || 'User'"
+            size="sm"
+            class="shrink-0"
+          />
+          <span class="min-w-0 flex-1 truncate text-[13px] font-medium text-(--ui-text)">{{
+            user?.username || 'User'
+          }}</span>
+          <UBadge
+            v-if="user?.isAdmin"
+            size="xs"
+            color="info"
+            variant="subtle"
+            :label="$t('dashboard.userCard.admin')"
+            class="shrink-0"
+          />
+          <UTooltip :text="$t('ui.action.logout.tooltip')">
+            <UButton
+              icon="tabler:logout"
+              size="sm"
+              color="neutral"
+              variant="ghost"
+              class="shrink-0"
+              aria-label="Logout"
+              @click="handleLogout"
+            />
+          </UTooltip>
         </div>
       </template>
     </UDashboardSidebar>

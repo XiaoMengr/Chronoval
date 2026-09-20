@@ -661,6 +661,9 @@
     }
   },
   "dashboard": {
+    "userCard": {
+      "admin": "管理员"
+    },
     "photos": {
       "title": "照片上传",
       "subtitle": "上传后照片会自动处理并添加到库中。您可以随后在 {0} 中组织您的照片。",
