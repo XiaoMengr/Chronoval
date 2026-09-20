@@ -343,11 +343,14 @@ const hoveredAlbum = ref<number | null>(null)
               </div>
             </div>
 
-            <!-- 照片数浮标：位于封面堆叠右下角，避免与描述挤在同一行 -->
+            <!-- 照片数浮标：右下角；扫描相簿用书本图标标识来源，不带文字 -->
             <div
-              class="pointer-events-none absolute right-2 bottom-2 z-10 flex items-center gap-1 rounded-full bg-neutral-950/55 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm"
+              class="pointer-events-none absolute right-2 bottom-2 z-10 flex items-center gap-1.5 rounded-full bg-neutral-950/55 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm"
             >
-              <Icon name="tabler:photo" class="size-3.5" />
+              <Icon
+                :name="album.kind === 'scan' ? 'tabler:book-2' : 'tabler:photo'"
+                class="size-3.5"
+              />
               {{ album.photoCount ?? 0 }}
             </div>
           </div>
@@ -373,7 +376,7 @@ const hoveredAlbum = ref<number | null>(null)
                     class="size-4 text-neutral-500 dark:text-neutral-400"
                   />
                   <p
-                    v-if="album.kind !== 'scan'"
+                    v-if="album.createdAt"
                     class="flex items-center gap-0.5 text-sm text-neutral-600 dark:text-neutral-400"
                   >
                     <Icon
