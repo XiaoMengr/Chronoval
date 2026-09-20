@@ -988,7 +988,14 @@ const openAlbum = (album: AlbumItem) => {
           v-model:open="isAlbumSlideoverOpen"
           :title="slideoverTitle"
           :description="slideoverDescription"
-          :ui="{ footer: 'justify-end', body: 'p-0 sm:p-0 space-y-4' }"
+          :ui="{
+            // footer 按钮栏：增加与内容之间的空隙(pt)及底部留白(含移动端安全区)，
+            // 避免「取消/保存」按钮贴底
+            footer:
+              'justify-end gap-3 px-4 pt-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:px-6 sm:pb-6',
+            // body 滚动内容：上/左/右对齐封面图满宽，但底部保留留白，滚动到底时不贴边
+            body: 'px-0 pt-0 pb-6 space-y-4 sm:pb-8',
+          }"
         >
           <template #body>
             <div
