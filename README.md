@@ -96,31 +96,46 @@ services:
 
 不想占用宿主机端口、想让 Chronoval 在局域网拥有**自己独立的 IP** 地址，直接用它——通过 **macvlan** 网络给容器分配专属 IP，浏览器访问 `http://<独立IP>:3000` 即可，行为如同一台局域网内独立的小主机。
 
-适合：宿主机 `3000` 端口被占用、想要稳定好记的专属地址、需要把这个地址对外分享或反代。
+本文件**不开本地编译**，直接用内网 Gitea 注册表现成镜像 `172.16.0.1:322/xiaomengr/chronoval:<tag>`（`latest`=最新，`1.0.0.4`=稳定版），改几个参数即可秒起。
+
+**一次性准备**（首次，按顺序）：
 
 ```bash
-# 1. 建一张 macvlan 网络（只执行一次，按实际局域网改三处）
+# 0. 让 Docker 信任内网 http 镜像仓库（编辑 /etc/docker/daemon.json，再重启 docker）
+#    { "insecure-registries": ["172.16.0.1:322"] }
+#    sudo systemctl restart docker
+
+# 1. 登录内网仓库（镜像非公开时需要）
+docker login 172.16.0.1:322 --username <你的Gitea用户名>
+
+# 2. 建一张 macvlan 网络（只执行一次，按实际局域网改三处）
 docker network create -d macvlan \
   --subnet=192.168.1.0/24 \      # 局域网网段
   --gateway=192.168.1.1 \        # 路由器/网关 IP
   -o parent=eth0 \               # 物理网卡名（ip addr 查看）
   chronoval-net
+```
 
-# 2. 在本项目根目录
+**启动**（在本项目根目录执行，也无需克隆整个源码仓库，只要有 compose 与 `.env` 即可）：
+
+```bash
+# 建好数据目录并准备环境文件
 mkdir -p data/storage/photos data/storage/videos
-cp .env.example .env
+cp .env.example .env            # 管理员账号/站点信息可在网页首次引导里填
 
-# 3. 把 docker-compose.ip.yml 里 ipv4_address 改成局域网空闲 IP（如 192.168.1.50）
-# 4. 启动
-docker compose -f docker-compose.ip.yml up -d --build
+# 把 docker-compose.ip.yml 里 ipv4_address 改成局域网空闲 IP（如 192.168.1.50）
+# 想用稳定版就把 image 的 :latest 换成 :1.0.0.4
 
-# 5. 访问 http://192.168.1.50:3000
+# 直接拉取镜像启动（注意没有 --build）
+docker compose -f docker-compose.ip.yml up -d
+
+# 访问 http://192.168.1.50:3000
 ```
 
 要点：
 
 - **无 `ports` 端口映射**：独立 IP 已直接监听 3000，不占宿主机端口。
-- 换 IP 无需重建：改 `ipv4_address` 后 `docker compose -f docker-compose.ip.yml up -d` 即可。
+- **换版本/换 IP 无需重建**：改 `image` tag 或 `ipv4_address` 后 `docker compose -f docker-compose.ip.yml up -d` 即可，卷内数据保持不变。
 - 仅支持 **Linux**（macvlan 依赖物理网卡）；数据目录、媒体库、扫描库挂载与默认 compose 完全一致。
 - 若还需容器**主动访问宿主机**（如反代到宿主进程），macvlan 对接回有限制，请改用 `network_mode: host`。
 
