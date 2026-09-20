@@ -1180,7 +1180,7 @@ const openAlbum = (album: AlbumItem) => {
                     <span class="h-px flex-1 bg-neutral-100 dark:bg-neutral-800" />
                   </header>
 
-                  <div class="grid grid-cols-2 gap-3 lg:grid-cols-2 xl:grid-cols-4">
+                  <div class="grid grid-cols-2 gap-3">
                     <button
                       v-for="opt in [
                         {

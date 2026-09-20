@@ -18,8 +18,8 @@ const emit = defineEmits<{
 }>()
 
 const SPIN_MS = 8000 // 轮盘旋转时长（放慢，转动更平顺持久）
-const ZOOM_MS = 1400 // 停稳后背景模糊+照片渐入时长
-const FINAL_HOLD = 1200 // 定格后短暂停顿再打开（无倒计时）
+const ZOOM_MS = 1700 // 停稳后：照片原尺寸出现 → 缓慢放大一点的时长
+const FINAL_HOLD = 1100 // 定格后短暂停顿再平滑过渡打开照片
 const MAX_CARDS = 16
 const EASING = 'cubic-bezier(0.2, 0.8, 0.22, 1)'
 const GAP = 0.5
@@ -515,22 +515,20 @@ onBeforeUnmount(() => {
   filter: none;
 }
 
-/* 中奖浮现：干净放大、无阴影、带圆角，从小渐入放大到清晰原图 */
+/* 中奖浮现：原尺寸柔和浮现后缓慢放大一点，丝滑缓动，随后过渡打开照片 */
 .rand-card__inner--active {
   box-shadow: none;
-  animation: randReveal 1.1s cubic-bezier(0.22, 1, 0.36, 1) 0.05s both;
+  animation: randReveal 1.5s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
 }
 
 @keyframes randReveal {
   from {
     opacity: 0;
-    transform: scale(0.6);
-    filter: blur(4px);
+    transform: scale(1);
   }
   to {
     opacity: 1;
-    transform: scale(1.8);
-    filter: blur(0);
+    transform: scale(1.3);
   }
 }
 
