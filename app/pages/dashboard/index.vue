@@ -313,6 +313,14 @@ const mediaTypePercent = (key: 'image' | 'video') => {
   return Math.round((mediaStats.value[key] / mediaStats.value.total) * 100)
 }
 
+// 类型与来源面板的数字动画：百分比与计数从 0 滚动到实际值，避免一刷新就定格在最终值
+const animImagePct = useAnimatedNumber(() => mediaTypePercent('image'))
+const animVideoPct = useAnimatedNumber(() => mediaTypePercent('video'))
+const animImageCount = useAnimatedNumber(() => mediaStats.value.image)
+const animVideoCount = useAnimatedNumber(() => mediaStats.value.video)
+const animUpload = useAnimatedNumber(() => mediaStats.value.upload)
+const animLibrary = useAnimatedNumber(() => mediaStats.value.library)
+
 
 
 // 缩略图地址纠错：thumbnailKey 存在时走 /thumb 代理，防止明文 token 泄漏
@@ -673,7 +681,7 @@ const onShareSite = () => {
                     ]"
                   >
                     <span class="text-lg font-medium tracking-tight text-(--ui-text) sm:text-2xl">
-  <span class="tabular-nums">{{ mediaTypePercent('image') }}</span
+  <span class="tabular-nums">{{ animImagePct.value }}</span
   ><span class="ml-0.5 text-xs font-medium text-(--ui-text-muted) sm:text-sm">%</span>
 </span>
                     <span class="mt-0.5 text-[10px] font-medium tracking-wide text-(--ui-text-dimmed) sm:mt-1 sm:text-xs">
@@ -693,23 +701,23 @@ const onShareSite = () => {
                         <span class="flex items-center gap-2 text-(--ui-text-toned)">
                           <span class="size-2 rounded-full bg-[var(--color-sky-500)]"></span>
                           {{ $t('dashboard.overview.section.mediaTypes.image') }}
-                          <span class="tabular-nums text-(--ui-text-dimmed)">{{ mediaStats.image }}</span>
+                          <span class="tabular-nums text-(--ui-text-dimmed)">{{ animImageCount.value }}</span>
                         </span>
                         <span class="text-xs font-medium tabular-nums text-(--ui-text)">
-                          {{ mediaTypePercent('image') }} %
+                          {{ animImagePct.value }} %
                         </span>
                       </div>
                       <div class="flex items-center justify-between gap-4 text-xs">
                         <span class="flex items-center gap-2 text-(--ui-text-toned)">
                           <span class="size-2 rounded-full bg-[var(--color-violet-500)]"></span>
                           {{ $t('dashboard.overview.section.mediaTypes.video') }}
-                          <span class="tabular-nums text-(--ui-text-dimmed)">{{ mediaStats.video }}</span>
+                          <span class="tabular-nums text-(--ui-text-dimmed)">{{ animVideoCount.value }}</span>
                         </span>
                         <span
                           class="text-xs font-medium tabular-nums"
                           :class="mediaStats.video > 0 ? 'text-(--ui-text)' : 'text-(--ui-text-dimmed)'"
                         >
-                          {{ mediaTypePercent('video') }} %
+                          {{ animVideoPct.value }} %
                         </span>
                       </div>
                     </div>
@@ -726,7 +734,7 @@ const onShareSite = () => {
                         <span class="text-(--ui-text-toned)">
                           {{ $t('dashboard.overview.section.mediaTypes.upload') }}
                         </span>
-                        <span class="tabular-nums text-(--ui-text-muted)">{{ mediaStats.upload }}</span>
+                        <span class="tabular-nums text-(--ui-text-muted)">{{ animUpload.value }}</span>
                       </div>
                       <div class="mt-1.5">
                         <UProgress
@@ -745,7 +753,7 @@ const onShareSite = () => {
                         <span class="text-(--ui-text-toned)">
                           {{ $t('dashboard.overview.section.mediaTypes.library') }}
                         </span>
-                        <span class="tabular-nums text-(--ui-text-muted)">{{ mediaStats.library }}</span>
+                        <span class="tabular-nums text-(--ui-text-muted)">{{ animLibrary.value }}</span>
                       </div>
                       <div class="mt-1.5">
                         <UProgress
