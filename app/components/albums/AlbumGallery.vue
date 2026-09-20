@@ -171,17 +171,17 @@ const timelineGroups = computed(() => {
     <div
       v-if="photos.length > 0"
       ref="switchRoot"
-      class="relative mb-4 flex h-9 items-center justify-center"
+      class="relative z-[40] mb-4 flex h-9 items-center justify-center"
     >
-      <!-- 悬停彩虹光晕：conic 渐变 + 模糊，从胶囊四周溢出，电脑端鼠标悬停胶囊时显示 -->
+      <!-- 悬停柔和淡色光晕：大模糊 + 低透明度，从胶囊四周大面积淡出，展开态隐藏，覆盖到照片上层 -->
       <div
         aria-hidden="true"
-        class="pointer-events-none absolute left-1/2 top-1/2 z-0 h-10 -translate-x-1/2 -translate-y-1/2 rounded-full blur-lg"
+        class="pointer-events-none absolute left-1/2 top-1/2 z-0 h-16 -translate-x-1/2 -translate-y-1/2 rounded-full blur-2xl"
         :style="{
           width: capsuleStyle.width,
-          opacity: hovered ? 1 : 0,
-          transition: 'width 320ms cubic-bezier(0.33, 1, 0.68, 1), opacity 320ms ease',
-          background: 'conic-gradient(from 0deg, #ff5f6d, #ffc371, #38d9a9, #5e8bff, #b06cff, #ff5f6d)',
+          opacity: hovered && !expanded ? 0.45 : 0,
+          transition: 'width 320ms cubic-bezier(0.33, 1, 0.68, 1), opacity 500ms ease',
+          background: 'conic-gradient(from 0deg, rgba(120,168,255,0.9), rgba(120,255,220,0.9), rgba(255,240,150,0.9), rgba(255,180,150,0.9), rgba(190,150,255,0.9), rgba(120,168,255,0.9))',
         }"
       ></div>
       <!-- 胶囊容器：宽度从收起态平滑过渡到展开态，居中定位，溢出隐藏 -->
