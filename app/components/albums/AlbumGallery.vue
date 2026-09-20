@@ -87,8 +87,9 @@ const capsuleStyle = computed(() => {
     : `${collapsedWidth}px`
   return {
     width: targetWidth,
-    transition: 'width 340ms cubic-bezier(0.33, 1, 0.68, 1)',
+    transition: 'width 320ms cubic-bezier(0.33, 1, 0.68, 1)',
     transform: 'translateZ(0)',
+    willChange: 'width',
   }
 })
 
@@ -187,10 +188,10 @@ const timelineGroups = computed(() => {
           </span>
         </button>
 
-        <!-- 展开态内容：四个布局选项，每个为独立胶囊，文字图标不挤压，一行排列 -->
+        <!-- 展开态内容：四个布局选项，每个为独立胶囊，文字图标不挤压，一行契合排列 -->
         <div
           ref="innerRef"
-          class="absolute left-1/2 flex h-full -translate-x-1/2 items-center p-1 will-change-transform"
+          class="absolute left-1/2 flex h-full -translate-x-1/2 transform-gpu items-center p-1 will-change-transform [backface-visibility:hidden]"
           :class="expanded ? 'opacity-100' : 'opacity-0'"
           :style="optionsStyle"
         >
@@ -198,7 +199,7 @@ const timelineGroups = computed(() => {
             v-for="opt in LAYOUT_OPTIONS"
             :key="opt.value"
             type="button"
-            class="group flex h-full shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full px-3 text-xs font-medium transition-colors duration-200"
+            class="group flex h-full shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full px-3 text-xs font-medium transition-colors duration-200 [backface-visibility:hidden]"
             :class="
               layout === opt.value
                 ? 'bg-neutral-900 text-white shadow-sm dark:bg-white dark:text-black'
