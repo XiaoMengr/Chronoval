@@ -232,6 +232,13 @@
       "when": 1789831071095,
       "tag": "0032_powerful_wolf_cub",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "6",
+      "when": 1789874937235,
+      "tag": "0033_dry_fixer",
+      "breakpoints": true
     }
   ]
 }

@@ -1,5 +1,5 @@
 import { eq, isNull } from 'drizzle-orm'
-import { getAlbumScanMountSet } from '~~/server/services/scan-library/manager'
+import { getGalleryHiddenScanMountSet } from '~~/server/services/scan-library/manager'
 
 /**
  * 画廊"指纹"接口（轻量）：只返回当前画廊可见照片的 数量 + 最新拍摄时间，
@@ -14,7 +14,7 @@ export default eventHandler(async (event) => {
   const session = await getUserSession(event).catch(() => null)
   const isAdmin = Boolean((session as any)?.user?.isAdmin)
 
-  const albumMounts = getAlbumScanMountSet()
+  const hiddenScanMounts = getGalleryHiddenScanMountSet()
 
   // 公开画廊才需要排除隐藏相簿里的照片
   let hiddenPhotoIds = new Set<string>()
@@ -43,7 +43,7 @@ export default eventHandler(async (event) => {
   let maxDateTaken: string | null = null
   for (const r of rows) {
     if (!isAdmin && hiddenPhotoIds.has(r.id)) continue
-    if (r.libraryMount && albumMounts.has(r.libraryMount)) continue
+    if (r.libraryMount && hiddenScanMounts.has(r.libraryMount)) continue
     count++
     if (r.dateTaken && (!maxDateTaken || r.dateTaken > maxDateTaken)) {
       maxDateTaken = r.dateTaken

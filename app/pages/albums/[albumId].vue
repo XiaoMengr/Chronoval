@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { motion } from 'motion-v'
+import AlbumUnlock from '~/components/albums/AlbumUnlock.vue'
 
 const route = useRoute()
 const router = useRouter()

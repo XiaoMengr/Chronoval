@@ -3,6 +3,7 @@ import z from 'zod'
 import { hasAlbumAccess } from '~~/server/utils/manualAlbumAuth'
 import { settingsManager } from '~~/server/services/settings/settingsManager'
 import { ensureAlbumUid } from '~~/server/utils/albumUid'
+import { getDisabledScanMountSet } from '~~/server/services/scan-library/manager'
 
 export default eventHandler(async (event) => {
   // 支持两种公开访问标识：数字 id（兼容存量链接）与不透明 uid
@@ -119,6 +120,21 @@ export default eventHandler(async (event) => {
     )
     .orderBy(asc(tables.albumPhotos.position))
     .all()
+
+  // 公开/编辑之外的普通访问：剔除「已禁用扫描库」的照片。
+  // 禁用库的图片路由（/library/<mount>/...）已不再提供，留在相册里会导致点击后加载失败；
+  // 管理员编辑模式（manage=1）需保留完整照片以便管理（与后台 /dashboard 一致）。
+  if (!manageMode) {
+    const disabledScanMounts = getDisabledScanMountSet()
+    if (disabledScanMounts.size > 0) {
+      const filtered = photos.filter(
+        (p) => !p.libraryMount || !disabledScanMounts.has(p.libraryMount),
+      )
+      // 复用兜底去重前的数组引用；下方 uniquePhotos 基于该数组去重
+      photos.length = 0
+      photos.push(...filtered)
+    }
+  }
 
   // 验证相册数据完整性
   if (!photos || !Array.isArray(photos)) {

@@ -3,7 +3,7 @@ import { leftJoin } from 'drizzle-orm'
 
 export default eventHandler(async (event) => {
   const db = useDB()
-  const { listScanAlbumRoots } = await import(
+  const { listScanAlbumRoots, getDisabledScanMountSet } = await import(
     '~~/server/services/scan-library/manager'
   )
   const { ensureAlbumUid } = await import('~~/server/utils/albumUid')
@@ -12,6 +12,9 @@ export default eventHandler(async (event) => {
   // 公开访问时过滤掉设置为“隐藏”的外部库相簿。
   const session = await getUserSession(event).catch(() => null)
   const isAdmin = Boolean((session as any)?.user?.isAdmin)
+
+  // 非管理员：剔除「已禁用扫描库」的照片，避免相册封面/列表出现加载失败的坏图
+  const disabledScanMounts = getDisabledScanMountSet()
 
   // 获取所有相册，按创建时间倒序
   const albums = await db.select().from(tables.albums)
@@ -31,13 +34,21 @@ export default eventHandler(async (event) => {
         thumbnailUrl: tables.photos.thumbnailUrl,
         thumbnailHash: tables.photos.thumbnailHash,
         aspectRatio: tables.photos.aspectRatio,
+        libraryMount: tables.photos.libraryMount,
       })
       .from(tables.albumPhotos)
       .leftJoin(tables.photos, eq(tables.albumPhotos.photoId, tables.photos.id))
       .where(eq(tables.albumPhotos.albumId, album.id))
       .orderBy(tables.albumPhotos.position)
       .all()
-    const photoIds = photoRows.map((r) => r.photoId)
+    // 非管理员：剔除已禁用扫描库的照片，封面与 photoIds 均不再引用
+    const rows =
+      !isAdmin && disabledScanMounts.size > 0
+        ? photoRows.filter(
+            (r) => !r.libraryMount || !disabledScanMounts.has(r.libraryMount),
+          )
+        : photoRows
+    const photoIds = rows.map((r) => r.photoId)
 
     const { passwordHash: _passwordHash, password: _password, ...restAlbum } =
       album
@@ -55,13 +66,13 @@ export default eventHandler(async (event) => {
       thumbnailHash: string | null
       aspectRatio: number | null
     }[] = []
-    if (photoRows.length) {
+    if (rows.length) {
       const ordered: string[] = []
       if (album.coverPhotoId) ordered.push(album.coverPhotoId)
       for (const pid of photoIds) {
         if (!ordered.includes(pid)) ordered.push(pid)
       }
-      const rowById = new Map(photoRows.map((r) => [r.photoId, r]))
+      const rowById = new Map(rows.map((r) => [r.photoId, r]))
       for (const pid of ordered.slice(0, 3)) {
         const row = rowById.get(pid)
         if (row) {

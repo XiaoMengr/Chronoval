@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { createHash } from 'node:crypto'
-import { and, count, eq, isNull } from 'drizzle-orm'
+import { promises as fs } from 'node:fs'
+import { and, count, eq, isNotNull, isNull, lt, or } from 'drizzle-orm'
 import { z } from 'zod'
 import { useDB, tables } from '~~/server/utils/db'
 import { applyScanAlbumMeta, getScanAlbumMeta } from './album-meta'
@@ -36,6 +37,8 @@ export interface ScanLibrary {
   lastScanResult: string | null
   /** 该扫描库已入索引的照片/视频数量 */
   photoCount: number
+  /** 最近一次被禁用的时间（ISO 字符串）；未禁用时为 null */
+  disabledAt: string | null
   createdAt: string | null
   updatedAt: string | null
 }
@@ -162,6 +165,7 @@ export const listScanLibraries = async (): Promise<ScanLibrary[]> => {
     lastScanAt: row.lastScanAt ? new Date(row.lastScanAt).toISOString() : null,
     lastScanResult: row.lastScanResult,
     photoCount: countByMount.get(scanMountName(row.id)) ?? 0,
+    disabledAt: row.disabledAt ? new Date(row.disabledAt).toISOString() : null,
     createdAt: row.createdAt ? new Date(row.createdAt).toISOString() : null,
     updatedAt: row.updatedAt ? new Date(row.updatedAt).toISOString() : null,
   }))
@@ -170,28 +174,74 @@ export const listScanLibraries = async (): Promise<ScanLibrary[]> => {
 /** 进程内缓存：已启用扫描库 → 挂载集合（缩略图热路径避免每次请求都查库） */
 let cachedMounts: LibraryMount[] | null = null
 
+/**
+ * 进程内「临时不可用」的外部库挂载名集合。
+ *
+ * 用途：当指定扫描库的根目录在一次扫描中被判定为不存在（目录被删除/卸载/失去权限）
+ * 时，将其挂载名记入本集合。这样画廊首页、相册页、以及 /library/<mount>/... 图片路由
+ * （它们都经由 getLibraryMounts() 取挂载集合）会立即隐藏整库，避免展示出点击后必然
+ * 加载失败的失效缩略图。恢复后该挂载会被扫描成功流程移出集合、自动回归。
+ *
+ * 该状态仅存在内存中，不落库：目录可用性是运行时状态，重启进程后由下次扫描重新判定。
+ */
+const unavailableScanMounts = new Set<string>()
+
+/** 把指定挂载名标记为「临时不可用」（目录不可访问），并让挂载集合缓存失效 */
+export const markScanMountUnavailable = (mountName: string): void => {
+  if (!mountName) return
+  unavailableScanMounts.add(mountName)
+  invalidateLibraryMountsCache()
+}
+
+/** 把指定挂载名标记为「可用」（目录已恢复访问），并让挂载集合缓存失效 */
+export const unmarkScanMountUnavailable = (mountName: string): void => {
+  if (!mountName) return
+  unavailableScanMounts.delete(mountName)
+  invalidateLibraryMountsCache()
+}
+
+/** 判断指定挂载名当前是否被判定为临时不可用 */
+export const isScanMountUnavailable = (mountName: string): boolean =>
+  unavailableScanMounts.has(mountName)
+
 /** 使 getLibraryMounts 缓存失效（在扫描库新增/更新/删除后调用） */
 export const invalidateLibraryMountsCache = (): void => {
   cachedMounts = null
 }
 
-/** 构建 active 挂载集合：优先使用已启用的扫描库；无启用扫描库时回退到环境变量目录 */
-export const getLibraryMounts = (): LibraryMount[] => {
-  if (cachedMounts) return cachedMounts
+/** 构建全量 enabled 挂载集合（含当前判定不可用者），不参与画廊展示过滤 */
+const buildLibraryMounts = (): LibraryMount[] => {
   const enabled = listRawScanLibraries().filter((r) => r.enabled)
-  const mounts: LibraryMount[] =
-    enabled.length === 0
-      ? envFallbackMounts()
-      : enabled.map<LibraryMount>((row) => ({
+  return enabled.length === 0
+    ? envFallbackMounts()
+    : enabled.map<LibraryMount>((row) => ({
     name: scanMountName(row.id),
     type: 'image', // 类型改为按单个文件扩展名判定（见 scanner.processFile）
     root: path.resolve(row.rootPath),
     extensions: unionMediaExtensions(),
     routePrefix: `/library/${scanMountName(row.id)}`,
   }))
-  cachedMounts = mounts
-  return mounts
 }
+
+/**
+ * 构建供画廊展示的 active 挂载集合：优先使用已启用的扫描库；
+ * 无启用扫描库时回退到环境变量目录。
+ * 目录缺席的挂载会立即从本集合剔除，使画廊/相册/图片路由隐藏整库（见 markScanMountUnavailable）。
+ */
+export const getLibraryMounts = (): LibraryMount[] => {
+  if (cachedMounts) return cachedMounts
+  const mounts = buildLibraryMounts()
+  const available = mounts.filter((m) => !unavailableScanMounts.has(m.name))
+  cachedMounts = available
+  return available
+}
+
+/**
+ * 供扫描器使用：返回全量 enabled 挂载（含当前判定为「临时不可用」者）。
+ * 扫描循环需要继续探测 unavailable 挂载，以便目录恢复访问时 unmark 并让整库自动回归画廊；
+ * 若直接用 getLibraryMounts()（已过滤）则不可用挂载永远不会被再次探测、无法恢复。
+ */
+export const getAllScalableMounts = (): LibraryMount[] => buildLibraryMounts()
 
 /** 新增扫描库并返回其 id */
 export const createScanLibrary = async (input: ScanLibraryInput): Promise<number> => {
@@ -241,6 +291,20 @@ export const updateScanLibrary = async (
     else if (k === 'asAlbum') colPatch.asAlbum = v
     else if (k === 'watchIntervalMs') colPatch.watchIntervalMs = v
   }
+
+  // 维护「最近禁用时间」：禁用时写入当前时间，恢复启用时清空；
+  // 供「禁用超 7 天未恢复则自动清理其遗留缩略图」的逻辑判断。
+  if (patch.enabled !== undefined) {
+    const row = getScanLibraryRow(id)
+    const wasEnabled = row?.enabled
+    const nowEnabled = patch.enabled
+    if (wasEnabled && !nowEnabled) {
+      colPatch.disabledAt = new Date()
+    } else if (!wasEnabled && nowEnabled) {
+      colPatch.disabledAt = null
+    }
+  }
+
   // 密码已下沉到「相簿」级别（scan_album_meta.password_hash），此处不再处理库级密码
   if (Object.keys(colPatch).length === 0) return false
   await db
@@ -255,7 +319,41 @@ export const updateScanLibrary = async (
 /** 删除扫描库（同时删除其 source='library' 的记录，因为这些条目已失去文件源） */
 export const deleteScanLibrary = async (id: number): Promise<boolean> => {
   const db = useDB()
-  await db.delete(tables.photos).where(eq(tables.photos.libraryMount, scanMountName(id))).run()
+  const mount = scanMountName(id)
+
+  // 同步清理该库就地生成的缩略图文件（<mountRoot>/thumbnails/<id>.webp），
+  // 避免删除外部库后遗留孤儿缩略图占磁盘空间。
+  const row = getScanLibraryRow(id)
+  if (row) {
+    const thumbnails = db
+      .select({ key: tables.photos.thumbnailKey })
+      .from(tables.photos)
+      .where(
+        and(
+          eq(tables.photos.source, 'library'),
+          eq(tables.photos.libraryMount, mount),
+        ),
+      )
+      .all()
+    const root = path.resolve(row.rootPath)
+    for (const t of thumbnails) {
+      if (!t.key) continue
+      const abs = path.resolve(root, t.key)
+      if (!abs.startsWith(path.resolve(root) + path.sep)) continue
+      try {
+        await fs.unlink(abs)
+        await fs.rmdir(path.dirname(abs)).catch(() => {})
+      } catch (err) {
+        // 缩略图文件删除失败不阻塞库删除，仅告警
+        logger.dynamic('scan-library').warn(
+          `Failed to remove thumbnail ${abs}:`,
+          err,
+        )
+      }
+    }
+  }
+
+  await db.delete(tables.photos).where(eq(tables.photos.libraryMount, mount)).run()
   await db.delete(scanLibraries).where(eq(scanLibraries.id, id)).run()
   invalidateLibraryMountsCache()
   return true
@@ -360,6 +458,47 @@ export const getAlbumScanMountSet = (): Set<string> => {
     .where(
       and(eq(scanLibraries.asAlbum, true), eq(scanLibraries.enabled, true)),
     )
+    .all()
+  return new Set(rows.map((r) => scanMountName(r.id)))
+}
+
+/**
+ * 应从首页全局画廊隐藏的扫描库挂载名集合。
+ * 包含两类：
+ * 1) 转为相簿展示的库（asAlbum=true，照片只在相册页展示）；
+ * 2) 已被禁用/停止的库（enabled=false，外部库不再可用，其缩略图应立即从画廊隐藏，
+ *    避免"关闭了还在首页显示"），删除的库则由 deleteScanLibrary 直接清理 DB 记录。
+ */
+export const getGalleryHiddenScanMountSet = (): Set<string> => {
+  const db = useDB()
+  const rows = db
+    .select({ id: scanLibraries.id })
+    .from(scanLibraries)
+    .where(
+      or(
+        eq(scanLibraries.asAlbum, true),
+        eq(scanLibraries.enabled, false),
+      ),
+    )
+    .all()
+  return new Set(rows.map((r) => scanMountName(r.id)))
+}
+
+/**
+ * 返回所有「已禁用」扫描库的挂载名集合（enabled=false）。
+ *
+ * 用途：被禁用的外部库，其原图/缩略图路由（/library/<mount>/...）已不再提供
+ * （挂载被 getLibraryMounts() 剔除），因此其照片不能在任何公开视图出现，
+ * 否则点击会命中加载失败的坏图。首页画廊已用 getGalleryHiddenScanMountSet()
+ * 过滤；相册等其余数据源需单独基于本集合过滤「仅禁用」的库（转为相簿但保持启用的
+ * 库应继续在相册内可见，故不能直接用 getGalleryHiddenScanMountSet）。
+ */
+export const getDisabledScanMountSet = (): Set<string> => {
+  const db = useDB()
+  const rows = db
+    .select({ id: scanLibraries.id })
+    .from(scanLibraries)
+    .where(eq(scanLibraries.enabled, false))
     .all()
   return new Set(rows.map((r) => scanMountName(r.id)))
 }
@@ -672,5 +811,89 @@ export const getScanAlbumDetail = async (
   )
 
   return { node, dirPhotos, children }
+}
+
+// ---------------------------------------------------------------------------
+// 禁用后超期未恢复的扫描库自动清理
+// ---------------------------------------------------------------------------
+
+/**
+ * 清理「被禁用且超过 graceDays 未恢复启用」的扫描库：
+ * 删除其就地生成的缩略图文件、source='library' 的照片记录，以及扫描库配置行。
+ *
+ * 设计背景：外部库被"关闭/停止/删除"后，其缩略图应立即从前台隐藏（由
+ * getGalleryHiddenScanMountSet 处理），但为给用户留出"误操作恢复"的缓冲，
+ * 磁盘上的缩略图会保留一段时间。本函数在恢复缓冲期（默认 7 天）过后，
+ * 彻底清理该库遗留的缩略图文件与数据库记录，避免无限期占用空间。
+ *
+ * @param graceDays 恢复缓冲天数，超过该时间仍未重新启用则自动清理；默认 7
+ * @returns 本次实际清理的扫描库数量
+ */
+export const cleanupExpiredDisabledScanLibraries = async (
+  graceDays = 7,
+): Promise<number> => {
+  const db = useDB()
+  const cutoff = new Date(Date.now() - graceDays * 24 * 60 * 60 * 1000)
+
+  const expired = db
+    .select()
+    .from(scanLibraries)
+    .where(
+      and(
+        eq(scanLibraries.enabled, false),
+        isNotNull(scanLibraries.disabledAt),
+        lt(scanLibraries.disabledAt, cutoff),
+      ),
+    )
+    .all()
+
+  if (expired.length === 0) return 0
+
+  for (const row of expired) {
+    const mount = scanMountName(row.id)
+    // 删除磁盘缩略图文件
+    const thumbnails = db
+      .select({ key: tables.photos.thumbnailKey })
+      .from(tables.photos)
+      .where(
+        and(
+          eq(tables.photos.source, 'library'),
+          eq(tables.photos.libraryMount, mount),
+        ),
+      )
+      .all()
+    const root = path.resolve(row.rootPath)
+    for (const t of thumbnails) {
+      if (!t.key) continue
+      const abs = path.resolve(root, t.key)
+      if (!abs.startsWith(path.resolve(root) + path.sep)) continue
+      try {
+        await fs.unlink(abs)
+        await fs.rmdir(path.dirname(abs)).catch(() => {})
+      } catch (err) {
+        logger.dynamic('scan-library').warn(
+          `(cleanup) Failed to remove thumbnail ${abs}:`,
+          err,
+        )
+      }
+    }
+    // 删除已有缩略图的照片记录与库配置行
+    await db
+      .delete(tables.photos)
+      .where(eq(tables.photos.libraryMount, mount))
+      .run()
+    await db
+      .delete(scanLibraries)
+      .where(eq(scanLibraries.id, row.id))
+      .run()
+    logger
+      .dynamic('scan-library')
+      .info(
+        `(cleanup) Purged disabled scan library #${row.id} "${row.name}" (disabled > ${graceDays}d, not recovered)`,
+      )
+  }
+
+  invalidateLibraryMountsCache()
+  return expired.length
 }
 

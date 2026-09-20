@@ -381,6 +381,11 @@ export const scanLibraries = sqliteTable(
   /** 最近一次扫描时间与结果摘要（供状态展示） */
   lastScanAt: integer('last_scan_at', { mode: 'timestamp' }),
   lastScanResult: text('last_scan_result'),
+  /**
+   * 最近一次被禁用的时间；为空表示当前为启用状态或从未被禁用。
+   * 用于「禁用超 7 天未恢复则自动清理其缩略图」的恢复缓冲判断。
+   */
+  disabledAt: integer('disabled_at', { mode: 'timestamp' }),
   createdAt: integer('created_at', { mode: 'timestamp' })
     .notNull()
     .default(sql`(unixepoch())`),

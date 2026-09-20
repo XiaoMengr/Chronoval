@@ -1,5 +1,5 @@
 import { asc, desc, isNull } from 'drizzle-orm'
-import { getAlbumScanMountSet } from '~~/server/services/scan-library/manager'
+import { getGalleryHiddenScanMountSet } from '~~/server/services/scan-library/manager'
 
 export default eventHandler(async (event) => {
   // 确定性排序：先按拍摄时间倒序，再按 id 升序兜底。
@@ -21,9 +21,9 @@ export default eventHandler(async (event) => {
   const isAdmin = Boolean((session as any)?.user?.isAdmin)
   if (isAdmin && !galleryOnly) return rows
 
-  const albumMounts = getAlbumScanMountSet()
-  if (albumMounts.size === 0) return rows
+  const hiddenScanMounts = getGalleryHiddenScanMountSet()
+  if (hiddenScanMounts.size === 0) return rows
   return rows.filter(
-    (p) => !p.libraryMount || !albumMounts.has(p.libraryMount),
+    (p) => !p.libraryMount || !hiddenScanMounts.has(p.libraryMount),
   )
 })

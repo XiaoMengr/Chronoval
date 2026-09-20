@@ -9,8 +9,10 @@ import type {
 } from './config'
 import { getLibraryConfig, VIDEO_EXTENSIONS } from './config'
 import {
-  getLibraryMounts,
+  getAllScalableMounts,
+  markScanMountUnavailable,
   recordScanResult,
+  unmarkScanMountUnavailable,
 } from '../scan-library/manager'
 import { probeVideo, extractVideoFrame } from './ffmpeg'
 import { generateThumbnailAndHash } from '../image/thumbnail'
@@ -91,9 +93,14 @@ export class LibraryScanner {
       // 目录不存在（未映射），跳过
     }
     if (!rootExists) {
+      // 目录被删除/卸载/失去权限：把挂载标记为「临时不可用」，
+      // 使画廊/相册/图片路由（经 getLibraryMounts）隐藏整库，不再展示必然加载失败的失效缩略图
+      markScanMountUnavailable(mount.name)
       log().warn(`Library mount not available, skipped: ${mount.root}`)
       return result
     }
+    // 目录可访问：若此前被判定为不可用，现在恢复为可用，让整库自动回归画廊
+    unmarkScanMountUnavailable(mount.name)
 
     // 防御：禁止把整个文件系统根目录当作媒体库扫描
     if (path.parse(mount.root).root === mount.root) {
@@ -190,8 +197,9 @@ export class LibraryScanner {
    * 扫描全部挂载目录
    */
   async scanAll(): Promise<Record<string, ScanResult>> {
-    // 每次从数据库重建挂载集合：新增/启用的扫描库立即生效（无需重启）
-    this.mounts = getLibraryMounts()
+    // 每次从数据库重建挂载集合：新增/启用的扫描库立即生效（无需重启）。
+    // 用 getAllScalableMounts()（含临时不可用挂载）以便持续探测、目录恢复后自动回归画廊
+    this.mounts = getAllScalableMounts()
     const out: Record<string, ScanResult> = {}
     for (const mount of this.mounts) {
       out[mount.name] = await this.scanMount(mount)
@@ -203,7 +211,7 @@ export class LibraryScanner {
    * 按挂载名触发单目录扫描（供“立即扫描”使用）
    */
   async scanMountByName(name: string): Promise<ScanResult | null> {
-    this.mounts = getLibraryMounts()
+    this.mounts = getAllScalableMounts()
     const mount = this.mounts.find((m) => m.name === name)
     return mount ? await this.scanMount(mount) : null
   }
