@@ -206,13 +206,20 @@ watch(
       </div>
 
       <h1
-        class="mb-2 flex items-center gap-3 text-3xl font-black text-neutral-900 dark:text-neutral-100"
+        class="mb-2 flex items-center gap-3 text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl dark:text-neutral-100"
       >
         {{ data?.node?.title }}
         <span v-if="data?.passwordProtected" class="inline-flex items-center gap-1 text-sm font-normal">
           <Icon name="tabler:lock" class="size-5 text-neutral-400" />
         </span>
       </h1>
+
+      <!-- 描述（与普通相簿头部一致） -->
+      <p
+        class="mb-3 mt-1 max-w-2xl text-base leading-relaxed text-neutral-600 dark:text-neutral-300"
+      >
+        {{ data?.node?.description || t('album.noDescription') }}
+      </p>
 
       <!-- 元信息：照片数 / 日期范围 / 创建时间（与普通相簿头部一致）；仅在未设锁或已解锁时展示 -->
       <div
