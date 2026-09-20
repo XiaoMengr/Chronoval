@@ -43,6 +43,7 @@ const LAYOUT_OPTIONS: { value: AlbumLayout; label: string; icon: string }[] = [
 // —— 收缩式布局切换控件 ——
 // 单一胶囊元素：收起态显示山体图标 + 照片数；点击后胶囊从中心向左右平滑展开，露出四个布局选项。
 const expanded = ref(false)
+const hovered = ref(false) // 电脑端鼠标悬停胶囊时显示彩虹光晕
 const switchRoot = ref<HTMLElement | null>(null)
 const capsuleRef = ref<HTMLElement | null>(null)
 const innerRef = ref<HTMLElement | null>(null)
@@ -172,11 +173,24 @@ const timelineGroups = computed(() => {
       ref="switchRoot"
       class="relative mb-4 flex h-9 items-center justify-center"
     >
+      <!-- 悬停彩虹光晕：conic 渐变 + 模糊，从胶囊四周溢出，电脑端鼠标悬停胶囊时显示 -->
+      <div
+        aria-hidden="true"
+        class="pointer-events-none absolute left-1/2 top-1/2 z-0 h-10 -translate-x-1/2 -translate-y-1/2 rounded-full blur-lg"
+        :style="{
+          width: capsuleStyle.width,
+          opacity: hovered ? 1 : 0,
+          transition: 'width 320ms cubic-bezier(0.33, 1, 0.68, 1), opacity 320ms ease',
+          background: 'conic-gradient(from 0deg, #ff5f6d, #ffc371, #38d9a9, #5e8bff, #b06cff, #ff5f6d)',
+        }"
+      ></div>
       <!-- 胶囊容器：宽度从收起态平滑过渡到展开态，居中定位，溢出隐藏 -->
       <div
         ref="capsuleRef"
-        class="absolute left-1/2 flex h-8 -translate-x-1/2 items-center overflow-hidden rounded-full border border-teal-300 bg-white/95 shadow-[0_1px_2px_rgba(15,23,42,0.06),0_3px_8px_-2px_rgba(20,184,166,0.30)] will-change-[width] dark:border-teal-600 dark:bg-neutral-900/95"
+        class="absolute left-1/2 flex h-8 -translate-x-1/2 items-center overflow-hidden rounded-full border border-neutral-200 bg-white/95 shadow-sm will-change-[width] dark:border-neutral-800 dark:bg-neutral-900/95"
         :style="capsuleStyle"
+        @mouseenter="hovered = true"
+        @mouseleave="hovered = false"
       >
         <!-- 收起态内容：风景图标 | 分隔线 | 照片数 | 分隔线 | 魔百盒，居中显示 -->
         <div
