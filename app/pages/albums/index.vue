@@ -110,8 +110,9 @@ const getPhotoById = (photoId: string) => {
 }
 
 const getAlbumDisplayPhotos = (album: AlbumItem) => {
-  // 扫描库相簿自带封面缩略图数据（其照片已从全局画廊隐藏）
-  if (album.kind === 'scan' && album.covers && album.covers.length > 0) {
+  // 优先使用服务端下发的封面堆叠数据（外部库相簿 + 普通相簿均提供），
+  // 避免依赖全局照片列表按 id 反查（超出现有照片范围会查不到导致仅显示单张）
+  if (album.covers && album.covers.length > 0) {
     return album.covers
   }
   if (!album.photoIds || album.photoIds.length === 0) return []
