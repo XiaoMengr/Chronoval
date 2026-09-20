@@ -53,8 +53,6 @@ const collapsedWidth = ref(0)
 /** 展开态胶囊宽度（四个布局选项） */
 const expandedWidth = ref(0)
 
-/** 收起态主胶囊图标：风景图标 */
-const activeIcon = 'tabler:tree'
 /** 有趣的魔百盒图标：点击随机预览一张相簿照片 */
 const magicIcon = 'tabler:box'
 
@@ -177,7 +175,7 @@ const timelineGroups = computed(() => {
       <!-- 胶囊容器：宽度从收起态平滑过渡到展开态，居中定位，溢出隐藏 -->
       <div
         ref="capsuleRef"
-        class="absolute left-1/2 flex h-8 -translate-x-1/2 items-center overflow-hidden rounded-full border border-neutral-200 bg-white/95 shadow-sm will-change-[width] dark:border-neutral-800 dark:bg-neutral-900/95"
+        class="absolute left-1/2 flex h-8 -translate-x-1/2 items-center overflow-hidden rounded-full border border-teal-300 bg-white/95 shadow-[0_1px_2px_rgba(15,23,42,0.06),0_3px_8px_-2px_rgba(20,184,166,0.30)] will-change-[width] dark:border-teal-600 dark:bg-neutral-900/95"
         :style="capsuleStyle"
       >
         <!-- 收起态内容：风景图标 | 分隔线 | 照片数 | 分隔线 | 魔百盒，居中显示 -->
@@ -199,10 +197,18 @@ const timelineGroups = computed(() => {
             :aria-expanded="expanded"
             @click="toggleSwitch"
           >
-            <Icon
-              :name="activeIcon"
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
               class="shrink-0 size-4 text-neutral-500 dark:text-neutral-400"
-            />
+              aria-hidden="true"
+            >
+              <path d="M3 19 8 10 11.5 15 14 7 21 19H3Z" />
+            </svg>
             <span class="h-4 w-px shrink-0 bg-neutral-200 dark:bg-neutral-700" aria-hidden="true" />
             <span class="text-xs font-semibold tabular-nums text-neutral-600 dark:text-neutral-300">
               {{ photos.length }}
@@ -222,7 +228,7 @@ const timelineGroups = computed(() => {
           >
             <Icon
               :name="magicIcon"
-              class="size-4 shrink-0 transition-transform duration-500 group-hover:-rotate-12 group-hover:scale-110 group-active:scale-90"
+              class="shrink-0 size-4 text-neutral-500 transition-transform duration-500 group-hover:-rotate-12 group-hover:scale-110 group-active:scale-90 dark:text-neutral-400"
             />
           </button>
         </div>
