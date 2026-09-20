@@ -172,7 +172,7 @@ const timelineGroups = computed(() => {
     <div
       v-if="photos.length > 0"
       ref="switchRoot"
-      class="relative z-[40] mb-4 flex h-9 items-center justify-center"
+      class="relative z-[40] mb-2 flex h-9 items-center justify-center"
     >
       <!-- 悬停彩虹光晕：四周柔和彩虹，仅桌面端悬停显示，展开态隐藏，覆盖到照片上层 -->
       <div

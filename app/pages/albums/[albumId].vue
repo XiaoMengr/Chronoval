@@ -244,10 +244,10 @@ onBeforeMount(() => {
       </div>
 
       <!-- Album Information -->
-      <div class="relative container mx-auto px-4 sm:px-6 lg:px-8 py-8 z-10">
+      <div class="relative container mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-8 z-10">
         <AnimatePresence>
           <motion.div
-            class="flex flex-col gap-6"
+            class="flex flex-col gap-3"
             :initial="{ opacity: 0, y: 10 }"
             :animate="{ opacity: 1, y: 0 }"
             :transition="{ duration: 0.4 }"
@@ -262,7 +262,7 @@ onBeforeMount(() => {
             </div>
 
             <!-- metadata -->
-            <div class="flex flex-col gap-4">
+            <div class="flex flex-col gap-3">
               <!-- description -->
               <p
                 class="text-base text-neutral-600 dark:text-neutral-300 leading-relaxed max-w-2xl"
@@ -323,7 +323,7 @@ onBeforeMount(() => {
       </div>
 
       <!-- Photos Waterfall or Empty State -->
-      <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div class="container mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         <motion.div
           :initial="{ opacity: 0 }"
           :animate="{ opacity: 1 }"

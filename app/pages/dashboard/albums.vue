@@ -455,7 +455,7 @@ const onFormSubmit = async (event: FormSubmitEvent<AlbumFormState>) => {
         method: 'PUT',
         body: {
           title: event.data.title,
-          description: event.data.description || undefined,
+          description: event.data.description ?? undefined,
           coverPhotoId: coverPhotoId.value || undefined,
           photoIds: selectedPhotoIds.value,
           isHidden: event.data.isHidden,
@@ -477,7 +477,7 @@ const onFormSubmit = async (event: FormSubmitEvent<AlbumFormState>) => {
         method: 'POST',
         body: {
           title: event.data.title,
-          description: event.data.description || undefined,
+          description: event.data.description ?? undefined,
           coverPhotoId: coverPhotoId.value || undefined,
           photoIds: selectedPhotoIds.value,
           isHidden: event.data.isHidden,
