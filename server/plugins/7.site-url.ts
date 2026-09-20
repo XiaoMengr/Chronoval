@@ -53,6 +53,19 @@ export default defineNitroPlugin(async (nitroApp) => {
   try {
     const publicConfig = useRuntimeConfig().public as Record<string, unknown>
 
+    // Nuxt 在生产环境会冻结 public runtime config（不可写），写入会抛
+    // "Cannot assign to read only property"。实际运行时（host-guard、
+    // resolveSiteUrl）均直接经 settingsManager 读取，不依赖该 public 字段，
+    // 因此这里做冻结安全写入：可写则同步，只读则静默跳过。
+    const assignPublic = <T,>(key: string, value: T): void => {
+      if (!Object.isExtensible(publicConfig)) return
+      try {
+        ;(publicConfig as Record<string, T>)[key] = value
+      } catch {
+        /* 冻结只读时不报错，运行期逻辑不依赖此字段 */
+      }
+    }
+
     const siteUrl: string =
       (await settingsManager.get<string>('app', 'siteUrl'))?.trim() ||
       process.env.NUXT_PUBLIC_SITE_URL ||
@@ -64,8 +77,8 @@ export default defineNitroPlugin(async (nitroApp) => {
       ''
 
     const canonical: string = normalizeSiteUrl(siteUrl)
-    publicConfig.siteUrl = canonical
-    publicConfig.allowedHosts = allowedHosts
+    assignPublic('siteUrl', canonical)
+    assignPublic('allowedHosts', allowedHosts)
 
     if (canonical) {
       const afterScheme = canonical.replace(/^[a-z]+:\/\//i, '')

@@ -5,5 +5,5 @@ WHERE `id` NOT IN (
   SELECT MIN(`id`)
   FROM `album_photos`
   GROUP BY `album_id`, `photo_id`
-);
+);--> statement-breakpoint
 CREATE UNIQUE INDEX `album_photos_album_photo_unique` ON `album_photos` (`album_id`,`photo_id`);
