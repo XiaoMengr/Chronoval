@@ -155,6 +155,11 @@ const handleOpenRandom = () => {
   handleOpenViewer(idx)
 }
 
+// 当前是否处于相簿的嵌套子路由（如随机轮盘页 random.vue）。
+// Nuxt 文件路由里 [albumId].vue 与 [albumId]/random.vue 是父子关系：
+// 子页面需由父模板的 <NuxtPage /> 注入渲染，否则跳转后只显示父页面、子页面不生效。
+const isRandomChildRoute = computed(() => route.path.endsWith('/random'))
+
 const coverPhoto = computed(() => {
   const album = albumData.value
   if (!album?.photos) return null
@@ -437,9 +442,13 @@ onBeforeMount(() => {
       </div>
     </template>
 
+    <!-- 嵌套子路由挂载点：当访问 /albums/{id}/random 时渲染随机轮盘页 random.vue。
+         父模板需提供 <NuxtPage /> 子页面才会被注入，否则跳转后只有父页面、子页面不生效。 -->
+    <NuxtPage v-if="isRandomChildRoute" />
+
     <!-- Back to Top Button（仅桌面端显示，移动端右下角隐藏） -->
     <motion.div
-      v-if="showFloatingActions"
+      v-if="showFloatingActions && !isRandomChildRoute"
       class="hidden md:block fixed bottom-6 right-6 z-50"
       :initial="{ opacity: 0, scale: 0.8 }"
       :animate="{ opacity: 1, scale: 1 }"
