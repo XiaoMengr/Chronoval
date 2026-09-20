@@ -4,6 +4,9 @@ import type { ScanAlbumNode } from './manager'
 
 export type ScanAlbumMetaRow = typeof tables.scanAlbumMeta.$inferSelect
 
+/** 「随机一张照片」动画模式：default=直接打开；wheel=3D轮盘动画；compat=轻量兼容动画 */
+export type RandomAnimationMode = 'default' | 'wheel' | 'compat'
+
 export interface ScanAlbumMetaInput {
   mount: string
   relPath: string
@@ -20,8 +23,10 @@ export interface ScanAlbumMetaInput {
   urlKey?: string | null
   /** 照片展示布局；undefined=保持不变 */
   layout?: 'waterfall' | 'grid' | 'immersive' | 'timeline'
-  /** 「随机一张照片」是否使用 3D 轮盘动画；undefined=保持不变 */
+  /** 「随机一张照片」是否使用 3D 轮盘动画；undefined=保持不变（已废弃，改由 randomAnimation 接管） */
   randomWheelAnimation?: boolean
+  /** 「随机一张照片」动画模式；undefined=保持不变 */
+  randomAnimation?: RandomAnimationMode
 }
 
 const cleanRelPath = (p: string): string =>
@@ -88,6 +93,8 @@ export const upsertScanAlbumMeta = async (
     if (input.layout !== undefined) updateData.layout = input.layout
     if (input.randomWheelAnimation !== undefined)
       updateData.randomWheelAnimation = Boolean(input.randomWheelAnimation)
+    if (input.randomAnimation !== undefined)
+      updateData.randomAnimation = input.randomAnimation
 
     await db
       .update(tables.scanAlbumMeta)
@@ -117,6 +124,7 @@ export const upsertScanAlbumMeta = async (
       urlKey: (input.urlKey && input.urlKey.trim()) || null,
       layout: input.layout ?? 'waterfall',
       randomWheelAnimation: input.randomWheelAnimation ? true : false,
+      randomAnimation: input.randomAnimation ?? 'default',
     })
     .returning()
     .get()
@@ -219,6 +227,8 @@ export const applyScanAlbumMeta = async (
     layout: meta.layout ?? node.layout,
     // 「随机一张照片」是否使用轮盘动画（默认关闭=直接打开）
     randomWheelAnimation: meta.randomWheelAnimation ?? false,
+    // 「随机一张照片」动画模式（default=直接打开 / wheel=轮盘 / compat=兼容动画）
+    randomAnimation: meta.randomAnimation ?? 'default',
     // 公开链接优先级：自定义 slug > 相簿自身 urlKey > 库级默认
     link: meta.slug
       ? `/albums/s/${encodeURIComponent(meta.slug)}`

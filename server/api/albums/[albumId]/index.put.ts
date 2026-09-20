@@ -30,7 +30,9 @@ export default eventHandler(async (event) => {
       clearPassword: z.boolean().optional(),
       // 照片展示布局：瀑布流 / 统一网格
       layout: z.enum(['waterfall', 'grid', 'immersive', 'timeline']).optional(),
-      // 「随机一张照片」是否使用 3D 轮盘动画
+      // 「随机一张照片」动画模式：default=直接打开 / wheel=3D轮盘 / compat=兼容动画
+      randomAnimation: z.enum(['default', 'wheel', 'compat']).optional(),
+      // 「随机一张照片」是否使用 3D 轮盘动画（旧字段，兼容旧客户端）
       randomWheelAnimation: z.boolean().optional(),
       // 自定义公开URL别名：可选；未传则保持，null/空串则清除
       slug: z
@@ -93,6 +95,10 @@ export default eventHandler(async (event) => {
 
     if (body.randomWheelAnimation !== undefined) {
       updateData.randomWheelAnimation = body.randomWheelAnimation
+    }
+
+    if (body.randomAnimation !== undefined) {
+      updateData.randomAnimation = body.randomAnimation
     }
 
     if (body.title !== undefined) {

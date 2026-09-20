@@ -131,13 +131,25 @@ const handleOpenViewer = (index: number) => {
 }
 
 // —— 随机一张照片 ——
-// 管理员在「编辑相簿 → 展示样式」开启「轮盘动画」后走独立随机页；
-// 默认（关闭）直接随机选一张照片打开查看器。
+// 相簿在「编辑相簿 → 展示样式」配置「随机照片盒动画」模式：
+// default=直接随机打开一张照片；wheel=3D轮盘过渡页；compat=轻量兼容过渡页。
+const randomMode = computed<'default' | 'wheel' | 'compat'>(() => {
+  const v = (albumData.value as any)?.randomAnimation
+  if (v === 'wheel' || v === 'compat') return v
+  if ((albumData.value as any)?.randomWheelAnimation) return 'wheel'
+  return 'default'
+})
+
 const handleOpenRandom = () => {
   const photos = sortedAlbumPhotos.value
   if (!photos.length) return
-  if ((albumData.value as any)?.randomWheelAnimation) {
+  const mode = randomMode.value
+  if (mode === 'wheel') {
     router.push(`/albums/${albumId.value}/random`)
+    return
+  }
+  if (mode === 'compat') {
+    router.push(`/albums/${albumId.value}/random-compat`)
     return
   }
   const idx = Math.floor(Math.random() * photos.length)

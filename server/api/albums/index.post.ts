@@ -18,7 +18,9 @@ export default eventHandler(async (event) => {
       hideFromGallery: z.boolean().optional(),
       // 照片展示布局：瀑布流 / 统一网格 / 沉浸式看图
       layout: z.enum(['waterfall', 'grid', 'immersive', 'timeline']).optional(),
-      // 「随机一张照片」是否使用 3D 轮盘动画
+      // 「随机一张照片」动画模式：default=直接打开 / wheel=3D轮盘 / compat=兼容动画
+      randomAnimation: z.enum(['default', 'wheel', 'compat']).optional(),
+      // 「随机一张照片」是否使用 3D 轮盘动画（旧字段，兼容旧客户端）
       randomWheelAnimation: z.boolean().optional(),
       // 相簿访问密码（明文）：非空设置新密码
       password: z.string().max(128).optional(),
@@ -63,6 +65,7 @@ export default eventHandler(async (event) => {
         hideFromGallery: body.hideFromGallery || false,
         layout: body.layout || 'waterfall',
         randomWheelAnimation: body.randomWheelAnimation || false,
+        randomAnimation: body.randomAnimation || 'default',
         passwordHash,
         password: body.password?.trim() || null,
         // 创建即分配不透明 UID

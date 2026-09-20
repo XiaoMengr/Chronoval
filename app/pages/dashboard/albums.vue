@@ -38,8 +38,8 @@ interface AlbumFormState {
   password: string
   // 照片展示布局：瀑布流 / 统一网格 / 沉浸式看图 / 时间线
   layout: 'waterfall' | 'grid' | 'immersive' | 'timeline'
-  // 「随机一张照片」是否使用 3D 轮盘动画（样式功能，默认关闭=直接打开）
-  randomWheelAnimation: boolean
+  // 「随机照片盒动画」模式：default=直接打开 / wheel=3D轮盘 / compat=兼容动画
+  randomAnimation: 'default' | 'wheel' | 'compat'
 }
 
 const albums = ref<AlbumItem[]>([])
@@ -99,8 +99,16 @@ const formData = reactive<AlbumFormState>({
   slug: '',
   password: '',
   layout: 'waterfall',
-  randomWheelAnimation: false,
+  randomAnimation: 'default',
 })
+
+// 归一化「随机照片盒动画」模式：优先取新的三态值，缺省则回退旧布尔（开启=wheel）
+const normalizeRandomAnimation = (d: any): 'default' | 'wheel' | 'compat' => {
+  const v = (d as any)?.randomAnimation
+  if (v === 'wheel' || v === 'compat') return v
+  if ((d as any)?.randomWheelAnimation) return 'wheel'
+  return 'default'
+}
 
 // 相簿密码「按钮式开关」：是否开启访问密码（表单态）
 const passwordToggle = ref(false)
@@ -258,7 +266,7 @@ const openEditSlideover = async (album: AlbumItem) => {
       (album as any).layout === 'timeline'
         ? (album as any).layout
         : 'waterfall'
-    formData.randomWheelAnimation = !!(album as any).randomWheelAnimation
+    formData.randomAnimation = normalizeRandomAnimation(album)
     passwordToggle.value = !!(album as any).passwordProtected
     coverPhotoId.value = album.coverPhotoId || ''
     selectedPhotoIds.value = []
@@ -283,7 +291,7 @@ const openEditSlideover = async (album: AlbumItem) => {
       albumDetail.layout === 'timeline'
         ? albumDetail.layout
         : 'waterfall'
-    formData.randomWheelAnimation = !!albumDetail.randomWheelAnimation
+    formData.randomAnimation = normalizeRandomAnimation(albumDetail)
     passwordToggle.value = !!albumDetail.passwordProtected
     formRef.value?.clear()
   } catch (error) {
@@ -445,7 +453,7 @@ const onFormSubmit = async (event: FormSubmitEvent<AlbumFormState>) => {
         coverPhotoId: coverPhotoId.value || null,
         isHidden: event.data.isHidden,
         layout: event.data.layout,
-        randomWheelAnimation: event.data.randomWheelAnimation,
+        randomAnimation: event.data.randomAnimation,
         ...passwordPayload,
         slug: event.data.slug?.trim() || null,
       }
@@ -467,7 +475,7 @@ const onFormSubmit = async (event: FormSubmitEvent<AlbumFormState>) => {
           isHidden: event.data.isHidden,
           hideFromGallery: event.data.hideFromGallery,
           layout: event.data.layout,
-          randomWheelAnimation: event.data.randomWheelAnimation,
+          randomAnimation: event.data.randomAnimation,
           ...passwordPayload,
           slug: event.data.slug?.trim() || null,
         },
@@ -490,7 +498,7 @@ const onFormSubmit = async (event: FormSubmitEvent<AlbumFormState>) => {
           isHidden: event.data.isHidden,
           hideFromGallery: event.data.hideFromGallery,
           layout: event.data.layout,
-          randomWheelAnimation: event.data.randomWheelAnimation,
+          randomAnimation: event.data.randomAnimation,
           password: passwordToggle.value ? newPassword || undefined : undefined,
           slug: event.data.slug?.trim() || null,
         },
@@ -1246,21 +1254,43 @@ const openAlbum = (album: AlbumItem) => {
                     {{ $t('dashboard.albums.form.layoutHint') }}
                   </p>
 
-                  <!-- 随机一张照片：轮盘动画开关（样式功能，默认关闭=直接打开） -->
-                  <UFormField name="randomWheelAnimation" class="pt-1">
+                  <!-- 随机照片盒动画：胶囊三选一（默认 / 动画轮盘 / 兼容） -->
+                  <UFormField name="randomAnimation" class="pt-1">
                     <div
                       class="overflow-hidden rounded-lg border border-neutral-200 bg-neutral-50/50 dark:border-neutral-800 dark:bg-neutral-900/40"
                     >
-                      <div class="flex items-center justify-between gap-4 px-4 py-3">
-                        <div class="min-w-0 space-y-0.5">
-                          <p class="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                            {{ $t('dashboard.albums.form.randomAnimation') }}
-                          </p>
-                          <p class="text-xs text-neutral-500 dark:text-neutral-400">
-                            {{ $t('dashboard.albums.form.randomAnimationHint') }}
-                          </p>
+                      <div class="px-4 py-3">
+                        <p class="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                          {{ $t('dashboard.albums.form.randomAnimation') }}
+                        </p>
+                        <p class="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">
+                          {{ $t('dashboard.albums.form.randomAnimationHint') }}
+                        </p>
+                        <!-- 胶囊分段选择器 -->
+                        <div class="mt-3 grid grid-cols-3 gap-1 rounded-full bg-neutral-100 p-1 dark:bg-neutral-800/70">
+                          <button
+                            v-for="opt in [
+                              { value: 'default', icon: 'tabler:player-pause', labelKey: 'dashboard.albums.form.randomMode.default' },
+                              { value: 'wheel', icon: 'tabler:rotate-3d', labelKey: 'dashboard.albums.form.randomMode.wheel' },
+                              { value: 'compat', icon: 'tabler:device-desktop', labelKey: 'dashboard.albums.form.randomMode.compat' },
+                            ]"
+                            :key="opt.value"
+                            type="button"
+                            class="flex items-center justify-center gap-1.5 rounded-full px-2 py-1.5 text-xs font-medium transition-all"
+                            :class="
+                              formData.randomAnimation === opt.value
+                                ? 'bg-white text-primary-700 shadow-sm ring-1 ring-neutral-200 dark:bg-neutral-950 dark:text-primary-300 dark:ring-neutral-700'
+                                : 'text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200'
+                            "
+                            @click="formData.randomAnimation = opt.value as 'default' | 'wheel' | 'compat'"
+                          >
+                            <Icon :name="opt.icon" class="size-3.5 shrink-0" />
+                            <span class="truncate">{{ $t(opt.labelKey) }}</span>
+                          </button>
                         </div>
-                        <USwitch v-model="formData.randomWheelAnimation" color="info" />
+                        <p class="mt-2 text-xs text-neutral-400 dark:text-neutral-500">
+                          {{ $t('dashboard.albums.form.randomMode.hint') }}
+                        </p>
                       </div>
                     </div>
                   </UFormField>

@@ -221,6 +221,12 @@ export const albums = sqliteTable('albums', {
   randomWheelAnimation: integer('random_wheel_animation', { mode: 'boolean' })
     .default(false)
     .notNull(),
+  // 「随机一张照片」动画模式：default=直接随机打开；wheel=3D轮盘动画；compat=轻量兼容动画
+  randomAnimation: text('random_animation', {
+    enum: ['default', 'wheel', 'compat'],
+  })
+    .default('default')
+    .notNull(),
   createdAt: integer('created_at', { mode: 'timestamp' })
     .notNull()
     .default(sql`(unixepoch())`),
@@ -289,6 +295,12 @@ export const scanAlbumMeta = sqliteTable(
       .notNull(),
     randomWheelAnimation: integer('random_wheel_animation', { mode: 'boolean' })
       .default(false)
+      .notNull(),
+    // 「随机一张照片」动画模式：default=直接随机打开；wheel=3D轮盘动画；compat=轻量兼容动画
+    randomAnimation: text('random_animation', {
+      enum: ['default', 'wheel', 'compat'],
+    })
+      .default('default')
       .notNull(),
     createdAt: integer('created_at', { mode: 'timestamp' })
       .notNull()

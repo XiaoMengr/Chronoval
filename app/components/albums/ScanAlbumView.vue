@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import type { ScanPhoto } from '~/components/albums/scanPhoto'
 import RandomPreviewOverlay from '~/components/albums/RandomPreviewOverlay.vue'
+import RandomCompatOverlay from '~/components/albums/RandomCompatOverlay.vue'
 
 interface ScanChildNode {
   kind: 'scan'
@@ -165,12 +166,30 @@ const onViewerIndexChange = (index: number) => {
   viewer.value.index = index
 }
 
-// —— 随机一张照片：先展示过渡动画页，停顿倒计时后自动打开该照片 ——
+// —— 随机一张照片 ——
+// 按相簿配置的「随机照片盒动画」模式选择过渡方式：
+// default=直接随机打开一张；wheel=3D轮盘覆盖层；compat=轻量兼容覆盖层。
+const randomMode = computed<'default' | 'wheel' | 'compat'>(() => {
+  const v = (data.value?.node as any)?.randomAnimation
+  if (v === 'wheel' || v === 'compat') return v
+  if ((data.value?.node as any)?.randomWheelAnimation) return 'wheel'
+  return 'default'
+})
+
 const randomOpen = ref(false)
 const randomTarget = ref(-1)
 
 const handleOpenRandom = (index: number) => {
   if (!data.value?.dirPhotos.length) return
+  const mode = randomMode.value
+  if (mode === 'default') {
+    // 直接随机打开一张照片（无过渡页）
+    const photos = data.value.dirPhotos
+    const idx = Math.floor(Math.random() * photos.length)
+    openPhoto(idx)
+    return
+  }
+  // wheel / compat：进入对应覆盖层动画
   randomTarget.value = index
   randomOpen.value = true
 }
@@ -571,8 +590,17 @@ watch(
       />
     </ClientOnly>
 
-    <!-- 随机一张照片：过渡动画页 -->
+    <!-- 随机照片盒动画：按模式渲染对应覆盖层（default 直接开图，不经由此处） -->
     <RandomPreviewOverlay
+      v-if="randomMode === 'wheel'"
+      :open="randomOpen"
+      :photos="data?.dirPhotos ?? []"
+      :target="randomTarget"
+      @done="handleRandomDone"
+      @cancel="handleRandomCancel"
+    />
+    <RandomCompatOverlay
+      v-else-if="randomMode === 'compat'"
       :open="randomOpen"
       :photos="data?.dirPhotos ?? []"
       :target="randomTarget"

@@ -37,7 +37,9 @@ export default eventHandler(async (event) => {
         .transform((v) => (v ? v.replace(/[^a-zA-Z0-9-_]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') : v)),
       // 照片展示布局：瀑布流 / 统一网格 / 沉浸式看图
       layout: z.enum(['waterfall', 'grid', 'immersive', 'timeline']).optional(),
-      // 「随机一张照片」是否使用 3D 轮盘动画
+      // 「随机一张照片」动画模式：default=直接打开 / wheel=3D轮盘 / compat=兼容动画
+      randomAnimation: z.enum(['default', 'wheel', 'compat']).optional(),
+      // 「随机一张照片」是否使用 3D 轮盘动画（旧字段，兼容旧客户端）
       randomWheelAnimation: z.boolean().optional(),
       // 传 true 时清除该相簿的元数据（还原为默认推导值）
       clear: z.boolean().optional(),
@@ -75,6 +77,7 @@ export default eventHandler(async (event) => {
     slug: body.slug,
     layout: body.layout,
     randomWheelAnimation: body.randomWheelAnimation,
+    randomAnimation: body.randomAnimation,
   })
 
   return {
@@ -90,6 +93,7 @@ export default eventHandler(async (event) => {
       slug: meta.slug,
       layout: meta.layout,
       randomWheelAnimation: meta.randomWheelAnimation,
+      randomAnimation: meta.randomAnimation,
     },
   }
 })

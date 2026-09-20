@@ -528,6 +528,8 @@ export interface ScanAlbumNode {
   link: string
   /** 照片展示布局：瀑布流 / 统一网格 / 沉浸式看图（自定义元数据可覆盖节点默认） */
   layout: 'waterfall' | 'grid' | 'immersive' | 'timeline'
+  /** 「随机一张照片」动画模式：default=直接打开 / wheel=3D轮盘 / compat=兼容动画 */
+  randomAnimation: 'default' | 'wheel' | 'compat'
   /** 该层目录直接包含的照片数（不含更深的子目录） */
   photoCount: number
   coverPhotoId: string | null
@@ -617,6 +619,7 @@ const buildScanAlbumNode = (
     urlKey: lib.urlKey,
     link,
     layout: 'waterfall',
+    randomAnimation: 'default',
     photoCount: dirPhotos.length,
     coverPhotoId: covers[0]?.id ?? null,
     covers,
