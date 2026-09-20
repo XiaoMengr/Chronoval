@@ -13,6 +13,10 @@ const props = defineProps<{
   showSwitch?: boolean
 }>()
 
+const emit = defineEmits<{
+  (e: 'open-random', index: number): void
+}>()
+
 const layout = defineModel<AlbumLayout>('layout', { default: 'waterfall' })
 
 const { t } = useI18n()
@@ -42,21 +46,25 @@ const expanded = ref(false)
 const switchRoot = ref<HTMLElement | null>(null)
 const capsuleRef = ref<HTMLElement | null>(null)
 const innerRef = ref<HTMLElement | null>(null)
+const collapsedCapRef = ref<HTMLElement | null>(null)
 
-const collapsedWidth = 88 // 收起态胶囊宽度（山体图标 + 数字）
-const expandedWidth = ref(0) // 展开态胶囊宽度（JS 测量）
+/** 收起态胶囊宽度（风景图标 + 分隔线 + 照片数 + 分隔线 + 魔百盒） */
+const collapsedWidth = ref(0)
+/** 展开态胶囊宽度（四个布局选项） */
+const expandedWidth = ref(0)
 
-/** 收起态主胶囊图标：独立使用山体图标 */
-const activeIcon = 'tabler:mountain'
+/** 收起态主胶囊图标：风景图标 */
+const activeIcon = 'tabler:tree'
+/** 有趣的魔百盒图标：点击随机预览一张相簿照片 */
+const magicIcon = 'tabler:box'
 
-// 测量展开态内容的实际宽度
+// 测量收起态与展开态胶囊的自然宽度
 const measureWidth = () => {
-  if (innerRef.value) {
-    expandedWidth.value = innerRef.value.offsetWidth
-  }
+  if (collapsedCapRef.value) collapsedWidth.value = collapsedCapRef.value.offsetWidth
+  if (innerRef.value) expandedWidth.value = innerRef.value.offsetWidth
 }
 
-// 组件挂载后测量展开态宽度
+// 组件挂载后测量
 onMounted(() => {
   nextTick(() => measureWidth())
 })
@@ -75,6 +83,13 @@ const pickLayout = (v: AlbumLayout) => {
   expanded.value = false
 }
 
+// 魔百盒：随机挑一张相簿照片预览
+const openRandom = () => {
+  const n = props.photos.length
+  if (!n) return
+  emit('open-random', Math.floor(Math.random() * n))
+}
+
 // —— 点击面板外部任意区域自动收起 ——
 onClickOutside(switchRoot, () => {
   if (expanded.value) expanded.value = false
@@ -82,11 +97,11 @@ onClickOutside(switchRoot, () => {
 
 // —— 中心展开动画：容器宽度从收起态平滑过渡到展开态；外层 rounded-full 保证两端始终为圆弧 ——
 const capsuleStyle = computed(() => {
-  const targetWidth = expanded.value && expandedWidth.value > 0
+  const full = expanded.value && expandedWidth.value > 0
     ? `${expandedWidth.value}px`
-    : `${collapsedWidth}px`
+    : `${collapsedWidth.value || 160}px`
   return {
-    width: targetWidth,
+    width: full,
     transition: 'width 320ms cubic-bezier(0.33, 1, 0.68, 1)',
     transform: 'translateZ(0)',
     willChange: 'width',
@@ -165,28 +180,52 @@ const timelineGroups = computed(() => {
         class="absolute left-1/2 flex h-8 -translate-x-1/2 items-center overflow-hidden rounded-full border border-neutral-200 bg-white/95 shadow-sm will-change-[width] dark:border-neutral-800 dark:bg-neutral-900/95"
         :style="capsuleStyle"
       >
-        <!-- 收起态内容：山体图标 + 照片数，居中显示 -->
-        <button
-          type="button"
-          class="absolute inset-0 z-10 flex items-center justify-center gap-2 hover:bg-neutral-100/50 dark:hover:bg-neutral-800/50"
+        <!-- 收起态内容：风景图标 | 分隔线 | 照片数 | 分隔线 | 魔百盒，居中显示 -->
+        <div
+          ref="collapsedCapRef"
+          class="absolute left-1/2 z-10 flex h-full -translate-x-1/2 transform-gpu items-center [backface-visibility:hidden]"
           :style="[
-            collapseBtnStyle,
             { opacity: expanded ? 0 : 1 },
             { pointerEvents: expanded ? 'none' : 'auto' },
+            collapseBtnStyle,
           ]"
-          :title="t('albums.layout.switchLabel')"
-          :aria-label="t('albums.layout.switchLabel')"
-          :aria-expanded="expanded"
-          @click="toggleSwitch"
         >
-          <Icon
-            :name="activeIcon"
-            class="shrink-0 size-4 text-neutral-500 dark:text-neutral-400"
-          />
-          <span class="text-xs font-semibold tabular-nums text-neutral-600 dark:text-neutral-300">
-            {{ photos.length }}
-          </span>
-        </button>
+          <!-- 风景图标 + 分隔线 + 照片数：点击整块展开胶囊 -->
+          <button
+            type="button"
+            class="flex h-full cursor-pointer items-center gap-2 pl-3 pr-2.5 transition-colors duration-200 hover:bg-neutral-100/50 dark:hover:bg-neutral-800/50"
+            :title="t('albums.layout.switchLabel')"
+            :aria-label="t('albums.layout.switchLabel')"
+            :aria-expanded="expanded"
+            @click="toggleSwitch"
+          >
+            <Icon
+              :name="activeIcon"
+              class="shrink-0 size-4 text-neutral-500 dark:text-neutral-400"
+            />
+            <span class="h-4 w-px shrink-0 bg-neutral-200 dark:bg-neutral-700" aria-hidden="true" />
+            <span class="text-xs font-semibold tabular-nums text-neutral-600 dark:text-neutral-300">
+              {{ photos.length }}
+            </span>
+          </button>
+
+          <!-- 分隔线 -->
+          <span class="h-4 w-px shrink-0 bg-neutral-200 dark:bg-neutral-700" aria-hidden="true" />
+
+          <!-- 魔百盒：点击随机预览一张相簿照片 -->
+          <button
+            type="button"
+            class="group flex h-full cursor-pointer items-center px-2.5 text-neutral-500 transition-colors duration-200 hover:bg-neutral-100/50 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800/50 dark:hover:text-neutral-200"
+            :title="t('albums.layout.randomPreview')"
+            :aria-label="t('albums.layout.randomPreview')"
+            @click.stop="openRandom"
+          >
+            <Icon
+              :name="magicIcon"
+              class="size-4 shrink-0 transition-transform duration-500 group-hover:-rotate-12 group-hover:scale-110 group-active:scale-90"
+            />
+          </button>
+        </div>
 
         <!-- 展开态内容：四个布局选项，每个为独立胶囊，文字图标不挤压，一行契合排列 -->
         <div

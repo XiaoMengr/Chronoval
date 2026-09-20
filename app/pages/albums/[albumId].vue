@@ -352,6 +352,7 @@ onBeforeMount(() => {
             v-else
             v-model:layout="layout"
             :photos="sortedAlbumPhotos"
+            @open-random="handleOpenViewer($event)"
           >
             <template #waterfall-card="{ photo, index }">
               <MasonryItem

@@ -481,6 +481,7 @@
     },
     "layout": {
       "switchLabel": "样式布局",
+      "randomPreview": "随机预览一张照片",
       "waterfall": "瀑布流",
       "grid": "网格",
       "immersive": "沉浸式看图",

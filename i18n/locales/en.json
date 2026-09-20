@@ -481,6 +481,7 @@
     },
     "layout": {
       "switchLabel": "Layout",
+      "randomPreview": "Preview a random photo",
       "waterfall": "Waterfall",
       "grid": "Grid",
       "immersive": "Immersive",

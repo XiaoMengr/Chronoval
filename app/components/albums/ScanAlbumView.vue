@@ -501,6 +501,7 @@ watch(
             v-model:layout="layout"
             :photos="data!.dirPhotos"
             class="px-6"
+            @open-random="openPhoto($event)"
           >
             <template #waterfall-card="{ photo, index }">
               <AlbumsAlbumFluidCard
