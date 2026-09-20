@@ -758,7 +758,10 @@
             "label": "Upload location",
             "description": "Choose whether to store files in local storage or an external scan library.",
             "localStorage": "Local storage",
-            "defaultHint": "Default upload location"
+            "defaultHint": "Default upload location",
+            "defaultBadge": "Default",
+            "externalLibraryBadge": "External library",
+            "availableHint": "available"
           },
           "duplicateCheck": {
             "label": "Duplicate file strategy",
@@ -1465,6 +1468,18 @@
           "label": "Corner radius size",
           "description": "Radius of gallery photo card corners (pixels)",
           "help": "Range 0 - 64 px, 0 means sharp corners"
+        },
+        "uploadProgressColor": {
+          "label": "Upload target progress bar color",
+          "description": "Color of the free-space progress bar in the upload slide-over",
+          "help": "Pick the progress bar fill color; green by default",
+          "options": {
+            "success": "Green",
+            "warning": "Yellow",
+            "error": "Red",
+            "info": "Blue",
+            "primary": "Primary"
+          }
         }
       },
       "upload": {

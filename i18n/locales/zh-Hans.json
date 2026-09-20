@@ -754,7 +754,10 @@
             "label": "上传位置",
             "description": "选择将文件保存到本地存储，还是外部扫描库。",
             "localStorage": "本地存储",
-            "defaultHint": "默认上传位置"
+            "defaultHint": "默认上传位置",
+            "defaultBadge": "默认",
+            "externalLibraryBadge": "外部库",
+            "availableHint": "可用"
           },
           "eraseLocation": {
             "label": "上传时抹除位置信息",
@@ -1459,6 +1462,18 @@
           "label": "圆角大小",
           "description": "画廊照片卡片圆角的半径（像素）",
           "help": "范围 0 - 64 像素，0 表示直角"
+        },
+        "uploadProgressColor": {
+          "label": "上传位置进度条颜色",
+          "description": "「上传照片」弹层中剩余空间进度条的颜色",
+          "help": "选择进度条填充的颜色，默认绿色",
+          "options": {
+            "success": "绿色",
+            "warning": "黄色",
+            "error": "红色",
+            "info": "蓝色",
+            "primary": "主题色"
+          }
         }
       },
       "upload": {

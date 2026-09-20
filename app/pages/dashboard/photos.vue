@@ -590,6 +590,54 @@ const enabledUploadLibraries = computed(() =>
 const uploadTarget = ref<'storage' | number>('storage')
 const hasSelectedUploadLibrary = computed(() => uploadTarget.value !== 'storage')
 
+// 各上传目标剩余可用空间（本地存储 key='storage'；外部库 key=库 id）
+const { data: uploadTargets } = await useFetch<{
+  targets: Array<{
+    key: string
+    availableBytes: number | null
+    totalBytes: number | null
+  }>
+}>('/api/uploads/targets')
+const targetAvailableBytes = (key: string | number): number | null =>
+  uploadTargets.value?.targets.find((t) => t.key === String(key))?.availableBytes ??
+  null
+const targetTotalBytes = (key: string | number): number | null =>
+  uploadTargets.value?.targets.find((t) => t.key === String(key))?.totalBytes ?? null
+const availableLabel = (bytes: number | null): string | null => {
+  if (bytes === null || bytes === undefined) return null
+  return `${formatBytes(bytes)} ${$t('dashboard.photos.slideover.options.uploadTarget.availableHint')}`
+}
+// 已用空间占比（0-100）；当可用/总量缺失或无意义时返回 null（前端隐藏进度条）
+const usagePercent = (key: string | number): number | null => {
+  const available = targetAvailableBytes(key)
+  const total = targetTotalBytes(key)
+  if (available === null || total === null || total <= 0) return null
+  const used = total - available
+  if (used < 0) return 0
+  const pct = (used / total) * 100
+  return Math.min(100, Math.round(pct * 10) / 10)
+}
+// 剩余可用占比（0-100）；无法统计时返回 null
+const remainingPercent = (key: string | number): number | null => {
+  const used = usagePercent(key)
+  return used === null ? null : 100 - used
+}
+// 进度条填充色：跟随「界面 → 外观 → 上传位置进度条颜色」设置，默认绿色(success)
+// 注意：不依赖任何 Tailwind 色类生成（如 bg-success-500 在部分构建下不会产出实际背景色，
+// 会导致绿色填充看似空白），而是直接用内联 hex/canvas 颜色，保证任何浏览器都必定渲染。
+const UPLOAD_PROGRESS_COLOR_HEX: Record<string, string> = {
+  success: '#16a34a',
+  warning: '#f59e0b',
+  error: '#dc2626',
+  info: '#2563eb',
+  primary: '#334155',
+}
+const uploadProgressColor = useSettingRef('app:appearance.uploadProgressColor')
+const progressBarColor = computed(() => {
+  const color = uploadProgressColor.value
+  return (typeof color === 'string' && UPLOAD_PROGRESS_COLOR_HEX[color]) || '#16a34a'
+})
+
 const hasSelectedFiles = computed(() => selectedFiles.value.length > 0)
 
 const selectedFilesTotalSize = computed(() =>
@@ -2048,7 +2096,7 @@ onUnmounted(() => {
           :title="$t('dashboard.photos.slideover.title')"
           :description="$t('dashboard.photos.slideover.description')"
           :ui="{
-            content: 'sm:max-w-xl',
+            content: 'pxs-panel w-full sm:max-w-xl',
             body: 'p-2',
             header:
               'px-6 py-5 border-b border-(--ui-border)',
@@ -2119,7 +2167,7 @@ onUnmounted(() => {
                   <div class="grid gap-2">
                     <button
                       type="button"
-                      class="flex items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors"
+                      class="flex w-full min-h-[52px] items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors"
                       :class="
                         uploadTarget === 'storage'
                           ? 'border-(--ui-text) bg-(--ui-text)/8'
@@ -2141,7 +2189,7 @@ onUnmounted(() => {
                         name="tabler:database"
                         class="size-4.5 shrink-0 text-(--ui-text-muted)"
                       />
-                      <span class="min-w-0">
+                      <span class="min-w-0 flex-1">
                         <span
                           class="block text-sm font-medium text-(--ui-text)"
                         >
@@ -2152,22 +2200,67 @@ onUnmounted(() => {
                           }}
                         </span>
                         <span
-                          class="block text-xs text-(--ui-text-muted)"
+                          v-if="
+                            availableLabel(targetAvailableBytes('storage')) ||
+                            usagePercent('storage') !== null
+                          "
+                          class="mt-1.5 block space-y-1.5"
                         >
-                          {{
-                            $t(
-                              'dashboard.photos.slideover.options.uploadTarget.defaultHint',
-                            )
-                          }}
+                          <span
+                            v-if="availableLabel(targetAvailableBytes('storage'))"
+                            class="block whitespace-nowrap text-xs text-(--ui-text-muted)"
+                          >
+                            {{ availableLabel(targetAvailableBytes('storage')) }}
+                          </span>
+                          <span
+                            v-if="usagePercent('storage') !== null"
+                            class="relative block overflow-hidden rounded-full"
+                            :style="{
+                              height: '14px',
+                              width: 'min(100%, 220px)',
+                              maxWidth: '100%',
+                              backgroundColor: 'rgba(15, 23, 42, 0.07)',
+                            }"
+                          >
+                            <span
+                              class="absolute inset-y-0 left-0 rounded-full transition-all duration-500 ease-out"
+                              :style="{
+                                width: `${remainingPercent('storage')}%`,
+                                backgroundColor: progressBarColor,
+                              }"
+                            />
+                            <span
+                              class="absolute inset-0 flex items-center justify-center text-[10px] font-medium leading-none tabular-nums"
+                              :class="
+                                (remainingPercent('storage') ?? 0) >= 50
+                                  ? 'text-white'
+                                  : 'text-(--ui-text)'
+                              "
+                            >
+                              {{
+                                Math.round(remainingPercent('storage') ?? 0)
+                              }}%
+                            </span>
+                          </span>
                         </span>
                       </span>
+                      <UBadge
+                        color="success"
+                        variant="soft"
+                        :label="
+                          $t(
+                            'dashboard.photos.slideover.options.uploadTarget.defaultBadge',
+                          )
+                        "
+                        class="ml-auto shrink-0"
+                      />
                     </button>
 
                     <button
                       v-for="lib in enabledUploadLibraries"
                       :key="lib.id"
                       type="button"
-                      class="flex items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors"
+                      class="flex w-full min-h-[52px] items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors"
                       :class="
                         uploadTarget === lib.id
                           ? 'border-(--ui-text) bg-(--ui-text)/8'
@@ -2189,13 +2282,67 @@ onUnmounted(() => {
                         name="tabler:folder-open"
                         class="size-4.5 shrink-0 text-(--ui-text-muted)"
                       />
-                      <span class="min-w-0">
+                      <span class="min-w-0 flex-1">
                         <span
                           class="block truncate text-sm font-medium text-(--ui-text)"
                         >
                           {{ lib.name }}
                         </span>
-                      </span>
+                        <span
+                          v-if="
+                            availableLabel(targetAvailableBytes(lib.id)) ||
+                            usagePercent(lib.id) !== null
+                          "
+                          class="mt-1.5 block space-y-1.5"
+                        >
+                          <span
+                            v-if="availableLabel(targetAvailableBytes(lib.id))"
+                            class="block whitespace-nowrap text-xs text-(--ui-text-muted)"
+                          >
+                            {{ availableLabel(targetAvailableBytes(lib.id)) }}
+                          </span>
+                          <span
+                            v-if="usagePercent(lib.id) !== null"
+                            class="relative block overflow-hidden rounded-full"
+                            :style="{
+                              height: '14px',
+                              width: 'min(100%, 220px)',
+                              maxWidth: '100%',
+                              backgroundColor: 'rgba(15, 23, 42, 0.07)',
+                            }"
+                          >
+                            <span
+                              class="absolute inset-y-0 left-0 rounded-full transition-all duration-500 ease-out"
+                              :style="{
+                                width: `${remainingPercent(lib.id)}%`,
+                                backgroundColor: progressBarColor,
+                              }"
+                            />
+                            <span
+                              class="absolute inset-0 flex items-center justify-center text-[10px] font-medium leading-none tabular-nums"
+                              :class="
+                                (remainingPercent(lib.id) ?? 0) >= 50
+                                  ? 'text-white'
+                                  : 'text-(--ui-text)'
+                              "
+                            >
+                              {{
+                                Math.round(remainingPercent(lib.id) ?? 0)
+                            }}%
+                            </span>
+                          </span>
+                        </span>
+                        </span>
+                        <UBadge
+                          color="info"
+                        variant="soft"
+                        :label="
+                          $t(
+                            'dashboard.photos.slideover.options.uploadTarget.externalLibraryBadge',
+                          )
+                        "
+                        class="ml-auto shrink-0"
+                      />
                     </button>
                   </div>
                 </div>
@@ -2492,13 +2639,17 @@ onUnmounted(() => {
                     :content="{ align: 'end' }"
                     :items="getRowActions(item.photo)"
                   >
-                    <UButton
-                      variant="solid"
-                      color="neutral"
-                      size="sm"
-                      icon="tabler:dots-vertical"
+                    <button
+                      type="button"
+                      aria-label="more"
+                      class="photo-hover-menu-btn flex size-8 items-center justify-center rounded-lg text-white transition-colors duration-200"
                       @click.stop
-                    />
+                    >
+                      <Icon
+                        name="tabler:dots-vertical"
+                        class="size-4"
+                      />
+                    </button>
                   </UDropdownMenu>
                 </div>
 
@@ -2626,7 +2777,7 @@ onUnmounted(() => {
           :title="$t('dashboard.photos.editModal.title')"
           :description="$t('dashboard.photos.editModal.description')"
           :ui="{
-            content: 'sm:max-w-xl',
+            content: 'pxs-panel w-full sm:max-w-xl',
             body: 'p-2',
             header:
               'px-6 py-5 border-b border-(--ui-border)',
@@ -3016,4 +3167,42 @@ onUnmounted(() => {
   </UDashboardPanel>
 </template>
 
-<style scoped></style>
+<style scoped>
+.photo-hover-menu-btn {
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.18);
+}
+.photo-hover-menu-btn:hover {
+  background: rgba(0, 0, 0, 0.62);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+</style>
+
+<!-- 非 scoped：侧滑面板经 teleport 渲染到 body 下，需用全局规则在手机窄屏下把面板约束在视口内并取消横向滚动。
+     注意：不能用 100vw，部分手机/浏览器中 100vw 会包含滚动条或超出动态视口，导致右边缘多出一截、卡片被挤出屏幕。
+     对 position:fixed 的元素，width:100% 即等于可视视口宽度，配合 left/right:0 可做到真正自适应缩放。 -->
+<style>
+@media (max-width: 639.98px) {
+  html,
+  body {
+    max-width: 100% !important;
+    overflow-x: clip !important;
+  }
+  .pxs-panel {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+  }
+  .pxs-panel .space-y-4,
+  .pxs-panel .space-y-6 {
+    min-width: 0 !important;
+  }
+}
+</style>

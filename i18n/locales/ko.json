@@ -1441,6 +1441,18 @@
           "label": "모서리 반경 크기",
           "description": "갤러리 사진 카드 모서리 반경 (픽셀)",
           "help": "범위 0 - 64 px, 0은 직각 모서리를 의미합니다"
+        },
+        "uploadProgressColor": {
+          "label": "업로드 위치 진행 막대 색상",
+          "description": "「사진 업로드」 패널에서 남은 공간 진행 막대의 색상",
+          "help": "진행 막대 채우기 색상을 선택하세요. 기본은 녹색",
+          "options": {
+            "success": "녹색",
+            "warning": "노란색",
+            "error": "빨간색",
+            "info": "파란색",
+            "primary": "테마 색상"
+          }
         }
       },
       "upload": {

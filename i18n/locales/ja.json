@@ -1221,6 +1221,18 @@
           "label": "角丸サイズ",
           "description": "ギャラリーの写真カードの角丸の半径（ピクセル）",
           "help": "範囲 0 - 64 px、0 は直角"
+        },
+        "uploadProgressColor": {
+          "label": "アップロード先のプログレスバーの色",
+          "description": "「写真をアップロード」パネルの空き容量プログレスバーの色",
+          "help": "プログレスバーの塗りつぶし色を選択。デフォルトは緑",
+          "options": {
+            "success": "緑",
+            "warning": "黄",
+            "error": "赤",
+            "info": "青",
+            "primary": "テーマ色"
+          }
         }
       },
       "upload": {

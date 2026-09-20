@@ -1441,6 +1441,18 @@
           "label": "Kích thước bán kính góc",
           "description": "Bán kính góc thẻ ảnh thư viện (pixel)",
           "help": "Phạm vi 0 - 64 px, 0 nghĩa là góc sắc"
+        },
+        "uploadProgressColor": {
+          "label": "Màu thanh tiến trình vị trí tải lên",
+          "description": "Màu của thanh tiến trình dung lượng còn trống trong cửa sổ «Tải ảnh lên»",
+          "help": "Chọn màu đổ đầy của thanh tiến trình, mặc định là xanh lá",
+          "options": {
+            "success": "Xanh lá",
+            "warning": "Vàng",
+            "error": "Đỏ",
+            "info": "Xanh dương",
+            "primary": "Màu chủ đề"
+          }
         }
       },
       "upload": {

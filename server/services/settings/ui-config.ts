@@ -77,6 +77,32 @@ export const APP_SETTINGS_UI: Record<string, FieldUIConfig> = {
     max: 64,
     visibleIf: { fieldKey: 'appearance.cardCornerRadius', value: true },
   },
+  'appearance.uploadProgressColor': {
+    type: 'select',
+    options: [
+      {
+        label: 'settings.app.appearance.uploadProgressColor.options.success',
+        value: 'success',
+      },
+      {
+        label: 'settings.app.appearance.uploadProgressColor.options.warning',
+        value: 'warning',
+      },
+      {
+        label: 'settings.app.appearance.uploadProgressColor.options.error',
+        value: 'error',
+      },
+      {
+        label: 'settings.app.appearance.uploadProgressColor.options.info',
+        value: 'info',
+      },
+      {
+        label: 'settings.app.appearance.uploadProgressColor.options.primary',
+        value: 'primary',
+      },
+    ],
+    help: 'settings.app.appearance.uploadProgressColor.help',
+  },
   'trash.retention': {
     type: 'select',
     options: [

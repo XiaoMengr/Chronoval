@@ -91,6 +91,16 @@ export const DEFAULT_SETTINGS = [
     description: 'settings.app.appearance.cardCornerRadiusValue.description',
     isPublic: true,
   },
+  {
+    namespace: 'app',
+    key: 'appearance.uploadProgressColor',
+    type: 'string',
+    defaultValue: 'success',
+    enum: ['success', 'warning', 'error', 'info', 'primary'],
+    label: 'settings.app.appearance.uploadProgressColor.label',
+    description: 'settings.app.appearance.uploadProgressColor.description',
+    isPublic: true,
+  },
   // 站点对外访问的规范地址（用于 OG 分享图/分享链接）。留空则跟随当前访问域名；
   // 内网/IP 部署、或希望分享链接固定到某个域名时在此填写，如 https://dev.1xc.top
   {

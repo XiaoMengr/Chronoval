@@ -1222,6 +1222,18 @@
           "label": "圓角大小",
           "description": "畫廊照片卡片圓角的半徑（像素）",
           "help": "範圍 0 - 64 像素，0 表示直角"
+        },
+        "uploadProgressColor": {
+          "label": "上傳位置進度條顏色",
+          "description": "「上傳照片」彈層中剩餘空間進度條的顏色",
+          "help": "選擇進度條填充的顏色，預設綠色",
+          "options": {
+            "success": "綠色",
+            "warning": "黃色",
+            "error": "紅色",
+            "info": "藍色",
+            "primary": "主題色"
+          }
         }
       },
       "upload": {
