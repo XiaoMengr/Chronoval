@@ -1,203 +1,65 @@
-# Chronoval
+<p align="center">
+  <img src="docs/public/logo.png" width="140" alt="Chronoval Logo">
+</p>
 
-> 自托管的个人摄影画廊 —— 基于 Nuxt 4 的轻量全栈单体应用，一个容器同时提供页面与 API。
+<h1 align="center">Chronoval</h1>
 
-极简暗色 · 透明 · 高斯模糊（灵感 Afilmory），WebGL 高性能图片查看器（承自 ChronoFrame）。
+<p align="center">
+  自托管的个人摄影画廊 · 基于 Nuxt 4 的全栈单体应用，一个容器同时提供页面与 API。
+</p>
+
+<p align="center">
+  <img alt="Nuxt" src="https://img.shields.io/badge/Nuxt-4-00DC82">
+  <img alt="Vue" src="https://img.shields.io/badge/Vue-3-42b883">
+  <img alt="Docker" src="https://img.shields.io/badge/Docker-%E2%9C%93-2496ED">
+  <img alt="SQLite" src="https://img.shields.io/badge/SQLite-%E2%9C%93-003B57">
+  <img alt="license" src="https://img.shields.io/badge/License-MIT-blue">
+  <img alt="version" src="https://img.shields.io/badge/Version-v1.0.0.4-green">
+</p>
+
+极简暗色 · 高斯模糊 · WebGL 高性能图片查看器（灵感 Afilmory，查看器承自 ChronoFrame）。
 
 ## 特性
 
-- 照片与视频「本地目录即存储」：直接放进映射目录即自动识别、生成缩略图，**无需后台上传**；原文件只读挂载，绝不加密或改写
-- 「本地扫描库」独立存储方式：按文件夹管理外部相册，缩略图就地生成到相册 `thumbnails/` 子目录，与加密上传完全分离、统一首页画廊显示
-- 图片查看器：WebGL 高性能缩放平移、Exif 信息面板、底部缩略图画廊
-- 分享：生成分享链接 / 嵌入代码 / 原生 Web Share / 一键复制 / 下载原图与 OG 预览图
-- 多格式：JPEG / PNG / WebP / GIF / TIFF / HEIC / MOV / MP4，Live Photo 自动配对
-- 地图浏览：MapLibre / Mapbox 聚合拍摄位置，反向地理编码识别城市
-- 管理后台：相册 / 上传队列 / 实时日志 / 系统监控 / 日历热图
+- **本地目录即存储**：照片/视频放进映射目录即自动识别、生成缩略图，无需后台上传；原文件只读挂载，绝不加密或改写
+- **本地扫描库**：按文件夹管理外部相册，缩略图就地生成，与加密上传完全分离、统一首页画廊
+- **查看与分享**：WebGL 缩放平移、Exif 面板、分享链接 / 嵌入代码 / 原生 Web Share / 下载原图
+- **多格式**：JPEG / PNG / WebP / GIF / TIFF / HEIC / MOV / MP4，Live Photo 自动配对
+- **地图浏览**：MapLibre / Mapbox 聚合拍摄位置，反向地理编码识别城市
+- **管理后台**：相册 / 上传队列 / 实时日志 / 系统监控 / 日历热图
 
-## 快速开始（Docker）
-
-一条命令即可启动前后端：
+## 快速开始
 
 ```bash
-# 1. 复制并填写 .env（参考下方「.env 参考」）
+# 1. 复制并填写 .env（首次安装也可在网页引导向导里填）
 cp .env.example .env
 
-# 2. 启动
-docker compose up -d --build
-
-# 3. 访问 http://localhost:3000
-```
-
-### .env 参考
-
-```bash
-# ---- 必填 ----
-# 管理员账号（首次启动自动创建）
-CFRAME_ADMIN_EMAIL=you@example.com
-CFRAME_ADMIN_PASSWORD=your-password
-
-# 会话加密密钥（必填，32 位随机串）
-NUXT_SESSION_PASSWORD="$(openssl rand -hex 16)"
-# 分享 OG 图签名密钥（可选，用下方命令生成）
-# NUXT_OG_IMAGE_SECRET="$(npx nuxt-og-image generate-secret)"
-
-# ---- 站点信息（可选）----
-NUXT_PUBLIC_APP_TITLE=Chronoval        # 站点标题
-NUXT_PUBLIC_APP_SLOGAN=                # 站点标语
-NUXT_PUBLIC_APP_AUTHOR=                # 作者署名（首页页脚）
-NUXT_PUBLIC_APP_AVATAR_URL=            # 站点头像 URL
-NUXT_PUBLIC_COLOR_MODE_PREFERENCE=dark # 主题：light / dark / system
-
-# ---- 地图（可选，用于浏览拍摄位置）----
-NUXT_PUBLIC_MAP_PROVIDER=maplibre      # maplibre(免费) / mapbox
-NUXT_PUBLIC_MAP_MAPLIBRE_STYLE=        # MapLibre 样式 URL
-NUXT_PUBLIC_MAPBOX_ACCESS_TOKEN=       # Mapbox 前端令牌
-
-# ---- 存储（默认本地文件系统，无需改动）----
-NUXT_STORAGE_PROVIDER=local            # local / s3 / openlist
-```
-
-### docker-compose.yml
-
-```yaml
-services:
-  chronoval:
-    image: chronoval:latest
-    container_name: chronoval
-    restart: unless-stopped
-    ports:
-      - '3000:3000'              # 宿主机端口:容器端口
-    environment:
-      # 本地文件存储：上传照片落盘位置（prefix=photos/ 即写入宿主 ./data/storage/photos）
-      NUXT_STORAGE_PROVIDER: local
-      NUXT_PROVIDER_LOCAL_PATH: /app/data/storage
-      NUXT_PROVIDER_LOCAL_PREFIX: photos/
-      # 媒体库目录：指向 /app/storage 下的两个子目录
-      LIBRARY_PHOTOS_PATH: /app/storage/photos
-      LIBRARY_VIDEOS_PATH: /app/storage/videos
-      LIBRARY_ENABLED: 'true'
-    env_file:
-      - .env                     # 管理员账号、会话密钥、站点信息等
-    volumes:
-      - ./data:/app/data                          # ① 数据目录（SQLite + 配置，可写）
-      - ./data/storage:/app/storage:ro            # ② 媒体库照片/视频目录（含 photos/ 与 videos/ 子目录）
-      - ./data/library:/app/library            # ③ 本地扫描库根（每个子目录 = 一个相册，可写）
-```
-
-> **①②③ 三个目录统一在项目 `./data` 下一个备份/迁移**。启动前先在宿主机建好媒体库子目录：`mkdir -p data/storage/photos data/storage/videos`（在 `docker-compose.yml` 所在目录执行）。
->
-> **① 数据目录**：SQLite 数据库、上传图片与缩略图、配置。上传经 `NUXT_PROVIDER_LOCAL_PATH=/app/data/storage` + `prefix=photos/` 落盘到宿主 `./data/storage/photos`。
->
-> **② 媒体库照片/视频目录**：只读挂载。照片放入 `./data/storage/photos`、视频放入 `./data/storage/videos` 即被自动识别并生成缩略图（默认每 5 分钟扫描，也可后台手动触发），原文件绝不加密或改写。缩略图集中写入可写数据目录。注意：一旦在后台新建并**启用**任何「本地扫描库」，本机制即被忽略，统一改由扫描库接管。
->
-> **③ 本地扫描库根**：见下文「本地扫描库」小节，适合按相册管理、需要缩略图跟随相册场景。该目录已挂载为**可写**（rw），缩略图可就地生成。
-
-### 独立 IP 访问（docker-compose.ip.yml）
-
-不想占用宿主机端口、想让 Chronoval 在局域网拥有**自己独立的 IP** 地址，直接用它——通过 **macvlan** 网络给容器分配专属 IP，浏览器访问 `http://<独立IP>:3000` 即可，行为如同一台局域网内独立的小主机。
-
-本文件**不开本地编译**，直接用内网 Gitea 注册表现成镜像 `172.16.0.1:322/xiaomengr/chronoval:<tag>`（`latest`=最新，`1.0.0.4`=稳定版），改几个参数即可秒起。macvlan 网络为**内置**，网关、子网、IP 都能在文件内直接自定义，无需手动建网络。
-
-**一次性准备**（首次，按顺序）：
-
-```bash
-# 0. 让 Docker 信任内网 http 镜像仓库（编辑 /etc/docker/daemon.json，再重启 docker）
-#    { "insecure-registries": ["172.16.0.1:322"] }
-#    sudo systemctl restart docker
-
-# 1. 登录内网仓库（镜像非公开时需要）
-docker login 172.16.0.1:322 --username <你的Gitea用户名>
-```
-
-**启动**（在本项目根目录执行，也无需克隆整个源码仓库，只要有 compose 与 `.env` 即可）：
-
-```bash
-# 建好数据目录并准备环境文件
+# 2. 建好媒体库目录
 mkdir -p data/storage/photos data/storage/videos
-cp .env.example .env            # 管理员账号/站点信息可在网页首次引导里填
 
-# 按你的局域网改 docker-compose.ip.yml 里四处：
-#   ①②③④  parent/网关/子网/容器IP（文件内有注释标明）
-#   想用稳定版就把 image 的 :latest 换成 :1.0.0.4
-
-# 直接拉取镜像启动（注意没有 --build）
-docker compose -f docker-compose.ip.yml up -d
-
-# 访问 http://192.168.1.50:3000
+# 3. 启动（默认 http://localhost:3000）
+docker compose up -d --build
 ```
 
-要点：
+首次启动会自动完成数据库迁移并进入安装向导；媒体库照片放入 `data/storage/photos`、视频放入 `data/storage/videos` 即被自动识别。
 
-- **无 `ports` 端口映射**：独立 IP 已直接监听 3000，不占宿主机端口。
-- **网关/子网/IP 全部文件内自定义**：macvlan 网络内置在 compose（`networks.net_chronoval` → `ipam.gateway`、`ipam.subnet`），改完 `docker compose up -d` 即可，无需 `docker network create`。
-- **换版本/换 IP 无需重建**：改 `image` tag、`ipv4_address` 或 `ipam` 后 `docker compose -f docker-compose.ip.yml up -d`，卷内数据保持不变。
-- 仅支持 **Linux**（macvlan 依赖物理网卡）；数据目录、媒体库、扫描库挂载与默认 compose 完全一致。
-- 若还需容器**主动访问宿主机**（如反代到宿主进程），macvlan 对接回有限制，请改用 `network_mode: host`。
-
-完整独立 compose 见 [`docker-compose.ip.yml`](docker-compose.ip.yml)，主机网络模式的备选写法见 [`docs/deployment.md`](docs/deployment.md)。
-
-### 本地扫描库（独立存储方式）
-
-除「后台上传（加密 blob 存储）」和「传统只读媒体库」外，Chronoval 提供第三种独立存储方式：**本地扫描库**。它把普通照片 / 视频按文件夹作为**可配置的引用源**，丢进去即自动扫描、自动生成缩略图，且与加密上传**完全分离**（数据库用 `source: 'library'` 区分，绝不混入上传 blob）。
-
-#### 概念
-
-- 每个扫描库 = 一个容器内绝对路径（相册），在「管理后台 → 存储设置 → 本地扫描库」中添加，可单独开关、配置轮询间隔、手动触发扫描。
-- 原图**只读引用**该目录（不加密、不改写），缩略图**就地生成**到该相册目录下的 `thumbnails/` 子目录，随相册一起管理。
-- 所有扫描库照片与上传照片**统一出现在首页画廊**（`/api/photos` 返回全部 `photos`，不做来源隔离）。
-- 一条扫描库都不启用时，才回退到传统的 `/app/photos`、`/app/videos` 环境变量目录。
-
-#### 推荐挂载
-
-```yaml
-volumes:
-  - ./data:/app/data                        # SQLite + 上传 blob（保持原样，独立）
-  - ./data/storage:/app/storage:ro          # 媒体库照片/视频（含 photos/ 与 videos/ 子目录）
-  - ./data/library:/app/library            # 外部引用库根：一层目录一个相册
-```
-
-> 缩略图就地生成要求外部库目录**可写**，本目录已挂载为 `rw`（区别于只读媒体库的 `ro`），缩略图就地写入相册 `thumbnails/`。
-
-#### 使用步骤
-
-1. 在宿主机按相册建目录，如 `./data/library/家庭相册`、`./data/library/旅行视频`（相对项目根），放入照片 / 视频。
-2. 进入「管理后台 → 存储设置 → 本地扫描库」，点「添加扫描库」。
-3. 根路径填**容器内**绝对路径，例如 `/app/library/家庭相册`（不是宿主机路径）。名称留空则自动取文件夹名。
-4. 保存后点该行的「扫描」立即触发，或等自动轮询（间隔可在表单里配置，默认 60 秒）。
-5. 缩略图自动生成在 `/app/library/家庭相册/thumbnails/`，照片出现在首页画廊。
-
-#### 要点
-
-- **填容器内路径，不是宿主机路径**：宿主 `./data/library` 可见，容器内是 `/app/library`。
-- 新增相册无需改 compose / 无需重启：外部库下一层子目录 + 界面加一条即可。
-- 相册目录被扫描时，`thumbnails/`、隐藏目录会自动跳过，不会被当原图重复入索引。
-- 删除扫描库照片只删缩略图与数据库记录，**不删外部原文件**。删除整个扫描库会一并清理其索引记录。
-- 容器需对挂载目录有读写权限，NAS / 外部盘注意 uid / gid。
-
-### 应用数据目录（单目录映射）
-
-所有数据持久化在宿主机项目根 `./data`，备份 / 迁移只需复制这一个目录：
-
-```
-data/
-├── app.sqlite3              # SQLite 数据库（元数据、相册、设置、账号）
-├── storage/                 # 媒体库照片/视频（只读挂载到 /app/storage）
-│   ├── photos/              # 图片（LIBRARY_PHOTOS_PATH=/app/storage/photos），上传也落盘于此
-│   └── videos/              # 视频（LIBRARY_VIDEOS_PATH=/app/storage/videos）
-└── library/                 # 本地扫描库根（挂载到 /app/library，每个子目录=一个相册）
-```
+如需直接使用镜像（不本地编译）或独立 IP 方式，见下方文档导航。
 
 ## 文档导航
 
-| 主题 | 链接 |
-|---|---|
-| 部署与目录映射 | [docs/deployment.md](docs/deployment.md) |
-| 全部环境变量参考 | [docs/configuration.md](docs/configuration.md) |
-| 本地开发与项目结构 | [docs/development/quickstart.md](docs/development/quickstart.md) |
-| 用户指南（安装/升级） | [docs/guide/getting-started.md](docs/guide/getting-started.md) |
-| 完整文档站 | [docs/index.md](docs/index.md) |
+| 主题 | 说明 | 文档 |
+| --- | --- | --- |
+| 快速上手 | 安装、配置、升级 | [docs/guide/getting-started.md](docs/guide/getting-started.md) |
+| 部署指南 | Docker / 镜像 / 目录映射 / 备份 | [docs/deployment.md](docs/deployment.md) |
+| 独立 IP 访问 | macvlan 网络，容器拥有专属 IP | [docs/zh/guide/deploy-ip.md](docs/zh/guide/deploy-ip.md) |
+| 本地扫描库 | 按文件夹管理外部相册 | [docs/zh/guide/scan-library.md](docs/zh/guide/scan-library.md) |
+| 环境变量 | 全部配置参考 | [docs/configuration.md](docs/configuration.md) |
+| 存储提供方 | 本地 / S3 / OpenList | [docs/configuration/storage-providers.md](docs/configuration/storage-providers.md) |
+| 本地开发 | 开发环境与项目结构 | [docs/development/quickstart.md](docs/development/quickstart.md) |
+| 用户指南 | 安装 / 升级 / 隐藏功能 | [docs/guide/updates.md](docs/guide/updates.md) |
+| 完整文档站 | 全部文档索引 | [docs/index.md](docs/index.md) |
 
-> 镜像通过内置 Gitea Actions 自动构建推送至内网注册表：`172.16.0.1:322/xiaomengr/chronoval:latest`（`docker pull` 即可获取）。
+> 镜像通过内置 Gitea Actions 自动构建推送至内网注册表：`172.16.0.1:322/xiaomengr/chronoval:latest`（`docker pull` 即可获取），对应稳定版 tag `172.16.0.1:322/xiaomengr/chronoval:1.0.0.4`。
 
 ## 许可证
 

@@ -17,6 +17,9 @@ export default defineConfig({
         text: '指南',
         items: [
           { text: '快速开始', link: '/zh/guide/getting-started' },
+          { text: '部署指南', link: '/deployment' },
+          { text: '独立 IP 访问', link: '/zh/guide/deploy-ip' },
+          { text: '本地扫描库', link: '/zh/guide/scan-library' },
           { text: '配置说明', link: '/zh/guide/configuration' },
           { text: '升级指南', link: '/zh/guide/updates' },
         ],
