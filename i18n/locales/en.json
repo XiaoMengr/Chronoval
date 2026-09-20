@@ -1096,7 +1096,7 @@
           "default": "Default",
           "wheel": "Wheel",
           "compat": "Compatible",
-          "hint": "Default opens a random photo directly; Wheel uses a 3D wheel; Compatible uses a lightweight flip animation for low-end devices"
+          "hint": "Default opens a random photo directly; Wheel uses a 3D wheel; Compatible prefers the wheel but falls back to Default when the browser lacks 3D support"
         },
         "layoutWaterfall": "Waterfall",
         "layoutGrid": "Uniform grid",

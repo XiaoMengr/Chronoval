@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { motion } from 'motion-v'
 import AlbumUnlock from '~/components/albums/AlbumUnlock.vue'
+import { supportsWheel3D } from '~/utils/capability'
 
 const route = useRoute()
 const router = useRouter()
@@ -132,7 +133,8 @@ const handleOpenViewer = (index: number) => {
 
 // —— 随机一张照片 ——
 // 相簿在「编辑相簿 → 展示样式」配置「随机照片盒动画」模式：
-// default=直接随机打开一张照片；wheel=3D轮盘过渡页；compat=轻量兼容过渡页。
+// default=直接随机打开一张照片；wheel=3D轮盘过渡页；compat=优先 3D 轮盘，
+// 浏览器不支持 3D 时自动回退到 default（直接随机打开一张）。
 const randomMode = computed<'default' | 'wheel' | 'compat'>(() => {
   const v = (albumData.value as any)?.randomAnimation
   if (v === 'wheel' || v === 'compat') return v
@@ -144,12 +146,9 @@ const handleOpenRandom = () => {
   const photos = sortedAlbumPhotos.value
   if (!photos.length) return
   const mode = randomMode.value
-  if (mode === 'wheel') {
+  // compat：仅当浏览器支持 3D 轮盘时才走轮盘，否则回退到默认直接打开
+  if (mode === 'wheel' || (mode === 'compat' && supportsWheel3D())) {
     router.push(`/albums/${albumId.value}/random`)
-    return
-  }
-  if (mode === 'compat') {
-    router.push(`/albums/${albumId.value}/random-compat`)
     return
   }
   const idx = Math.floor(Math.random() * photos.length)

@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { ScanPhoto } from '~/components/albums/scanPhoto'
 import RandomPreviewOverlay from '~/components/albums/RandomPreviewOverlay.vue'
-import RandomCompatOverlay from '~/components/albums/RandomCompatOverlay.vue'
+import { supportsWheel3D } from '~/utils/capability'
 
 interface ScanChildNode {
   kind: 'scan'
@@ -168,7 +168,8 @@ const onViewerIndexChange = (index: number) => {
 
 // —— 随机一张照片 ——
 // 按相簿配置的「随机照片盒动画」模式选择过渡方式：
-// default=直接随机打开一张；wheel=3D轮盘覆盖层；compat=轻量兼容覆盖层。
+// default=直接随机打开一张；wheel=3D轮盘覆盖层；compat=优先 3D 轮盘，
+// 浏览器不支持时自动回退到 default（直接随机打开）。
 const randomMode = computed<'default' | 'wheel' | 'compat'>(() => {
   const v = (data.value?.node as any)?.randomAnimation
   if (v === 'wheel' || v === 'compat') return v
@@ -181,17 +182,20 @@ const randomTarget = ref(-1)
 
 const handleOpenRandom = (index: number) => {
   if (!data.value?.dirPhotos.length) return
+  const photos = data.value.dirPhotos
   const mode = randomMode.value
-  if (mode === 'default') {
-    // 直接随机打开一张照片（无过渡页）
-    const photos = data.value.dirPhotos
+  // default 直接随机打开一张（无过渡页）
+  const openDirect = () => {
     const idx = Math.floor(Math.random() * photos.length)
     openPhoto(idx)
+  }
+  // 只有显式选择 wheel 才强制轮盘；compat 在支持 3D 时才走轮盘
+  if (mode === 'wheel' || (mode === 'compat' && supportsWheel3D())) {
+    randomTarget.value = index
+    randomOpen.value = true
     return
   }
-  // wheel / compat：进入对应覆盖层动画
-  randomTarget.value = index
-  randomOpen.value = true
+  openDirect()
 }
 
 const handleRandomDone = (index: number) => {
@@ -590,17 +594,8 @@ watch(
       />
     </ClientOnly>
 
-    <!-- 随机照片盒动画：按模式渲染对应覆盖层（default 直接开图，不经由此处） -->
+    <!-- 随机照片盒动画：轮盘覆盖层（default 直接开图，不经由此处；compat 时会先做能力检测） -->
     <RandomPreviewOverlay
-      v-if="randomMode === 'wheel'"
-      :open="randomOpen"
-      :photos="data?.dirPhotos ?? []"
-      :target="randomTarget"
-      @done="handleRandomDone"
-      @cancel="handleRandomCancel"
-    />
-    <RandomCompatOverlay
-      v-else-if="randomMode === 'compat'"
       :open="randomOpen"
       :photos="data?.dirPhotos ?? []"
       :target="randomTarget"
