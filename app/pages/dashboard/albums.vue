@@ -110,6 +110,13 @@ const normalizeRandomAnimation = (d: any): 'default' | 'wheel' | 'compat' => {
   return 'default'
 }
 
+// 当前选中的「随机照片盒动画」模式下标（0/1/2），驱动胶囊滑动指示条 translateX
+const randomModeIndex = computed(() =>
+  ['default', 'wheel', 'compat'].indexOf(
+    (formData.randomAnimation as string) || 'default',
+  ),
+)
+
 // 相簿密码「按钮式开关」：是否开启访问密码（表单态）
 const passwordToggle = ref(false)
 const hasStoredPassword = computed(() => {
@@ -1093,8 +1100,8 @@ const openAlbum = (album: AlbumItem) => {
                   </UFormField>
                 </section>
 
-                <!-- 分区：公开访问 -->
-                <div class="my-5 h-px bg-neutral-100 dark:bg-neutral-800" />
+                <!-- 分区：公开访问（与基本信息一致：标题行内带头分隔线，去掉上方通栏线） -->
+                <div class="my-6" aria-hidden="true" />
                 <section class="space-y-4">
                   <header class="flex items-center gap-2 pt-1">
                     <p class="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">
@@ -1178,8 +1185,8 @@ const openAlbum = (album: AlbumItem) => {
                   </UFormField>
                 </section>
 
-                <!-- 分区：展示样式 -->
-                <div class="my-5 h-px bg-neutral-100 dark:bg-neutral-800" />
+                <!-- 分区：展示样式（与基本信息一致：标题行内带头分隔线，去掉上方通栏线） -->
+                <div class="my-6" aria-hidden="true" />
                 <section class="space-y-3">
                   <header class="flex items-center gap-2 pt-1">
                     <p class="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">
@@ -1266,27 +1273,35 @@ const openAlbum = (album: AlbumItem) => {
                         <p class="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">
                           {{ $t('dashboard.albums.form.randomAnimationHint') }}
                         </p>
-                        <!-- 胶囊分段选择器 -->
-                        <div class="mt-3 grid grid-cols-3 gap-1 rounded-full bg-neutral-100 p-1 dark:bg-neutral-800/70">
-                          <button
-                            v-for="opt in [
-                              { value: 'default', icon: 'tabler:player-pause', labelKey: 'dashboard.albums.form.randomMode.default' },
-                              { value: 'wheel', icon: 'tabler:rotate-3d', labelKey: 'dashboard.albums.form.randomMode.wheel' },
-                              { value: 'compat', icon: 'tabler:device-desktop', labelKey: 'dashboard.albums.form.randomMode.compat' },
-                            ]"
-                            :key="opt.value"
-                            type="button"
-                            class="flex items-center justify-center gap-1.5 rounded-full px-2 py-1.5 text-xs font-medium transition-all"
-                            :class="
-                              formData.randomAnimation === opt.value
-                                ? 'bg-white text-primary-700 shadow-sm ring-1 ring-neutral-200 dark:bg-neutral-950 dark:text-primary-300 dark:ring-neutral-700'
-                                : 'text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200'
-                            "
-                            @click="formData.randomAnimation = opt.value as 'default' | 'wheel' | 'compat'"
-                          >
-                            <Icon :name="opt.icon" class="size-3.5 shrink-0" />
-                            <span class="truncate">{{ $t(opt.labelKey) }}</span>
-                          </button>
+                        <!-- 胶囊分段选择器：带滑动指示胶囊的丝滑切换（translateX 动画，GPU 合成） -->
+                        <div class="mt-3 rounded-full bg-neutral-100 p-1 dark:bg-neutral-800/70">
+                          <div class="relative grid grid-cols-3 rounded-full">
+                            <!-- 滑动指示胶囊：平滑滑到选中项，不打断点击，纯 transform 动画最流畅 -->
+                            <span
+                              aria-hidden="true"
+                              class="pointer-events-none absolute inset-y-0 left-0 z-0 w-1/3 rounded-full bg-white shadow-sm ring-1 ring-neutral-200 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] dark:bg-neutral-950 dark:ring-neutral-700"
+                              :style="{ transform: `translateX(${Math.max(0, randomModeIndex) * 100}%)` }"
+                            />
+                            <button
+                              v-for="opt in [
+                                { value: 'default', icon: 'tabler:player-pause', labelKey: 'dashboard.albums.form.randomMode.default' },
+                                { value: 'wheel', icon: 'tabler:rotate-3d', labelKey: 'dashboard.albums.form.randomMode.wheel' },
+                                { value: 'compat', icon: 'tabler:device-desktop', labelKey: 'dashboard.albums.form.randomMode.compat' },
+                              ]"
+                              :key="opt.value"
+                              type="button"
+                              class="relative z-10 flex items-center justify-center gap-1.5 rounded-full px-2 py-1.5 text-xs font-medium transition-colors duration-300"
+                              :class="
+                                formData.randomAnimation === opt.value
+                                  ? 'text-primary-700 dark:text-primary-300'
+                                  : 'text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200'
+                              "
+                              @click="formData.randomAnimation = opt.value as 'default' | 'wheel' | 'compat'"
+                            >
+                              <Icon :name="opt.icon" class="size-3.5 shrink-0" />
+                              <span class="truncate">{{ $t(opt.labelKey) }}</span>
+                            </button>
+                          </div>
                         </div>
                         <p class="mt-2 text-xs text-neutral-400 dark:text-neutral-500">
                           {{ $t('dashboard.albums.form.randomMode.hint') }}
@@ -1296,8 +1311,8 @@ const openAlbum = (album: AlbumItem) => {
                   </UFormField>
                 </section>
 
-                <!-- 分区：访问控制 -->
-                <div class="my-5 h-px bg-neutral-100 dark:bg-neutral-800" />
+                <!-- 分区：访问控制（与基本信息一致：标题行内带头分隔线，去掉上方通栏线） -->
+                <div class="my-6" aria-hidden="true" />
                 <section class="space-y-4">
                   <header class="flex items-center gap-2 pt-1">
                     <p class="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">
