@@ -7,7 +7,7 @@ Chronoval 为**全栈单体**：前端页面与后端 API 由同一个 Nitro 服
 | 宿主机路径 | 容器路径 | 用途 | 读写 |
 | ---------- | -------- | ---- | ---- |
 | `./data` | `/app/data` | SQLite 数据库、上传照片原图、缩略图、日志 | 读写（持久化） |
-| `./data/storage` | `/app/storage` | **只读媒体库**，其下 `photos/`（图片）与 `videos/`（视频）放入即被自动识别 | 只读 |
+| `./storage` | `/app/storage` | **本地存储 + 缩略图回退**（纯存储、绝不自动扫描） | 读写（持久化） |
 | `./data/library` | `/app/library` | **本地扫描库**（分散相册，按容器内路径添加） | 读写 |
 
 > **本地目录即存储**：照片/视频目录是**只读映射**，你只要把文件放进 `/app/storage/photos`、`/app/storage/videos`，应用启动或定时扫描就会自动识别、生成缩略图并展示。**原文件绝不加密、绝不改写、绝不搬移**，始终留在你的目录里；也不需要通过后台上传。这就是"本地存储"式的用法，和 chronoframe 那种"必须上传才会被加密识别"的做法完全不同。
@@ -50,7 +50,7 @@ docker compose up -d
 ```yaml
 volumes:
   - ./data:/app/data
-  - /data/storage:/app/storage       # 本地存储 + 缩略图回退（纯存储，不扫描）
+  - ./storage:/app/storage       # 本地存储 + 缩略图回退（纯存储，不扫描）
   - /data/library:/app/library       # 外部扫描库根：一层目录一个相册
 ```
 
@@ -116,4 +116,4 @@ tar -czf chronoval-backup-$(date +%F).tar.gz ./data
 - **我把照片放进目录了但没显示？** 默认扫描间隔 5 分钟；可在 Dashboard 手动触发扫描，或把 `LIBRARY_SCAN_INTERVAL_MS` 调小。
 - **视频没有缩略图？** 确认镜像包含 ffmpeg（本仓库 Dockerfile 已内置），且视频格式受支持（mp4/mov/m4v/mkv/webm 等）。
 - **地图不显示？** 需配置 MapLibre/Mapbox 令牌；中国大陆网络可配置 `NUXT_NOMINATIM_BASE_URL` 为可用代理。
-- **上传照片报错？** 检查存储配置：本地存储需确认 `./data/storage` 可写；S3 需校验密钥与桶权限；同时可在后台 → 设置 → 系统 调整重复文件检测策略。
+- **上传照片报错？** 检查存储配置：本地存储需确认 `./storage` 可写；S3 需校验密钥与桶权限；同时可在后台 → 设置 → 系统 调整重复文件检测策略。

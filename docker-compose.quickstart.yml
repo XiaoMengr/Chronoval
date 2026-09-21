@@ -18,7 +18,7 @@ services:
       # 必需 1/2：数据库 + 会话密钥/配置（备份只需复制 ./data）
       - ./data:/app/data
       # 必需 2/2：上传照片 + 缩略图回退（纯存储，绝不自动扫描）
-      - ./data/storage:/app/storage
+      - ./storage:/app/storage
       # 可选：外部扫描库（需要时先 mkdir -p data/library，再取消下面注释）
       # - ./data/library:/app/library
     env_file:

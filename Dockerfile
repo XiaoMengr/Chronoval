@@ -48,7 +48,7 @@ COPY --from=build /usr/src/app/server/database/migrations ./server/database/migr
 EXPOSE 3000
 # 数据卷：SQLite 数据库 + 会话密钥/配置（程序运行目录）
 VOLUME ["/app/data"]
-# 存储卷（可选，用于持久化上传照片/缩略图）：运行时以 -v ./data/storage:/app/storage 挂载，
+# 存储卷（可选，用于持久化上传照片/缩略图）：运行时以 -v ./storage:/app/storage 挂载，
 # 该目录只作存储（上传照片落 photos/、缩略图回退落 thumbnails/），绝不自动扫描。
 # 外部扫描库需单独挂载并放至 /app/library 等目录，由用户显式添加。
 

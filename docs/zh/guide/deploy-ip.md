@@ -18,7 +18,7 @@ docker login ghcr.io --username XiaoMengr
 
 ```bash
 # 建好数据目录并准备环境文件
-mkdir -p data/storage/photos data/storage/videos
+mkdir -p storage/photos storage/videos
 cp .env.example .env            # 管理员账号/站点信息可在网页首次引导里填
 
 # 按你的局域网改 docker-compose.ip.yml 里四处（文件内有注释标明）：

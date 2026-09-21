@@ -17,7 +17,7 @@
   <img alt="license" src="https://img.shields.io/badge/License-MIT-blue">
 </p>
 
-照片 / 视频放进 `data/storage` 下的对应目录即被自动识别；WebGL 高清查看、Exif 信息、地图浏览、分享链接，管理后台一键搞定。
+照片 / 视频上传即展示，放入外部扫描库即被自动识别；WebGL 高清查看、Exif 信息、地图浏览、分享链接，管理后台一键搞定。
 
 ## 特性
 

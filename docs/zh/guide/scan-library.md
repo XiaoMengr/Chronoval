@@ -15,7 +15,7 @@
 ```yaml
 volumes:
   - ./data:/app/data              # 程序运行目录：SQLite + 配置
-  - ./data/storage:/app/storage   # 本地存储+缩略图回退（纯存储、不扫描）
+  - ./storage:/app/storage   # 本地存储+缩略图回退（纯存储、不扫描）
   - ./data/library:/app/library   # 外部扫描库根：一层目录一个相册
 ```
 
