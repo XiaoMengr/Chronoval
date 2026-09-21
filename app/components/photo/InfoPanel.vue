@@ -67,12 +67,17 @@ const sheetStyle = computed(() =>
     : {},
 )
 
-// 面板被打开/关闭时复位到「半高」起始位置（关闭即隐藏、重开回到 50%）
+// 面板被打开/关闭时复位到「半高」起始位置（关闭即隐藏、重开回到 50%）。
+// immediate：照片切换会因 :key 重挂载整个组件，若此时面板已打开（visible 已为 true），
+// 挂载不会触发 change 回调，sheetHeight 会停留在初始 0 —— 首次轻触上滑会瞬间冲到满卡高，
+// 且满卡后内容区被锁定、仅顶部细窄把手能收矮，表现即为「卡片直接跳到顶部、滑不下来」。
+// 立即执行保证每次挂载都复位到半高起始位置。
 watch(
   () => props.visible,
   (v) => {
     if (isMobile.value && v) sheetHeight.value = PEEK_H()
   },
+  { immediate: true },
 )
 
 // 整张卡片在「未拉满」前任意位置可上滑撑高/下拉收矮（区别于仅中间白线可拖）：
@@ -116,10 +121,69 @@ function onSheetUp() {
   }
 }
 
+// ===== 满卡后内容区的「下拉收矮」兜底 =====
+// 满卡高度下内容区为原生内部滚动（touch-action: pan-y）。此时顶部把手虽然也能收矮，
+// 但用户手指往往按在内容区上，若内容已滚动到顶部仍继续下拉，会被识别为「滑不下来」。
+// 这里在内容区监听 touch：仅当（内容区 scrollTop === 0 且手指再往下拉）时接管为整卡收矮；
+// 其余情况（内容可滚动 / 向上滚）一律放行给原生滚动，二者互不干扰。
+const contentEl = ref<HTMLElement | null>(null)
+let contentTouchStartY = 0
+let contentStartScrollTop = 0
+let contentPull = false
+
+function onContentTouchStart(e: TouchEvent) {
+  if (!isMobile.value || !props.visible || !sheetAtMax.value) return
+  const el = contentEl.value
+  if (!el) return
+  contentStartScrollTop = el.scrollTop
+  contentTouchStartY = e.touches[0].clientY
+  contentPull = false
+}
+
+function onContentTouchMove(e: TouchEvent) {
+  if (!isMobile.value || !props.visible || !sheetAtMax.value || !contentEl.value)
+    return
+  const dy = e.touches[0].clientY - contentTouchStartY
+  // 内容已在顶部且继续下拉：拦截原生滚动，改为整卡收矮
+  if (contentStartScrollTop <= 0 && dy > 4) {
+    if (e.cancelable) e.preventDefault()
+    contentPull = true
+    const next = FULL_H() - dy
+    sheetHeight.value = Math.max(PEEK_H(), Math.min(FULL_H(), next))
+  }
+}
+
+function onContentTouchEnd() {
+  if (!contentPull) return
+  contentPull = false
+  const PEEK = PEEK_H()
+  sheetHeight.value =
+    sheetHeight.value >= (PEEK + FULL_H()) / 2 ? FULL_H() : PEEK
+}
+
+// touchmove 需要非被动监听才能在拦截下拉时 preventDefault（阻止原生滚动抢占）
+onMounted(() => {
+  const el = contentEl.value
+  if (!el) return
+  el.addEventListener('touchstart', onContentTouchStart, { passive: true })
+  el.addEventListener('touchmove', onContentTouchMove, { passive: false })
+  el.addEventListener('touchend', onContentTouchEnd, { passive: true })
+  el.addEventListener('touchcancel', onContentTouchEnd, { passive: true })
+})
+function teardownContentTouch() {
+  const el = contentEl.value
+  if (!el) return
+  el.removeEventListener('touchstart', onContentTouchStart)
+  el.removeEventListener('touchmove', onContentTouchMove)
+  el.removeEventListener('touchend', onContentTouchEnd)
+  el.removeEventListener('touchcancel', onContentTouchEnd)
+}
+
 onBeforeUnmount(() => {
   window.removeEventListener('pointermove', onSheetMove)
   window.removeEventListener('pointerup', onSheetUp)
   window.removeEventListener('pointercancel', onSheetUp)
+  teardownContentTouch()
 })
 
 // 面板显隐由 visible 驱动（常驻挂载预热数据，仅切换可见性/位置）。
@@ -486,6 +550,7 @@ const onAlbumClick = (albumId: number) => {
     <!-- 内容区域：移动端「拉满前」锁定并由整卡手势拉伸；「拉满后」切换为内部滚动
          可继续查看底部信息（含地理位置小地图）。桌面端始终常规滚动 -->
     <div
+      ref="contentEl"
       class="min-h-0 flex-1 px-4 pb-4 content-fade"
       :class="[
         props.visible ? 'content-fade-in' : '',
