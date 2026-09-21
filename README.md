@@ -43,10 +43,7 @@ docker compose up -d
 # 4. 打开 http://localhost:3000，按向导设置管理员
 ```
 
-媒体库照片放入 `data/storage/photos`、视频放入 `data/storage/videos` 即被自动识别。
-
-> 想用固定版本，将 `docker-compose.yml` 的 `image` 改为 `ghcr.io/xiaomengr/chronoval:1.0.0.4`。
-> 从源码自己编译时才用 `docker compose up -d --build`。
+媒体文件存储在挂载目录中：`data/storage/photos` 为照片目录、`data/storage/videos` 为视频目录，目录内的支持格式媒体会自动被识别展示。
 
 ## 文档导航
 

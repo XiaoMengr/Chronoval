@@ -37,9 +37,9 @@ cp .env.quickstart.example .env
 | 会话密钥 | 未设置时自动生成并持久化，无需手动 `openssl` |
 | 本地存储/媒体库路径 | 已固化在镜像内，无需配置 |
 
-## 我想放自己的照片
+## 我想把照片存进项目库
 
-把照片放进 `./data/storage/photos`、视频放进 `./data/storage/videos`，应用会自动扫描识别（原文件只读，不会被改动）。注意这些子目录在 `./data` 挂载内。
+`./data/storage/photos` 是照片存储目录、`./data/storage/videos` 是视频存储目录，把已有文件拷贝进去，应用会自动扫描识别（原文件只读，不会被改动）。注意这两个目录都在 `./data` 挂载内。
 
 ```bash
 mkdir -p data/storage/photos data/storage/videos
