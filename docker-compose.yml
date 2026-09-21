@@ -26,7 +26,8 @@ name: chronoval
 #   1) mkdir -p data/storage/photos data/storage/videos
 #   2) cp .env.example .env 并按需编辑（至少设置 NUXT_SESSION_PASSWORD）
 #   3) 把照片放入 data/storage/photos，视频放入 data/storage/videos
-#   4) docker compose up -d --build
+#   4) docker compose up -d （默认拉取 GHCR 已构建镜像 ghcr.io/xiaomengr/chronoval:latest）
+#      仅当你想从源码自己构建时才用：docker compose up -d --build
 #   5) 打开 http://localhost:3000
 
 services:
@@ -34,7 +35,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: chronoval:latest
+    image: ghcr.io/xiaomengr/chronoval:latest
     container_name: chronoval
     restart: unless-stopped
     ports:

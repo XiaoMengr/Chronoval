@@ -12,9 +12,10 @@ Chronoval 为**全栈单体**：前端页面与后端 API 由同一个 Nitro 服
 
 > **本地目录即存储**：照片/视频目录是**只读映射**，你只要把文件放进 `/app/storage/photos`、`/app/storage/videos`，应用启动或定时扫描就会自动识别、生成缩略图并展示。**原文件绝不加密、绝不改写、绝不搬移**，始终留在你的目录里；也不需要通过后台上传。这就是"本地存储"式的用法，和 chronoframe 那种"必须上传才会被加密识别"的做法完全不同。
 
-## 方式一：docker compose 一键启动（推荐）
+## 方式一：docker compose 一键启动（推荐，默认拉取已构建镜像）
 
-`docker-compose.yml` 默认把宿主机的 `/data/photos`、`/data/videos` 挂到容器内只读目录。首次使用前先创建这两个目录：
+拿现成镜像，直拉即用，无需编译：
+`docker-compose.yml` 默认使用 GHCR 已构建镜像 `ghcr.io/xiaomengr/chronoval:latest`（`docker compose up -d` 会自动拉取）。首次使用前先创建媒体库目录：
 
 ```bash
 cp .env.example .env
@@ -31,12 +32,16 @@ mkdir -p data/storage/photos data/storage/videos
 cp ~/photos/*.jpg data/storage/photos/
 cp ~/videos/*.mp4 data/storage/videos/
 
-docker compose up -d --build
+# 3. 启动：默认从 GHCR 拉取已构建镜像（首次会自动 pull latest）
+docker compose up -d
 ```
 
 - 服务端口：`3000:3000`（改端口只改 `ports` 左侧即可）
+- 镜像来源：`ghcr.io/xiaomengr/chronoval:latest`（由 GitHub Actions 自动构建推送；可改 tag 固定到某版本，如 `1.0.0.4`）
 - 本地存储路径、媒体库目录等默认值已固化在镜像内（见 `Dockerfile ENV`），无需在 compose 中重复配置，需要时再在 `.env` 覆盖
 - 首次启动会自动扫描 `/app/storage/photos`、`/app/storage/videos` 并生成缩略图（间隔默认 5 分钟，可用 `LIBRARY_SCAN_INTERVAL_MS` 调整）
+
+> 从源码本地构建只是**可选**：想自己编译时改用 `docker compose up -d --build`（会用仓库内 Dockerfile 构建本地镜像）。日常上线直接用上面的远程拉取即可。
 
 ### 使用自定义目录映射
 
@@ -54,8 +59,9 @@ volumes:
 ### 升级
 
 ```bash
-docker compose pull          # 若使用预构建镜像
-docker compose up -d --build # 若从源码构建
+docker compose pull          # 拉取最新镜像（默认远程镜像，无需 --build）
+docker compose up -d
+# 只有从源码本地构建时才用：docker compose up -d --build
 ```
 
 ## 方式二：预构建镜像
@@ -77,13 +83,11 @@ docker run -d --name chronoval -p 3000:3000 \
 仓库已内置 `.github/workflows/publish-images.yml`，触发时机：
 
 - 推送 `v*` 标签（生成对应版本镜像与 GitHub Release 草稿）
-- 同时在 GHCR 与 Docker Hub 推送（多架构 `linux/amd64`, `linux/arm64`）
+- 仅推送到 GHCR（多架构 `linux/amd64`, `linux/arm64`）
 
-### 前置要求（针对 Docker Hub，可选）
+### 前置要求
 
 1. **GHCR**：使用 Actions 内置的 `GITHUB_TOKEN`（`packages: write`）即可推送，无需额外配置。
-2. **Docker Hub（可选）**：仅在要同步到 Docker Hub 时才需要仓库 Secrets：
-   - `DOCKERHUB_USERNAME` 与 `DOCKERHUB_TOKEN`（登录 Docker Hub 推送）。
 
 ### 触发发布
 
@@ -94,7 +98,7 @@ git tag v1.0.0
 git push github v1.0.0
 ```
 
-> 在 GitHub → Actions → 对应运行记录中可看到 `ghcr.io/xiaomengr/chronoval:<tag>` 的推送结果；已推送的镜像可在 GitHub → 你的头像 → 你的仓库包（Packages）查看。
+> 在 GitHub → Actions → 对应运行记录中可看到 `ghcr.io/xiaomengr/chronoval:<tag>` 的推送结果；已推送的镜像可在 GitHub → 你的头像 → 你的仓库包（Packages）查看。注意镜像版本 tag 是去掉 `v` 前缀的（如 `v1.0.0.4` 标签对应镜像 `ghcr.io/xiaomengr/chronoval:1.0.0.4`）。
 
 ## 数据备份
 
