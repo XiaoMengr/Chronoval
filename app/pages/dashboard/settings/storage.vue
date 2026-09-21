@@ -1086,14 +1086,6 @@ const storageInfoConfigEntries = computed(() => {
                     <span class="truncate font-medium text-neutral-900 dark:text-neutral-100">
                       {{ lib.name }}
                     </span>
-                    <USwitch
-                      v-model="lib.enabled"
-                      size="sm"
-                      class="shrink-0"
-                      :loading="scanTogglingId === lib.id"
-                      :disabled="scanTogglingId !== null"
-                      @change="onScanLibraryToggle(lib)"
-                    />
                   </div>
 
                   <p class="mt-1.5 flex items-center gap-1.5 truncate text-sm text-neutral-500 dark:text-neutral-400">
@@ -1115,8 +1107,22 @@ const storageInfoConfigEntries = computed(() => {
                   </div>
                 </div>
 
-                <!-- 右侧/下方：操作按钮 -->
+                <!-- 右侧/下方：启停开关 + 操作按钮 -->
                 <div class="flex shrink-0 flex-wrap items-center gap-2 sm:flex-nowrap">
+                  <USwitch
+                    v-model="lib.enabled"
+                    size="sm"
+                    color="success"
+                    :loading="scanTogglingId === lib.id"
+                    :disabled="scanTogglingId !== null"
+                    @change="onScanLibraryToggle(lib)"
+                  />
+
+                  <span
+                    class="hidden h-4 w-px bg-neutral-200 dark:bg-neutral-700 sm:block"
+                    aria-hidden="true"
+                  />
+
                   <UTooltip :text="$t('settings.storage.scanLibrary.messages.scanned')">
                     <UButton
                       size="sm"
