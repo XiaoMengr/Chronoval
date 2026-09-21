@@ -5,10 +5,6 @@ useHead({
 
 const { photos } = usePhotos()
 
-// 照片风骨架屏：进入画廊时的加载画面品牌名（跟随站点标题，兜底 Chronoval）
-const appTitle = useSettingRef('app:title')
-const loaderTitle = computed(() => appTitle.value || 'Chronoval')
-
 // 后台可自定义的三张加载卡片图片（app:loader.images，string[]）
 // 为空时回退到卡片样式（液态玻璃 / 拟物化）的内置图形
 const loaderImagesSetting = useSettingRef('app:loader.images')
@@ -60,7 +56,7 @@ const cardSrcAt = (i: number) =>
           columns="auto"
         />
         <template #fallback>
-          <!-- 照片风骨架屏：品牌胶囊 + 两张长方形玻璃相框层层叠叠 -->
+          <!-- 照片风骨架屏：三张长方形玻璃相框层层叠叠 -->
           <div
             class="gallery-loader pointer-events-none fixed inset-0 flex flex-col items-center justify-center"
             role="status"
@@ -68,11 +64,6 @@ const cardSrcAt = (i: number) =>
           >
             <!-- 柔和环境光晕 -->
             <div class="loader-halo" aria-hidden="true" />
-
-            <!-- 品牌玻璃胶囊：大间距标题文字流光 -->
-            <div class="loader-brand" aria-hidden="true">
-              <span class="loader-brand-text">{{ loaderTitle }}</span>
-            </div>
 
             <!-- 三张长方形相框：左右错开，轮流叠到对方上面，像收发照片一样轮回 -->
             <div class="loader-cards" :class="{ 'loader-cards--fan': isFan, 'loader-cards--skeuo': isSkeuo }" aria-hidden="true">
@@ -173,65 +164,6 @@ const cardSrcAt = (i: number) =>
   50% {
     opacity: 0.9;
     transform: translateY(-12px) scale(1.06);
-  }
-}
-
-/* 品牌玻璃胶囊：脉冲光点 + 大间距标题文字流光 */
-.loader-brand {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 22px;
-  margin-bottom: clamp(30px, 5vh, 48px);
-  border-radius: 999px;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  backdrop-filter: blur(22px) saturate(150%);
-  -webkit-backdrop-filter: blur(22px) saturate(150%);
-  box-shadow:
-    0 14px 44px -14px color-mix(in srgb, var(--glass-text) 26%, transparent),
-    inset 0 1px 0 color-mix(in srgb, var(--glass-text) 12%, transparent);
-  animation: loader-brand-fade 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-@keyframes loader-brand-fade {
-  from {
-    opacity: 0;
-    transform: translateY(12px) scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.loader-brand-text {
-  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-  font-size: 14px;
-  font-weight: 650;
-  letter-spacing: 0.38em;
-  text-transform: uppercase;
-  background-image: linear-gradient(
-    110deg,
-    var(--glass-muted) 28%,
-    color-mix(in srgb, var(--glass-text) 92%, transparent) 48%,
-    var(--glass-muted) 60%
-  );
-  background-size: 220% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: loader-text-shine 2.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-}
-
-@keyframes loader-text-shine {
-  0% {
-    background-position: 180% 0;
-  }
-  55%,
-  100% {
-    background-position: -40% 0;
   }
 }
 
@@ -580,8 +512,6 @@ const cardSrcAt = (i: number) =>
 /* 尊重系统的减少动效偏好 */
 @media (prefers-reduced-motion: reduce) {
   .loader-halo,
-  .loader-brand,
-  .loader-brand-text,
   .loader-card,
   .loader-cards--fan .loader-card,
   .loader-card::before,
