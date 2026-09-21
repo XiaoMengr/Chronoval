@@ -25,10 +25,10 @@ The documentation is still being written; some sections may be incomplete.
 
 ### Pull Image
 
-Chronoval is built and published to your private Gitea's built‑in Container Registry by the included Gitea Actions workflow. Pull it from the internal registry (add `172.16.0.1:322` to Docker's `insecure-registries` if the registry is plain HTTP):
+Chronoval is built and published to the GitHub Container Registry (GHCR) by the included GitHub Actions workflow. Pull it from GHCR (log in with `docker login ghcr.io` if the image is not public):
 
 ```bash
-docker pull 172.16.0.1:322/xiaomengr/chronoval:latest
+docker pull ghcr.io/xiaomengr/chronoval:latest
 ```
 
 ### Create `.env`
@@ -103,7 +103,7 @@ docker run -d \
   -v /data/photos:/app/photos:ro \
   -v /data/videos:/app/videos:ro \
   --env-file .env \
-  172.16.0.1:322/xiaomengr/chronoval:latest
+  ghcr.io/xiaomengr/chronoval:latest
 ```
 
 ### Docker Compose
@@ -113,7 +113,7 @@ Create `docker-compose.yml`:
 ```yaml
 services:
   chronoval:
-    image: 172.16.0.1:322/xiaomengr/chronoval:latest
+    image: ghcr.io/xiaomengr/chronoval:latest
     container_name: chronoval
     restart: unless-stopped
     ports:
@@ -198,7 +198,7 @@ server {
 ```yaml
 services:
   chronoval:
-    image: 172.16.0.1:322/xiaomengr/chronoval:latest
+    image: ghcr.io/xiaomengr/chronoval:latest
     container_name: chronoval
     restart: unless-stopped
     volumes:

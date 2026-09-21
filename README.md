@@ -59,7 +59,7 @@ docker compose up -d --build
 | 用户指南 | 安装 / 升级 / 隐藏功能 | [docs/guide/updates.md](docs/guide/updates.md) |
 | 完整文档站 | 全部文档索引 | [docs/index.md](docs/index.md) |
 
-> 镜像通过内置 Gitea Actions 自动构建推送至内网注册表：`172.16.0.1:322/xiaomengr/chronoval:latest`（`docker pull` 即可获取），对应稳定版 tag `172.16.0.1:322/xiaomengr/chronoval:1.0.0.4`。
+> 镜像通过内置 Gitea Actions 自动构建推送至内网注册表：`ghcr.io/xiaomengr/chronoval:latest`（`docker pull` 即可获取），对应稳定版 tag `ghcr.io/xiaomengr/chronoval:1.0.0.4`。
 
 ## 许可证
 

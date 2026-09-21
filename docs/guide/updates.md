@@ -66,7 +66,7 @@ If you need to update to a specific version:
 # docker-compose.yml
 services:
   chronoval:
-    image: 172.16.0.1:322/xiaomengr/chronoval:latest # specify a tag if needed
+    image: ghcr.io/xiaomengr/chronoval:latest # specify a tag if needed
     # ... other configurations
 ```
 
@@ -82,7 +82,7 @@ docker stop chronoval
 docker rm chronoval
 
 # Pull latest image
-docker pull 172.16.0.1:322/xiaomengr/chronoval:latest
+docker pull ghcr.io/xiaomengr/chronoval:latest
 
 # Start new container with same configuration
 docker run -d \
@@ -92,7 +92,7 @@ docker run -d \
   -v /data/photos:/app/photos:ro \
   -v /data/videos:/app/videos:ro \
   --env-file .env \
-  172.16.0.1:322/xiaomengr/chronoval:latest
+  ghcr.io/xiaomengr/chronoval:latest
 ```
 
 ## Database Migration

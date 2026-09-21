@@ -1,6 +1,6 @@
 # 部署指南
 
-Chronoval 为**全栈单体**：前端页面与后端 API 由同一个 Nitro 服务托管，因此一个 Docker 容器即可完成部署。本页覆盖标准部署、**只读媒体库目录映射**，以及通过 Gitea Actions 自动构建镜像三种场景。
+Chronoval 为**全栈单体**：前端页面与后端 API 由同一个 Nitro 服务托管，因此一个 Docker 容器即可完成部署。本页覆盖标准部署、**只读媒体库目录映射**，以及通过 GitHub Actions 自动构建镜像三种场景。
 
 ## 目录结构（理解映射关系）
 
@@ -60,48 +60,41 @@ docker compose up -d --build # 若从源码构建
 
 ## 方式二：预构建镜像
 
-工作流构建后会推送到 Gitea 内置容器注册表（内网地址），可直接拉取运行：
+工作流构建后会推送镜像到 GitHub 容器镜像仓库（GHCR），可直接拉取运行：
 
 ```bash
 docker run -d --name chronoval -p 3000:3000 \
   -v $(pwd)/data:/app/data \
   -v /data/media:/app/storage:ro \
   --env-file .env \
-  172.16.0.1:322/xiaomengr/chronoval:latest
+  ghcr.io/xiaomengr/chronoval:latest
 ```
 
-> 注册表为内网 HTTP 地址，部署机需将 `172.16.0.1:322` 加入 Docker 的 `insecure-registries` 才能拉取。完整镜像地址（用户级命名空间）为 `172.16.0.1:322/xiaomengr/chronoval:latest`。镜像归属你的用户（owner）命名空间，可在 Gitea 右上角头像 → 你的用户名 → 「软件包」中查看；Gitea 容器镜像不支持绑定到仓库命名空间。
+> 镜像是 HTTPS 的 GHCR 地址，无需配置 `insecure-registries`。若镜像未设为公开，需先 `docker login ghcr.io --username XiaoMengr` 并按提示输入 GitHub 访问令牌（PAT，权限 `read:packages`）。
 
-## 通过 Gitea Actions 自动构建镜像
+## 通过 GitHub Actions 自动构建镜像
 
-仓库已内置 `.gitea/workflows/docker-build.yml`，触发时机：
+仓库已内置 `.github/workflows/publish-images.yml`，触发时机：
 
-- 推送 `main` 分支（生成 `latest` 标签）
-- 推送 `v*` 标签
-- 手动触发（Actions → Run workflow）
+- 推送 `v*` 标签（生成对应版本镜像与 GitHub Release 草稿）
+- 同时在 GHCR 与 Docker Hub 推送（多架构 `linux/amd64`, `linux/arm64`）
 
-### 前置要求
+### 前置要求（针对 Docker Hub，可选）
 
-1. **启用 Gitea Actions**：在 Gitea 管理台开启 Actions，并注册 Runner（推荐 `act_runner`，`DOCKER_MODE` 为 docker）。
-2. **内网连通**：Runner 需能访问内网地址 `172.16.0.1:322`（Gitea 服务与 Container 注册表）。
-3. **容器注册表**：Gitea 需开启 Package 注册表，用户/组织有推送权限。
-4. **Token 权限**：工作流使用 `secrets.GITHUB_TOKEN` 推送镜像并上传离线资源；需具备 **write:package + write contents** 权限。
+1. **GHCR**：使用 Actions 内置的 `GITHUB_TOKEN`（`packages: write`）即可推送，无需额外配置。
+2. **Docker Hub（可选）**：仅在要同步到 Docker Hub 时才需要仓库 Secrets：
+   - `DOCKERHUB_USERNAME` 与 `DOCKERHUB_TOKEN`（登录 Docker Hub 推送）。
 
-### 离线资源（版本下载）
+### 触发发布
 
-为保证内网/离线环境构建可用，工作流会把**离线构建资源压缩包**作为 Release 附件上传到仓库的**版本下载**里：
+打一个 `v*` 标签即可触发完整构建并生成镜像与 Release：
 
-- Release 标签：`build-offline-assets`
-- 附件：`chronoval-src.tar.gz`（源码快照，供离线构建）
-- 后续构建可优先从该 Release 附件下载，避免依赖外网源
+```bash
+git tag v1.0.0
+git push github v1.0.0
+```
 
-### 可选 Secrets
-
-| Secret | 默认值 | 说明 |
-| ------ | ------ | ---- |
-| `GITEA_SERVER_URL` | `http://172.16.0.1:322` | 内网 Gitea 地址/注册表地址 |
-| `GITEA_OWNER` | 仓库 owner | 镜像/Release 归属 |
-| `GITEA_API_TOKEN` | 用 `GITHUB_TOKEN` | 上传 Release 附件的 API Token |
+> 在 GitHub → Actions → 对应运行记录中可看到 `ghcr.io/xiaomengr/chronoval:<tag>` 的推送结果；已推送的镜像可在 GitHub → 你的头像 → 你的仓库包（Packages）查看。
 
 ## 数据备份
 

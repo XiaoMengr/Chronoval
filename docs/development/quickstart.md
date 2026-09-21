@@ -43,7 +43,7 @@ chronoval/
 ├── shared/               # 共享类型与工具
 ├── Dockerfile            # 多阶段 Docker 构建
 ├── docker-compose.yml    # 一键启动
-└── .gitea/workflows/     # Gitea Actions：自动构建 Docker 镜像
+└── .github/workflows/    # GitHub Actions：自动构建并推送 Docker 镜像（GHCR）
 ```
 
 > 更深入的后端开发指引见 [API 开发](api.md)、[贡献指南](contributing.md)、[如何新增设置项](how-to-add-setting.md)。

@@ -25,10 +25,10 @@
 
 ### 拉取镜像
 
-Chronoval 由内置的 Gitea Actions 工作流自动构建并推送到你的私有 Gitea 内置容器注册表。从内网注册表拉取（若注册表为 HTTP，需将 `172.16.0.1:322` 加入 Docker 的 `insecure-registries`）：
+Chronoval 由内置的 GitHub Actions 工作流自动构建并推送到 GitHub 容器镜像仓库（GHCR）。从 GHCR 拉取（镜像非公开时先 `docker login ghcr.io`）：
 
 ```bash
-docker pull 172.16.0.1:322/xiaomengr/chronoval:latest
+docker pull ghcr.io/xiaomengr/chronoval:latest
 ```
 
 ### 创建配置文件
@@ -103,7 +103,7 @@ docker run -d --name chronoval -p 3000:3000 \
   -v /data/photos:/app/photos:ro \
   -v /data/videos:/app/videos:ro \
   --env-file .env \
-  172.16.0.1:322/xiaomengr/chronoval:latest
+  ghcr.io/xiaomengr/chronoval:latest
 ```
 
 ### Docker Compose 部署
@@ -115,7 +115,7 @@ docker run -d --name chronoval -p 3000:3000 \
 ```yaml
 services:
   chronoval:
-    image: 172.16.0.1:322/xiaomengr/chronoval:latest
+    image: ghcr.io/xiaomengr/chronoval:latest
     container_name: chronoval
     restart: unless-stopped
     ports:
@@ -214,7 +214,7 @@ server {
 ```yaml
 services:
   chronoval:
-    image: 172.16.0.1:322/xiaomengr/chronoval:latest
+    image: ghcr.io/xiaomengr/chronoval:latest
     container_name: chronoval
     restart: unless-stopped
     volumes:

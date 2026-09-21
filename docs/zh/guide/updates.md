@@ -66,7 +66,7 @@ docker-compose logs -f chronoval
 # docker-compose.yml
 services:
   chronoval:
-    image: 172.16.0.1:322/xiaomengr/chronoval:latest # 按需指定版本
+    image: ghcr.io/xiaomengr/chronoval:latest # 按需指定版本
     # ... 其他配置
 ```
 
@@ -82,7 +82,7 @@ docker stop chronoval
 docker rm chronoval
 
 # 拉取最新镜像
-docker pull 172.16.0.1:322/xiaomengr/chronoval:latest
+docker pull ghcr.io/xiaomengr/chronoval:latest
 
 # 使用相同配置启动新容器
 docker run -d \
@@ -92,7 +92,7 @@ docker run -d \
   -v /data/photos:/app/photos:ro \
   -v /data/videos:/app/videos:ro \
   --env-file .env \
-  172.16.0.1:322/xiaomengr/chronoval:latest
+  ghcr.io/xiaomengr/chronoval:latest
 ```
 
 ## 数据库迁移

@@ -7,7 +7,7 @@ name: chronoval
 # 是你这套 OVS 环境最可靠的部署方式（不依赖 macvlan 物理网卡）。
 #
 # 本文件【不开本地编译】，直接用内网 Gitea 注册表现成镜像：
-#   镜像地址：172.16.0.1:322/xiaomengr/chronoval:<tag>
+#   镜像地址：ghcr.io/xiaomengr/chronoval:<tag>
 #     · latest   = 最新主分支构建（持续更新）
 #     · 1.0.0.4  = 稳定版（对应 git tag v1.0.0.4）
 #
@@ -19,7 +19,7 @@ name: chronoval
 services:
   chronoval:
     # 直接使用内网 Gitea 注册表现成镜像（不本地编译）
-    image: 172.16.0.1:322/xiaomengr/chronoval:latest
+    image: ghcr.io/xiaomengr/chronoval:latest
     container_name: chronoval
     restart: unless-stopped
     env_file:

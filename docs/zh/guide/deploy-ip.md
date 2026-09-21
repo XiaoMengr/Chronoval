@@ -2,17 +2,14 @@
 
 不想占用宿主机端口、想让 Chronoval 在局域网拥有**自己独立的 IP**，通过 **macvlan** 网络给容器分配专属 IP，浏览器访问 `http://<独立IP>:3000` 即可，行为如同一台局域网内独立的小主机。
 
-本方案**不做本地编译**，直接用内网 Gitea 注册表现成镜像 `172.16.0.1:322/xiaomengr/chronoval:<tag>`（`latest`=最新主分支构建；`1.0.0.4`=稳定版），改几个参数即可秒起。完整配置文件见根目录 [`docker-compose.ip.yml`](../../../docker-compose.ip.yml)。
+本方案**不做本地编译**，直接用 GitHub 容器镜像（GHCR）现成镜像 `ghcr.io/xiaomengr/chronoval:<tag>`（`latest`=最新主分支构建；`1.0.0.4`=稳定版），改几个参数即可秒起。完整配置文件见根目录 [`docker-compose.ip.yml`](../../../docker-compose.ip.yml)。
 
 ## 一次性准备
 
 ```bash
-# 1. 让 Docker 信任内网 http 镜像仓库（编辑 /etc/docker/daemon.json，再重启 docker）
-#    { "insecure-registries": ["172.16.0.1:322"] }
-#    sudo systemctl restart docker
-
-# 2. 登录内网仓库（镜像非公开时需要）
-docker login 172.16.0.1:322 --username <你的Gitea用户名>
+# 1. 登录 GitHub 容器镜像仓库（GHCR，HTTPS，无需 insecure-registries）
+docker login ghcr.io --username XiaoMengr
+#    按提示输入 GitHub 访问令牌（PAT，需 `read:packages`；如镜像设为公开则无需登录）
 ```
 
 ## 启动
