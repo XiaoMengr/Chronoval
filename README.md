@@ -28,27 +28,33 @@
 - **地图浏览**：MapLibre / Mapbox 聚合拍摄位置，反向地理编码识别城市
 - **管理后台**：相册 / 上传队列 / 实时日志 / 系统监控 / 日历热图
 
-## 快速开始
+## 快速开始（推荐：直接拉取已构建镜像，无需编译）
+
+镜像已由 GitHub Actions 自动构建并推送至 **GHCR**，几行命令即可跑起来：
 
 ```bash
-# 1. 复制并填写 .env（首次安装也可在网页引导向导里填）
+# 1. 复制环境变量模板并填写（管理账号、站点标题等；留空也能在网页向导里填）
 cp .env.example .env
 
-# 2. 建好媒体库目录
+# 2. 建好媒体库目录（照片/视频放进即自动识别）
 mkdir -p data/storage/photos data/storage/videos
 
-# 3. 启动（默认 http://localhost:3000）
-docker compose up -d --build
+# 3. 启动：默认拉取 ghcr.io/xiaomengr/chronoval:latest 镜像（首次会自动 pull）
+docker compose up -d
+
+# 4. 打开浏览器 http://localhost:3000，按「首次运行向导」设置管理员即可
 ```
 
-首次启动会自动完成数据库迁移并进入安装向导；媒体库照片放入 `data/storage/photos`、视频放入 `data/storage/videos` 即被自动识别。
+首次启动会自动拉取镜像、完成数据库迁移并进入安装向导；媒体库照片放入 `data/storage/photos`、视频放入 `data/storage/videos` 即被自动识别。
 
-如需直接使用镜像（不本地编译）或独立 IP 方式，见下方文档导航。
+> 想用某个固定版本？改一行：`docker compose.yml` 里 `image: ghcr.io/xiaomengr/chronoval:1.0.0.4`（去掉 `v` 前缀）。
+> 只有你想**从源码自己编译**时才用：`docker compose up -d --build`。
 
 ## 文档导航
 
 | 主题 | 说明 | 文档 |
 | --- | --- | --- |
+| 一分钟启动 | 面向同事的极简 3 步部署 | [docs/quickstart-deploy.md](docs/quickstart-deploy.md) |
 | 快速上手 | 安装、配置、升级 | [docs/guide/getting-started.md](docs/guide/getting-started.md) |
 | 部署指南 | Docker / 镜像 / 目录映射 / 备份 | [docs/deployment.md](docs/deployment.md) |
 | 独立 IP 访问 | macvlan 网络，容器拥有专属 IP | [docs/zh/guide/deploy-ip.md](docs/zh/guide/deploy-ip.md) |
@@ -59,7 +65,7 @@ docker compose up -d --build
 | 用户指南 | 安装 / 升级 / 隐藏功能 | [docs/guide/updates.md](docs/guide/updates.md) |
 | 完整文档站 | 全部文档索引 | [docs/index.md](docs/index.md) |
 
-> 镜像通过内置 Gitea Actions 自动构建推送至内网注册表：`ghcr.io/xiaomengr/chronoval:latest`（`docker pull` 即可获取），对应稳定版 tag `ghcr.io/xiaomengr/chronoval:1.0.0.4`。
+> 镜像通过内置 **GitHub Actions** 自动构建并推送至 **GHCR**：`ghcr.io/xiaomengr/chronoval:latest`（最新代码），稳定版 `ghcr.io/xiaomengr/chronoval:1.0.0.4`。`docker compose up -d` 或 `docker pull` 即可获取。
 
 ## 许可证
 
