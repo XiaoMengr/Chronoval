@@ -2,29 +2,29 @@ import { z } from 'zod'
 
 export const s3StorageConfigSchema = z.object({
   provider: z.literal('s3'),
-  bucket: z.string(),
+  bucket: z.string().trim().min(1),
   region: z.string().default('auto'),
-  endpoint: z.string(),
+  endpoint: z.string().trim().min(1),
   prefix: z.string().default('/photos').optional(),
   cdnUrl: z.string().optional(),
-  accessKeyId: z.string(),
-  secretAccessKey: z.string(),
+  accessKeyId: z.string().trim().min(1),
+  secretAccessKey: z.string().trim().min(1),
   forcePathStyle: z.boolean().optional(),
   maxKeys: z.number().optional(),
 })
 
 export const localStorageConfigSchema = z.object({
   provider: z.literal('local'),
-  basePath: z.string().min(1),
+  basePath: z.string().trim().min(1),
   baseUrl: z.string().optional(),
   prefix: z.string().optional(),
 })
 
 export const openListStorageConfigSchema = z.object({
   provider: z.literal('openlist'),
-  baseUrl: z.string().min(1),
-  rootPath: z.string().min(1),
-  token: z.string().min(1),
+  baseUrl: z.string().trim().min(1),
+  rootPath: z.string().trim().min(1),
+  token: z.string().trim().min(1),
   uploadEndpoint: z.string().default('/api/fs/put').optional(),
   downloadEndpoint: z.string().optional(),
   listEndpoint: z.string().optional(),

@@ -24,17 +24,17 @@ export default eventHandler(async (event) => {
         event,
         z.discriminatedUnion('provider', [
           z.object({
-            name: z.string(),
+            name: z.string().trim().min(1),
             provider: z.literal('s3'),
             config: s3StorageConfigSchema,
           }),
           z.object({
-            name: z.string(),
+            name: z.string().trim().min(1),
             provider: z.literal('local'),
             config: localStorageConfigSchema,
           }),
           z.object({
-            name: z.string(),
+            name: z.string().trim().min(1),
             provider: z.literal('openlist'),
             config: openListStorageConfigSchema,
           }),
