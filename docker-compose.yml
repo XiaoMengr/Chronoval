@@ -3,32 +3,33 @@ name: chronoval
 # Chronoval —— 个人摄影画廊
 #
 # 单服务全栈：Nuxt 4 前端 + Nitro 后端由同一容器托管。
+#
+# 三类挂载目录的角色（重要）：
+#
+# ▍/app/data —— 程序运行目录（可写）
+#   ./data -> /app/data
+#   SQLite 数据库、会话密钥、配置在此。备份/迁移只需复制 ./data。
+#
+# ▍/app/storage —— 本地存储 + 缩略图回退目录（可写，纯存储、绝不自动扫描）
+#   ./data/storage -> /app/storage
+#   - 上传的加密照片/视频实时写入 /app/storage/photos（prefix=photos/），上传即显示、无需扫描。
+#   - 只读外部库的在位写入失败时，缩略图回退到 /app/storage/thumbnails/。
+#   该目录不会被当作相册自动扫描。
+#
+# ▍/app/library —— 外部扫描库（可写，唯一自动识别来源）
+#   ./data/library -> /app/library
+#   每个相册 = /app/library 下一个子目录，在界面按容器内路径手动添加为扫描库。
+#   手动放图即被自动识别；缩略图就地生成到相册目录 thumbnails/。
+#
+# 结论：只有外部扫描库（如 /app/library 或额外挂载的其他目录）才会触发「放图自动识别」；
+#       上传/存储目录（/app/storage）纯作存储，不走扫描、上传即显示。
 
-# ▍数据目录（单目录持久化）
-#   ./data -> /app/data：SQLite 数据库、上传照片/缩略图、配置均在此，备份/迁移只需复制 ./data。
-
-# ▍媒体库目录（只读，自动扫描）
-#   ./data/storage -> /app/storage:ro
-#   - 图片目录：/app/storage/photos  => LIBRARY_PHOTOS_PATH
-#   - 视频目录：/app/storage/videos  => LIBRARY_VIDEOS_PATH
-#   把文件放进对应子目录即被自动扫描识别，原文件始终保留，只读挂载不会被改写。
-
-# ▍本地扫描库（独立存储方式，给分散相册）
-#   ./data/library -> /app/library（每个相册 = /app/library 下一个子目录，界面按容器内路径添加）。
-#   缩略图就地生成到相册目录 thumbnails/，因此该外部库目录挂载为可写（rw）。
-
-# 备注：通过「上传」进来的文件统一存入存储 prefix（默认 photos/）下一处，
-#       应用不会自动按文件类型拆分到 photos/ 与 videos/ 两个子目录。
-
-# 首次使用前先创建媒体库目录：
-#     mkdir -p data/storage/photos data/storage/videos
 # 快速开始：
-#   1) mkdir -p data/storage/photos data/storage/videos
+#   1) mkdir -p data/library
 #   2) cp .env.example .env 并按需编辑（至少设置 NUXT_SESSION_PASSWORD）
-#   3) 把照片放入 data/storage/photos，视频放入 data/storage/videos
-#   4) docker compose up -d （默认拉取 GHCR 已构建镜像 ghcr.io/xiaomengr/chronoval:latest）
+#   3) docker compose up -d （默认拉取 GHCR 已构建镜像 ghcr.io/xiaomengr/chronoval:latest）
 #      仅当你想从源码自己构建时才用：docker compose up -d --build
-#   5) 打开 http://localhost:3000
+#   4) 打开 http://localhost:3000 ，在「扫描库」里添加外部目录（如 /app/library）即可放图识别
 
 services:
   chronoval:
@@ -46,11 +47,11 @@ services:
       # 本地存储与媒体库的默认值已固化在镜像内（Dockerfile ENV），无需在此重复配置。
       - .env
     volumes:
-      # 数据卷：数据库 + 上传照片/缩略图 + 配置（可写）
+      # 程序运行目录：数据库 + 配置（可写）
       - ./data:/app/data
-      # 本地照片/视频目录（只读，需含 photos/ 与 videos/ 子目录）
-      - ./data/storage:/app/storage:ro
-      # 本地扫描库（独立相册，按容器内路径添加；缩略图就地生成，需可写）
+      # 本地存储 + 缩略图回退目录（可写，上传落 photos/，纯存储不扫描）
+      - ./data/storage:/app/storage
+      # 外部扫描库（独立相册，界面按容器内路径添加；缩略图就地生成，需可写）
       - ./data/library:/app/library
     healthcheck:
       test:

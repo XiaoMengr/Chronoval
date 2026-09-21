@@ -1,22 +1,24 @@
 import path from 'node:path'
 
 /**
- * 媒体库配置：本地映射目录（只读），可直接把照片/视频丢进目录即被自动识别
+ * 媒体库配置（仅剩兼容字段：photosPath/videosPath 已不再用于自动扫描挂载）
  *
- * 图片目录默认 /app/photos，视频目录默认 /app/videos。
- * 可通过环境变量覆盖：
- *   LIBRARY_PHOTOS_PATH
- *   LIBRARY_VIDEOS_PATH
- *   LIBRARY_THUMBNAIL_DIR   (缩略图落在可写数据目录中的相对子目录)
+ * 自迁移后：程序只有外部扫描库（scan-library）触发自动识别；纯存储目录（/app/storage）
+ * 只作上传落盘 + 缩略图回退，绝不扫描。下列 photosPath/videosPath 字段仅保留供 system/stats
+ * 与旧接口读取，不再参与构建挂载。
+ *
+ * 环境变量（历史/镜像默认，当前已不驱动扫描）：
+ *   LIBRARY_PHOTOS_PATH / LIBRARY_VIDEOS_PATH
+ *   LIBRARY_THUMBNAIL_DIR
  */
 export interface LibraryConfig {
-  /** 图片目录绝对路径（映射，只读） */
+  /** 图片目录绝对路径（兼容保留，不再用于扫描） */
   photosPath: string
-  /** 视频目录绝对路径（映射，只读） */
+  /** 视频目录绝对路径（兼容保留，不再用于扫描） */
   videosPath: string
   /** 缩略图写入的相对目录（位于本地存储 basePath 下） */
   thumbnailDir: string
-  /** 是否启用自动扫描 */
+  /** 是否启用自动扫描（对外部扫描库同样生效） */
   enabled: boolean
 }
 
@@ -88,22 +90,6 @@ export const VIDEO_EXTENSIONS = new Set([
   '.m2ts',
 ])
 
-export const getLibraryMounts = (): LibraryMount[] => {
-  const cfg = getLibraryConfig()
-  return [
-    {
-      name: 'photos',
-      type: 'image',
-      root: cfg.photosPath,
-      extensions: IMAGE_EXTENSIONS,
-      routePrefix: '/library/photos',
-    },
-    {
-      name: 'videos',
-      type: 'video',
-      root: cfg.videosPath,
-      extensions: VIDEO_EXTENSIONS,
-      routePrefix: '/library/videos',
-    },
-  ]
-}
+// 内置媒体库挂载（photos/videos）已移除：不再内置 /app/photos、/app/videos 扫描入口。
+// 纯存储目录（/app/storage）只作上传落盘 + 缩略图回退，绝不自动扫描；
+// 只有用户显式添加的外部扫描库（scan-library）才触发自动识别。见 scan-library/manager。

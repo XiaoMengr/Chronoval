@@ -52,9 +52,10 @@ interface ScanResult {
 
 /**
  * 本地媒体库扫描器
- * - 只读映射目录（默认 /app/photos、/app/videos）
- * - 自动识别目录内图片 / 视频，自动生成缩略图
- * - 不改写原文件（原图始终引用映射目录，缩略图落在可写数据目录）
+ * - 仅扫描用户显式添加的外部扫描库（scan-library 挂载，经 getLibraryMounts/getAllScalableMounts 获取）
+ * - 纯存储目录（/app/storage）绝不参与扫描：上传加密照片实时落盘即展示，无需扫描。
+ * - 自动识别外部库内图片 / 视频，自动生成缩略图
+ * - 不改写原文件（原图始终引用映射目录，缩略图就地或回退到存储）
  */
 export class LibraryScanner {
   private cfg: LibraryConfig

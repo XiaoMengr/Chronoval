@@ -55,10 +55,12 @@
 git clone https://github.com/XiaoMengr/Chronoval.git && cd Chronoval
 
 cp .env.example .env
-mkdir -p data/storage/photos data/storage/videos
+mkdir -p data/library   # 外部扫描库（界面添加后放图即自动识别）
 docker compose up -d
 
 # 打开 http://localhost:3000，按向导设置管理员
+# 之后在「扫描库」里添加一个外部目录（如 /app/library）即可放图自动识别；
+# 上传照片则实时落入 /app/storage，上传即显示、无需扫描。
 ```
 
 ## 文档

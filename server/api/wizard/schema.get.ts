@@ -79,7 +79,7 @@ export default eventHandler(async (event) => {
       {
         key: 'local.basePath',
         type: 'string',
-        defaultValue: '/app/data/storage',
+        defaultValue: '/app/storage',
         label: 'settings.storage.local.basePath.label',
       },
       {

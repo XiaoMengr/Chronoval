@@ -32,19 +32,23 @@ cp .env.quickstart.example .env
 
 | 项目 | 默认行为 |
 | ---- | -------- |
-| 数据持久化 | 自动挂载 `./data`，数据库、上传照片、缩略图、配置都存在这里 |
+| 数据持久化 | 自动挂载 `./data`，数据库、配置都存在这里 |
 | 管理员账号 | 网页向导里手动设置，不用在 `.env` 写 |
 | 会话密钥 | 未设置时自动生成并持久化，无需手动 `openssl` |
 | 本地存储/媒体库路径 | 已固化在镜像内，无需配置 |
 
-## 我想把照片存进项目库
+## 我想把旧照片批量导入
 
-`./data/storage/photos` 是照片存储目录、`./data/storage/videos` 是视频存储目录，把已有文件拷贝进去，应用会自动扫描识别（原文件只读，不会被改动）。注意这两个目录都在 `./data` 挂载内。
+导入已有照片有两个途径（二选一即可）：
+
+1. **上传**：网页里直接上传即可，加密后实时落入 `/app/storage`，上传即显示、无需扫描。
+2. **外部扫描库（推荐批量）**：把文件夹放进 `./data/library/<相册名>/`，再到「存储设置 → 本地扫描库」添加该目录，放图即自动识别、缩略图就地生成。
+
+纯存储目录（`/app/storage`）**不做**媒体库自动扫描，只存上传照片与缩略图回退。
 
 ```bash
-mkdir -p data/storage/photos data/storage/videos
-cp ~/照片/*.jpg  data/storage/photos/
-cp ~/视频/*.mp4  data/storage/videos/
+mkdir -p data/library
+# 按相册放：cp -r ~/家庭相册 data/library/   → 界面里添加容器路径 /app/library/家庭相册
 ```
 
 ## 换端口

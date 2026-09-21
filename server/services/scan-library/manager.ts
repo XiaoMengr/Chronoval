@@ -13,8 +13,6 @@ import {
   type LibraryMount,
   IMAGE_EXTENSIONS,
   VIDEO_EXTENSIONS,
-  DEFAULT_LIBRARY_PHOTOS,
-  DEFAULT_LIBRARY_VIDEOS,
 } from '../library/config'
 
 /**
@@ -23,6 +21,12 @@ import {
  * 与「上传加密 blob 存储」完全分离：把明文照片/视频丢进某一文件夹即被自动监控、
  * 自动生成缩略图。原图只读引用该文件夹（通过 /library/<mount>/... 访问），
  * 缩略图写入当前 blob 存储后端（与上传共用，但两者互不混淆）。
+ *
+ * 注意：不再存在「内置媒体库」兜底挂载。本程序只有两类照片来源——
+ *   1) 上传加密照片：实时写入本地存储（/app/storage），立即展示、无需扫描。
+ *   2) 外部扫描库：用户显式添加的挂载目录才被自动识别（大小写见 buildLibraryMounts）。
+ * 因此 buildLibraryMounts 不再回退到 /app/photos、/app/videos 等内置路径，
+ * 避免把纯存储目录（/app/storage）误当作相册扫描显示。
  */
 
 export interface ScanLibrary {
@@ -83,35 +87,7 @@ const unionMediaExtensions = (): Set<string> => {
 const cleanName = (s: string) =>
   (s || '').trim().replace(/[\\/]+$/, '').replace(/^[\\/]+/, '')
 
-/** 环境变量回退挂载（兼容旧行为 /app/photos、/app/videos） */
-const envFallbackMounts = (): LibraryMount[] => {
-  const cfg = useRuntimeConfig() as any
-  const runtime = cfg?.library || {}
-  const photosRoot = path.resolve(
-    (runtime.photosPath || process.env.LIBRARY_PHOTOS_PATH || '').trim() ||
-      DEFAULT_LIBRARY_PHOTOS,
-  )
-  const videosRoot = path.resolve(
-    (runtime.videosPath || process.env.LIBRARY_VIDEOS_PATH || '').trim() ||
-      DEFAULT_LIBRARY_VIDEOS,
-  )
-  return [
-    {
-      name: 'photos',
-      type: 'image',
-      root: photosRoot,
-      extensions: IMAGE_EXTENSIONS,
-      routePrefix: '/library/photos',
-    },
-    {
-      name: 'videos',
-      type: 'video',
-      root: videosRoot,
-      extensions: VIDEO_EXTENSIONS,
-      routePrefix: '/library/videos',
-    },
-  ]
-}
+
 
 /** 读取全部（含禁用）扫描库原始行 */
 export const listRawScanLibraries = (): Array<typeof scanLibraries.$inferSelect> => {
@@ -212,12 +188,10 @@ export const invalidateLibraryMountsCache = (): void => {
   cachedMounts = null
 }
 
-/** 构建全量 enabled 挂载集合（含当前判定不可用者），不参与画廊展示过滤 */
+/** 构建全量 enabled 挂载集合（仅外部扫描库，不再包含内置兜底），含当前判定不可用者 */
 const buildLibraryMounts = (): LibraryMount[] => {
   const enabled = listRawScanLibraries().filter((r) => r.enabled)
-  return enabled.length === 0
-    ? envFallbackMounts()
-    : enabled.map<LibraryMount>((row) => ({
+  return enabled.map<LibraryMount>((row) => ({
     name: scanMountName(row.id),
     type: 'image', // 类型改为按单个文件扩展名判定（见 scanner.processFile）
     root: path.resolve(row.rootPath),
@@ -227,8 +201,8 @@ const buildLibraryMounts = (): LibraryMount[] => {
 }
 
 /**
- * 构建供画廊展示的 active 挂载集合：优先使用已启用的扫描库；
- * 无启用扫描库时回退到环境变量目录。
+ * 构建供画廊展示的 active 挂载集合：仅采用已启用的外部扫描库。
+ * 已移除内置 photos/videos 兜底回退——纯存储目录（/app/storage）绝不会被当作相册扫描。
  * 目录缺席的挂载会立即从本集合剔除，使画廊/相册/图片路由隐藏整库（见 markScanMountUnavailable）。
  */
 export const getLibraryMounts = (): LibraryMount[] => {

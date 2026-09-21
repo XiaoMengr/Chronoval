@@ -11,6 +11,11 @@ name: chronoval
 #     · latest   = 最新主分支构建（持续更新）
 #     · 1.0.0.4  = 稳定版（对应 git tag v1.0.0.4）
 #
+# 目录角色（关键）：
+#   ./data           -> /app/data      程序运行目录（DB/配置）
+#   ./data/storage   -> /app/storage   本地存储+缩略图回退（可写，纯存储、绝不自动扫描）
+#   ./data/library   -> /app/library   外部扫描库（界面添加后才自动识别放图）
+#
 # 访问方式：
 #   展示页面  http://<宿主机IP>:3000        （例如 http://172.16.0.1:3000）
 #   如 3000 被占用，改下方 ports 左侧宿主机端口即可，例如 "3100:3000"
@@ -28,7 +33,8 @@ services:
       - '3000:3000'            # 宿主机3000 -> 容器3000（改左值即可换对外端口）
     volumes:
       - ./data:/app/data
-      - ./data/storage:/app/storage:ro
+      # 本地存储+缩略图回退：可写，上传落 photos/，纯存储不扫描（不再 ro）
+      - ./data/storage:/app/storage
       - ./data/library:/app/library
     healthcheck:
       test:

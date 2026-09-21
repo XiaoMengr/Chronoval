@@ -25,12 +25,12 @@ cp .env.example .env
 #     并持久化到 ./data/.session-password，之后启动复用，无需手动 openssl
 #   仅当需要高级覆盖（S3 存储 / 地图 / 主题 / 固定会话密钥等）时才编辑 .env
 
-# 1. 创建媒体库目录（与 compose 卷映射对应）
-mkdir -p data/storage/photos data/storage/videos
+# 1. 创建外部扫描库目录（与 compose 卷映射对应）
+mkdir -p data/library
 
-# 2. 直接把你已有的照片 / 视频复制进去（放进即识别，无需后台上传）
-cp ~/photos/*.jpg data/storage/photos/
-cp ~/videos/*.mp4 data/storage/videos/
+# 2. 把已有照片/视频按相册放进 data/library 下的子目录（如 data/library/家庭相册）
+#    然后到「存储设置 → 本地扫描库」添加容器内路径 /app/library/家庭相册 即自动识别。
+#    （网页上传则实时写入 /app/storage，上传即显示、无需扫描。）
 
 # 3. 启动：默认从 GHCR 拉取已构建镜像（首次会自动 pull latest）
 docker compose up -d
@@ -38,8 +38,8 @@ docker compose up -d
 
 - 服务端口：`3000:3000`（改端口只改 `ports` 左侧即可）
 - 镜像来源：`ghcr.io/xiaomengr/chronoval:latest`（由 GitHub Actions 自动构建推送；可改 tag 固定到某版本，如 `1.0.0.4`）
-- 本地存储路径、媒体库目录等默认值已固化在镜像内（见 `Dockerfile ENV`），无需在 compose 中重复配置，需要时再在 `.env` 覆盖
-- 首次启动会自动扫描 `/app/storage/photos`、`/app/storage/videos` 并生成缩略图（间隔默认 5 分钟，可用 `LIBRARY_SCAN_INTERVAL_MS` 调整）
+- 本地存储路径（`/app/storage`，上传落 photos/ + 缩略图回退 thumbnails/）等默认值已固化在镜像内（见 `Dockerfile ENV`），无需在 compose 中重复配置，需要时再在 `.env` 覆盖
+- 只有外部扫描库（界面添加 `/app/library` 等目录）才会自动扫描识别（间隔默认 5 分钟，可用 `LIBRARY_SCAN_INTERVAL_MS` 调整）；`/app/storage` 纯作存储、不扫描
 
 > 从源码本地构建只是**可选**：想自己编译时改用 `docker compose up -d --build`（会用仓库内 Dockerfile 构建本地镜像）。日常上线直接用上面的远程拉取即可。
 
@@ -50,11 +50,11 @@ docker compose up -d
 ```yaml
 volumes:
   - ./data:/app/data
-  - /data/media:/app/storage:ro   # ← 换成你的媒体根目录，其下需含 photos/ 与 videos/ 子目录
-  - ./data/library:/app/library
+  - /data/storage:/app/storage       # 本地存储 + 缩略图回退（纯存储，不扫描）
+  - /data/library:/app/library       # 外部扫描库根：一层目录一个相册
 ```
 
-> 视频目录与图片目录同属 `/app/storage` 挂载点下的 `videos/`、`photos/` 两个子目录。若目录内既有照片又有视频，也都能被识别：普通图片走图片流程，视频用 ffmpeg 抽帧生成缩略图并支持在查看器中播放。
+> 照片来源只有两类：网页上传 → 实时落入 `/app/storage`（上传即显示）；外部扫描库 → 把文件夹放 `/app/library`（或任意挂载目录）并在界面添加，放图即自动识别、缩略图就地生成到相册 `thumbnails/`。
 
 ### 升级
 
@@ -71,7 +71,7 @@ docker compose up -d
 ```bash
 docker run -d --name chronoval -p 3000:3000 \
   -v $(pwd)/data:/app/data \
-  -v /data/media:/app/storage:ro \
+  -v $(pwd)/data/library:/app/library \
   --env-file .env \
   ghcr.io/xiaomengr/chronoval:latest
 ```

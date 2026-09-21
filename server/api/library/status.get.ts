@@ -21,8 +21,10 @@ export default eventHandler(async (event) => {
 
   return {
     enabled: cfg.enabled,
-    photosPath: cfg.photosPath,
-    videosPath: cfg.videosPath,
+    // 内置媒体库目录（photosPath/videosPath）已移除：仅存在外部扫描库，
+    // 因此这两个字段已无意义，置 null 占位（前端不再消费）。
+    photosPath: null,
+    videosPath: null,
     thumbnailDir: cfg.thumbnailDir,
     total: libraryCount?.count || 0,
     scanIntervalMs: Number(process.env.LIBRARY_SCAN_INTERVAL_MS || 300000),

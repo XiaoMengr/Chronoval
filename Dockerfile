@@ -25,14 +25,12 @@ RUN apk add --no-cache ca-certificates perl exiftool ffmpeg \
 	&& install -Dm755 "$(readlink -f /usr/bin/exiftool)" /opt/runtime-bin/exiftool \
 	&& install -Dm755 "$(readlink -f /usr/bin/ffmpeg)" /opt/runtime-bin/ffmpeg \
 	&& install -Dm755 "$(readlink -f /usr/bin/ffprobe)" /opt/runtime-bin/ffprobe \
-	&& mkdir -p /opt/runtime-bin/appdirs/photos /opt/runtime-bin/appdirs/videos /opt/runtime-bin/appdirs/data
+	&& mkdir -p /opt/runtime-bin/appdirs/data
 
 FROM scratch AS runtime
 WORKDIR /app
 
-# 预创建只读映射目录与可写数据目录（scratch 阶段无 shell，通过 COPY 空目录实现）
-COPY --from=runtime_deps /opt/runtime-bin/appdirs/photos /app/photos
-COPY --from=runtime_deps /opt/runtime-bin/appdirs/videos /app/videos
+# 预创建可写数据目录（scratch 阶段无 shell，通过 COPY 空目录实现）
 COPY --from=runtime_deps /opt/runtime-bin/appdirs/data /app/data
 
 COPY --from=runtime_deps /usr/local/bin/node /usr/bin/node
@@ -48,10 +46,11 @@ COPY --from=build /usr/src/app/.output ./.output
 COPY --from=build /usr/src/app/server/database/migrations ./server/database/migrations
 
 EXPOSE 3000
-# 单目录数据卷：SQLite 数据库 + 照片原图 + 缩略图
+# 数据卷：SQLite 数据库 + 会话密钥/配置（程序运行目录）
 VOLUME ["/app/data"]
-# 只读映射目录：用户把照片/视频直接放进这些目录即被自动识别
-# 在 docker-compose.yml 或运行时用 -v /data/photos:/app/photos:ro -v /data/videos:/app/videos:ro 挂载
+# 存储卷（可选，用于持久化上传照片/缩略图）：运行时以 -v ./data/storage:/app/storage 挂载，
+# 该目录只作存储（上传照片落 photos/、缩略图回退落 thumbnails/），绝不自动扫描。
+# 外部扫描库需单独挂载并放至 /app/library 等目录，由用户显式添加。
 
 ENV NODE_ENV=production
 ENV NITRO_PORT=3000
@@ -62,17 +61,16 @@ ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 ENV EXIFTOOL_PATH=/usr/bin/exiftool
 ENV FFMPEG_PATH=/usr/bin/ffmpeg
 ENV FFPROBE_PATH=/usr/bin/ffprobe
-# ---- 本地存储与媒体库默认值（docker-compose 无需再重复配置，必要时可覆盖） ----
-# 本地文件存储：上传照片落盘位置（prefix=photos/ 即写入 /app/data/storage/photos）
+# ---- 本地存储默认值（docker-compose 无需再重复配置，必要时可覆盖） ----
+# 本地文件存储：上传照片落盘位置（prefix=photos/ 即写入 /app/storage/photos）
+# /app/storage 纯作存储 + 缩略图回退目录，绝不参与媒体库自动扫描。
 ENV NUXT_STORAGE_PROVIDER=local
-ENV NUXT_PROVIDER_LOCAL_PATH=/app/data/storage
+ENV NUXT_PROVIDER_LOCAL_PATH=/app/storage
 ENV NUXT_PROVIDER_LOCAL_BASE_URL=/storage
 ENV NUXT_PROVIDER_LOCAL_PREFIX=photos/
-# 媒体库目录：只读映射，把文件放进即被自动扫描识别
-ENV LIBRARY_PHOTOS_PATH=/app/storage/photos
-ENV LIBRARY_VIDEOS_PATH=/app/storage/videos
+# 外部扫描库：仅用户显式添加 /app/library 等目录才被自动识别；无内置 photos/videos 兜底。
 ENV LIBRARY_ENABLED=true
-# 自动扫描间隔（毫秒），默认 300 秒
+# 自动扫描间隔（毫秒），默认 300 秒（对外部扫描库生效）
 ENV LIBRARY_SCAN_INTERVAL_MS=300000
 
 CMD ["/usr/bin/node", ".output/server/index.mjs"]
