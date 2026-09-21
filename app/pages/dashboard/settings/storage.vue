@@ -523,12 +523,6 @@ const onScanLibraryToggle = async (lib: ScanLibraryItem) => {
   }
 }
 
-// 移动端：详情折叠状态
-const scanLibExpanded = ref<Record<number, boolean>>({})
-const toggleScanLibExpand = (id: number) => {
-  scanLibExpanded.value[id] = !scanLibExpanded.value[id]
-}
-
 // 移动端"更多"菜单：编辑 / 信息 / 删除
 const scanLibMoreItems = (lib: ScanLibraryItem) => [
   {
@@ -1121,62 +1115,44 @@ const storageInfoConfigEntries = computed(() => {
                 />
               </div>
 
-              <!-- 折叠详情（路径 + 元信息）：默认隐藏，点按展开 -->
-              <div v-if="scanLibExpanded[lib.id]" class="mt-2 space-y-1.5">
-                <p class="flex items-center gap-1.5 truncate font-mono text-xs text-neutral-400 dark:text-neutral-500">
-                  <UIcon name="tabler:folder" class="size-3.5 shrink-0" />
-                  <span class="truncate">{{ lib.rootPath }}</span>
-                </p>
-                <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-400 dark:text-neutral-500">
-                  <span class="inline-flex items-center gap-1">
-                    <UIcon name="tabler:photo" class="size-3.5" />
-                    <span class="font-medium text-neutral-600 dark:text-neutral-300">{{ lib.photoCount }}</span>
-                  </span>
-                  <span class="inline-flex items-center gap-1">
-                    <UIcon name="tabler:clock" class="size-3.5" />
-                    {{ fmtScanTime(lib.lastScanAt) }}
-                  </span>
-                  <ScanResultBadges v-if="lib.lastScanResult" :raw="lib.lastScanResult" />
-                </div>
+              <!-- 路径 -->
+              <p class="mt-1.5 flex items-center gap-1.5 truncate font-mono text-xs text-neutral-400 dark:text-neutral-500">
+                <UIcon name="tabler:folder" class="size-3.5 shrink-0" />
+                <span class="truncate">{{ lib.rootPath }}</span>
+              </p>
+
+              <!-- 元信息 -->
+              <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-400 dark:text-neutral-500">
+                <span class="inline-flex items-center gap-1">
+                  <UIcon name="tabler:photo" class="size-3.5" />
+                  <span class="font-medium text-neutral-600 dark:text-neutral-300">{{ lib.photoCount }}</span>
+                </span>
+                <span class="inline-flex items-center gap-1">
+                  <UIcon name="tabler:clock" class="size-3.5" />
+                  {{ fmtScanTime(lib.lastScanAt) }}
+                </span>
+                <ScanResultBadges v-if="lib.lastScanResult" :raw="lib.lastScanResult" />
               </div>
 
-              <!-- 操作行：左侧折叠详情 + 右侧 播放 / 更多 -->
-              <div class="mt-2 flex items-center justify-between gap-2">
-                <button
-                  type="button"
-                  class="flex items-center gap-1 rounded-md px-1 py-1 text-xs text-neutral-400 transition hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300"
-                  @click="toggleScanLibExpand(lib.id)"
-                >
-                  <UIcon
-                    :name="scanLibExpanded[lib.id] ? 'tabler:chevron-up' : 'tabler:chevron-down'"
-                    class="size-3.5"
-                  />
-                  {{
-                    scanLibExpanded[lib.id]
-                      ? $t('settings.storage.scanLibrary.details.hide')
-                      : $t('settings.storage.scanLibrary.details.show')
-                  }}
-                </button>
-
-                <div class="flex shrink-0 items-center gap-1.5">
+              <!-- 操作行：右侧 播放 / 更多 -->
+              <div class="mt-2 flex shrink-0 items-center justify-end gap-1.5">
+                <UButton
+                  size="sm"
+                  variant="soft"
+                  icon="tabler:player-play"
+                  :loading="scanLibRunning === lib.id"
+                  :disabled="scanLibRunning !== null"
+                  @click="onScanLibraryScan(lib)"
+                />
+                <UDropdownMenu :items="scanLibMoreItems(lib)" :content="{ align: 'end' }">
                   <UButton
                     size="sm"
                     variant="soft"
-                    icon="tabler:player-play"
-                    :loading="scanLibRunning === lib.id"
-                    :disabled="scanLibRunning !== null"
-                    @click="onScanLibraryScan(lib)"
+                    icon="tabler:dots-vertical"
+                    :aria-label="$t('settings.storage.scanLibrary.actions.info')"
+                    @click.stop
                   />
-                  <UDropdownMenu :items="scanLibMoreItems(lib)" :content="{ align: 'end' }">
-                    <UButton
-                      size="sm"
-                      variant="soft"
-                      icon="tabler:dots-vertical"
-                      :aria-label="$t('settings.storage.scanLibrary.actions.info')"
-                      @click.stop
-                    />
-                  </UDropdownMenu>
-                </div>
+                </UDropdownMenu>
               </div>
             </div>
 
