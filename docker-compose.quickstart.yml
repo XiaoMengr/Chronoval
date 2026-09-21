@@ -15,7 +15,11 @@ services:
     ports:
       - "3000:3000"        # 左侧改端口即可，例如 "8080:3000"
     volumes:
-      # 必须：数据持久化（数据库 + 上传照片/缩略图/配置），备份只需复制 ./data
+      # 必需 1/2：数据库 + 会话密钥/配置（备份只需复制 ./data）
       - ./data:/app/data
+      # 必需 2/2：上传照片 + 缩略图回退（纯存储，绝不自动扫描）
+      - ./data/storage:/app/storage
+      # 可选：外部扫描库（需要时先 mkdir -p data/library，再取消下面注释）
+      # - ./data/library:/app/library
     env_file:
       - .env               # 见下方极简 .env；留空也能跑（向导里填管理员即可）

@@ -12,9 +12,9 @@ name: chronoval
 #     · 1.0.0.4  = 稳定版（对应 git tag v1.0.0.4）
 #
 # 目录角色（关键）：
-#   ./data           -> /app/data      程序运行目录（DB/配置）
-#   ./data/storage   -> /app/storage   本地存储+缩略图回退（可写，纯存储、绝不自动扫描）
-#   ./data/library   -> /app/library   外部扫描库（界面添加后才自动识别放图）
+#   ./data           -> /app/data      程序运行目录（DB/配置，必需）
+#   ./data/storage   -> /app/storage   本地存储+缩略图回退（必需，可写，纯存储、绝不自动扫描）
+#   ./data/library   -> /app/library   外部扫描库（可选，界面添加后才自动识别放图；默认不挂载）
 #
 # 访问方式：
 #   展示页面  http://<宿主机IP>:3000        （例如 http://172.16.0.1:3000）
@@ -35,7 +35,8 @@ services:
       - ./data:/app/data
       # 本地存储+缩略图回退：可写，上传落 photos/，纯存储不扫描（不再 ro）
       - ./data/storage:/app/storage
-      - ./data/library:/app/library
+      # 可选：外部扫描库（先 mkdir -p data/library，再取消下面注释以启用）
+      # - ./data/library:/app/library
     healthcheck:
       test:
         - CMD
