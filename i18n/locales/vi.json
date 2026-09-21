@@ -1645,6 +1645,10 @@
           "label": "Đường dẫn cơ sở lưu trữ",
           "description": "Nếu bạn đang dùng Docker và không biết cách thao tác, hãy giữ nguyên đường dẫn mặc định /app/storage."
         },
+        "dockerHint": {
+          "title": "Lưu ý đường dẫn lưu trữ (môi trường Docker)",
+          "description": "Nếu bạn đang dùng Docker và không biết cách thao tác, hãy giữ nguyên đường dẫn mặc định /app/storage."
+        },
         "baseUrl": {
           "label": "URL cơ sở",
           "description": "URL cơ sở công khai để truy cập ảnh đã lưu"

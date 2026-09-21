@@ -1645,6 +1645,10 @@
           "label": "스토리지 기본 경로",
           "description": "Docker 환경에서 조작 방법을 모른다면 기본 경로 /app/storage를 유지하세요."
         },
+        "dockerHint": {
+          "title": "스토리지 경로 안내 (Docker 환경)",
+          "description": "Docker 환경에서 조작 방법을 모른다면 기본 경로 /app/storage를 유지하세요."
+        },
         "baseUrl": {
           "label": "기본 URL",
           "description": "저장된 사진에 접근하기 위한 공개 URL 기본"

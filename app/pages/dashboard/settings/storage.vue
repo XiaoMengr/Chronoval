@@ -827,6 +827,15 @@ const storageInfoConfigEntries = computed(() => {
 
                     <USeparator />
 
+                    <!-- Docker 环境下的存储路径醒目提示：仅本地存储时显示 -->
+                    <UAlert
+                      v-if="storageConfigState.provider === 'local'"
+                      color="warning"
+                      icon="tabler:alert-triangle"
+                      :title="$t('settings.storage.local.dockerHint.title')"
+                      :description="$t('settings.storage.local.dockerHint.description')"
+                    />
+
                     <AutoForm
                       id="createStorageForm"
                       :schema="currentStorageSchema"

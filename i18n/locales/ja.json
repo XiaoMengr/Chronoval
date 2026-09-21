@@ -1418,6 +1418,10 @@
           "label": "基本パス",
           "description": "Docker 環境で操作方法が分からない場合は、既定の /app/storage のままにしてください。"
         },
+        "dockerHint": {
+          "title": "ストレージパスの注意（Docker 環境）",
+          "description": "Docker 環境で操作方法が分からない場合は、既定の /app/storage パスのままにしてください。"
+        },
         "baseUrl": {
           "label": "ベース URL",
           "description": "ローカルストレージファイルにアクセスするためのベース URL"

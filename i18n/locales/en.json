@@ -1707,6 +1707,10 @@
           "label": "Storage Base Path",
           "description": "If you are running in Docker and don't know how to do this, keep the default /app/storage unchanged."
         },
+        "dockerHint": {
+          "title": "Storage path notice (Docker environment)",
+          "description": "If you are running in Docker and don't know how to do this, please keep the default /app/storage path unchanged."
+        },
         "baseUrl": {
           "label": "Base URL",
           "description": "Public URL base for accessing stored photos"
