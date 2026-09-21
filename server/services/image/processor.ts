@@ -3,6 +3,7 @@ import bmp from '@vingle/bmp-js'
 import heicConvert from 'heic-convert'
 import { getStorageManager } from '~~/server/plugins/3.storage'
 import sharp from 'sharp'
+import { isRawExtension, rawToJpegPreview } from './raw'
 import { withRetry, RetryPresets, RetryConditions } from '../../utils/retry'
 
 export interface ProcessedImageData {
@@ -204,6 +205,15 @@ export const preprocessImageBuffer = async (
     return await convertHeicToJpeg(buffer)
   }
 
+  if (isRawExtension(extName)) {
+    const preview = rawToJpegPreview(buffer)
+    if (preview) {
+      logger.image.info('RAW image detected, using embedded JPEG preview', key)
+      return preview
+    }
+    logger.image.warn('RAW has no embedded JPEG preview, cannot render', key)
+  }
+
   return buffer
 }
 
@@ -225,18 +235,34 @@ export const preprocessImageWithJpegUpload = async (
     }
 
     const extName = path.extname(s3key).toLowerCase()
+    // HEIC / RAW 等需转出可展示的 JPEG sidecar（查看器/WebGL 无法直接渲染这些格式）
+    const isHeic = ['.heic', '.heif', '.hif'].includes(extName)
+    const isRaw = isRawExtension(extName)
     let processedBuffer: Buffer
     let jpegKey: string | undefined
     let jpegStorageKey: string | undefined
 
-    if (['.heic', '.heif', '.hif'].includes(extName)) {
+    if (isHeic || isRaw) {
       logger.image.info(
-        'HEIC image detected, converting and uploading JPEG version',
+        isHeic
+          ? 'HEIC image detected, converting and uploading JPEG version'
+          : 'RAW image detected, extracting embedded JPEG preview',
         s3key,
       )
 
       try {
-        processedBuffer = await convertHeicToJpeg(rawImageBuffer)
+        if (isHeic) {
+          processedBuffer = await convertHeicToJpeg(rawImageBuffer)
+        } else {
+          const preview = rawToJpegPreview(rawImageBuffer)
+          if (!preview) {
+            logger.image.error(
+              `RAW has no embedded JPEG preview: ${s3key}`,
+            )
+            return null
+          }
+          processedBuffer = preview
+        }
 
         // 生成 JPEG 版本的 key（替换扩展名为 .jpg）
         const baseName = path.basename(s3key, path.extname(s3key))
@@ -248,7 +274,12 @@ export const preprocessImageWithJpegUpload = async (
         ).key
         logger.image.info(`Uploaded JPEG version to: ${jpegKey}`)
       } catch (err) {
-        logger.image.error(`HEIC conversion failed: ${s3key}`, err)
+        logger.image.error(
+          `${isHeic ? 'HEIC conversion' : 'RAW preview extraction'} failed: ${
+            s3key
+          }`,
+          err,
+        )
         return null
       }
     } else {

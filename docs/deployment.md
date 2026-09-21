@@ -7,7 +7,7 @@ Chronoval 为**全栈单体**：前端页面与后端 API 由同一个 Nitro 服
 | 宿主机路径 | 容器路径 | 用途 | 读写 |
 | ---------- | -------- | ---- | ---- |
 | `./data` | `/app/data` | SQLite 数据库、上传照片原图、缩略图、日志 | 读写（持久化） |
-| `./storage` | `/app/storage` | **本地存储 + 缩略图回退**（纯存储、绝不自动扫描） | 读写（持久化） |
+| `./storage` | `/app/storage` | **本地存储 + 统一缩略图**（纯存储、绝不自动扫描） | 读写（持久化） |
 | `./data/library` | `/app/library` | **本地扫描库**（分散相册，按容器内路径添加） | 读写 |
 
 > **本地目录即存储**：照片/视频目录是**只读映射**，你只要把文件放进 `/app/storage/photos`、`/app/storage/videos`，应用启动或定时扫描就会自动识别、生成缩略图并展示。**原文件绝不加密、绝不改写、绝不搬移**，始终留在你的目录里；也不需要通过后台上传。这就是"本地存储"式的用法，和 chronoframe 那种"必须上传才会被加密识别"的做法完全不同。
@@ -38,7 +38,7 @@ docker compose up -d
 
 - 服务端口：`3000:3000`（改端口只改 `ports` 左侧即可）
 - 镜像来源：`ghcr.io/xiaomengr/chronoval:latest`（由 GitHub Actions 自动构建推送；可改 tag 固定到某版本，如 `1.0.0.4`）
-- 本地存储路径（`/app/storage`，上传落 photos/ + 缩略图回退 thumbnails/）等默认值已固化在镜像内（见 `Dockerfile ENV`），无需在 compose 中重复配置，需要时再在 `.env` 覆盖
+- 本地存储路径（`/app/storage`，上传落 photos/ + 全量缩略图统一落 thumbnails/）等默认值已固化在镜像内（见 `Dockerfile ENV`），无需在 compose 中重复配置，需要时再在 `.env` 覆盖
 - 只有外部扫描库（界面添加 `/app/library` 等目录）才会自动扫描识别（间隔默认 5 分钟，可用 `LIBRARY_SCAN_INTERVAL_MS` 调整）；`/app/storage` 纯作存储、不扫描
 
 > 从源码本地构建只是**可选**：想自己编译时改用 `docker compose up -d --build`（会用仓库内 Dockerfile 构建本地镜像）。日常上线直接用上面的远程拉取即可。
@@ -50,11 +50,11 @@ docker compose up -d
 ```yaml
 volumes:
   - ./data:/app/data
-  - ./storage:/app/storage       # 本地存储 + 缩略图回退（纯存储，不扫描）
+  - ./storage:/app/storage       # 本地存储 + 统一缩略图（纯存储，不扫描）
   - /data/library:/app/library       # 外部扫描库根：一层目录一个相册
 ```
 
-> 照片来源只有两类：网页上传 → 实时落入 `/app/storage`（上传即显示）；外部扫描库 → 把文件夹放 `/app/library`（或任意挂载目录）并在界面添加，放图即自动识别、缩略图就地生成到相册 `thumbnails/`。
+> 照片来源只有两类：网页上传 → 实时落入 `/app/storage`（上传即显示）；外部扫描库 → 把文件夹放 `/app/library`（或任意挂载目录）并在界面添加，放图即自动识别、缩略图统一写入程序内部存储 `/app/storage/thumbnails/`。
 
 ### 升级
 

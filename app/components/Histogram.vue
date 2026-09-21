@@ -42,9 +42,11 @@ watchEffect(() => {
   currentImage = img
   img.crossOrigin = 'anonymous'
 
-  const url = new URL(props.thumbnailUrl, window.location.origin)
-  url.searchParams.set('_cors', Date.now().toString())
-  img.src = url.toString()
+  // 统一走同源 /thumb 代理读取像素：对象存储 / CDN 等跨域缩略图若其服务未返回 CORS 头，
+  // 直接 crossOrigin 加载会将 canvas 污染，getImageData 抛错导致直方图无法渲染。
+  // 经服务端 /thumb 转发的 URL 与主站同源，画布保持干净可读；该路由同时对本地缩略图掩藏明文 token。
+  const url = `/thumb/${encodeURIComponent(props.thumbnailUrl)}?_cors=${Date.now()}`
+  img.src = url
 
   img.onload = () => {
     // 检查这是否还是当前的缩略图

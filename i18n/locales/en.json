@@ -229,6 +229,7 @@
     "photoload": {
       "loadError": "Image loading failed",
       "loading": "Loading image",
+      "downloading": "Downloading image",
       "converting": "Converting...",
       "loadingWebGL": "Loading WebGL...",
       "loadingHEIC": "Loading HEIC image...",
@@ -1902,8 +1903,8 @@
           "displayMode": "Display mode",
           "modeAlbum": "Album",
           "modeGallery": "Gallery",
-          "thumbnailDirHint": "Thumbnails are written in-place",
-          "thumbnailDir": "A thumbnails subfolder inside the library folder",
+          "thumbnailDirHint": "Thumbnails are written to internal storage",
+          "thumbnailDir": "Internal storage thumbnails directory, not inside the library folder",
           "scanIntervalHint": "Interval at which this folder is auto-polled",
           "createdAt": "Created",
           "updatedAt": "Updated"

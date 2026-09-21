@@ -19,7 +19,9 @@ export default eventHandler(async (event) => {
   // 缩略图内容由路径唯一决定、可随时重算，浏览器可安全长期缓存（大幅减少重复回源码）
   setHeader(event, 'Cache-Control', 'public, max-age=31536000, immutable')
 
-  // 扫描库缩略图（就地写在挂载目录的 thumbnails/ 下）：直接从磁盘读取，
+  // 扫描库缩略图（兼容旧版就地在挂载目录 thumbnails/ 生成的路径；新版本已统一写入
+  // 内部存储 thumbnails/<mount>/…，走下方 /storage/ 分支）：此分支直接读磁盘返回。
+  // 若为不再被引用的旧路径文件缺失，回落到 404，不影响新存储的缩略图渲染。
   // 避免走下方的 `fetch(url)`——相对 URL 在服务端 fetch 会抛错导致 OG 生成黑屏。
   if (url.startsWith('/library/')) {
     const { getLibraryMounts } = await import(

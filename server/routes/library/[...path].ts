@@ -1,6 +1,10 @@
 import path from 'node:path'
 import { promises as fs, createReadStream } from 'node:fs'
 import { getLibraryMounts } from '~~/server/services/scan-library/manager'
+import {
+  isRawExtension,
+  extractEmbeddedJpegPreview,
+} from '~~/server/services/image/raw'
 
 const guessContentType = (filePath: string): string => {
   const ext = (filePath.split('.').pop() || '').toLowerCase()
@@ -100,6 +104,25 @@ export default eventHandler(async (event) => {
     return null
   }
 
+  // 相机 RAW：默认返回内嵌 JPEG 预览供查看器/网格渲染（浏览器与 WebGL 无法直接解码 RAW）；
+  // 显式 ?original=1 时返回原始 RAW 字节（无损归档/下载）。缩略图走独立 thumb 路由不受影响。
+  const fileExt = path.extname(absolute).toLowerCase()
+  const wantOriginal = getQuery(event).original === '1'
+  if (isRawExtension(fileExt) && !wantOriginal) {
+    try {
+      const rawBuffer = await fs.readFile(absolute)
+      const preview = extractEmbeddedJpegPreview(rawBuffer)
+      if (preview) {
+        setHeader(event, 'Content-Type', 'image/jpeg')
+        setHeader(event, 'Cache-Control', 'public, max-age=31536000, immutable')
+        event.node.res.setHeader('Content-Length', String(preview.length))
+        return preview
+      }
+    } catch {
+      // 预览失败时回落到原始字节流，保证接口始终可用
+    }
+  }
+
   // Range 支持（视频拖动进度）
   const range = getHeader(event, 'range')
   if (range) {
@@ -121,5 +144,8 @@ export default eventHandler(async (event) => {
     }
   }
 
+  // 明确告知响应长度：缺少 Content-Length 时，浏览器 XHR 的 onprogress 拿不到
+  // lengthComputable，前端无法计算并展示真实下载百分比（始终停在 0%）。
+  event.node.res.setHeader('Content-Length', String(stat.size))
   return sendStream(event, createReadStream(absolute))
 })

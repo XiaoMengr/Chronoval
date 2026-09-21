@@ -27,7 +27,7 @@ Chronoval 的所有配置通过环境变量提供（Docker 场景写入 `.env`�
 | 变量 | 说明 | 默认 |
 |---|---|---|
 | `NUXT_STORAGE_PROVIDER` | 存储方案：`local` / `s3` / `openlist` | `local` |
-| `NUXT_PROVIDER_LOCAL_PATH` | 本地存储根路径（上传落 photos/、略缩图回退 thumbnails/） | `/app/storage` |
+| `NUXT_PROVIDER_LOCAL_PATH` | 本地存储根路径（上传落 photos/、全量缩略图统一落 thumbnails/） | `/app/storage` |
 | `NUXT_PROVIDER_LOCAL_BASE_URL` | 本地图片访问基址 | `/storage` |
 | `NUXT_PROVIDER_LOCAL_PREFIX` | 本地存储子目录前缀 | `photos/` |
 

@@ -39,7 +39,10 @@ features:
     details: Perfect for desktop and mobile, support touch operations and gesture controls, native app-like experience.
   - title: Live/Motion Photo Support
     icon: 🎬
-    details: Full support for Apple LivePhoto format and Google-standard Motion Photo, automatically detect and process MOV video files, preserve dynamic photo effects.
+    details: Full support for Apple LivePhoto format and Google-standard Motion Photo, auto-detect and pair MOV sidecar files, long-press to play in the viewer with mobile haptic feedback, pinch-to-zoom stops playback, and in-viewport preloading.
+  - title: Video Playback
+    icon: ▶️
+    details: Play standalone MP4 / MOV videos directly in the gallery with native controls and poster thumbnails, no transcoding wait required.
 ---
 
 ## 🌍 Demo Sites

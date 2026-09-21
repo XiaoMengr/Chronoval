@@ -75,6 +75,9 @@ export class ImageLoaderManager {
 
     onUpdateLoadingState?.({
       isVisible: true,
+      progress: 0,
+      bytesLoaded: 0,
+      bytesTotal: 0,
     })
 
     return new Promise((resolve, reject) => {

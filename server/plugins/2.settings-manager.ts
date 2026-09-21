@@ -242,7 +242,7 @@ function normalizeProviderConfig(provider: string, config: any): any {
     case 'local':
       return {
         provider: 'local',
-        // 本地存储即 /app/storage：上传加密照片落 photos/(prefix 下)，略缩图回退落 thumbnails/。
+        // 本地存储即 /app/storage：上传加密照片落 photos/(prefix 下)，所有缩略图统一落 thumbnails/。
         // 该目录仅为存储、不参与媒体库自动扫描。
         basePath: config.localPath || '/app/storage',
         baseUrl: config.baseUrl || '/storage',

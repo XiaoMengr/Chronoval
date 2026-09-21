@@ -4,7 +4,7 @@ import path from 'node:path'
  * 媒体库配置（仅剩兼容字段：photosPath/videosPath 已不再用于自动扫描挂载）
  *
  * 自迁移后：程序只有外部扫描库（scan-library）触发自动识别；纯存储目录（/app/storage）
- * 只作上传落盘 + 缩略图回退，绝不扫描。下列 photosPath/videosPath 字段仅保留供 system/stats
+ * 只作上传落盘 + 统一缩略图存储，绝不扫描。下列 photosPath/videosPath 字段仅保留供 system/stats
  * 与旧接口读取，不再参与构建挂载。
  *
  * 环境变量（历史/镜像默认，当前已不驱动扫描）：
@@ -77,6 +77,29 @@ export const IMAGE_EXTENSIONS = new Set([
   '.avif',
   '.heic',
   '.heif',
+  '.svg',
+  // 相机 RAW：扫描库内放 RAW 即自动识别；缩略图/展示由服务端提取内嵌 JPEG 预览
+  '.cr2',
+  '.cr3',
+  '.crw',
+  '.nef',
+  '.nrw',
+  '.arw',
+  '.srf',
+  '.sr2',
+  '.raf',
+  '.orf',
+  '.rw2',
+  '.pef',
+  '.dng',
+  '.srw',
+  '.x3f',
+  '.dcr',
+  '.kdc',
+  '.iiq',
+  '.3fr',
+  '.erf',
+  '.mrw',
 ])
 
 export const VIDEO_EXTENSIONS = new Set([
@@ -91,5 +114,5 @@ export const VIDEO_EXTENSIONS = new Set([
 ])
 
 // 内置媒体库挂载（photos/videos）已移除：不再内置 /app/photos、/app/videos 扫描入口。
-// 纯存储目录（/app/storage）只作上传落盘 + 缩略图回退，绝不自动扫描；
+// 纯存储目录（/app/storage）只作上传落盘 + 统一缩略图存储，绝不自动扫描；
 // 只有用户显式添加的外部扫描库（scan-library）才触发自动识别。见 scan-library/manager。

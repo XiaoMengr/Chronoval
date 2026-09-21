@@ -19,7 +19,7 @@
 | NUXT_NOMINATIM_BASE_URL                  | Nominatim 反向地理编码服务的基础 URL                 | `https://nominatim.openstreetmap.org` | 否                                                                    |
 | NUXT_MAPBOX_ACCESS_TOKEN                 | Mapbox 访问令牌(无 URL 限制)，用于位置信息服务       | 无                                    | 否                                                                    |
 | NUXT_STORAGE_PROVIDER                    | 存储提供者，支持 `local`、`s3`、`openlist`           | `local`                               | 是                                                                    |
-| NUXT_PROVIDER_LOCAL_PATH                 | 本地存储路径（上传落 photos/、略缩图回退 thumbnails/） | `/app/storage`                   | 否                                                                    |
+| NUXT_PROVIDER_LOCAL_PATH                 | 本地存储路径（上传落 photos/、全量缩略图统一落 thumbnails/） | `/app/storage`                   | 否                                                                    |
 | NUXT_PROVIDER_LOCAL_BASE_URL             | 本地存储的访问 URL                                   | `/storage`                            | 否                                                                    |
 | NUXT_PROVIDER_LOCAL_PREFIX               | 本地存储子目录前缀                                   | `photos/`                             | 否                                                                    |
 | LIBRARY_ENABLED                          | 是否启用自动扫描（对外部扫描库生效）                 | `true`                                | 否                                                                    |

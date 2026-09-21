@@ -22,6 +22,23 @@ const IMAGE_EXTENSIONS = new Set([
   '.tif',
   '.tiff',
   '.webp',
+  '.svg',
+  // 相机 RAW（服务端提取内嵌 JPEG 预览以支持展示与缩略图）
+  '.cr2',
+  '.cr3',
+  '.crw',
+  '.nef',
+  '.nrw',
+  '.arw',
+  '.srf',
+  '.sr2',
+  '.raf',
+  '.orf',
+  '.rw2',
+  '.pef',
+  '.dng',
+  '.srw',
+  '.x3f',
 ])
 
 const isVideoFile = (

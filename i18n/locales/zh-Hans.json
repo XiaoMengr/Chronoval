@@ -225,6 +225,7 @@
     "photoload": {
       "loadError": "图片加载失败",
       "loading": "正在加载图片",
+      "downloading": "正在下载图片",
       "converting": "正在转换中...",
       "loadingWebGL": "正在加载 WebGL...",
       "loadingHEIC": "HEIC 图片加载中...",
@@ -1896,8 +1897,8 @@
           "displayMode": "展示方式",
           "modeAlbum": "相簿",
           "modeGallery": "画廊",
-          "thumbnailDirHint": "缩略图就地产出位置",
-          "thumbnailDir": "当前相册下的 thumbnails 子目录",
+          "thumbnailDirHint": "缩略图统一写入程序内部存储",
+          "thumbnailDir": "本地存储 thumbnails 目录，非相册目录",
           "scanIntervalHint": "自动轮询扫描该目录的间隔",
           "createdAt": "创建时间",
           "updatedAt": "更新时间"

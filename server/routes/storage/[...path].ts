@@ -112,6 +112,11 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'Not Found' })
   }
 
+  // 明确告知响应长度：缺少 Content-Length 时，浏览器 XHR 的 onprogress 拿不到
+  // lengthComputable，前端将无法计算并展示真实下载百分比（始终停在 0%）。
+  // 开启 Range 支持以便中断后可续传。
+  setHeader(event, 'Accept-Ranges', 'bytes')
+  event.node.res.setHeader('Content-Length', String(stat.size))
   const stream = createReadStream(absolute)
   return sendStream(event, stream)
 })

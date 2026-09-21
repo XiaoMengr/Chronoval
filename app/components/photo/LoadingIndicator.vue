@@ -145,18 +145,15 @@ const loadingVariants = {
           </template>
 
           <template v-else>
-            <div class="flex items-center gap-2">
-              <p class="text-xs font-medium text-white">
-                {{
-                  loadingState.isHeic
+            <p class="text-xs font-medium text-white">
+              {{
+                loadingState.bytesTotal > 0
+                  ? $t('viewer.photoload.downloading')
+                  : loadingState.isHeic
                     ? $t('viewer.photoload.loadingHEIC')
                     : $t('viewer.photoload.loading')
-                }}
-              </p>
-              <span class="text-xs text-white/60 tabular-nums">
-                {{ Math.round(loadingState.progress) }}%
-              </span>
-            </div>
+              }}
+            </p>
           </template>
 
           <!-- 真实下载进度：本地/远程原图下载期间显示进度条与 0.0MB / 总量 -->

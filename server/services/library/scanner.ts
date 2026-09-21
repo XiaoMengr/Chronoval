@@ -16,6 +16,7 @@ import {
 } from '../scan-library/manager'
 import { probeVideo, extractVideoFrame } from './ffmpeg'
 import { generateThumbnailAndHash } from '../image/thumbnail'
+import { preprocessImageBuffer } from '../image/processor'
 import { extractExifData, extractPhotoInfo } from '../image/exif'
 import { parseGPSCoordinates } from '../location/geocoding'
 import { compressUint8Array } from '~~/shared/utils/u8array'
@@ -55,7 +56,8 @@ interface ScanResult {
  * - 仅扫描用户显式添加的外部扫描库（scan-library 挂载，经 getLibraryMounts/getAllScalableMounts 获取）
  * - 纯存储目录（/app/storage）绝不参与扫描：上传加密照片实时落盘即展示，无需扫描。
  * - 自动识别外部库内图片 / 视频，自动生成缩略图
- * - 不改写原文件（原图始终引用映射目录，缩略图就地或回退到存储）
+ * - 不改写原文件（原图始终引用映射目录）；缩略图统一写入内部存储
+ *   （本地存储 thumbnails/<mountName>/…，外部库目录保持纯只读原图，不就地生成）
  */
 export class LibraryScanner {
   private cfg: LibraryConfig
@@ -276,34 +278,14 @@ private async collectFiles(dir: string): Promise<string[]> {
     // 原文件只读引用：通过 /library/<mountName>/<relpath> 访问
     const originalUrl = `/library/${mount.name}/${relUrl}`
 
-    // 缩略图写入策略：
-    // 1) 就地优先：写入外部库根目录下的 thumbnails/ 子目录，随相册一起存在、便于管理，
-    //    通过 /library/<mountName>/thumbnails/<id>.webp 访问。
-    // 2) 只读回退：若外部库目录不可写（仅读挂载），就地写会失败，则回退到程序本地存储
-    //    的 thumbnails/<mountName>/<id>.webp（与上传缩略图同源），URL 由 storageProvider
-    //    给出（本地存储为 /storage/...，可被 thumb 路由读取）。原文件始终不被改动。
+    // 缩略图统一写入内部存储（与上传缩略图同源）：
+    // 不再就地写入外部库目录，外部库保持纯只读原图。本地存储下 URL 为
+    // /storage/thumbnails/<mountName>/<id>.webp，可被 thumb 路由读取渲染。
     const thumbFileName = `${photoId}.webp`
-    const thumbAbsPath = path.resolve(mount.root, `thumbnails/${thumbFileName}`)
 
     const writeThumbnail = async (
       buffer: Buffer,
     ): Promise<{ key: string; url: string } | null> => {
-      // 优先就地写入外部库目录
-      try {
-        await fs.mkdir(path.dirname(thumbAbsPath), { recursive: true })
-        await fs.writeFile(thumbAbsPath, buffer)
-        return {
-          key: `thumbnails/${thumbFileName}`,
-          url: `/library/${mount.name}/thumbnails/${thumbFileName}`,
-        }
-      } catch (err) {
-        log().warn(
-          `In-place thumbnail write failed for ${absFile}, falling back to storage:`,
-          err,
-        )
-      }
-
-      // 回退：写入本地存储缩略图目录（对应外部库），未授权无法直接读取原图
       const provider = storageProvider
       if (!provider) return null
       try {
@@ -313,10 +295,10 @@ private async collectFiles(dir: string): Promise<string[]> {
           'image/webp',
         )
         return { key: obj.key, url: provider.getPublicUrl(obj.key) }
-      } catch (err2) {
+      } catch (err) {
         log().warn(
-          `Failed to write fallback thumbnail for ${absFile} to storage:`,
-          err2,
+          `Failed to write thumbnail for ${absFile} to storage:`,
+          err,
         )
         return null
       }
@@ -328,13 +310,9 @@ private async collectFiles(dir: string): Promise<string[]> {
 
     if (isImage) {
       try {
-        let imageBuffer = await fs.readFile(absFile)
-        // HEIC/HEIF 需转 JPEG (对 exif/sharp 友好)
-        const ext = path.extname(absFile).toLowerCase()
-        if (['.heic', '.heif', '.hif'].includes(ext)) {
-          const { convertHeicToJpeg } = await import('../image/processor')
-          imageBuffer = await convertHeicToJpeg(imageBuffer)
-        }
+        const rawBuffer = await fs.readFile(absFile)
+        // HEIC/RAW 等需转 JPEG 预览（对 exif/sharp 友好），其余格式原样返回
+        const imageBuffer = await preprocessImageBuffer(rawBuffer, absFile)
 
         const { width, height } = await sharp(imageBuffer, {
           limitInputPixels: false,
@@ -344,7 +322,7 @@ private async collectFiles(dir: string): Promise<string[]> {
         const { thumbnailBuffer, thumbnailHash } =
           await generateThumbnailAndHash(imageBuffer)
 
-        // 缩略图：就地写入优先，只读目录自动回退到本地存储
+        // 缩略图统一写入内部存储（不就地写外部库目录；见 writeThumbnail）
         const thumb = await writeThumbnail(thumbnailBuffer)
 
         // EXIF

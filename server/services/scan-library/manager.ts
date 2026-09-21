@@ -1,6 +1,5 @@
 import path from 'node:path'
 import { createHash } from 'node:crypto'
-import { promises as fs } from 'node:fs'
 import { and, count, eq, isNotNull, isNull, lt, or } from 'drizzle-orm'
 import { z } from 'zod'
 import { useDB, tables } from '~~/server/utils/db'
@@ -294,18 +293,14 @@ export const updateScanLibrary = async (
 }
 
 /**
- * 删除某扫描库对应的全部缩略图（就地文件 + 回退到本地存储的文件）。
- * - 就地：<mountRoot>/thumbnails/<id>.webp，文件真实存在于挂载目录内。
- * - 回退：存于当前存储后端的 thumbnails/<mount>/<id>.webp（由 provider.create 写入）。
- *
- * 判定规则：若该 thumbnailKey 解析到挂载根目录内【且】文件真实存在，说明是就地生成的
- * 缩略图，直接 unlink；否则（不存在于挂载目录内 / 文件缺失）视为回退到存储的缩略图，
- * 交由 storage provider.delete 清理。这同时兼容"本地存储无 prefix"时回退 key 恰好在
- * 挂载根目录下（thumbnails/<mount>/<id>.webp）的歧义情况。
+ * 删除某扫描库对应的全部缩略图。
+ * 缩略图统一由存储 provider 写入内部存储（key = thumbnails/<mount>/<id>.webp，含前缀），
+ * 按存储 key 直接删除即可；provider.delete 对不存在的文件静默忽略，
+ * 不再存在「就地生成」到挂载目录的情况。
  */
 const removeLibraryThumbnails = async (
   mount: string,
-  rootPath: string,
+  _rootPath: string,
   loc: string,
 ): Promise<void> => {
   const db = useDB()
@@ -322,40 +317,15 @@ const removeLibraryThumbnails = async (
 
   // 存储后端可能尚未初始化（如删除发生在引导早期），此时只尽力而为、不阻塞库删除
   const provider = getGlobalStorageManager()?.getProvider()
-  const root = path.resolve(rootPath)
-  const rootSep = path.resolve(root) + path.sep
-
   for (const t of thumbnails) {
-    if (!t.key) continue
-
-    const abs = path.resolve(root, t.key)
-    if (abs.startsWith(rootSep)) {
-      // 命中挂载根目录内：若能读取到真实文件，说明是就地生成的缩略图
-      const exists = await fs.access(abs).then(() => true, () => false)
-      if (exists) {
-        try {
-          await fs.unlink(abs)
-          await fs.rmdir(path.dirname(abs)).catch(() => {})
-          continue
-        } catch (err) {
-          logger.dynamic('scan-library').warn(
-            `${loc} Failed to remove thumbnail ${abs}:`,
-            err,
-          )
-        }
-      }
-    }
-
-    // 回退生成、存于存储后端的缩略图：按存储 key 删除（本地 provider 删除不存在的文件静默忽略）
-    if (provider) {
-      try {
-        await provider.delete(t.key)
-      } catch (err) {
-        logger.dynamic('scan-library').warn(
-          `${loc} Failed to remove stored thumbnail ${t.key}:`,
-          err,
-        )
-      }
+    if (!t.key || !provider) continue
+    try {
+      await provider.delete(t.key)
+    } catch (err) {
+      logger.dynamic('scan-library').warn(
+        `${loc} Failed to remove thumbnail ${t.key}:`,
+        err,
+      )
     }
   }
 }
@@ -365,7 +335,7 @@ export const deleteScanLibrary = async (id: number): Promise<boolean> => {
   const db = useDB()
   const mount = scanMountName(id)
 
-  // 同步清理该库的缩略图（就地 + 回退到存储的），避免删除外部库后遗留孤儿缩略图占磁盘空间。
+  // 同步清理该库的缩略图（统一存于内部存储，按 key 删除），避免删除外部库后遗留孤儿缩略图占磁盘空间。
   const row = getScanLibraryRow(id)
   if (row) {
     await removeLibraryThumbnails(mount, row.rootPath, 'deleted')
@@ -849,7 +819,7 @@ export const getScanAlbumDetail = async (
 
 /**
  * 清理「被禁用且超过 graceDays 未恢复启用」的扫描库：
- * 删除其就地生成的缩略图文件、source='library' 的照片记录，以及扫描库配置行。
+ * 删除其（统一存于内部存储的）缩略图、source='library' 的照片记录，以及扫描库配置行。
  *
  * 设计背景：外部库被"关闭/停止/删除"后，其缩略图应立即从前台隐藏（由
  * getGalleryHiddenScanMountSet 处理），但为给用户留出"误操作恢复"的缓冲，
@@ -881,7 +851,7 @@ export const cleanupExpiredDisabledScanLibraries = async (
 
   for (const row of expired) {
     const mount = scanMountName(row.id)
-    // 删除该库的全部缩略图（就地 + 回退到存储的）
+    // 删除该库的全部缩略图（统一存于内部存储）
     await removeLibraryThumbnails(mount, row.rootPath, '(cleanup)')
     // 删除已有缩略图的照片记录与库配置行
     await db

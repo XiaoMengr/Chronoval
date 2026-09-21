@@ -448,9 +448,10 @@ watchEffect(() => {
   toneImage = img
   img.crossOrigin = 'anonymous'
 
-  const parsed = new URL(url, window.location.origin)
-  parsed.searchParams.set('_cors', Date.now().toString())
-  img.src = parsed.toString()
+  // 走同源 /thumb 代理读像素（原因见 Histogram.vue 注释）：避免跨域缩略图污染 canvas，
+  // 导致影调分析静默失败、整段「影调参数 + 直方图」消失
+  const src = `/thumb/${encodeURIComponent(url)}?_cors=${Date.now()}`
+  img.src = src
 
   img.onload = () => {
     if (img !== toneImage) return
@@ -634,21 +635,22 @@ const onAlbumClick = (albumId: number) => {
         </div>
       </div>
 
+      <!-- 直方图：独立于影调分析渲染。即使像素读取失败也保留该区块（组件自带加载/错误态），
+           不再因 toneAnalysis 为空而整段消失 -->
+      <div v-if="currentPhoto.thumbnailUrl" class="mt-5 mb-3">
+        <div class="mb-2 text-xs font-medium text-neutral-500 dark:text-neutral-400">{{ $t('exif.sections.histogram') }}</div>
+        <Histogram :thumbnail-url="currentPhoto.thumbnailUrl" />
+      </div>
+
       <!-- 影调分析 -->
       <div v-if="toneAnalysis">
-        <h4 class="mb-2 mt-5 text-sm font-medium text-neutral-600 dark:text-neutral-400">{{ $t('exif.tone.analysis') }}</h4>
+        <h4 class="mb-2 text-sm font-medium text-neutral-600 dark:text-neutral-400">{{ $t('exif.tone.analysis') }}</h4>
         <PhotoInfoRow :label="$t('exif.tone.toneType')" :value="toneTypeText" />
         <div class="mt-1 mb-3 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
           <PhotoInfoRow :label="$t('exif.tone.brightness')" :value="`${toneAnalysis.brightness}%`" />
           <PhotoInfoRow :label="$t('exif.tone.contrast')" :value="`${toneAnalysis.contrast}%`" />
           <PhotoInfoRow :label="$t('exif.tone.shadowRatio')" :value="`${Math.round(toneAnalysis.shadowRatio * 100)}%`" />
           <PhotoInfoRow :label="$t('exif.tone.highlightRatio')" :value="`${Math.round(toneAnalysis.highlightRatio * 100)}%`" />
-        </div>
-
-        <!-- 直方图 -->
-        <div class="mb-3">
-          <div class="mb-2 text-xs font-medium text-neutral-500 dark:text-neutral-400">{{ $t('exif.sections.histogram') }}</div>
-          <Histogram v-if="currentPhoto.thumbnailUrl" :thumbnail-url="currentPhoto.thumbnailUrl" />
         </div>
       </div>
 

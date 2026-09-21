@@ -13,7 +13,7 @@ name: chronoval
 #
 # 目录角色（关键）：
 #   ./data           -> /app/data      程序运行目录（DB/配置，必需）
-#   ./storage        -> /app/storage   本地存储+缩略图回退（必需，可写，纯存储、绝不自动扫描）
+#   ./storage        -> /app/storage   本地存储+统一缩略图（必需，可写，纯存储、绝不自动扫描）
 #   ./data/library   -> /app/library   外部扫描库（可选，界面添加后才自动识别放图；默认不挂载）
 #
 # 访问方式：
@@ -33,7 +33,7 @@ services:
       - '3000:3000'            # 宿主机3000 -> 容器3000（改左值即可换对外端口）
     volumes:
       - ./data:/app/data
-      # 本地存储+缩略图回退：可写，上传落 photos/，纯存储不扫描（不再 ro）
+      # 本地存储+统一缩略图：可写，上传落 photos/，纯存储不扫描（不再 ro）
       - ./storage:/app/storage
       # 可选：外部扫描库（先 mkdir -p data/library，再取消下面注释以启用）
       # - ./data/library:/app/library

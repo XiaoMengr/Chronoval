@@ -1,9 +1,6 @@
-import path from 'node:path'
-import { promises as fs } from 'node:fs'
 import { and, eq, isNotNull, lt } from 'drizzle-orm'
 import type { StorageProvider } from '../storage'
 import { getStorageManager } from '../../plugins/3.storage'
-import { getLibraryMounts } from '../scan-library/manager'
 import { useDB, tables, type Photo } from '../../utils/db'
 
 const HEIC_EXTENSIONS = ['.heic', '.heif', '.hif']
@@ -36,23 +33,15 @@ export async function permanentlyDeletePhoto(
 
   const isLibrarySource = photo.source === 'library'
   // 库目录来源：原文件位于映射目录，不写入存储也不删除原文件。
-  // 缩略图为就地生成在 <mountRoot>/thumbnails/ 下，用 fs 直接删除（不经过 storageProvider）。
-  if (photo.thumbnailKey && isLibrarySource) {
-    const mount = getLibraryMounts().find((m) => m.name === photo.libraryMount)
-    if (mount) {
-      const thumbAbs = path.resolve(mount.root, photo.thumbnailKey)
-      if (thumbAbs.startsWith(path.resolve(mount.root) + path.sep)) {
-        try {
-          await fs.unlink(thumbAbs)
-          // 尝试清理空的 thumbnails 目录
-          await fs.rmdir(path.dirname(thumbAbs)).catch(() => {})
-        } catch (err) {
-          logger.image.warn(
-            `Failed to remove in-place thumbnail ${thumbAbs}:`,
-            err,
-          )
-        }
-      }
+  // 缩略图统一存于内部存储（thumbnails/<mount>/…），按存储 key 删除，外部库目录不再就地生成。
+  if (photo.thumbnailKey && isLibrarySource && storageProvider) {
+    try {
+      await storageProvider.delete(photo.thumbnailKey)
+    } catch (err) {
+      logger.image.warn(
+        `Failed to remove library thumbnail ${photo.thumbnailKey}:`,
+        err,
+      )
     }
   }
 

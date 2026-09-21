@@ -32,7 +32,8 @@
 - 🧭 **360° 全景查看**：支持全景照片的 360 自由视角浏览（`PanoramaViewer`）
 - 🖼️ **WebGL 高性能查看器**：高清缩放、平移、雾面过渡，多机位
 - 🏷️ **Exif 信息**：相机参数、拍摄时间、地理位置展示
-- 🎬 **Live Photo 自动配对**：图片 + 视频配对播放
+- 🎬 **Live/Motion Photo 播放**：Apple Live Photo（图片 + MOV 自动配对）与 Google Motion Photo 自动识别，查看器长按即播放实况视频，移动端触觉反馈、捏合缩放自动停止，视口内自动预加载
+- ▶️ **视频播放**：独立视频（MP4 / MOV）在相册中直接播放，原生播放器 + 封面缩略图，播放即显示、无需等待转码
 - 🗺️ **地图浏览**：MapLibre / Mapbox 聚合拍摄位置，反向地理编码识别城市
 - 🧩 **多格式支持**：JPEG / PNG / WebP / GIF / TIFF / HEIC / AVIF + MOV / MP4
 

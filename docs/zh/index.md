@@ -39,7 +39,10 @@ features:
     details: 完美适配桌面端和移动端，支持触摸操作和手势控制，提供原生应用般的体验。
   - title: Live/Motion Photo 支持
     icon: 🎬
-    details: 完整支持 Apple LivePhoto 格式和 Google 标准的 Motion Photo，自动检测和处理 MOV 视频文件，保留动态照片效果。
+    details: 完整支持 Apple LivePhoto 格式和 Google 标准的 Motion Photo，自动检测并配对 MOV 视频文件，查看器长按即可播放实况，移动端触觉反馈、捏合缩放手势自动停止，并在视口内自动预加载。
+  - title: 视频播放
+    icon: ▶️
+    details: 相册中直接播放独立视频（MP4 / MOV），自带原生播放器与封面缩略图，无需等待转码。
 ---
 
 ## 🌍 演示站点
