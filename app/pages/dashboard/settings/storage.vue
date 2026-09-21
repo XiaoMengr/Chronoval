@@ -999,7 +999,7 @@ const storageInfoConfigEntries = computed(() => {
               <h3 class="text-base font-semibold text-neutral-900 dark:text-neutral-100">
                 {{ $t('settings.storage.scanLibrary.sectionTitle') }}
               </h3>
-              <p class="mt-0.5 hidden break-words text-sm text-neutral-500 dark:text-neutral-400 sm:block">
+              <p class="mt-0.5 break-words text-xs leading-snug text-neutral-400 dark:text-neutral-500 sm:mt-1 sm:text-sm sm:leading-normal sm:text-neutral-500 sm:dark:text-neutral-400">
                 {{ $t('settings.storage.scanLibrary.sectionDescription') }}
               </p>
             </div>
