@@ -755,21 +755,17 @@ const onAlbumClick = (albumId: number) => {
     rgba(var(--cm-material-medium)),
     rgba(var(--cm-material-thick))
   );
+  /* 中性阴影：去掉 --cm-accent 彩色光晕，仅保留柔和灰影，消除侧栏边上的蓝色光晕 */
   box-shadow:
-    0 8px 32px color-mix(in srgb, rgb(var(--cm-accent)) 8%, transparent),
-    0 4px 16px color-mix(in srgb, rgb(var(--cm-accent)) 6%, transparent),
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    0 4px 16px rgba(0, 0, 0, 0.08),
     0 2px 8px rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(40px) saturate(1.3);
   -webkit-backdrop-filter: blur(40px) saturate(1.3);
 }
-/* afilmory 内发光：accent 5% 斜向高光 */
+/* 原 afilmory accent 内发光：改为全透明，去除蓝色光晕叠加，保持材质简洁 */
 .inspector-glass-glow {
-  background: linear-gradient(
-    to bottom right,
-    color-mix(in srgb, rgb(var(--cm-accent)) 5%, transparent),
-    transparent,
-    color-mix(in srgb, rgb(var(--cm-accent)) 5%, transparent)
-  );
+  background: transparent;
 }
 
 /* 打开面板时文字平滑渐入（每次 visible 变 true 触发一次）——
