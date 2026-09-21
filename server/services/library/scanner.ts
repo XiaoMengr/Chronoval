@@ -268,32 +268,54 @@ private async collectFiles(dir: string): Promise<string[]> {
     rel: string,
     absFile: string,
     stat: Awaited<ReturnType<typeof fs.stat>>,
-    _storageProvider: any,
+    storageProvider: any,
   ): Promise<Partial<Photo> | null> {
     const photoId = buildLibraryPhotoId(mount.name, rel)
     const relUrl = encodeURIComponent(rel).replace(/%2F/g, '/')
     // 原文件只读引用：通过 /library/<mountName>/<relpath> 访问
     const originalUrl = `/library/${mount.name}/${relUrl}`
 
-    // 缩略图就地生成：写入挂载根目录下的 thumbnails/ 子目录，随相册一起存在、便于管理。
-    // 通过原图路由 /library/<mountName>/thumbnails/<id>.webp 访问（该路由能 serve 挂载根下任意文件）。
+    // 缩略图写入策略：
+    // 1) 就地优先：写入外部库根目录下的 thumbnails/ 子目录，随相册一起存在、便于管理，
+    //    通过 /library/<mountName>/thumbnails/<id>.webp 访问。
+    // 2) 只读回退：若外部库目录不可写（仅读挂载），就地写会失败，则回退到程序本地存储
+    //    的 thumbnails/<mountName>/<id>.webp（与上传缩略图同源），URL 由 storageProvider
+    //    给出（本地存储为 /storage/...，可被 thumb 路由读取）。原文件始终不被改动。
     const thumbFileName = `${photoId}.webp`
-    const thumbRelKey = `thumbnails/${thumbFileName}`
-    const thumbAbsPath = path.resolve(mount.root, thumbRelKey)
-    const thumbnailPublicUrl = `/library/${mount.name}/thumbnails/${thumbFileName}`
+    const thumbAbsPath = path.resolve(mount.root, `thumbnails/${thumbFileName}`)
 
-    // 就地写入缩略图（确保子目录存在）
-    const writeThumbnailInPlace = async (
+    const writeThumbnail = async (
       buffer: Buffer,
-    ): Promise<string | null> => {
+    ): Promise<{ key: string; url: string } | null> => {
+      // 优先就地写入外部库目录
       try {
         await fs.mkdir(path.dirname(thumbAbsPath), { recursive: true })
         await fs.writeFile(thumbAbsPath, buffer)
-        return thumbRelKey
+        return {
+          key: `thumbnails/${thumbFileName}`,
+          url: `/library/${mount.name}/thumbnails/${thumbFileName}`,
+        }
       } catch (err) {
         log().warn(
-          `Failed to write in-place thumbnail for ${absFile}:`,
+          `In-place thumbnail write failed for ${absFile}, falling back to storage:`,
           err,
+        )
+      }
+
+      // 回退：写入本地存储缩略图目录（对应外部库），未授权无法直接读取原图
+      const provider = storageProvider
+      if (!provider) return null
+      try {
+        const obj = await provider.create(
+          `thumbnails/${mount.name}/${thumbFileName}`,
+          buffer,
+          'image/webp',
+        )
+        return { key: obj.key, url: provider.getPublicUrl(obj.key) }
+      } catch (err2) {
+        log().warn(
+          `Failed to write fallback thumbnail for ${absFile} to storage:`,
+          err2,
         )
         return null
       }
@@ -321,7 +343,8 @@ private async collectFiles(dir: string): Promise<string[]> {
         const { thumbnailBuffer, thumbnailHash } =
           await generateThumbnailAndHash(imageBuffer)
 
-        const written = await writeThumbnailInPlace(thumbnailBuffer)
+        // 缩略图：就地写入优先，只读目录自动回退到本地存储
+        const thumb = await writeThumbnail(thumbnailBuffer)
 
         // EXIF
         let exifData: Awaited<ReturnType<typeof extractExifData>> = null
@@ -333,8 +356,6 @@ private async collectFiles(dir: string): Promise<string[]> {
         const photoInfo = extractPhotoInfo(rel, exifData)
         const coords = exifData ? parseGPSCoordinates(exifData) : null
 
-        const thumbnailUrl = written ? thumbnailPublicUrl : null
-
         return {
           title: photoInfo.title,
           description: photoInfo.description,
@@ -344,11 +365,11 @@ private async collectFiles(dir: string): Promise<string[]> {
             width && height && height > 0 ? width / height : null,
           dateTaken: photoInfo.dateTaken,
           storageKey: `${mount.name}/${rel}`,
-          thumbnailKey: written || null,
+          thumbnailKey: thumb?.key || null,
           fileSize: stat.size,
           lastModified: stat.mtime.toISOString(),
           originalUrl,
-          thumbnailUrl,
+          thumbnailUrl: thumb?.url || null,
           thumbnailHash: thumbnailHash
             ? compressUint8Array(thumbnailHash)
             : null,
@@ -389,9 +410,9 @@ private async collectFiles(dir: string): Promise<string[]> {
         }
       }
 
-      let written: string | null = null
+      let thumb: { key: string; url: string } | null = null
       if (thumbnailBuffer) {
-        written = await writeThumbnailInPlace(thumbnailBuffer)
+        thumb = await writeThumbnail(thumbnailBuffer)
       }
 
       const dbWidth = width || null
@@ -406,11 +427,11 @@ private async collectFiles(dir: string): Promise<string[]> {
           dbWidth && dbHeight && dbHeight > 0 ? dbWidth / dbHeight : 16 / 9,
         dateTaken: stat.mtime.toISOString(),
         storageKey: `${mount.name}/${rel}`,
-        thumbnailKey: written || null,
+        thumbnailKey: thumb?.key || null,
         fileSize: stat.size,
         lastModified: stat.mtime.toISOString(),
         originalUrl,
-        thumbnailUrl: written ? thumbnailPublicUrl : null,
+        thumbnailUrl: thumb?.url || null,
         thumbnailHash: thumbnailHash ? compressUint8Array(thumbnailHash) : null,
         tags: ['video'],
         exif: null,
