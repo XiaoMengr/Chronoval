@@ -968,12 +968,12 @@ const storageInfoConfigEntries = computed(() => {
         </section>
 
         <section class="rounded-md border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
-          <header class="flex w-full items-center justify-between border-b border-neutral-200 px-5 py-4 dark:border-neutral-800">
-            <div>
+          <header class="flex w-full items-center justify-between gap-3 border-b border-neutral-200 px-5 py-4 dark:border-neutral-800">
+            <div class="min-w-0 flex-1 pr-1">
               <h3 class="text-base font-semibold text-neutral-900 dark:text-neutral-100">
                 {{ $t('settings.storage.scanLibrary.sectionTitle') }}
               </h3>
-              <p class="mt-0.5 text-sm text-neutral-500 dark:text-neutral-400">
+              <p class="mt-0.5 break-words text-sm text-neutral-500 dark:text-neutral-400">
                 {{ $t('settings.storage.scanLibrary.sectionDescription') }}
               </p>
             </div>
@@ -982,7 +982,7 @@ const storageInfoConfigEntries = computed(() => {
               :ui="{ footer: 'justify-end' }"
               @open="openAddScanLibrary"
             >
-              <UButton size="sm" variant="soft" icon="tabler:folder-plus">
+              <UButton class="shrink-0" size="sm" variant="soft" icon="tabler:folder-plus">
                 {{ $t('settings.storage.scanLibrary.actions.add') }}
               </UButton>
 
