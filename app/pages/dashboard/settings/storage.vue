@@ -178,56 +178,8 @@ const currentStorageSchema = computed(() => {
   }
 })
 
-// “存储基础路径”默认指向 /app/storage（生产部署时通常是唯一被宿主机映射挂载、可持久化的目录）。
-// 若把它改为其他非挂载目录，数据可能不会持久化——容器或环境重建后文件将直接丢失。
-const LOCAL_BASE_PATH = '/app/storage'
-// 修改默认存储路径前的风险确认弹窗
-const confirmLocalBasePathOpen = ref(false)
-// 用户已确认风险、允许继续修改该路径
-const basePathEditUnlocked = ref(false)
-
-const localBasePathLocked = computed(
-  () =>
-    storageConfigState.provider === 'local' &&
-    !basePathEditUnlocked.value &&
-    (storageConfigState.config as any)?.basePath === LOCAL_BASE_PATH,
-)
-
-// 锁定态下点击/按下 basePath 输入框：阻止编辑并弹出风险提示，确认后可解锁修改
-const handleLocalBasePathPress = (e: MouseEvent) => {
-  if (!localBasePathLocked.value) return
-  e.preventDefault()
-  confirmLocalBasePathOpen.value = true
-}
-const confirmLocalBasePathEdit = () => {
-  basePathEditUnlocked.value = true
-  confirmLocalBasePathOpen.value = false
-}
-const cancelLocalBasePathEdit = () => {
-  confirmLocalBasePathOpen.value = false
-}
-
-// 保存时：容器模式下若把本地存储路径改为非挂载目录 /app/storage，做二次风险确认
-const confirmSaveNonMountOpen = ref(false)
-let pendingStorageSubmit: { payload: Record<string, any>; close?: () => void } | null =
-  null
-const askConfirmSaveNonMount = (
-  payload: Record<string, any>,
-  close?: () => void,
-) => {
-  pendingStorageSubmit = { payload, close }
-  confirmSaveNonMountOpen.value = true
-}
-const proceedSaveNonMount = () => {
-  const p = pendingStorageSubmit
-  pendingStorageSubmit = null
-  confirmSaveNonMountOpen.value = false
-  if (p) void doStorageConfigSubmit(p.payload, p.close)
-}
-const cancelSaveNonMount = () => {
-  pendingStorageSubmit = null
-  confirmSaveNonMountOpen.value = false
-}
+// 存储基础路径默认指向 /app/storage。不再做锁定与风险弹窗拦截，
+// 仅以字段描述提示：Docker 环境下若不知如何操作，请保持默认路径。
 
 // 获取存储配置的默认值
 const getStorageConfigDefaults = (provider: string): Partial<StorageConfig> => {
@@ -268,13 +220,6 @@ const storageFieldsConfig = computed<Record<string, any>>(() => {
         basePath: {
           label: $t(`${baseKey}.basePath.label`),
           description: $t(`${baseKey}.basePath.description`),
-          inputProps: {
-            readonly: localBasePathLocked.value,
-            class: localBasePathLocked.value
-              ? 'cursor-not-allowed opacity-60 bg-neutral-100 dark:bg-neutral-800'
-              : undefined,
-            onMousedown: handleLocalBasePathPress,
-          },
         },
         baseUrl: {
           label: $t(`${baseKey}.baseUrl.label`),
@@ -417,15 +362,6 @@ const onStorageConfigSubmit = async (
       title: $t('settings.storage.messages.nameRequired'),
       color: 'error',
     })
-    return
-  }
-
-  // 把本地存储路径改为非默认挂载目录 /app/storage 时，先弹风险确认再保存
-  if (
-    payload.provider === 'local' &&
-    (payload.config as any)?.basePath !== LOCAL_BASE_PATH
-  ) {
-    askConfirmSaveNonMount(payload, close)
     return
   }
 
@@ -1014,78 +950,6 @@ const storageInfoConfigEntries = computed(() => {
             </template>
           </USlideover>
 
-          <!-- 容器模式下修改默认存储路径 /app/storage 的风险确认（确认后才可编辑） -->
-          <UModal
-            v-model:open="confirmLocalBasePathOpen"
-            :title="$t('settings.storage.local.basePathLock.title')"
-            :ui="{ footer: 'justify-end' }"
-          >
-            <template #body>
-              <div class="flex items-start gap-3">
-                <UIcon
-                  name="tabler:alert-triangle"
-                  class="mt-0.5 size-5 shrink-0 text-amber-500"
-                />
-                <div class="space-y-2 text-sm text-neutral-600 dark:text-neutral-400">
-                  <p>{{ $t('settings.storage.local.basePathLock.body1') }}</p>
-                  <p>{{ $t('settings.storage.local.basePathLock.body2') }}</p>
-                  <p class="font-medium text-neutral-800 dark:text-neutral-200">
-                    {{ $t('settings.storage.local.basePathLock.body3') }}
-                  </p>
-                </div>
-              </div>
-            </template>
-            <template #footer>
-              <UButton
-                :label="$t('common.actions.cancel')"
-                color="neutral"
-                variant="outline"
-                @click="cancelLocalBasePathEdit"
-              />
-              <UButton
-                :label="$t('settings.storage.local.basePathLock.confirmLabel')"
-                color="warning"
-                icon="tabler:alert-triangle"
-                @click="confirmLocalBasePathEdit"
-              />
-            </template>
-          </UModal>
-
-          <!-- 容器模式下保存为“非挂载目录”存储路径的二次风险确认 -->
-          <UModal
-            v-model:open="confirmSaveNonMountOpen"
-            :title="$t('settings.storage.local.basePathNonMount.title')"
-            :ui="{ footer: 'justify-end' }"
-          >
-            <template #body>
-              <div class="flex items-start gap-3">
-                <UIcon
-                  name="tabler:alert-triangle"
-                  class="mt-0.5 size-5 shrink-0 text-red-500"
-                />
-                <div class="space-y-2 text-sm text-neutral-600 dark:text-neutral-400">
-                  <p>{{ $t('settings.storage.local.basePathNonMount.body1') }}</p>
-                  <p class="font-medium text-neutral-800 dark:text-neutral-200">
-                    {{ $t('settings.storage.local.basePathNonMount.body2') }}
-                  </p>
-                </div>
-              </div>
-            </template>
-            <template #footer>
-              <UButton
-                :label="$t('common.actions.cancel')"
-                color="neutral"
-                variant="outline"
-                @click="cancelSaveNonMount"
-              />
-              <UButton
-                :label="$t('settings.storage.local.basePathNonMount.confirmLabel')"
-                color="error"
-                icon="tabler:alert-triangle"
-                @click="proceedSaveNonMount"
-              />
-            </template>
-          </UModal>
         </section>
 
         <section class="rounded-md border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">

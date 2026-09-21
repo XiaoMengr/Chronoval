@@ -1424,7 +1424,7 @@
       "local": {
         "basePath": {
           "label": "基本路徑",
-          "description": "本地儲存嘅基本目錄路徑"
+          "description": "如果你喺 Docker 環境唔知點操作，請保持預設嘅 /app/storage 唔變。"
         },
         "baseUrl": {
           "label": "基本 URL",

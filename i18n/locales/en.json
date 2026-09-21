@@ -1705,20 +1705,7 @@
       "local": {
         "basePath": {
           "label": "Storage Base Path",
-          "description": "Local filesystem path for storing photos"
-        },
-        "basePathLock": {
-          "title": "Storage path change warning",
-          "body1": "You are running in a Docker container, where only the /app/storage directory is mounted for persistence.",
-          "body2": "Changing it to another directory not mapped from the host means photos will be written there and NOT be persisted.",
-          "body3": "Once the container is deleted and recreated, those files will be lost and cannot be recovered. Still want to change it?",
-          "confirmLabel": "Change anyway"
-        },
-        "basePathNonMount": {
-          "title": "Save non-mounted storage path?",
-          "body1": "You are running in a Docker container; /app/storage is the only host-mapped, persisted directory.",
-          "body2": "The path you are saving is not /app/storage, so photos will be written elsewhere inside the container. If the container is deleted and recreated, those files will be lost and unrecoverable. Still save anyway?",
-          "confirmLabel": "Save anyway"
+          "description": "If you are running in Docker and don't know how to do this, keep the default /app/storage unchanged."
         },
         "baseUrl": {
           "label": "Base URL",

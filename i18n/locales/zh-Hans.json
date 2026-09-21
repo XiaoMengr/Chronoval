@@ -1699,20 +1699,7 @@
       "local": {
         "basePath": {
           "label": "存储基础路径",
-          "description": "用于存储照片的本地文件系统路径"
-        },
-        "basePathLock": {
-          "title": "修改存储路径风险提示",
-          "body1": "您正运行在 Docker 容器中，容器仅将 /app/storage 目录映射挂载进行持久化。",
-          "body2": "若修改为其他非宿主机映射的容器内目录，照片将写入该目录，数据不会持久化。",
-          "body3": "当容器被删除并重新启动后，这些文件会直接丢失且无法恢复。确认仍要修改吗？",
-          "confirmLabel": "仍要修改"
-        },
-        "basePathNonMount": {
-          "title": "保存非映射存储路径确认",
-          "body1": "您当前运行在 Docker 容器中，/app/storage 是唯一被宿主机映射挂载、可持久化的目录。",
-          "body2": "您正在保存的路径不是 /app/storage，照片将写入容器内部其他位置；当容器被删除并重新启动后，这些文件会直接丢失且无法恢复。确认仍要保存吗？",
-          "confirmLabel": "仍要保存"
+          "description": "如果是 Docker 环境，不知道怎么操作，请保持默认的 /app/storage 不变。"
         },
         "baseUrl": {
           "label": "基础 URL",

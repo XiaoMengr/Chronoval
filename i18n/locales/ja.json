@@ -1416,7 +1416,7 @@
       "local": {
         "basePath": {
           "label": "基本パス",
-          "description": "ローカルファイルシステムでファイルを保存するベースディレクトリパス"
+          "description": "Docker 環境で操作方法が分からない場合は、既定の /app/storage のままにしてください。"
         },
         "baseUrl": {
           "label": "ベース URL",

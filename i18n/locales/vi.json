@@ -1643,7 +1643,7 @@
       "local": {
         "basePath": {
           "label": "Đường dẫn cơ sở lưu trữ",
-          "description": "Đường dẫn hệ thống tệp cục bộ để lưu ảnh"
+          "description": "Nếu bạn đang dùng Docker và không biết cách thao tác, hãy giữ nguyên đường dẫn mặc định /app/storage."
         },
         "baseUrl": {
           "label": "URL cơ sở",

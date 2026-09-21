@@ -1643,7 +1643,7 @@
       "local": {
         "basePath": {
           "label": "스토리지 기본 경로",
-          "description": "사진 저장용 로컬 파일 시스템 경로"
+          "description": "Docker 환경에서 조작 방법을 모른다면 기본 경로 /app/storage를 유지하세요."
         },
         "baseUrl": {
           "label": "기본 URL",
