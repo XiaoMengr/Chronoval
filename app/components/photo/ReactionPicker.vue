@@ -70,9 +70,9 @@ const handleSelect = (id: string) => {
     <motion.div
       v-if="isOpen"
       ref="pickerRef"
-      :initial="{ opacity: 0, scale: 0.9, y: 10 }"
+      :initial="{ opacity: 1, scale: 0.92, y: 8 }"
       :animate="{ opacity: 1, scale: 1, y: 0 }"
-      :exit="{ opacity: 0, scale: 0.9, y: 10 }"
+      :exit="{ opacity: 1, scale: 0.92, y: 8 }"
       :transition="{
         type: 'spring',
         stiffness: 400,
@@ -82,6 +82,7 @@ const handleSelect = (id: string) => {
       class="absolute bottom-full right-0 mb-2 z-30"
       @click.stop
     >
+      <!-- 半透明高斯模糊玻璃卡片 -->
       <div
         class="bg-white/70 dark:bg-neutral-900/55 backdrop-blur-2xl backdrop-saturate-150 rounded-2xl border border-white/40 dark:border-white/10 shadow-2xl shadow-black/10 dark:shadow-black/40 p-3"
       >
@@ -129,11 +130,15 @@ const handleSelect = (id: string) => {
             :title="reaction.label"
             @click="handleSelect(reaction.id)"
           >
-            <Icon
-              :name="reaction.iconName"
-              class="text-[28px] select-none"
-              mode="svg"
-            />
+            <span
+              class="absolute left-1/2 top-0 -translate-x-1/2 flex items-center justify-center pointer-events-none select-none h-full w-full"
+            >
+              <Icon
+                :name="reaction.iconName"
+                class="text-[28px] leading-none select-none"
+                mode="svg"
+              />
+            </span>
 
             <!-- 表情 label：移动端常显，桌面端悬浮显示 -->
             <span
