@@ -249,11 +249,15 @@ export const applyScanAlbumMeta = async (
     randomQuotes: meta.randomQuotes || null,
     randomQuotesTag: meta.randomQuotesTag ?? null,
     // 公开链接优先级：自定义 slug > 相簿自身 urlKey > 库级默认
-    link: meta.slug
-      ? `/albums/s/${encodeURIComponent(meta.slug)}`
-      : meta.urlKey
-        ? `/albums/scan/${encodeURIComponent(meta.urlKey)}`
-        : node.link,
+    // 注意：仅对顶层（无上级路径）相簿做链接替换；子相簿必须保留完整子路径链接，
+    // 否则点击子相簿会退回到库根而“进不去”，因此子相簿始终用 node.link（含路径）。
+    link: !node.relPath
+      ? meta.slug
+        ? `/albums/s/${encodeURIComponent(meta.slug)}`
+        : meta.urlKey
+          ? `/albums/scan/${encodeURIComponent(meta.urlKey)}`
+          : node.link
+      : node.link,
     slug: meta.slug || null,
     hasCustom: true,
   }

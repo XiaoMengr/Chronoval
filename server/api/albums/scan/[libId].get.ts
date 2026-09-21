@@ -35,7 +35,11 @@ export default eventHandler(async (event) => {
       throw createError({ statusCode: 404, statusMessage: 'Not Found' })
     }
     libIdNum = lib.id
-    relPath = byMetaUrl.relPath || ''
+    // urlKey 标识的相簿可能是某目录层，公开链接 /albums/scan/{urlKey}/{子路径...} 可继续向下钻取；
+    // 因此在基础 relPath 之上叠加 query.path，否则点击其子相簿会被错误地解析回父相簿（表现为“打不开”）。
+    relPath = query.path
+      ? [byMetaUrl.relPath || '', query.path].filter(Boolean).join('/')
+      : byMetaUrl.relPath || ''
   } else {
     const lib = getScanLibraryByKey(libId)
     if (!lib || !lib.asAlbum || !lib.enabled) {

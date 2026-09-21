@@ -285,11 +285,18 @@ const cardSrcAt = (i: number) =>
   position: relative;
   width: clamp(168px, 36vw, 220px);
   aspect-ratio: 3 / 4;
+  /* 兼容兜底：老 WebView 不支持 aspect-ratio 时给一个固定高度，避免容器塌陷 */
+  height: clamp(224px, 48vw, 293px);
 }
 
 .loader-card {
   position: absolute;
-  inset: 0;
+  /* 显式 top/right/bottom/left：避免仅依赖 inset 简写在旧内核（如部分移动 WebView）
+     下逐条失效，导致三张卡片退化成“一列竖排”的异常布局 */
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   border-radius: clamp(12px, 2.5vw, 18px);
   /* 液态玻璃底色：顶部受光更透、底部更沉，形成体积感 */
   background: linear-gradient(
@@ -316,7 +323,10 @@ const cardSrcAt = (i: number) =>
 /* 相框内嵌的"照片"（拟物摄影图）：盖住整卡、四角圆角，像真实印刷照片嵌在玻璃里 */
 .loader-photo {
   position: absolute;
-  inset: 7px;
+  top: 7px;
+  right: 7px;
+  bottom: 7px;
+  left: 7px;
   display: block;
   width: calc(100% - 14px);
   height: calc(100% - 14px);

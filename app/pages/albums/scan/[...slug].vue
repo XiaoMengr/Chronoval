@@ -17,8 +17,13 @@ const relPath = computed(() =>
 </script>
 
 <template>
+  <!-- 用 :key 强制子组件随「相簿标识 + 相对路径」整体重挂载：
+       `/albums/scan/{urlKey}/{子路径...}` 属于同一个 catch-all 路由，若复用组件实例，
+       useAsyncData 会在 key 变化时发生跨 key 竞态，导致点击三级相簿“没反应”或偶发 400/相簿不存在。
+       以 key 重挂载可确保每次定位都走一次干净、无竞态的数据请求。 -->
   <ScanAlbumView
     v-if="libKey"
+    :key="`${libKey}/${relPath}`"
     :lib-key="libKey"
     :rel-path="relPath"
     mode="scan"

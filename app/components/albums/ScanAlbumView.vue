@@ -47,13 +47,26 @@ const relPath = computed(() => props.relPath || '')
 const { t } = useI18n()
 const dayjs = useDayjs()
 
+// 相簿相对路径可能含非 ASCII（中文等）。Node/nitro 的 HTTP 层会直接 400 拒绝
+// 请求行里未百分号编码的非 ASCII query（如 path=旅行），导致三级相簿“打不开”。
+// 这里先把每段 encodeURIComponent 后作为 query 值。后端 getScanAlbumDetail /
+// cleanRelPath 本就会再 decodeURIComponent，因此无论前端是否二次编码都能正确还原，
+// 可稳定绕过该 400。
+const encodedRelPath = computed(() =>
+  relPath.value
+    .split('/')
+    .filter(Boolean)
+    .map((s) => encodeURIComponent(s))
+    .join('/'),
+)
+
 const { data, status, refresh } = await useAsyncData<ScanAlbumPayload>(
   () => `scan-album-${props.libKey}-${relPath.value}`,
   () =>
     $fetch<ScanAlbumPayload>(
       `/api/albums/scan/${props.libKey}`,
       {
-        query: { path: relPath.value },
+        query: { path: encodedRelPath.value || relPath.value },
       },
     ),
   { watch: [() => props.libKey, relPath] },
@@ -91,7 +104,7 @@ const onSubmitPassword = async () => {
   try {
     await $fetch(`/api/albums/scan/${props.libKey}`, {
       method: 'POST',
-      query: { path: relPath.value },
+      query: { path: encodedRelPath.value || relPath.value },
       body: { password: pw },
     })
     stopFailTimer()
@@ -277,15 +290,24 @@ function readStoredView(): 'photos' | 'subs' | null {
   }
 }
 const activeView = ref<'photos' | 'subs'>(readStoredView() ?? 'photos')
+
+// 可用性判断：仅当「同时有照片和子相簿」时才需要圆球切换；否则固定唯一可用视图
+const hasPhotos = computed(() => (data.value?.dirPhotos?.length ?? 0) > 0)
+const hasSubs = computed(() => (data.value?.children?.length ?? 0) > 0)
+const canSwitch = computed(() => hasPhotos.value && hasSubs.value)
+
 watch(
-  () => [data.value?.dirPhotos ?? [], data.value?.children ?? []],
+  () => [hasPhotos.value, hasSubs.value],
   () => {
-    const stored = readStoredView()
-    if (stored) {
-      activeView.value = stored
-    } else {
-      activeView.value = (data.value?.dirPhotos?.length ?? 0) > 0 ? 'photos' : 'subs'
+    if (!canSwitch.value) {
+      // 数据尚未就绪（照片、子相簿都为空）时保持默认，避免加载期视图闪现
+      if (!hasPhotos.value && !hasSubs.value) return
+      // 单一视图：有照片优先显示照片，只有子相簿则显示子相簿
+      activeView.value = hasPhotos.value ? 'photos' : 'subs'
+      return
     }
+    const stored = readStoredView()
+    activeView.value = stored ?? 'photos'
   },
   { immediate: true },
 )
@@ -308,31 +330,47 @@ const selectView = (v: 'photos' | 'subs') => {
     <!-- 顶部导航 / 标题区 -->
     <div class="px-6 pt-6">
       <div class="mb-6 flex items-center justify-between gap-3 text-sm text-neutral-500 dark:text-neutral-400">
-        <div class="flex min-w-0 items-center gap-2">
+        <nav class="flex h-7 min-w-0 shrink items-center gap-0.5 rounded-full bg-(--ui-bg-elevated) px-1 ring-1 ring-(--ui-border)">
+          <!-- 返回上一级 -->
           <NuxtLink
             :to="backTarget"
-            class="flex items-center gap-1 transition-colors hover:text-neutral-800 dark:hover:text-neutral-100"
+            class="flex items-center gap-1 rounded-full px-1.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-(--ui-bg) hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-neutral-100"
           >
-            <Icon name="tabler:arrow-left" class="size-4" />
+            <Icon name="tabler:arrow-left" class="size-3.5" />
             <span>{{ backLabel }}</span>
           </NuxtLink>
-          <template v-if="crumbs.length">
-            <span>/</span>
-            <NuxtLink
-              v-for="(seg, i) in crumbs"
-              :key="seg"
-              :to="`/albums/scan/${libKey}/${crumbs.slice(0, i + 1).join('/')}`"
-              class="max-w-[16ch] truncate transition-colors hover:text-neutral-800 dark:hover:text-neutral-100"
-            >
-              {{ seg }}
-            </NuxtLink>
-          </template>
-        </div>
 
-        <!-- 右上角：圆形球「照片 / 子相簿」切换（左） + 首页独立胶囊（右最外） -->
-        <div class="flex shrink-0 items-center gap-2">
-          <!-- 圆形球胶囊：点击无缝原地增长为「照片 / 子相簿」切换胶囊（与首页等高，融为一体） -->
-          <div v-if="data?.children?.length" ref="ballRef" class="ball-capsule">
+          <template v-if="crumbs.length">
+            <Icon name="tabler:chevron-right" class="size-3 shrink-0 text-neutral-400 dark:text-neutral-500" />
+            <template v-for="(seg, i) in crumbs" :key="seg">
+              <!-- 中间层级：可点击跳转的路径 -->
+              <NuxtLink
+                v-if="i < crumbs.length - 1"
+                :to="`/albums/scan/${libKey}/${crumbs.slice(0, i + 1).join('/')}`"
+                class="max-w-[14ch] truncate rounded-full px-1.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-(--ui-bg) hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-neutral-100"
+              >
+                {{ seg }}
+              </NuxtLink>
+              <!-- 当前层级：主题色高亮胶囊，不可点击 -->
+              <span
+                v-else
+                class="max-w-[14ch] truncate rounded-full bg-(--ui-primary)/10 px-2 text-xs font-semibold text-(--ui-primary)"
+              >
+                {{ seg }}
+              </span>
+              <Icon
+                v-if="i < crumbs.length - 1"
+                name="tabler:chevron-right"
+                class="size-3 shrink-0 text-neutral-400 dark:text-neutral-500"
+              />
+            </template>
+          </template>
+        </nav>
+
+        <!-- 右上角胶囊组：圆球在相簿首页与子相簿都显示；右侧独立「返回相簿」胶囊仅子相簿显示 -->
+        <div class="ml-auto flex shrink-0 items-center gap-2">
+          <!-- 圆形球胶囊：仅当「同时有照片和子相簿」时显示，点击无缝原地增长为「照片 / 子相簿」切换 -->
+          <div v-if="canSwitch" ref="ballRef" class="ball-capsule">
             <div class="ball-segments-grid" :class="{ open: menuOpen }">
               <div class="seg-wrap">
                 <button
@@ -380,8 +418,9 @@ const selectView = (v: 'photos' | 'subs') => {
             </button>
           </div>
 
-          <!-- 首页：独立胶囊（同普通相册），位于最右 -->
+          <!-- 首页：独立胶囊（同普通相册），位于最右；仅子相簿显示 -->
           <UButton
+            v-if="crumbs.length > 0"
             :to="'/albums'"
             variant="soft"
             color="neutral"
