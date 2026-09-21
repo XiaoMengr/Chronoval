@@ -1146,8 +1146,7 @@ onUnmounted(() => window.removeEventListener('resize', handleWindowResizeRefit))
                         :aria-label="
                           isDesktopInspectorVisible ? 'collapse info' : 'expand info'
                         "
-                        class="flex size-8 items-center justify-center rounded-full backdrop-blur-2xl duration-200 hover:bg-black/40"
-                        style="background-color: rgba(var(--cm-material-thick)); color: rgb(var(--cm-text))"
+                        class="flex size-8 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm duration-200 hover:bg-black/50"
                         @click="isDesktopInspectorVisible = !isDesktopInspectorVisible"
                       >
                         <Icon
@@ -1164,20 +1163,8 @@ onUnmounted(() => window.removeEventListener('resize', handleWindowResizeRefit))
                         type="button"
                         aria-label="share photo"
                         :title="$t('viewer.share')"
-                        class="flex items-center justify-center rounded-full transition-colors"
-                        :class="
-                          isMobile
-                            ? 'size-9 bg-black/30 text-white backdrop-blur-sm hover:bg-black/50'
-                            : 'size-8 backdrop-blur-2xl duration-200 hover:bg-black/40'
-                        "
-                        :style="
-                          isMobile
-                            ? undefined
-                            : {
-                                backgroundColor: 'rgba(var(--cm-material-thick))',
-                                color: 'rgb(var(--cm-text))',
-                              }
-                        "
+                        class="flex items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm transition-colors hover:bg-black/50"
+                        :class="isMobile ? 'size-9' : 'size-8'"
                         @click="showShareModal = true"
                       >
                         <Icon name="tabler:share-3" class="size-4.5" />
@@ -1186,20 +1173,8 @@ onUnmounted(() => window.removeEventListener('resize', handleWindowResizeRefit))
                         type="button"
                         aria-label="close"
                         :title="$t('viewer.close')"
-                        class="flex items-center justify-center rounded-full transition-colors"
-                        :class="
-                          isMobile
-                            ? 'size-9 bg-black/30 text-white backdrop-blur-sm hover:bg-black/50'
-                            : 'size-8 backdrop-blur-2xl duration-200 hover:bg-black/40'
-                        "
-                        :style="
-                          isMobile
-                            ? undefined
-                            : {
-                                backgroundColor: 'rgba(var(--cm-material-thick))',
-                                color: 'rgb(var(--cm-text))',
-                              }
-                        "
+                        class="flex items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm transition-colors hover:bg-black/50"
+                        :class="isMobile ? 'size-9' : 'size-8'"
                         @click="emit('close')"
                       >
                         <Icon name="tabler:x" class="size-4.5" />
