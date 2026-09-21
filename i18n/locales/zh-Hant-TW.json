@@ -170,6 +170,7 @@
     "failedToLoadDescription": "載入此相簿時出現問題。",
     "failedToLoad": "載入相簿失敗",
     "backToAlbums": "返回相簿",
+    "backToAlbumsHome": "返回相簿首頁",
     "noDescription": "無描述",
     "photo": "無相片 | 一張相片 | {count} 張相片",
     "createdAt": "建立於 {time}",

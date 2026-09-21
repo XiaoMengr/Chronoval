@@ -162,6 +162,7 @@
     "failedToLoadDescription": "При загрузке альбома произошла ошибка.",
     "failedToLoad": "Не удалось загрузить альбом",
     "backToAlbums": "Вернуться к альбомам",
+    "backToAlbumsHome": "К списку альбомов",
     "noDescription": "Описание не указано",
     "photo": "нет фотографий | {count} фотография | {count} фотографии | {count} фотографий",
     "createdAt": "Создан {time}",

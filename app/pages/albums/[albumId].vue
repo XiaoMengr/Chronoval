@@ -250,14 +250,27 @@ onBeforeMount(() => {
             class="absolute inset-0 bg-gradient-to-b from-white/40 via-white/60 to-white dark:from-neutral-900/30 dark:via-neutral-900/50 dark:to-neutral-900"
           />
         </div>
-        <div class="relative container mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+        <div
+          class="relative container mx-auto flex items-center justify-between px-4 pt-4 sm:px-6 lg:px-8"
+        >
           <UButton
             variant="ghost"
             color="neutral"
             icon="tabler:arrow-left"
             size="sm"
+            :aria-label="$t('album.backToAlbums')"
             @click="goBackToAlbums"
           />
+          <UButton
+            variant="ghost"
+            color="neutral"
+            icon="tabler:home"
+            size="sm"
+            class="gap-1"
+            @click="goBackToAlbums"
+          >
+            {{ $t('album.backToAlbumsHome') }}
+          </UButton>
         </div>
         <AlbumUnlock
           :album-id="albumData?.id"
@@ -284,15 +297,28 @@ onBeforeMount(() => {
         />
       </div>
 
-      <!-- Back Button -->
-      <div class="relative container mx-auto px-4 sm:px-6 lg:px-8 pt-4 z-10">
+      <!-- Top Bar: Back + Home（右上角返回相簿首页） -->
+      <div
+        class="relative container mx-auto flex items-center justify-between px-4 pt-4 z-10 sm:px-6 lg:px-8"
+      >
         <UButton
           variant="ghost"
           color="neutral"
           icon="tabler:arrow-left"
           size="sm"
+          :aria-label="$t('album.backToAlbums')"
           @click="goBackToAlbums"
         />
+        <UButton
+          variant="ghost"
+          color="neutral"
+          icon="tabler:home"
+          size="sm"
+          class="gap-1"
+          @click="goBackToAlbums"
+        >
+          {{ $t('album.backToAlbumsHome') }}
+        </UButton>
       </div>
 
       <!-- Album Information -->

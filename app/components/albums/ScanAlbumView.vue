@@ -256,25 +256,34 @@ watch(
   <div class="min-h-svh w-full bg-white pb-16 dark:bg-neutral-950">
     <!-- 顶部导航 / 标题区 -->
     <div class="px-6 pt-6">
-      <div class="mb-6 flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
-        <NuxtLink
-          :to="backTarget"
-          class="flex items-center gap-1 transition-colors hover:text-neutral-800 dark:hover:text-neutral-100"
-        >
-          <Icon name="tabler:arrow-left" class="size-4" />
-          <span>{{ backLabel }}</span>
-        </NuxtLink>
-        <template v-if="crumbs.length">
-          <span>/</span>
+      <div class="mb-6 flex items-center justify-between gap-2 text-sm text-neutral-500 dark:text-neutral-400">
+        <div class="flex min-w-0 items-center gap-2">
           <NuxtLink
-            v-for="(seg, i) in crumbs"
-            :key="seg"
-            :to="`/albums/scan/${libKey}/${crumbs.slice(0, i + 1).join('/')}`"
-            class="max-w-[16ch] truncate transition-colors hover:text-neutral-800 dark:hover:text-neutral-100"
+            :to="backTarget"
+            class="flex items-center gap-1 transition-colors hover:text-neutral-800 dark:hover:text-neutral-100"
           >
-            {{ seg }}
+            <Icon name="tabler:arrow-left" class="size-4" />
+            <span>{{ backLabel }}</span>
           </NuxtLink>
-        </template>
+          <template v-if="crumbs.length">
+            <span>/</span>
+            <NuxtLink
+              v-for="(seg, i) in crumbs"
+              :key="seg"
+              :to="`/albums/scan/${libKey}/${crumbs.slice(0, i + 1).join('/')}`"
+              class="max-w-[16ch] truncate transition-colors hover:text-neutral-800 dark:hover:text-neutral-100"
+            >
+              {{ seg }}
+            </NuxtLink>
+          </template>
+        </div>
+        <NuxtLink
+          to="/albums"
+          class="flex shrink-0 items-center gap-1 transition-colors hover:text-neutral-800 dark:hover:text-neutral-100"
+        >
+          <Icon name="tabler:home" class="size-4" />
+          <span>{{ t('album.backToAlbumsHome') }}</span>
+        </NuxtLink>
       </div>
 
       <h1

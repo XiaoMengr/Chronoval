@@ -173,6 +173,7 @@
     "failedToLoadDescription": "Có lỗi xảy ra khi tải album này.",
     "failedToLoad": "Không thể tải album",
     "backToAlbums": "Quay lại Album",
+    "backToAlbumsHome": "Trang chủ Album",
     "noDescription": "Không có mô tả",
     "photo": "không có ảnh | 1 ảnh | {count} ảnh",
     "createdAt": "Tạo {time}",
