@@ -1702,7 +1702,8 @@
         },
         "dockerHint": {
           "title": "存储路径提示（Docker 环境）",
-          "description": "如果你正在 Docker 环境，不知道怎么操作，请保持默认的 /app/storage 路径不变。"
+          "prefix": "如果你正在 Docker 环境，不知道怎么操作，请保持默认的",
+          "suffix": " 路径不变。"
         },
         "baseUrl": {
           "label": "基础 URL",

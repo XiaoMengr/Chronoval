@@ -1463,7 +1463,8 @@
         },
         "dockerHint": {
           "title": "儲存路徑提示（Docker 環境）",
-          "description": "如果你在 Docker 環境不知道怎麼操作，請保持預設的 /app/storage 路徑不變。"
+          "prefix": "如果你在 Docker 環境不知道怎麼操作，請保持預設的",
+          "suffix": " 路徑不變。"
         },
         "baseUrl": {
           "label": "基本 URL",

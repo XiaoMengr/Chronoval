@@ -1646,7 +1646,8 @@
         },
         "dockerHint": {
           "title": "스토리지 경로 안내 (Docker 환경)",
-          "description": "Docker 환경에서 조작 방법을 모른다면 기본 경로 /app/storage를 유지하세요."
+          "prefix": "Docker 환경에서 조작 방법을 모른다면 기본 경로",
+          "suffix": "를 유지하세요."
         },
         "baseUrl": {
           "label": "기본 URL",

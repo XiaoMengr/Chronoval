@@ -832,8 +832,15 @@ const storageInfoConfigEntries = computed(() => {
                       color="info"
                       icon="tabler:info-circle"
                       :title="$t('settings.storage.local.dockerHint.title')"
-                      :description="$t('settings.storage.local.dockerHint.description')"
-                    />
+                    >
+                      <template #description>
+                        {{ $t('settings.storage.local.dockerHint.prefix') }}
+                        <strong class="mx-0.5 rounded bg-primary/15 px-1.5 py-0.5 font-mono text-[13px] font-bold leading-none text-foreground">
+                          /app/storage
+                        </strong>
+                        {{ $t('settings.storage.local.dockerHint.suffix') }}
+                      </template>
+                    </UAlert>
 
                     <AutoForm
                       id="createStorageForm"

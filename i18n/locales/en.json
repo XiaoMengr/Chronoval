@@ -1708,7 +1708,8 @@
         },
         "dockerHint": {
           "title": "Storage path notice (Docker environment)",
-          "description": "If you are running in Docker and don't know how to do this, please keep the default /app/storage path unchanged."
+          "prefix": "If you are running in Docker and don't know how to do this, please keep the default",
+          "suffix": " path unchanged."
         },
         "baseUrl": {
           "label": "Base URL",

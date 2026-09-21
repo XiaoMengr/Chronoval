@@ -1419,7 +1419,8 @@
         },
         "dockerHint": {
           "title": "ストレージパスの注意（Docker 環境）",
-          "description": "Docker 環境で操作方法が分からない場合は、既定の /app/storage パスのままにしてください。"
+          "prefix": "Docker 環境で操作方法が分からない場合は、既定の",
+          "suffix": " パスのままにしてください。"
         },
         "baseUrl": {
           "label": "ベース URL",
