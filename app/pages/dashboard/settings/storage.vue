@@ -1079,6 +1079,7 @@ const storageInfoConfigEntries = computed(() => {
                 />
                 <UButton
                   :label="$t('settings.storage.scanLibrary.actions.save')"
+                  color="success"
                   variant="soft"
                   icon="tabler:check"
                   @click="onScanLibrarySubmit(close)"
@@ -1314,28 +1315,45 @@ const storageInfoConfigEntries = computed(() => {
                 <UFormField
                   :ui="{ container: 'sm:max-w-full' }"
                 >
-                  <div class="flex w-full items-center justify-between gap-4 rounded-md border border-neutral-200 dark:border-neutral-800 bg-neutral-50/60 dark:bg-neutral-900/40 px-3 py-2.5">
-                    <div class="flex flex-col gap-0.5">
-                      <span class="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                        {{ $t('settings.storage.scanLibrary.form.asAlbumLabel') }}
-                      </span>
-                      <span
-                        class="text-xs"
-                        :class="scanLibraryFormState.asAlbum
-                          ? 'text-primary-600 dark:text-primary-400'
-                          : 'text-neutral-400 dark:text-neutral-500'"
+                  <div class="space-y-2">
+                    <span class="block text-xs font-medium text-neutral-700 dark:text-neutral-300">
+                      {{ $t('settings.storage.scanLibrary.form.asAlbumLabel') }}
+                    </span>
+
+                    <!-- 胶囊样式分段选项：照片画廊 / 相簿照片 -->
+                    <div
+                      role="radiogroup"
+                      class="inline-flex w-fit items-center gap-0.5 rounded-full border border-neutral-200 bg-neutral-100/80 p-0.5 dark:border-neutral-800 dark:bg-neutral-900/50"
+                    >
+                      <button
+                        type="button"
+                        class="flex items-center justify-center gap-1 whitespace-nowrap rounded-full px-3 py-1 text-xs font-medium transition-colors"
+                        :class="!scanLibraryFormState.asAlbum
+                          ? 'bg-success-500 text-white shadow-sm'
+                          : 'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200'"
+                        @click="scanLibraryFormState.asAlbum = false"
                       >
-                        {{ scanLibraryFormState.asAlbum
-                          ? $t('settings.storage.scanLibrary.form.asAlbumStateOn')
-                          : $t('settings.storage.scanLibrary.form.asAlbumStateOff') }}
-                      </span>
+                        <UIcon name="tabler:photo" class="size-3 shrink-0" />
+                        {{ $t('settings.storage.scanLibrary.info.modeGallery') }}
+                      </button>
+                      <button
+                        type="button"
+                        class="flex items-center justify-center gap-1 whitespace-nowrap rounded-full px-3 py-1 text-xs font-medium transition-colors"
+                        :class="scanLibraryFormState.asAlbum
+                          ? 'bg-success-500 text-white shadow-sm'
+                          : 'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200'"
+                        @click="scanLibraryFormState.asAlbum = true"
+                      >
+                        <UIcon name="tabler:book-2" class="size-3 shrink-0" />
+                        {{ $t('settings.storage.scanLibrary.info.modeAlbum') }}
+                      </button>
                     </div>
-                    <USwitch v-model="scanLibraryFormState.asAlbum" color="primary" />
+
+                    <p class="flex items-start gap-1 text-xs text-neutral-400 dark:text-neutral-500">
+                      <UIcon name="tabler:book-2" class="size-3.5 shrink-0 mt-px" />
+                      {{ $t('settings.storage.scanLibrary.form.asAlbumHint') }}
+                    </p>
                   </div>
-                  <p class="mt-1.5 flex items-start gap-1 text-xs text-neutral-400 dark:text-neutral-500">
-                    <UIcon name="tabler:book-2" class="size-3.5 shrink-0 mt-px" />
-                    {{ $t('settings.storage.scanLibrary.form.asAlbumHint') }}
-                  </p>
                 </UFormField>
               </div>
 
@@ -1469,6 +1487,7 @@ const storageInfoConfigEntries = computed(() => {
                 />
                 <UButton
                   :label="$t('settings.storage.scanLibrary.actions.save')"
+                  color="success"
                   variant="soft"
                   icon="tabler:check"
                   @click="onScanLibrarySubmit(close)"

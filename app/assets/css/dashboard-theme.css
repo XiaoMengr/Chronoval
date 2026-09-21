@@ -269,11 +269,13 @@ html body.dashboard-active {
   background: transparent;
 }
 
-/* ---- 选区与焦点：克制、无光斑 ---- */
+/* ---- 选区与焦点：克制、无光斑 ----
+   表单控件（input/textarea/select）不被此处的全局 outline 影响，
+   它们各自在下方“后台表单控件”小节获得柔和聚焦反馈。 */
 .dashboard-root ::selection {
   background: color-mix(in srgb, var(--ui-text) 22%, transparent);
 }
-.dashboard-root :focus-visible {
+.dashboard-root :focus-visible:not(input):not(textarea):not(select) {
   outline: 2px solid color-mix(in srgb, var(--ui-text) 55%, transparent);
   outline-offset: 2px;
 }
@@ -380,4 +382,55 @@ html.dark body.dashboard-active [role='dialog'] {
   box-shadow:
     0 1px 2px rgba(0, 0, 0, 0.3),
     0 26px 60px -28px rgba(0, 0, 0, 0.8);
+}
+
+/* ============================================================
+   后台表单控件美化（dashboard-root + body.dashboard-active 覆盖层）
+   ------------------------------------------------------------
+   - 覆盖 Nuxt UI 原生 input/textarea/select 的默认观感：
+     浅灰底 + 清晰边框，在浅卡片上也能一眼认出是输入框；
+   - 聚焦反馈：杜绝刺眼黑圈，改为细而收敛的 success 绿
+     外环（1.5px 细框色 + 极淡光晕），视觉精致不算法；
+   - 仅作用于后台，不触碰前台画廊。
+   ============================================================ */
+.dashboard-root input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not([type='file']):not([type='submit']):not([type='button']),
+.dashboard-root textarea,
+.dashboard-root select,
+html body.dashboard-active input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not([type='file']):not([type='submit']):not([type='button']),
+html body.dashboard-active textarea,
+html body.dashboard-active select {
+  border-radius: var(--ui-radius-lg, 0.375rem) !important;
+  border-width: 1px !important;
+  border-color: color-mix(in srgb, var(--ui-text) 18%, transparent) !important;
+  background-color: var(--ui-bg-muted) !important;
+  box-shadow: none !important;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background-color 0.18s ease !important;
+}
+.dashboard-root input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not([type='file']):not([type='submit']):not([type='button']):hover,
+.dashboard-root textarea:hover,
+.dashboard-root select:hover,
+html body.dashboard-active input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not([type='file']):not([type='submit']):not([type='button']):hover,
+html body.dashboard-active textarea:hover,
+html body.dashboard-active select:hover {
+  border-color: color-mix(in srgb, var(--ui-text) 32%, transparent) !important;
+}
+.dashboard-root input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not([type='file']):not([type='submit']):not([type='button']):focus,
+.dashboard-root input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not([type='file']):not([type='submit']):not([type='button']):focus-visible,
+.dashboard-root textarea:focus,
+.dashboard-root textarea:focus-visible,
+.dashboard-root select:focus,
+.dashboard-root select:focus-visible,
+html body.dashboard-active input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not([type='file']):not([type='submit']):not([type='button']):focus,
+html body.dashboard-active input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not([type='file']):not([type='submit']):not([type='button']):focus-visible,
+html body.dashboard-active textarea:focus,
+html body.dashboard-active textarea:focus-visible,
+html body.dashboard-active select:focus,
+html body.dashboard-active select:focus-visible {
+  outline: none !important;
+  border-color: color-mix(in srgb, var(--ui-color-success-500) 55%, var(--ui-border-accented)) !important;
+  background-color: var(--ui-bg-accented) !important;
+  box-shadow: none !important;
 }
