@@ -10,6 +10,8 @@ import type { DataMigration } from './types'
  *   - 每新增一条迁移：在 MIGRATIONS 尾部追加，并把 CURRENT_DATA_VERSION 递增。
  *   - 迁移函数必须【幂等】：即便数据库里没有脏数据（新装），也应安全地空跑。
  *   - 每条迁移在独立事务中执行，失败自动回滚且阻塞启动（见 runner）。
+ *   - 版本号必须恰好构成 1..CURRENT_DATA_VERSION 的连续整数序列；
+ *     注册表有误（重复/乱序/漏号/常量未同步）会在启动时立即失败（见 assertValidRegistry）。
  *
  * ▍版本号
  *   CURRENT_DATA_VERSION 表示「当前应用期望的数据版本」。数据库中通过
@@ -80,7 +82,37 @@ export const MIGRATIONS: DataMigration[] = [
   },
 ]
 
-/** 供 runner 使用的查询：查找某数据版本在注册表中的描述（缺失时返回 null） */
-export function findMigrationDescription(version: number): string | null {
-  return MIGRATIONS.find((m) => m.version === version)?.description ?? null
+/** 供 runner 使用的注册表完整性校验：仅在迁移真正执行前后置一次 */
+export function assertValidRegistry(): void {
+  const head = CURRENT_DATA_VERSION
+  if (!Number.isInteger(head) || head < 1) {
+    throw new Error(`CURRENT_DATA_VERSION 非法：${head}（应为正整数）`)
+  }
+  if (MIGRATIONS.length !== head) {
+    throw new Error(
+      `数据迁移注册表不完整：期望 ${head} 条迁移（v1..v${head}），实际 ${MIGRATIONS.length} 条`,
+    )
+  }
+  const seen = new Set<number>()
+  for (let i = 0; i < MIGRATIONS.length; i++) {
+    const m = MIGRATIONS[i]
+    if (!Number.isInteger(m.version) || m.version < 1) {
+      throw new Error(`数据迁移登记了非法版本号：${m.version}（索引 ${i}）`)
+    }
+    if (seen.has(m.version)) {
+      throw new Error(`数据迁移版本号重复：v${m.version}`)
+    }
+    if (m.version !== i + 1) {
+      throw new Error(
+        `数据迁移版本号不连续或乱序：索引 ${i} 处为 v${m.version}，应为 v${i + 1}`,
+      )
+    }
+    if (!m.id || typeof m.description !== 'string') {
+      throw new Error(`数据迁移 v${m.version} 缺少 id 或 description`)
+    }
+    seen.add(m.version)
+  }
+  if (!seen.has(head)) {
+    throw new Error(`数据迁移缺少最新版本 v${head}，CURRENT_DATA_VERSION 需与 MIGRATIONS 同步`)
+  }
 }

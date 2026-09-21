@@ -5,7 +5,7 @@ import Database from 'better-sqlite3'
 import { drizzle } from 'drizzle-orm/better-sqlite3'
 
 import { logger } from '../../utils/logger'
-import { CURRENT_DATA_VERSION, MIGRATIONS } from './registry'
+import { CURRENT_DATA_VERSION, MIGRATIONS, assertValidRegistry } from './registry'
 import type {
   AppliedMigration,
   DataMigrationReport,
@@ -26,6 +26,11 @@ const dataMigrateLogger = logger.dynamic('data-migrate')
  * ▍失败策略
  *   迁移一旦失败即抛出异常。由于本函数在 nitro 插件中 await 调用，
  *   服务进程不会正常监听端口（阻塞启动），避免在旧数据上以不兼容新版本运行。
+ *
+ * ▍降级/回滚
+ *   当数据库中数据版本【高于】应用期望时（用旧镜像覆盖了新版数据），
+ *   仅告警并继续启动、不做向下迁移：因为阻塞会让合法的回滚无法完成。
+ *   预期后果是旧代码可能读到新区字段（SQLite 容忍多余列），此为有意的取舍。
  */
 export async function runDataMigrations(
   dbPath: string,
@@ -34,6 +39,9 @@ export async function runDataMigrations(
   const sqlite = new Database(dbPath)
 
   try {
+    // 注册表结构前置校验（程序性错误，启动即失败，不等迁移执行到那里）
+    assertValidRegistry()
+
     // 版本元表（与 drizzle schema 分离，专门记录数据迁移阶段）
     sqlite.exec(
       `CREATE TABLE IF NOT EXISTS app_meta (
@@ -104,7 +112,7 @@ export async function runDataMigrations(
         sqlite,
         db,
         report: (rowsAffected, detail) => {
-          applied.changedRows = rowsAffected
+          applied.changedRows += rowsAffected
           if (detail) applied.detail = detail
         },
       }
