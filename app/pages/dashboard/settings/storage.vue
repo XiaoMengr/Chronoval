@@ -1075,74 +1075,80 @@ const storageInfoConfigEntries = computed(() => {
             <div
               v-for="lib in scanLibs"
               :key="lib.id"
-              class="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3"
+              class="px-5 py-4"
             >
-              <div class="min-w-0 flex-1">
-                <div class="flex items-center gap-2">
-                  <ScanStatusDot :enabled="lib.enabled" :raw="lib.lastScanResult" />
-                  <USwitch
-                    v-model="lib.enabled"
-                    size="sm"
-                    :loading="scanTogglingId === lib.id"
-                    :disabled="scanTogglingId !== null"
-                    @change="onScanLibraryToggle(lib)"
-                  />
-                  <span class="font-medium text-neutral-900 dark:text-neutral-100">
-                    {{ lib.name }}
-                  </span>
-                </div>
-                <p class="truncate text-sm text-neutral-500 dark:text-neutral-400">
-                  {{ lib.rootPath }}
-                </p>
-                <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-neutral-400 dark:text-neutral-500">
-                  <span>
-                    {{ $t('settings.storage.scanLibrary.table.photoCount') }}
-                    <span class="font-medium text-neutral-700 dark:text-neutral-300">{{ lib.photoCount }}</span>
-                  </span>
-                  <span aria-hidden="true">·</span>
-                  <span class="inline-flex items-center gap-1">
-                    <UIcon name="tabler:clock" class="size-3.5" />
-                    {{ fmtScanTime(lib.lastScanAt) }}
-                  </span>
-                  <template v-if="lib.lastScanResult">
-                    <span aria-hidden="true">·</span>
-                    <ScanResultBadges :raw="lib.lastScanResult" />
-                  </template>
-                </div>
-              </div>
+              <!-- 移动端纵向堆叠；sm 及以上的桌面端横向排列 -->
+              <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <!-- 左侧：状态 + 名称 + 路径 + 元信息 -->
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-2">
+                    <ScanStatusDot :enabled="lib.enabled" :raw="lib.lastScanResult" />
+                    <span class="truncate font-medium text-neutral-900 dark:text-neutral-100">
+                      {{ lib.name }}
+                    </span>
+                    <USwitch
+                      v-model="lib.enabled"
+                      size="sm"
+                      class="shrink-0"
+                      :loading="scanTogglingId === lib.id"
+                      :disabled="scanTogglingId !== null"
+                      @change="onScanLibraryToggle(lib)"
+                    />
+                  </div>
 
-              <div class="flex items-center gap-2">
-                <UTooltip :text="$t('settings.storage.scanLibrary.messages.scanned')">
+                  <p class="mt-1.5 flex items-center gap-1.5 truncate text-sm text-neutral-500 dark:text-neutral-400">
+                    <UIcon name="tabler:folder" class="size-3.5 shrink-0" />
+                    <span class="truncate font-mono text-[13px]">{{ lib.rootPath }}</span>
+                  </p>
+
+                  <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-400 dark:text-neutral-500">
+                    <span class="inline-flex items-center gap-1">
+                      <UIcon name="tabler:photo" class="size-3.5" />
+                      {{ $t('settings.storage.scanLibrary.table.photoCount') }}
+                      <span class="font-medium text-neutral-700 dark:text-neutral-300">{{ lib.photoCount }}</span>
+                    </span>
+                    <span class="inline-flex items-center gap-1">
+                      <UIcon name="tabler:clock" class="size-3.5" />
+                      {{ fmtScanTime(lib.lastScanAt) }}
+                    </span>
+                    <ScanResultBadges v-if="lib.lastScanResult" :raw="lib.lastScanResult" />
+                  </div>
+                </div>
+
+                <!-- 右侧/下方：操作按钮 -->
+                <div class="flex shrink-0 flex-wrap items-center gap-2 sm:flex-nowrap">
+                  <UTooltip :text="$t('settings.storage.scanLibrary.messages.scanned')">
+                    <UButton
+                      size="sm"
+                      variant="soft"
+                      icon="tabler:player-play"
+                      :loading="scanLibRunning === lib.id"
+                      :disabled="scanLibRunning !== null"
+                      @click="onScanLibraryScan(lib)"
+                    />
+                  </UTooltip>
+
                   <UButton
                     size="sm"
                     variant="soft"
-                    icon="tabler:player-play"
-                    :loading="scanLibRunning === lib.id"
-                    :disabled="scanLibRunning !== null"
-                    @click="onScanLibraryScan(lib)"
+                    icon="tabler:pencil"
+                    @click="openScanLibraryEdit(lib)"
                   />
-                </UTooltip>
+                  <UButton
+                    size="sm"
+                    variant="soft"
+                    icon="tabler:info-circle"
+                    @click="openScanLibraryInfo(lib)"
+                  />
 
-                <UButton
-                  size="sm"
-                  variant="soft"
-                  icon="tabler:pencil"
-                  @click="openScanLibraryEdit(lib)"
-                />
-                <UButton
-                  size="sm"
-                  variant="soft"
-                  icon="tabler:info-circle"
-                  @click="openScanLibraryInfo(lib)"
-                />
-
-                <UButton
-                  size="sm"
-                  variant="soft"
-                  color="error"
-                  icon="tabler:trash"
-                  @click="onScanLibraryDelete(lib)"
-                />
+                  <UButton
+                    size="sm"
+                    variant="soft"
+                    color="error"
+                    icon="tabler:trash"
+                    @click="onScanLibraryDelete(lib)"
+                  />
+                </div>
               </div>
             </div>
           </div>
