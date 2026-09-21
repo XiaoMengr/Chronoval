@@ -1167,9 +1167,15 @@ const storageInfoConfigEntries = computed(() => {
                     :disabled="scanLibRunning !== null"
                     @click="onScanLibraryScan(lib)"
                   />
-                  <UDropdown :items="scanLibMoreItems(lib)" :content="{ align: 'end' }">
-                    <UButton size="sm" variant="soft" icon="tabler:dots-vertical" aria-label="更多操作" />
-                  </UDropdown>
+                  <UDropdownMenu :items="scanLibMoreItems(lib)" :content="{ align: 'end' }">
+                    <UButton
+                      size="sm"
+                      variant="soft"
+                      icon="tabler:dots-vertical"
+                      :aria-label="$t('settings.storage.scanLibrary.actions.info')"
+                      @click.stop
+                    />
+                  </UDropdownMenu>
                 </div>
               </div>
             </div>
