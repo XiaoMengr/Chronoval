@@ -1,6 +1,6 @@
 # 快速开始
 
-本文档将指导您如何快速部署并开始使用 ChronoFrame。
+本文档将指导您如何快速部署并开始使用 Chronoval。
 
 :::warning 🚧施工中
 文档正在编写中，部分功能文档尚未完成。
@@ -38,7 +38,7 @@ docker pull ghcr.io/xiaomengr/chronoval:latest
 ```bash
 # 管理员邮箱（必须）
 CFRAME_ADMIN_EMAIL=
-# 管理员用户名（可选，默认 ChronoFrame）
+# 管理员用户名（可选，默认 Chronoval）
 CFRAME_ADMIN_NAME=
 # 管理员密码（可选，默认 CF1234@!）
 CFRAME_ADMIN_PASSWORD=

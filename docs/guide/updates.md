@@ -1,6 +1,6 @@
 # Update Guide
 
-This document will guide you through safely updating and upgrading ChronoFrame to the latest version.
+This document will guide you through safely updating and upgrading Chronoval to the latest version.
 
 ## Version Check
 
@@ -8,7 +8,7 @@ This document will guide you through safely updating and upgrading ChronoFrame t
 
 #### Through Web Interface
 
-1. Login to ChronoFrame admin dashboard
+1. Login to Chronoval admin dashboard
 2. Go to "Dashboard" page
 3. Check version number in "Runtime Information" panel
 
@@ -28,7 +28,7 @@ ts=$(date +%Y%m%d-%H%M%S) && mkdir -p backups/$ts && cp -r data/ .env docker-com
 
 #### 2. Check Compatibility
 
-Review [Release Notes](https://github.com/HoshinoSuzumi/chronoframe/releases) to understand:
+Review [Release Notes](https://github.com/XiaoMengr/Chronoval/releases) to understand:
 
 - Breaking changes
 - New environment variables
@@ -99,7 +99,7 @@ docker run -d \
 
 ### Automatic Migration
 
-ChronoFrame automatically executes database migrations on startup:
+Chronoval automatically executes database migrations on startup:
 
 ```bash
 # View migration logs

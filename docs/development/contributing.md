@@ -1,6 +1,6 @@
 # Contributing Guide
 
-This document will guide you through setting up the ChronoFrame development environment, including environment requirements, dependency installation, configuration settings, and development tools.
+This document will guide you through setting up the Chronoval development environment, including environment requirements, dependency installation, configuration settings, and development tools.
 
 ## Environment Requirements
 
@@ -17,16 +17,16 @@ This document will guide you through setting up the ChronoFrame development envi
 
 ```bash
 # Using HTTPS
-git clone https://github.com/HoshinoSuzumi/chronoframe.git
+git clone https://github.com/XiaoMengr/Chronoval.git
 
 # Or using SSH
-git clone git@github.com:HoshinoSuzumi/chronoframe.git
+git clone git@github.com:XiaoMengr/Chronoval.git
 
 # Enter project directory
 cd chronoframe
 
 # Set upstream remote repository
-git remote add upstream https://github.com/HoshinoSuzumi/chronoframe.git
+git remote add upstream https://github.com/XiaoMengr/Chronoval.git
 ```
 
 ### 2. Install Dependencies
@@ -348,5 +348,5 @@ Look for Issues labeled with:
 
 ### Community Resources
 
-- [GitHub Issues](https://github.com/HoshinoSuzumi/chronoframe/issues)
-- [GitHub Discussions](https://github.com/HoshinoSuzumi/chronoframe/discussions)
+- [GitHub Issues](https://github.com/XiaoMengr/Chronoval/issues)
+- [GitHub Discussions](https://github.com/XiaoMengr/Chronoval/discussions)

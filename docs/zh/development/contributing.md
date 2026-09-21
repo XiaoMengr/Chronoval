@@ -1,6 +1,6 @@
 # 开始贡献
 
-本文档将指导您搭建 ChronoFrame 的开发环境，包括环境要求、依赖安装、配置设置和开发工具。
+本文档将指导您搭建 Chronoval 的开发环境，包括环境要求、依赖安装、配置设置和开发工具。
 
 ## 环境要求
 
@@ -17,16 +17,16 @@
 
 ```bash
 # 使用 HTTPS
-git clone https://github.com/HoshinoSuzumi/chronoframe.git
+git clone https://github.com/XiaoMengr/Chronoval.git
 
 # 或使用 SSH
-git clone git@github.com:HoshinoSuzumi/chronoframe.git
+git clone git@github.com:XiaoMengr/Chronoval.git
 
 # 进入项目目录
 cd chronoframe
 
 # 设置上游远程仓库
-git remote add upstream https://github.com/HoshinoSuzumi/chronoframe.git
+git remote add upstream https://github.com/XiaoMengr/Chronoval.git
 ```
 
 ### 2. 安装依赖
@@ -348,5 +348,5 @@ chore: 更新依赖包版本
 
 ### 社区资源
 
-- [GitHub Issues](https://github.com/HoshinoSuzumi/chronoframe/issues)
-- [GitHub Discussions](https://github.com/HoshinoSuzumi/chronoframe/discussions)
+- [GitHub Issues](https://github.com/XiaoMengr/Chronoval/issues)
+- [GitHub Discussions](https://github.com/XiaoMengr/Chronoval/discussions)

@@ -1,6 +1,6 @@
 # Getting Started
 
-This guide walks you through deploying and using ChronoFrame quickly.
+This guide walks you through deploying and using Chronoval quickly.
 
 :::warning 🚧 Under Construction
 The documentation is still being written; some sections may be incomplete.
@@ -145,7 +145,7 @@ docker compose up -d
 
 ## Reverse Proxy
 
-For production you typically place ChronoFrame behind a reverse proxy (Nginx, Caddy, Traefik) to terminate HTTPS and serve via your domain.
+For production you typically place Chronoval behind a reverse proxy (Nginx, Caddy, Traefik) to terminate HTTPS and serve via your domain.
 
 ### Nginx Example
 

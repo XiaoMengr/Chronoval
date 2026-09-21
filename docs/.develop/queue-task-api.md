@@ -1,6 +1,6 @@
 # 队列任务管理 API 文档
 
-本文档描述了ChronoFrame应用中新增的队列任务管理API端点。
+本文档描述了Chronoval应用中新增的队列任务管理API端点。
 
 ## API 端点
 

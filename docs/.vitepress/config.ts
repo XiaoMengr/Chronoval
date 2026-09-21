@@ -2,10 +2,10 @@ import { defineConfig } from 'vitepress'
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
-  title: 'ChronoFrame',
+  title: 'Chronoval',
   description: 'A Self-hosted photo gallery',
   head: [
-    ['link', { rel: 'icon', href: '/favicon.ico' }],
+    ['link', { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' }],
     [
       'script',
       {
@@ -33,6 +33,7 @@ export default defineConfig({
   lastUpdated: true,
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
+    logo: '/logo.svg',
     nav: [
       { text: 'Guide', link: '/guide/getting-started' },
       { text: 'Development', link: '/development/contributing' },
@@ -72,13 +73,13 @@ export default defineConfig({
     ],
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/HoshinoSuzumi/chronoframe' },
+      { icon: 'github', link: 'https://github.com/XiaoMengr/Chronoval' },
       { icon: 'discord', link: 'https://discord.gg/MM4ZK4Ed7s' },
     ],
 
     editLink: {
       pattern:
-        'https://github.com/HoshinoSuzumi/chronoframe/edit/main/docs/:path',
+        'https://github.com/XiaoMengr/Chronoval/edit/main/docs/:path',
       text: 'Edit this page on GitHub',
     },
 

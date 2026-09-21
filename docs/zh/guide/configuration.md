@@ -9,7 +9,7 @@
 | CFRAME_ADMIN_EMAIL                       | 初始管理员用户的邮箱                                 | `admin@chronoframe.com`               | 是                                                                    |
 | CFRAME_ADMIN_NAME                        | 初始管理员用户的用户名                               | `Chronoframe`                         | 否                                                                    |
 | CFRAME_ADMIN_PASSWORD                    | 初始管理员用户的密码                                 | `CF1234@!`                            | 否                                                                    |
-| NUXT_PUBLIC_APP_TITLE                    | 应用标题                                             | `ChronoFrame`                         | 否                                                                    |
+| NUXT_PUBLIC_APP_TITLE                    | 应用标题                                             | `Chronoval`                         | 否                                                                    |
 | NUXT_PUBLIC_APP_SLOGAN                   | 应用口号                                             | 无                                    | 否                                                                    |
 | NUXT_PUBLIC_APP_AUTHOR                   | 应用作者                                             | 无                                    | 否                                                                    |
 | NUXT_PUBLIC_APP_AVATAR_URL               | 应用头像 URL                                         | 无                                    | 否                                                                    |

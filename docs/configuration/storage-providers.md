@@ -1,6 +1,6 @@
 # Storage Provider Configuration
 
-ChronoFrame supports multiple storage backends to save your photos and thumbnails. This document will detail how to configure different storage providers.
+Chronoval supports multiple storage backends to save your photos and thumbnails. This document will detail how to configure different storage providers.
 
 | Provider                                    | Support | Use Case                                | Cost               |
 | ------------------------------------------- | :-----: | --------------------------------------- | ------------------ |

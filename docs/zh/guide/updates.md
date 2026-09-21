@@ -1,6 +1,6 @@
 # 升级指南
 
-本文档将指导您如何安全地更新和升级 ChronoFrame 到最新版本。
+本文档将指导您如何安全地更新和升级 Chronoval 到最新版本。
 
 ## 版本检查
 
@@ -8,7 +8,7 @@
 
 #### 通过 Web 界面
 
-1. 登录 ChronoFrame 管理后台
+1. 登录 Chronoval 管理后台
 2. 进入「仪表板」页面
 3. 查看「运行信息」面板中的版本号
 
@@ -28,7 +28,7 @@ ts=$(date +%Y%m%d-%H%M%S) && mkdir -p backups/$ts && cp -r data/ .env docker-com
 
 #### 2. 检查兼容性
 
-查看 [发布说明](https://github.com/HoshinoSuzumi/chronoframe/releases) 了解：
+查看 [发布说明](https://github.com/XiaoMengr/Chronoval/releases) 了解：
 
 - 破坏性变更
 - 新增环境变量
@@ -99,7 +99,7 @@ docker run -d \
 
 ### 自动迁移
 
-ChronoFrame 在启动时会自动执行数据库迁移：
+Chronoval 在启动时会自动执行数据库迁移：
 
 ```bash
 # 查看迁移日志

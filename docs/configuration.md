@@ -7,7 +7,7 @@ Chronoval 的所有配置通过环境变量提供（Docker 场景写入 `.env`�
 | 变量 | 说明 | 默认 |
 |---|---|---|
 | `CFRAME_ADMIN_EMAIL` | 管理员邮箱（首次启动自动创建账号，必填） | - |
-| `CFRAME_ADMIN_NAME` | 管理员用户名 | `ChronoFrame` |
+| `CFRAME_ADMIN_NAME` | 管理员用户名 | `Chronoval` |
 | `CFRAME_ADMIN_PASSWORD` | 管理员密码 | `CF1234@!` |
 | `NUXT_PUBLIC_APP_TITLE` | 站点标题 | `Chronoval` |
 | `NUXT_PUBLIC_APP_SLOGAN` | 站点标语 | - |

@@ -1,6 +1,6 @@
 # Map Providers
 
-ChronoFrame supports two types of map providers. You can choose the one that best fits your needs.
+Chronoval supports two types of map providers. You can choose the one that best fits your needs.
 
 | Provider              | Supported | Extra Configuration   | Features                                     |
 | --------------------- | :-------: | --------------------- | -------------------------------------------- |
@@ -19,7 +19,7 @@ NUXT_PUBLIC_MAP_MAPLIBRE_TOKEN=your_maplibre_access_token
 ### Custom Styles
 
 ```bash
-# ChronoFrame comes with built-in light and dark styles that switch automatically.
+# Chronoval comes with built-in light and dark styles that switch automatically.
 # If you configure a custom style, it will override the default styles.
 # Example: https://demotiles.maplibre.org/globe.json
 NUXT_PUBLIC_MAP_MAPLIBRE_STYLE=

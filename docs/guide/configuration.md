@@ -9,7 +9,7 @@ Whether using Docker or Docker Compose (.env) deployment, configuration is done 
 | CFRAME_ADMIN_EMAIL                       | Initial admin user email                                        | `admin@chronoframe.com`               | Yes                                                  |
 | CFRAME_ADMIN_NAME                        | Initial admin username                                          | `Chronoframe`                         | No                                                   |
 | CFRAME_ADMIN_PASSWORD                    | Initial admin user password                                     | `CF1234@!`                            | No                                                   |
-| NUXT_PUBLIC_APP_TITLE                    | Application title                                               | `ChronoFrame`                         | No                                                   |
+| NUXT_PUBLIC_APP_TITLE                    | Application title                                               | `Chronoval`                         | No                                                   |
 | NUXT_PUBLIC_APP_SLOGAN                   | Application slogan                                              | None                                  | No                                                   |
 | NUXT_PUBLIC_APP_AUTHOR                   | Application author                                              | None                                  | No                                                   |
 | NUXT_PUBLIC_APP_AVATAR_URL               | Application avatar URL                                          | None                                  | No                                                   |
