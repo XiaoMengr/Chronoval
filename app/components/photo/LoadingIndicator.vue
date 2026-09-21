@@ -147,28 +147,10 @@ const loadingVariants = {
           <template v-else>
             <p class="text-xs font-medium text-white">
               {{
-                loadingState.bytesTotal > 0
-                  ? $t('viewer.photoload.downloading')
-                  : loadingState.isHeic
-                    ? $t('viewer.photoload.loadingHEIC')
-                    : $t('viewer.photoload.loading')
+                loadingState.isHeic
+                  ? $t('viewer.photoload.loadingHEIC')
+                  : $t('viewer.photoload.loading')
               }}
-            </p>
-          </template>
-
-          <!-- 真实下载进度：本地/远程原图下载期间显示进度条与 0.0MB / 总量 -->
-          <template v-if="loadingState.bytesTotal > 0">
-            <div class="mt-2 h-1 w-full overflow-hidden rounded-full bg-white/15">
-              <div
-                class="h-full rounded-full bg-white/80 transition-[width] duration-150"
-                :style="{
-                  width: `${Math.min(100, Math.max(0, loadingState.progress))}%`,
-                }"
-              />
-            </div>
-            <p class="text-xs text-white/70 tabular-nums">
-              {{ (loadingState.bytesLoaded / 1024 / 1024).toFixed(1) }}MB /
-              {{ (loadingState.bytesTotal / 1024 / 1024).toFixed(1) }}MB
             </p>
           </template>
         </div>
