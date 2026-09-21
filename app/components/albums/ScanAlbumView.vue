@@ -254,6 +254,16 @@ watch(
 // 有子相簿时用右上角 Home 图标展开的菜单切换，避免「照片 + 子相簿」混排在一个页面显得突兀。
 // 默认优先展示本层照片（照片为主页面）；仅当本层无直接照片、只有子相簿时才落到子相簿视图。
 const menuOpen = ref(false)
+const ballRef = ref<HTMLElement | null>(null)
+// 点击胶囊外部任意处自动收回展开的「照片/子相簿」切换区
+function onClickOutside(e: MouseEvent) {
+  if (!menuOpen.value) return
+  if (ballRef.value && e.target instanceof Node && !ballRef.value.contains(e.target)) {
+    menuOpen.value = false
+  }
+}
+onMounted(() => document.addEventListener('click', onClickOutside))
+onBeforeUnmount(() => document.removeEventListener('click', onClickOutside))
 
 // 浏览视图记忆：每个相簿独立记住「照片/子相簿」，存 sessionStorage（关闭浏览器即重置）
 const viewStorageKey = computed(() => `chronoval:scan-view:${props.libKey}:${relPath.value}`)
@@ -322,7 +332,7 @@ const selectView = (v: 'photos' | 'subs') => {
         <!-- 右上角：圆形球「照片 / 子相簿」切换（左） + 首页独立胶囊（右最外） -->
         <div class="flex shrink-0 items-center gap-2">
           <!-- 圆形球胶囊：点击无缝原地增长为「照片 / 子相簿」切换胶囊（与首页等高，融为一体） -->
-          <div v-if="data?.children?.length" class="ball-capsule">
+          <div v-if="data?.children?.length" ref="ballRef" class="ball-capsule">
             <div class="ball-segments-grid" :class="{ open: menuOpen }">
               <div class="seg-wrap">
                 <button
