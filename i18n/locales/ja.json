@@ -162,7 +162,7 @@
     "failedToLoadDescription": "このアルバムを読み込む際に問題が発生しました。",
     "failedToLoad": "アルバムの読み込みに失敗しました",
     "backToAlbums": "アルバムに戻る",
-    "backToAlbumsHome": "アルバムホームへ",
+    "backToAlbumsHome": "ホーム",
     "noDescription": "説明がありません",
     "photo": "写真がありません | 写真 {count} 枚",
     "createdAt": "{time} に作成されました",

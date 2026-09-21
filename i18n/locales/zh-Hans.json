@@ -180,7 +180,7 @@
     "failedToLoadDescription": "加载此相簿时出现问题。",
     "failedToLoad": "加载相簿失败",
     "backToAlbums": "返回相簿",
-    "backToAlbumsHome": "返回相簿首页",
+    "backToAlbumsHome": "首页",
     "noDescription": "无描述",
     "photo": "无照片 | 一张照片 | {count} 张照片",
     "createdAt": "创建于 {time}",

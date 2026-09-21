@@ -262,11 +262,12 @@ onBeforeMount(() => {
             @click="goBackToAlbums"
           />
           <UButton
-            variant="ghost"
+            variant="soft"
             color="neutral"
-            icon="tabler:home"
+            icon="tabler:home-2"
             size="sm"
-            class="gap-1"
+            class="gap-1.5 rounded-full shadow-sm ring-1 ring-(--ui-border) hover:ring-(--ui-border-accented)"
+            :aria-label="$t('album.backToAlbumsHome')"
             @click="goBackToAlbums"
           >
             {{ $t('album.backToAlbumsHome') }}
@@ -310,11 +311,12 @@ onBeforeMount(() => {
           @click="goBackToAlbums"
         />
         <UButton
-          variant="ghost"
+          variant="soft"
           color="neutral"
-          icon="tabler:home"
+          icon="tabler:home-2"
           size="sm"
-          class="gap-1"
+          class="gap-1.5 rounded-full shadow-sm ring-1 ring-(--ui-border) hover:ring-(--ui-border-accented)"
+          :aria-label="$t('album.backToAlbumsHome')"
           @click="goBackToAlbums"
         >
           {{ $t('album.backToAlbumsHome') }}

@@ -249,6 +249,47 @@ watch(
   },
   { immediate: true },
 )
+
+// —— 相簿浏览视图：照片主页面 / 子相簿 ——
+// 有子相簿时用右上角 Home 图标展开的菜单切换，避免「照片 + 子相簿」混排在一个页面显得突兀。
+// 默认优先展示本层照片（照片为主页面）；仅当本层无直接照片、只有子相簿时才落到子相簿视图。
+const menuOpen = ref(false)
+
+// 浏览视图记忆：每个相簿独立记住「照片/子相簿」，存 sessionStorage（关闭浏览器即重置）
+const viewStorageKey = computed(() => `chronoval:scan-view:${props.libKey}:${relPath.value}`)
+function readStoredView(): 'photos' | 'subs' | null {
+  try {
+    if (typeof window === 'undefined') return null
+    const v = sessionStorage.getItem(viewStorageKey.value)
+    return v === 'photos' || v === 'subs' ? v : null
+  } catch {
+    return null
+  }
+}
+const activeView = ref<'photos' | 'subs'>(readStoredView() ?? 'photos')
+watch(
+  () => [data.value?.dirPhotos ?? [], data.value?.children ?? []],
+  () => {
+    const stored = readStoredView()
+    if (stored) {
+      activeView.value = stored
+    } else {
+      activeView.value = (data.value?.dirPhotos?.length ?? 0) > 0 ? 'photos' : 'subs'
+    }
+  },
+  { immediate: true },
+)
+
+// 点选浏览模式后收起胶囊切换区，并记忆该选择
+const selectView = (v: 'photos' | 'subs') => {
+  activeView.value = v
+  menuOpen.value = false
+  try {
+    if (typeof window !== 'undefined') sessionStorage.setItem(viewStorageKey.value, v)
+  } catch {
+    /* ignore */
+  }
+}
 </script>
 
 <template>
@@ -256,7 +297,7 @@ watch(
   <div class="min-h-svh w-full bg-white pb-16 dark:bg-neutral-950">
     <!-- 顶部导航 / 标题区 -->
     <div class="px-6 pt-6">
-      <div class="mb-6 flex items-center justify-between gap-2 text-sm text-neutral-500 dark:text-neutral-400">
+      <div class="mb-6 flex items-center justify-between gap-3 text-sm text-neutral-500 dark:text-neutral-400">
         <div class="flex min-w-0 items-center gap-2">
           <NuxtLink
             :to="backTarget"
@@ -277,13 +318,71 @@ watch(
             </NuxtLink>
           </template>
         </div>
-        <NuxtLink
-          to="/albums"
-          class="flex shrink-0 items-center gap-1 transition-colors hover:text-neutral-800 dark:hover:text-neutral-100"
-        >
-          <Icon name="tabler:home" class="size-4" />
-          <span>{{ t('album.backToAlbumsHome') }}</span>
-        </NuxtLink>
+
+        <!-- 右上角：圆形球「照片 / 子相簿」切换（左） + 首页独立胶囊（右最外） -->
+        <div class="flex shrink-0 items-center gap-2">
+          <!-- 圆形球胶囊：点击无缝原地增长为「照片 / 子相簿」切换胶囊（与首页等高，融为一体） -->
+          <div v-if="data?.children?.length" class="ball-capsule">
+            <div class="ball-segments-grid" :class="{ open: menuOpen }">
+              <div class="seg-wrap">
+                <button
+                  type="button"
+                  :class="[
+                    'flex h-[26px] items-center gap-1 rounded-full px-2 text-xs font-medium transition-colors',
+                    activeView === 'photos'
+                      ? 'bg-(--ui-bg) text-(--ui-text)'
+                      : 'text-(--ui-text-muted) hover:bg-(--ui-bg) hover:text-(--ui-text)',
+                  ]"
+                  @click="selectView('photos')"
+                >
+                  <Icon name="tabler:photo" class="size-3.5" />
+                  <span>{{ t('albums.scan.photos') }}</span>
+                  <span class="tabular-nums opacity-60">{{ photoCount }}</span>
+                </button>
+                <button
+                  type="button"
+                  :class="[
+                    'flex h-[26px] items-center gap-1 rounded-full px-2 text-xs font-medium transition-colors',
+                    activeView === 'subs'
+                      ? 'bg-(--ui-bg) text-(--ui-text)'
+                      : 'text-(--ui-text-muted) hover:bg-(--ui-bg) hover:text-(--ui-text)',
+                  ]"
+                  @click="selectView('subs')"
+                >
+                  <Icon name="tabler:folder-heart" class="size-3.5" />
+                  <span>{{ t('albums.scan.subAlbums') }}</span>
+                  <span class="tabular-nums opacity-60">{{ data?.children?.length ?? 0 }}</span>
+                </button>
+              </div>
+            </div>
+            <button
+              type="button"
+              :title="`${t('albums.scan.photos')} / ${t('albums.scan.subAlbums')}`"
+              :aria-label="`${t('albums.scan.photos')} / ${t('albums.scan.subAlbums')}`"
+              class="ball-trigger"
+              @click="menuOpen = !menuOpen"
+            >
+              <Icon
+                name="tabler:layout-grid"
+                class="size-4 transition-transform duration-300"
+                :class="{ 'rotate-90': menuOpen }"
+              />
+            </button>
+          </div>
+
+          <!-- 首页：独立胶囊（同普通相册），位于最右 -->
+          <UButton
+            :to="'/albums'"
+            variant="soft"
+            color="neutral"
+            icon="tabler:home-2"
+            size="sm"
+            class="gap-1.5 rounded-full shadow-sm ring-1 ring-(--ui-border) hover:ring-(--ui-border-accented)"
+            :aria-label="t('album.backToAlbumsHome')"
+          >
+            {{ t('album.backToAlbumsHome') }}
+          </UButton>
+        </div>
       </div>
 
       <h1
@@ -534,25 +633,46 @@ watch(
     <template
       v-if="status !== 'pending' && !!data && (!data.passwordProtected || data.authorized)"
     >
-      <!-- 嵌套子相簿：与首页相簿结台统一的「克制照片卡」，模糊于画廊之间，不形成生硬相框图 -->
-      <div v-if="data!.children.length" class="mb-10 px-6">
-        <div class="mb-4 flex items-center gap-2 pt-2">
-          <Icon
-            name="tabler:folder-heart"
-            class="size-4 text-neutral-400 dark:text-neutral-500"
-          />
-          <h2
-            class="text-sm font-semibold text-neutral-700 dark:text-neutral-300"
-          >
-            {{ t('albums.scan.subAlbums') }}
-          </h2>
-          <span
-            class="rounded-full bg-(--ui-bg-elevated) px-1.5 py-0.5 text-xs tabular-nums text-(--ui-text-muted)"
-          >
-            {{ data!.children.length }}
-          </span>
+      <!-- 照片主页面：保持本层照片一整页展示，不与子相簿混排 -->
+      <div v-if="activeView === 'photos'" class="px-6">
+        <div v-if="data!.dirPhotos.length">
+          <ClientOnly>
+            <AlbumsAlbumGallery
+              v-model:layout="layout"
+              :photos="data!.dirPhotos"
+              @open-random="handleOpenRandom($event)"
+            >
+              <template #waterfall-card="{ photo, index }">
+                <AlbumsAlbumFluidCard
+                  :photo="photo"
+                  :index="index"
+                  @open="openPhoto($event)"
+                />
+              </template>
+              <template #grid-card="{ photo, index }">
+                <AlbumsAlbumGridCard
+                  :photo="photo"
+                  :index="index"
+                  @open="openPhoto($event)"
+                />
+              </template>
+              <template #immersive-card="{ photo, index }">
+                <AlbumsAlbumImmersiveCard
+                  :photo="photo"
+                  :index="index"
+                  @open="openPhoto($event)"
+                />
+              </template>
+            </AlbumsAlbumGallery>
+          </ClientOnly>
         </div>
+        <p v-else class="py-16 text-center text-neutral-400">
+          {{ t('albums.scan.empty') }}
+        </p>
+      </div>
 
+      <!-- 子相簿页：独立于照片展示，进入浏览不再突兀 -->
+      <div v-else class="px-6">
         <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
           <NuxtLink
             v-for="child in data!.children"
@@ -601,43 +721,6 @@ watch(
           </NuxtLink>
         </div>
       </div>
-
-      <!-- 照片展示（瀑布流 / 统一网格可选，头部已展示照片数） -->
-      <div v-if="data!.dirPhotos.length">
-        <ClientOnly>
-          <AlbumsAlbumGallery
-            v-model:layout="layout"
-            :photos="data!.dirPhotos"
-            class="px-6"
-            @open-random="handleOpenRandom($event)"
-          >
-            <template #waterfall-card="{ photo, index }">
-              <AlbumsAlbumFluidCard
-                :photo="photo"
-                :index="index"
-                @open="openPhoto($event)"
-              />
-            </template>
-            <template #grid-card="{ photo, index }">
-              <AlbumsAlbumGridCard
-                :photo="photo"
-                :index="index"
-                @open="openPhoto($event)"
-              />
-            </template>
-            <template #immersive-card="{ photo, index }">
-              <AlbumsAlbumImmersiveCard
-                :photo="photo"
-                :index="index"
-                @open="openPhoto($event)"
-              />
-            </template>
-          </AlbumsAlbumGallery>
-        </ClientOnly>
-      </div>
-      <p v-else-if="!data!.children.length" class="py-16 text-center text-neutral-400">
-        {{ t('albums.scan.empty') }}
-      </p>
     </template>
 
     <!-- 查看器 -->
@@ -666,6 +749,65 @@ watch(
 </template>
 
 <style scoped>
+/* 圆形球胶囊：无缝从球形原地增长为「照片 / 子相簿」切换胶囊，与首页胶囊等高 */
+.ball-capsule {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  border-radius: 9999px;
+  background: var(--ui-bg-elevated);
+  border: 1px solid var(--ui-border);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
+}
+/* 用 grid-template-columns 实现宽度丝滑增长，而不是跳变 */
+.ball-segments-grid {
+  display: grid;
+  grid-template-columns: 0fr;
+  transition: grid-template-columns 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.ball-segments-grid.open {
+  grid-template-columns: 1fr;
+}
+.ball-segments-grid .seg-wrap {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  overflow: hidden;
+  /* min-width 归零以允许轨道收拢回圆球(0fr)，绝不能用 max-content 撑住宽度 */
+  min-width: 0;
+  /* 内容禁止换行，动画中只会被裁剪显现，绝不会竖排成一列 */
+  white-space: nowrap;
+  height: 26px;
+  /* 文字用渐入渐出，展开时不随宽度被挤压裁剪 */
+  opacity: 0;
+  transition: opacity 0.16s ease;
+}
+.ball-segments-grid .seg-wrap > button,
+.ball-segments-grid .seg-wrap > span {
+  flex: none;
+  white-space: nowrap;
+}
+.ball-segments-grid.open .seg-wrap {
+  opacity: 1;
+  /* 等胶囊宽度基本展开后再淡入，避免被挤压的观感 */
+  transition-delay: 0.18s;
+  transition-duration: 0.22s;
+}
+.ball-trigger {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  margin-left: 2px;
+  border-radius: 9999px;
+  color: var(--ui-text-muted);
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+.ball-trigger:hover {
+  color: var(--ui-text-accent);
+  background-color: var(--ui-bg-accent);
+}
 /* 锁定卡片：磨砂玻璃 + 细微暖白渐变，比照片白底略深一档，清晰区隔 */
 .kernel-lock-card {
   position: relative;

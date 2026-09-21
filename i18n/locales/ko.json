@@ -173,7 +173,7 @@
     "failedToLoadDescription": "앨범을 불러오는 중 오류가 발생했습니다.",
     "failedToLoad": "앨범을 불러오지 못했습니다",
     "backToAlbums": "앨범으로 돌아가기",
-    "backToAlbumsHome": "앨범 홈으로",
+    "backToAlbumsHome": "홈",
     "noDescription": "설명이 제공되지 않았습니다",
     "photo": "사진 없음 | 사진 1장 | 사진 {count}장",
     "createdAt": "{time}에 생성됨",
