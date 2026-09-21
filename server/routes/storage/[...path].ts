@@ -116,7 +116,8 @@ export default defineEventHandler(async (event) => {
   // lengthComputable，前端将无法计算并展示真实下载百分比（始终停在 0%）。
   // 开启 Range 支持以便中断后可续传。
   setHeader(event, 'Accept-Ranges', 'bytes')
-  event.node.res.setHeader('Content-Length', String(stat.size))
+  const size = (await fs.stat(absolute)).size
+  event.node.res.setHeader('Content-Length', String(size))
   const stream = createReadStream(absolute)
   return sendStream(event, stream)
 })
