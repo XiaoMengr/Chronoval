@@ -9,7 +9,7 @@ hero:
   image:
     src: /logo.png
     alt: Chronoval
-    style: 'filter: drop-shadow(0 0 30px rgba(168, 85, 247, 0.7)) drop-shadow(0 0 60px rgba(59, 130, 246, 0.5)) drop-shadow(0 0 100px rgba(168, 85, 247, 0.3)); width: 200px; height: 200px;'
+    style: 'filter: drop-shadow(0 0 30px rgba(168, 85, 247, 0.7)) drop-shadow(0 0 60px rgba(59, 130, 246, 0.5)) drop-shadow(0 0 100px rgba(168, 85, 247, 0.3)); width: 150px; height: 150px;'
   actions:
     - theme: brand
       text: 快速开始
