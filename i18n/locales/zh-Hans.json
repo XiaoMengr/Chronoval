@@ -477,7 +477,8 @@
       "next": "下一张",
       "redirecting": "正在跳转到相簿…",
       "customUrlRedirect": "相簿跳转",
-      "backToAlbums": "返回相册"
+      "backToAlbums": "返回相册",
+      "backToParent": "返回上一级"
     },
     "layout": {
       "switchLabel": "样式布局",

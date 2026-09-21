@@ -67,6 +67,11 @@ const measureWidth = () => {
 // 组件挂载后测量
 onMounted(() => {
   nextTick(() => measureWidth())
+  // 字体加载完成后校正一次：i18n/Web 字体若在挂载时尚未就绪，测得的宽度会偏小，
+  // 导致展开胶囊“只展开一点点”。字体就绪后再测一次即可修正。
+  if (typeof document !== 'undefined' && document.fonts?.ready) {
+    document.fonts.ready.then(() => nextTick(() => measureWidth()))
+  }
 })
 
 // 监听窗口大小变化重新测量
@@ -75,6 +80,9 @@ useEventListener('resize', () => {
 })
 
 const toggleSwitch = () => {
+  // 展开前即时重测最新宽度，确保不受异步字体/文案加载影响；
+  // 也在收起后重测一次，保证下次展开仍用最新值。
+  nextTick(() => measureWidth())
   expanded.value = !expanded.value
 }
 

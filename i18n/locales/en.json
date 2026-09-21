@@ -477,7 +477,8 @@
       "next": "Next",
       "redirecting": "Redirecting to album…",
       "customUrlRedirect": "Album redirect",
-      "backToAlbums": "Back to albums"
+      "backToAlbums": "Back to albums",
+      "backToParent": "Back to parent"
     },
     "layout": {
       "switchLabel": "Layout",

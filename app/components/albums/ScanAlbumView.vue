@@ -130,6 +130,22 @@ const crumbs = computed(() => {
   return rel.split('/').filter(Boolean)
 })
 
+/** 返回按钮指向：非顶层时回到父相簿（上级目录），顶层/别名模式才回相簿首页 */
+const backTarget = computed(() => {
+  if (props.mode === 'slug') return '/albums'
+  if (crumbs.value.length === 0) return '/albums'
+  const parent = crumbs.value.slice(0, -1)
+  const parentPath = parent.join('/')
+  return parentPath
+    ? `/albums/scan/${props.libKey}/${parentPath}`
+    : `/albums/scan/${props.libKey}`
+})
+const backLabel = computed(() =>
+  props.mode === 'slug' || crumbs.value.length === 0
+    ? t('albums.scan.backToAlbums')
+    : t('albums.scan.backToParent'),
+)
+
 /** 本相簿直接照片数（与普通相簿头部一致） */
 const photoCount = computed(() => {
   const n = data.value?.node?.photoCount
@@ -241,9 +257,12 @@ watch(
     <!-- 顶部导航 / 标题区 -->
     <div class="px-6 pt-6">
       <div class="mb-6 flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
-        <NuxtLink to="/albums" class="flex items-center gap-1 transition-colors hover:text-neutral-800 dark:hover:text-neutral-100">
+        <NuxtLink
+          :to="backTarget"
+          class="flex items-center gap-1 transition-colors hover:text-neutral-800 dark:hover:text-neutral-100"
+        >
           <Icon name="tabler:arrow-left" class="size-4" />
-          <span>{{ t('title.albums') }}</span>
+          <span>{{ backLabel }}</span>
         </NuxtLink>
         <template v-if="crumbs.length">
           <span>/</span>
@@ -506,34 +525,49 @@ watch(
     <template
       v-if="status !== 'pending' && !!data && (!data.passwordProtected || data.authorized)"
     >
-      <!-- 嵌套子相簿 -->
+      <!-- 嵌套子相簿：与首页相簿结台统一的「克制照片卡」，模糊于画廊之间，不形成生硬相框图 -->
       <div v-if="data!.children.length" class="mb-10 px-6">
-        <h2 class="mb-4 text-base font-semibold text-neutral-700 dark:text-neutral-300">
-          {{ t('albums.scan.subAlbums') }}
-        </h2>
+        <div class="mb-4 flex items-center gap-2 pt-2">
+          <Icon
+            name="tabler:folder-heart"
+            class="size-4 text-neutral-400 dark:text-neutral-500"
+          />
+          <h2
+            class="text-sm font-semibold text-neutral-700 dark:text-neutral-300"
+          >
+            {{ t('albums.scan.subAlbums') }}
+          </h2>
+          <span
+            class="rounded-full bg-(--ui-bg-elevated) px-1.5 py-0.5 text-xs tabular-nums text-(--ui-text-muted)"
+          >
+            {{ data!.children.length }}
+          </span>
+        </div>
+
         <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
           <NuxtLink
             v-for="child in data!.children"
             :key="child.link"
             :to="child.link"
-            class="group block overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-neutral-800 dark:bg-neutral-900"
+            class="group flex flex-col overflow-hidden rounded-2xl ring-1 ring-(--ui-border) bg-(--ui-bg) transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/5 hover:ring-(--ui-border-accented)"
           >
-            <div class="relative aspect-[3/4] w-full overflow-hidden bg-neutral-100 dark:bg-neutral-800">
+            <div
+              class="relative aspect-[4/3] w-full overflow-hidden bg-(--ui-bg-elevated)"
+            >
               <ClientOnly>
                 <ThumbImage
                   v-if="child.covers[0]"
-                  class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                   :src="child.covers[0].thumbnailUrl || ''"
                   :fallback-src="child.covers[0].originalUrl || ''"
                   :thumbhash="child.covers[0].thumbnailHash"
                   :alt="child.title"
-                  :style="{ aspectRatio: child.covers[0].aspectRatio || 3 / 4 }"
                 />
                 <div
-                  v-if="!child.covers[0]"
-                  class="flex h-full items-center justify-center text-neutral-300"
+                  v-else
+                  class="flex h-full items-center justify-center text-(--ui-text-muted)"
                 >
-                  <Icon name="tabler:folder" class="size-8" />
+                  <Icon name="tabler:folder-heart" class="size-7" />
                 </div>
               </ClientOnly>
               <Icon
@@ -541,13 +575,18 @@ watch(
                 name="tabler:lock"
                 class="absolute right-2 top-2 size-4 text-white drop-shadow"
               />
+              <span
+                class="absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-black/45 px-2 py-0.5 text-[11px] font-medium text-white backdrop-blur-md"
+              >
+                <Icon name="tabler:photo" class="size-3" />
+                {{ child.photoCount }}
+              </span>
             </div>
-            <div class="p-3">
-              <p class="truncate text-sm font-medium text-neutral-800 dark:text-neutral-200">
+            <div class="flex min-w-0 items-center gap-2 px-2.5 py-2">
+              <p
+                class="min-w-0 flex-1 truncate text-[13px] font-medium text-(--ui-text)"
+              >
                 {{ child.title }}
-              </p>
-              <p class="text-xs text-neutral-400">
-                {{ child.photoCount }} {{ t('albums.scan.photos') }}
               </p>
             </div>
           </NuxtLink>
