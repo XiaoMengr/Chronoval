@@ -49,7 +49,7 @@ docker compose up -d
 
 | 主题 | 说明 | 文档 |
 | --- | --- | --- |
-| 一分钟启动 | 面向同事的极简 3 步部署 | [docs/quickstart-deploy.md](docs/quickstart-deploy.md) |
+| 一分钟启动 | 极简 3 步部署 | [docs/quickstart-deploy.md](docs/quickstart-deploy.md) |
 | 快速上手 | 安装、配置、升级 | [docs/guide/getting-started.md](docs/guide/getting-started.md) |
 | 部署指南 | Docker / 镜像 / 目录映射 / 备份 | [docs/deployment.md](docs/deployment.md) |
 | 独立 IP 访问 | macvlan 网络，容器拥有专属 IP | [docs/zh/guide/deploy-ip.md](docs/zh/guide/deploy-ip.md) |
