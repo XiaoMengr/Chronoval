@@ -28,27 +28,25 @@
 - **地图浏览**：MapLibre / Mapbox 聚合拍摄位置，反向地理编码识别城市
 - **管理后台**：相册 / 上传队列 / 实时日志 / 系统监控 / 日历热图
 
-## 快速开始（推荐：直接拉取已构建镜像，无需编译）
-
-镜像已由 GitHub Actions 自动构建并推送至 **GHCR**，几行命令即可跑起来：
+## 快速开始
 
 ```bash
-# 1. 复制环境变量模板并填写（管理账号、站点标题等；留空也能在网页向导里填）
+# 1. 复制环境变量模板
 cp .env.example .env
 
-# 2. 建好媒体库目录（照片/视频放进即自动识别）
+# 2. 建好媒体库目录
 mkdir -p data/storage/photos data/storage/videos
 
-# 3. 启动：默认拉取 ghcr.io/xiaomengr/chronoval:latest 镜像（首次会自动 pull）
+# 3. 启动（默认拉取 ghcr.io/xiaomengr/chronoval:latest 镜像）
 docker compose up -d
 
-# 4. 打开浏览器 http://localhost:3000，按「首次运行向导」设置管理员即可
+# 4. 打开 http://localhost:3000，按向导设置管理员
 ```
 
-首次启动会自动拉取镜像、完成数据库迁移并进入安装向导；媒体库照片放入 `data/storage/photos`、视频放入 `data/storage/videos` 即被自动识别。
+媒体库照片放入 `data/storage/photos`、视频放入 `data/storage/videos` 即被自动识别。
 
-> 想用某个固定版本？改一行：`docker compose.yml` 里 `image: ghcr.io/xiaomengr/chronoval:1.0.0.4`（去掉 `v` 前缀）。
-> 只有你想**从源码自己编译**时才用：`docker compose up -d --build`。
+> 想用固定版本，将 `docker-compose.yml` 的 `image` 改为 `ghcr.io/xiaomengr/chronoval:1.0.0.4`。
+> 从源码自己编译时才用 `docker compose up -d --build`。
 
 ## 文档导航
 
