@@ -20,6 +20,7 @@ export default defineConfig({
       {
         text: '指南',
         items: [
+          { text: '一分钟启动（极简版）', link: '/quickstart-deploy' },
           { text: '快速开始', link: '/zh/guide/getting-started' },
           { text: '部署指南', link: '/deployment' },
           { text: '独立 IP 访问', link: '/zh/guide/deploy-ip' },

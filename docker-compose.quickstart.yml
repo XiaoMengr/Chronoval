@@ -1,0 +1,21 @@
+name: chronoval
+
+# ============================================================
+# Chronoval 极简单启动（基于已构建镜像，无需 build）
+# ------------------------------------------------------------
+# 直接 <code>docker compose -f docker-compose.quickstart.yml up -d</code>
+# 然后打开 http://localhost:3000，按网页向导设置管理员即可。
+# ============================================================
+
+services:
+  chronoval:
+    image: ghcr.io/xiaomengr/chronoval:latest   # 已构建好的 GHCR 镜像
+    container_name: chronoval
+    restart: unless-stopped
+    ports:
+      - "3000:3000"        # 左侧改端口即可，例如 "8080:3000"
+    volumes:
+      # 必须：数据持久化（数据库 + 上传照片/缩略图/配置），备份只需复制 ./data
+      - ./data:/app/data
+    env_file:
+      - .env               # 见下方极简 .env；留空也能跑（向导里填管理员即可）

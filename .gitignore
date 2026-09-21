@@ -32,6 +32,7 @@ logs
 .env
 .env.*
 !.env.example
+!.env.quickstart.example
 
 # VitePress outputs
 docs/.vitepress/dist
