@@ -1642,8 +1642,7 @@
       },
       "local": {
         "basePath": {
-          "label": "Đường dẫn cơ sở lưu trữ",
-          "description": "Nếu bạn đang dùng Docker và không biết cách thao tác, hãy giữ nguyên đường dẫn mặc định /app/storage."
+          "label": "Đường dẫn cơ sở lưu trữ"
         },
         "dockerHint": {
           "title": "Lưu ý đường dẫn lưu trữ (môi trường Docker)",

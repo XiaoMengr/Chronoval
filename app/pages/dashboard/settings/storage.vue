@@ -219,7 +219,6 @@ const storageFieldsConfig = computed<Record<string, any>>(() => {
         provider: { hidden: true },
         basePath: {
           label: $t(`${baseKey}.basePath.label`),
-          description: $t(`${baseKey}.basePath.description`),
         },
         baseUrl: {
           label: $t(`${baseKey}.baseUrl.label`),

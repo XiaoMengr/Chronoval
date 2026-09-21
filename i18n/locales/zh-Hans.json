@@ -1698,8 +1698,7 @@
       },
       "local": {
         "basePath": {
-          "label": "存储基础路径",
-          "description": "如果是 Docker 环境，不知道怎么操作，请保持默认的 /app/storage 不变。"
+          "label": "存储基础路径"
         },
         "dockerHint": {
           "title": "存储路径提示（Docker 环境）",

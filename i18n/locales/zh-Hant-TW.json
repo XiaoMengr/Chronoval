@@ -1459,8 +1459,7 @@
       },
       "local": {
         "basePath": {
-          "label": "基本路徑",
-          "description": "如果你在 Docker 環境不知道怎麼操作，請保持預設的 /app/storage 不變。"
+          "label": "基本路徑"
         },
         "dockerHint": {
           "title": "儲存路徑提示（Docker 環境）",

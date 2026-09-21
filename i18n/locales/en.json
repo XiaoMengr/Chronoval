@@ -1704,8 +1704,7 @@
       },
       "local": {
         "basePath": {
-          "label": "Storage Base Path",
-          "description": "If you are running in Docker and don't know how to do this, keep the default /app/storage unchanged."
+          "label": "Storage Base Path"
         },
         "dockerHint": {
           "title": "Storage path notice (Docker environment)",
