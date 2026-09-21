@@ -523,6 +523,32 @@ const onScanLibraryToggle = async (lib: ScanLibraryItem) => {
   }
 }
 
+// 移动端：详情折叠状态
+const scanLibExpanded = ref<Record<number, boolean>>({})
+const toggleScanLibExpand = (id: number) => {
+  scanLibExpanded.value[id] = !scanLibExpanded.value[id]
+}
+
+// 移动端"更多"菜单：编辑 / 信息 / 删除
+const scanLibMoreItems = (lib: ScanLibraryItem) => [
+  {
+    label: $t('settings.storage.scanLibrary.actions.edit'),
+    icon: 'tabler:pencil',
+    onSelect: () => openScanLibraryEdit(lib),
+  },
+  {
+    label: $t('settings.storage.scanLibrary.actions.info'),
+    icon: 'tabler:info-circle',
+    onSelect: () => openScanLibraryInfo(lib),
+  },
+  {
+    label: $t('settings.storage.scanLibrary.actions.delete'),
+    icon: 'tabler:trash',
+    color: 'error' as const,
+    onSelect: () => onScanLibraryDelete(lib),
+  },
+]
+
 const scanLibRunning = ref<number | null>(null)
 const onScanLibraryScan = async (lib: ScanLibraryItem) => {
   scanLibRunning.value = lib.id
@@ -1072,13 +1098,89 @@ const storageInfoConfigEntries = computed(() => {
           </div>
 
           <div v-else class="divide-y divide-neutral-100 dark:divide-neutral-800">
+            <!-- ===== 移动端卡片（<sm）：紧凑、可折叠 ===== -->
             <div
               v-for="lib in scanLibs"
               :key="lib.id"
-              class="px-5 py-4"
+              class="px-5 py-3 sm:hidden"
             >
-              <!-- 移动端纵向堆叠；sm 及以上的桌面端横向排列 -->
-              <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <!-- 主行：状态 + 名称 + 启停开关（开关推到右端） -->
+              <div class="flex items-center gap-2">
+                <ScanStatusDot :enabled="lib.enabled" :raw="lib.lastScanResult" />
+                <span class="min-w-0 flex-1 truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                  {{ lib.name }}
+                </span>
+                <USwitch
+                  v-model="lib.enabled"
+                  size="sm"
+                  color="success"
+                  class="shrink-0"
+                  :loading="scanTogglingId === lib.id"
+                  :disabled="scanTogglingId !== null"
+                  @change="onScanLibraryToggle(lib)"
+                />
+              </div>
+
+              <!-- 折叠详情（路径 + 元信息）：默认隐藏，点按展开 -->
+              <div v-if="scanLibExpanded[lib.id]" class="mt-2 space-y-1.5">
+                <p class="flex items-center gap-1.5 truncate font-mono text-xs text-neutral-400 dark:text-neutral-500">
+                  <UIcon name="tabler:folder" class="size-3.5 shrink-0" />
+                  <span class="truncate">{{ lib.rootPath }}</span>
+                </p>
+                <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-400 dark:text-neutral-500">
+                  <span class="inline-flex items-center gap-1">
+                    <UIcon name="tabler:photo" class="size-3.5" />
+                    <span class="font-medium text-neutral-600 dark:text-neutral-300">{{ lib.photoCount }}</span>
+                  </span>
+                  <span class="inline-flex items-center gap-1">
+                    <UIcon name="tabler:clock" class="size-3.5" />
+                    {{ fmtScanTime(lib.lastScanAt) }}
+                  </span>
+                  <ScanResultBadges v-if="lib.lastScanResult" :raw="lib.lastScanResult" />
+                </div>
+              </div>
+
+              <!-- 操作行：左侧折叠详情 + 右侧 播放 / 更多 -->
+              <div class="mt-2 flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  class="flex items-center gap-1 rounded-md px-1 py-1 text-xs text-neutral-400 transition hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300"
+                  @click="toggleScanLibExpand(lib.id)"
+                >
+                  <UIcon
+                    :name="scanLibExpanded[lib.id] ? 'tabler:chevron-up' : 'tabler:chevron-down'"
+                    class="size-3.5"
+                  />
+                  {{
+                    scanLibExpanded[lib.id]
+                      ? $t('settings.storage.scanLibrary.details.hide')
+                      : $t('settings.storage.scanLibrary.details.show')
+                  }}
+                </button>
+
+                <div class="flex shrink-0 items-center gap-1.5">
+                  <UButton
+                    size="sm"
+                    variant="soft"
+                    icon="tabler:player-play"
+                    :loading="scanLibRunning === lib.id"
+                    :disabled="scanLibRunning !== null"
+                    @click="onScanLibraryScan(lib)"
+                  />
+                  <UDropdown :items="scanLibMoreItems(lib)" :content="{ align: 'end' }">
+                    <UButton size="sm" variant="soft" icon="tabler:dots-vertical" aria-label="更多操作" />
+                  </UDropdown>
+                </div>
+              </div>
+            </div>
+
+            <!-- ===== 桌面端卡片（sm 及以上）：信息完整、操作居右 ===== -->
+            <div
+              v-for="lib in scanLibs"
+              :key="lib.id"
+              class="hidden px-5 py-4 sm:block"
+            >
+              <div class="flex flex-row items-center justify-between gap-3">
                 <!-- 左侧：状态 + 名称 + 路径 + 元信息 -->
                 <div class="min-w-0 flex-1">
                   <div class="flex items-center gap-2">
@@ -1107,8 +1209,8 @@ const storageInfoConfigEntries = computed(() => {
                   </div>
                 </div>
 
-                <!-- 右侧/下方：启停开关 + 操作按钮 -->
-                <div class="flex shrink-0 flex-wrap items-center gap-2 sm:flex-nowrap">
+                <!-- 右侧：启停开关 + 操作按钮 -->
+                <div class="flex shrink-0 items-center gap-2">
                   <USwitch
                     v-model="lib.enabled"
                     size="sm"
@@ -1118,10 +1220,7 @@ const storageInfoConfigEntries = computed(() => {
                     @change="onScanLibraryToggle(lib)"
                   />
 
-                  <span
-                    class="hidden h-4 w-px bg-neutral-200 dark:bg-neutral-700 sm:block"
-                    aria-hidden="true"
-                  />
+                  <span class="h-4 w-px bg-neutral-200 dark:bg-neutral-700" aria-hidden="true" />
 
                   <UTooltip :text="$t('settings.storage.scanLibrary.messages.scanned')">
                     <UButton

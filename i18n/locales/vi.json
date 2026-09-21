@@ -1848,6 +1848,10 @@
           "edit": "Chỉnh sửa",
           "info": "Thông tin",
           "delete": "Xóa"
+        },
+        "details": {
+          "show": "Xem chi tiết",
+          "hide": "Thu gọn"
         }
       }
     },
