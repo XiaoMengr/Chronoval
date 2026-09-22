@@ -330,38 +330,38 @@ const selectView = (v: 'photos' | 'subs') => {
     <!-- 顶部导航 / 标题区 -->
     <div class="px-6 pt-6">
       <div class="mb-6 flex items-center justify-between gap-3 text-sm text-neutral-500 dark:text-neutral-400">
-        <nav class="flex h-7 min-w-0 shrink items-center gap-0.5 rounded-full bg-(--ui-bg-elevated) px-1 ring-1 ring-(--ui-border)">
+        <nav class="flex h-6 min-w-0 shrink items-center gap-0.5 rounded-full bg-(--ui-bg-elevated) px-1 ring-1 ring-(--ui-border)">
           <!-- 返回上一级 -->
           <NuxtLink
             :to="backTarget"
-            class="flex items-center gap-1 rounded-full px-1.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-(--ui-bg) hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-neutral-100"
+            class="flex h-full items-center gap-1 rounded-full px-1.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-(--ui-bg) hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-neutral-100"
           >
             <Icon name="tabler:arrow-left" class="size-3.5" />
             <span>{{ backLabel }}</span>
           </NuxtLink>
 
           <template v-if="crumbs.length">
-            <Icon name="tabler:chevron-right" class="size-3 shrink-0 text-neutral-400 dark:text-neutral-500" />
+            <Icon name="tabler:chevron-right" class="size-3 shrink-0 self-center text-neutral-400 dark:text-neutral-500" />
             <template v-for="(seg, i) in crumbs" :key="seg">
               <!-- 中间层级：可点击跳转的路径 -->
               <NuxtLink
                 v-if="i < crumbs.length - 1"
                 :to="`/albums/scan/${libKey}/${crumbs.slice(0, i + 1).join('/')}`"
-                class="max-w-[14ch] truncate rounded-full px-1.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-(--ui-bg) hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-neutral-100"
+                class="flex h-full max-w-[14ch] items-center truncate rounded-full px-1.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-(--ui-bg) hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-neutral-100"
               >
                 {{ seg }}
               </NuxtLink>
               <!-- 当前层级：主题色高亮胶囊，不可点击 -->
               <span
                 v-else
-                class="max-w-[14ch] truncate rounded-full bg-(--ui-primary)/10 px-2 text-xs font-semibold text-(--ui-primary)"
+                class="flex h-full max-w-[14ch] items-center truncate rounded-full bg-(--ui-primary)/10 px-1.5 text-xs font-semibold text-(--ui-primary)"
               >
                 {{ seg }}
               </span>
               <Icon
                 v-if="i < crumbs.length - 1"
                 name="tabler:chevron-right"
-                class="size-3 shrink-0 text-neutral-400 dark:text-neutral-500"
+                class="size-3 shrink-0 self-center text-neutral-400 dark:text-neutral-500"
               />
             </template>
           </template>
@@ -376,9 +376,9 @@ const selectView = (v: 'photos' | 'subs') => {
                 <button
                   type="button"
                   :class="[
-                    'flex h-[26px] items-center gap-1 rounded-full px-2 text-xs font-medium transition-colors',
+                    'ball-seg flex h-[26px] items-center gap-1 rounded-full px-2 text-xs font-medium transition-colors',
                     activeView === 'photos'
-                      ? 'bg-(--ui-bg) text-(--ui-text)'
+                      ? 'ball-seg-active'
                       : 'text-(--ui-text-muted) hover:bg-(--ui-bg) hover:text-(--ui-text)',
                   ]"
                   @click="selectView('photos')"
@@ -390,9 +390,9 @@ const selectView = (v: 'photos' | 'subs') => {
                 <button
                   type="button"
                   :class="[
-                    'flex h-[26px] items-center gap-1 rounded-full px-2 text-xs font-medium transition-colors',
+                    'ball-seg flex h-[26px] items-center gap-1 rounded-full px-2 text-xs font-medium transition-colors',
                     activeView === 'subs'
-                      ? 'bg-(--ui-bg) text-(--ui-text)'
+                      ? 'ball-seg-active'
                       : 'text-(--ui-text-muted) hover:bg-(--ui-bg) hover:text-(--ui-text)',
                   ]"
                   @click="selectView('subs')"
@@ -856,6 +856,28 @@ const selectView = (v: 'photos' | 'subs') => {
 .ball-trigger:hover {
   color: var(--ui-text-accent);
   background-color: var(--ui-bg-accent);
+}
+/* 白色选中块：强迫与外部胶囊同圆度（完全圆形、不挤压），并留出内边距呼吸感 */
+.ball-seg {
+  flex: none;
+  white-space: nowrap;
+  border-radius: 9999px;
+}
+/* 选中态：纯圆 + 细腻阴影 + 与外框一致的圆角，消除被压缩观感 */
+.ball-seg-active {
+  background-color: var(--ui-bg);
+  color: var(--ui-text);
+  border-radius: 9999px;
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.08),
+    0 0 0 0.5px rgb(0 0 0 / 0.04);
+  /* 允许白块在胶囊内部水平方向有呼吸空间，避免贴边显挤压 */
+  outline: 1px solid transparent;
+}
+/* 白色块保持内容垂直居中以呈现饱满胶囊，且圆角渲染不受裁剪 */
+.ball-segments-grid .seg-wrap > button.ball-seg-active,
+.ball-segments-grid .seg-wrap > span.ball-seg-active {
+  box-shadow: inset 0 0.5px 0 rgb(255 255 255 / 0.6);
 }
 /* 锁定卡片：磨砂玻璃 + 细微暖白渐变，比照片白底略深一档，清晰区隔 */
 .kernel-lock-card {
