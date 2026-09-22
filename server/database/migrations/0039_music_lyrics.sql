@@ -1,0 +1,1 @@
+ALTER TABLE `music` ADD `lyrics` text;

@@ -148,7 +148,8 @@
       "noImage": "空相簿",
       "emptyAlbumTip": "添加照片开始吧",
       "noDescription": "无描述",
-      "scanPhotos": "张照片"
+      "scanPhotos": "张照片",
+      "hasBgm": "该相簿开启背景音乐（BGM）"
     },
     "loading": "加载中",
     "photo": {
@@ -194,7 +195,11 @@
       "play": "播放背景音乐",
       "pause": "暂停背景音乐",
       "autoBlockedTip": "浏览器拦截了自动播放，点击即可开始播放背景音乐",
-      "loopOn": "循环播放"
+      "loopOn": "循环播放",
+      "expandPlayer": "展开音乐播放器",
+      "collapse": "收起",
+      "noLyrics": "暂无歌词",
+      "pureMusic": "纯音乐，请欣赏"
     }
   },
   "minimap": {
@@ -1420,7 +1425,20 @@
       "emptyCta": "上传第一首音乐",
       "deleteTitle": "删除音乐",
       "deleteConfirm": "确定删除「{title}」吗？删除后所有关联相簿将不再播放该背景音乐。",
-      "deleteAction": "确认删除"
+      "deleteAction": "确认删除",
+      "totalCount": "{count} 首音乐",
+      "playAll": "播放全部",
+      "lyricsLabel": "歌词（LRC）",
+      "lyricsPlaceholder": "在此粘贴 LRC 歌词，例如：\n[00:12.30]第一句歌词\n[00:18.40]第二句歌词",
+      "lyricsSaved": "歌词已保存",
+      "lyricsSaveFail": "歌词保存失败",
+      "editLyrics": "编辑歌词",
+      "noLyrics": "暂无歌词",
+      "pureMusic": "纯音乐，请欣赏",
+      "openPlayer": "展开播放器",
+      "collapsePlayer": "收起播放器",
+      "listCount": "全部音乐",
+      "playsCount": "首"
     }
   },
   "settings": {

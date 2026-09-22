@@ -209,6 +209,8 @@ export const music = sqliteTable('music', {
   // 时长（秒，解析自文件；未知为 null）
   duration: real('duration'),
   fileSize: integer('file_size').notNull().default(0),
+  // 歌词（LRC 格式文本；为空表示无歌词）
+  lyrics: text('lyrics'),
   createdAt: integer('created_at', { mode: 'timestamp' })
     .notNull()
     .default(sql`(unixepoch())`),

@@ -14,6 +14,7 @@ export const serializeMusic = (
   mimeType: string | null
   duration: number | null
   fileSize: number
+  lyrics: string | null
   url: string
   createdAt: Date
 } => ({
@@ -23,6 +24,7 @@ export const serializeMusic = (
   mimeType: m.mimeType,
   duration: m.duration,
   fileSize: m.fileSize,
+  lyrics: m.lyrics ?? null,
   url: `${STREAM_BASE}/${m.id}/stream`,
   createdAt: m.createdAt,
 })

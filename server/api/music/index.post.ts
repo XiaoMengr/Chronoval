@@ -25,6 +25,7 @@ export default eventHandler(async (event) => {
 
   const filePart = form.find((f) => f.name === 'file')
   const titlePart = form.find((f) => f.name === 'title')
+  const lyricsPart = form.find((f) => f.name === 'lyrics')
 
   if (!filePart || !filePart.data || filePart.data.byteLength === 0) {
     throw createError({ statusCode: 400, statusMessage: 'Missing audio file' })
@@ -85,6 +86,9 @@ export default eventHandler(async (event) => {
       mimeType: mime,
       duration,
       fileSize: buffer.byteLength,
+      lyrics: lyricsPart
+        ? Buffer.from(lyricsPart.data).toString('utf-8').trim() || null
+        : null,
     })
     .returning()
     .get()

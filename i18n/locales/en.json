@@ -140,7 +140,8 @@
       "noImage": "Empty Album",
       "emptyAlbumTip": "Add photos to get started",
       "noDescription": "No description",
-      "scanPhotos": "photos"
+      "scanPhotos": "photos",
+      "hasBgm": "This album has background music (BGM)"
     },
     "loading": "Loading",
     "photo": {
@@ -187,7 +188,11 @@
       "play": "Play background music",
       "pause": "Pause background music",
       "autoBlockedTip": "Autoplay was blocked by the browser. Click to start the background music",
-      "loopOn": "Loop playback"
+      "loopOn": "Loop playback",
+      "expandPlayer": "Expand music player",
+      "collapse": "Collapse",
+      "noLyrics": "No lyrics",
+      "pureMusic": "Instrumental, enjoy"
     }
   },
   "map": {
@@ -1426,7 +1431,20 @@
       "emptyCta": "Upload the first track",
       "deleteTitle": "Delete Music",
       "deleteConfirm": "Delete \"{title}\"? All albums using it will no longer play this BGM.",
-      "deleteAction": "Delete"
+      "deleteAction": "Delete",
+      "totalCount": "{count} tracks",
+      "playAll": "Play all",
+      "lyricsLabel": "Lyrics (LRC)",
+      "lyricsPlaceholder": "Paste LRC lyrics here, e.g.:\n[00:12.30]First line\n[00:18.40]Second line",
+      "lyricsSaved": "Lyrics saved",
+      "lyricsSaveFail": "Failed to save lyrics",
+      "editLyrics": "Edit lyrics",
+      "noLyrics": "No lyrics",
+      "pureMusic": "Instrumental, enjoy",
+      "openPlayer": "Expand player",
+      "collapsePlayer": "Collapse player",
+      "listCount": "All tracks",
+      "playsCount": "tracks"
     }
   },
   "settings": {

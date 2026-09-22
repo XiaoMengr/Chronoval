@@ -14,6 +14,7 @@ interface AlbumItem extends Album {
   link?: string
   photoCount?: number
   passwordProtected?: boolean
+  bgm?: { id: number; title: string } | null
 }
 const config = useRuntimeConfig()
 const { photos } = usePhotos()
@@ -341,6 +342,15 @@ const hoveredAlbum = ref<number | null>(null)
                   {{ $t('ui.album.emptyAlbumTip') }}
                 </p> -->
               </div>
+            </div>
+
+            <!-- BGM 标记：右上角；该相簿已绑定背景音乐时显示 -->
+            <div
+              v-if="album.bgm"
+              class="pointer-events-none absolute right-2 top-2 z-10 flex items-center gap-1.5 rounded-full bg-neutral-950/55 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm"
+              :title="$t('ui.album.hasBgm')"
+            >
+              <Icon name="tabler:music" class="size-3.5" />
             </div>
 
             <!-- 照片数浮标：右下角；扫描相簿用书本图标标识来源，不带文字 -->
