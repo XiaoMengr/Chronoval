@@ -1071,7 +1071,10 @@
         "passwordWarningTitle": "Mật khẩu album không được để trống",
         "passwordWarningMessage": "Nhập mật khẩu (không được để trống) để bật mật khẩu truy cập album.",
         "passwordWarningGotIt": "Đã hiểu",
-        "passwordSaveError": "Lưu thất bại. Mật khẩu truy cập album đã đặt không được để trống."
+        "passwordSaveError": "Lưu thất bại. Mật khẩu truy cập album đã đặt không được để trống.",
+        "groupBgm": "Nhạc nền",
+        "bgmMusic": "Nhạc nền (BGM)",
+        "bgmMusicPlaceholder": "Chọn nhạc nền (tùy chọn)"
       },
       "table": {
         "columns": {
@@ -1341,7 +1344,37 @@
     "nav": {
       "home": "Về trang chủ",
       "documentation": "Tài liệu",
-      "albums": "Album"
+      "albums": "Album",
+      "music": "Hộp nhạc"
+    },
+    "music": {
+      "title": "Hộp nhạc",
+      "subtitle": "Tải lên và quản lý audio có thể dùng làm nhạc nền (BGM) cho album",
+      "uploadButton": "Tải lên nhạc",
+      "dropHint": "Chọn tệp âm thanh",
+      "dropHintDesc": "Hỗ trợ các định dạng phổ biến như MP3 / WAV / M4A / OGG",
+      "titleLabel": "Tiêu đề nhạc",
+      "titlePlaceholder": "Để trống để dùng tên tệp",
+      "colTitle": "Tiêu đề",
+      "colDuration": "Thời lượng",
+      "colSize": "Kích thước",
+      "colUploaded": "Ngày tải lên",
+      "playFail": "Phát không thành công",
+      "loadFail": "Không tải được danh sách nhạc",
+      "uploadSuccess": "Đã tải lên nhạc",
+      "invalidFile": "Chỉ hỗ trợ tệp âm thanh",
+      "uploadFail": "Tải lên thất bại",
+      "deleteSuccess": "Đã xóa nhạc",
+      "deleteFail": "Xóa thất bại",
+      "renameSuccess": "Đã cập nhật tiêu đề",
+      "renameFail": "Cập nhật tiêu đề thất bại",
+      "nowPlaying": "Đang phát",
+      "stop": "Dừng",
+      "empty": "Hộp nhạc đang trống",
+      "emptyCta": "Tải lên bài đầu tiên",
+      "deleteTitle": "Xóa nhạc",
+      "deleteConfirm": "Xóa «{title}»? Mọi album liên quan sẽ không còn phát BGM này.",
+      "deleteAction": "Xóa"
     }
   },
   "settings": {

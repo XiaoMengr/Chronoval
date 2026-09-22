@@ -193,12 +193,40 @@ export const photoReactions = sqliteTable('photo_reactions', {
     .default(sql`(unixepoch())`),
 })
 
+// 音乐盒（BGM）：管理员上传的背景音乐，可绑定到相簿/照片画廊，
+// 进入相簿时自动播放。实际音频文件存于存储后端（storage provider），
+// 此表仅存元数据与存储 key。
+export const music = sqliteTable('music', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  // 显示标题（默认取文件名，可编辑）
+  title: text('title').notNull(),
+  // 原始文件名
+  filename: text('filename').notNull(),
+  // 存储后端中的对象 key（形如 music/{id}/<file>）
+  storageKey: text('storage_key').notNull().unique(),
+  // MIME 类型（audio/mpeg 等）
+  mimeType: text('mime_type').notNull().default('audio/mpeg'),
+  // 时长（秒，解析自文件；未知为 null）
+  duration: real('duration'),
+  fileSize: integer('file_size').notNull().default(0),
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' })
+    .notNull()
+    .default(sql`(unixepoch())`),
+})
+
 // 相簿表
 export const albums = sqliteTable('albums', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   title: text('title').notNull(),
   description: text('description'),
   coverPhotoId: text('cover_photo_id').references(() => photos.id, {
+    onDelete: 'set null',
+  }),
+  // 相簿背景音乐（音乐盒）；null=不播放 BGM
+  bgmMusicId: integer('bgm_music_id').references(() => music.id, {
     onDelete: 'set null',
   }),
   isHidden: integer('is_hidden', { mode: 'boolean' }).default(false).notNull(),
@@ -299,6 +327,10 @@ export const scanAlbumMeta = sqliteTable(
     // /albums/scan/{urlKey} 访问。与扫描库级 urlKey 分离，可被管理员手动重置；
     // 不参与库级 backfill（那些仅针对 scan_libraries.url_key）。
     urlKey: text('url_key'),
+    // 相簿背景音乐（音乐盒）；null=不播放 BGM
+    bgmMusicId: integer('bgm_music_id').references(() => music.id, {
+      onDelete: 'set null',
+    }),
     // 照片展示布局：瀑布流 / 统一网格 / 沉浸式看图 / 时间线；null 视为默认（瀑布流）
     layout: text('layout', { enum: ['waterfall', 'grid', 'immersive', 'timeline'] })
       .default('waterfall')

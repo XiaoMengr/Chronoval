@@ -92,3 +92,28 @@ export const extractVideoFrame = async (
 
 export const getVideoExtensionFromPath = (filePath: string): string =>
   path.extname(filePath).toLowerCase()
+
+/**
+ * 使用 ffprobe 读取音频时长（秒）。用于音乐盒上传时记录 BGM 时长。
+ * 失败（文件头损坏 / ffprobe 缺失）时返回 null。
+ */
+export const probeAudioDuration = async (
+  filePath: string,
+): Promise<number | null> => {
+  try {
+    const { stdout } = await execFileP(
+      FFPROBE_BIN,
+      [
+        '-v', 'error',
+        '-show_entries', 'format=duration',
+        '-of', 'default=noprint_wrappers=1:nokey=1',
+        filePath,
+      ],
+      { timeout: 15000 },
+    )
+    const duration = Number((stdout || '').trim())
+    return Number.isFinite(duration) && duration > 0 ? duration : null
+  } catch {
+    return null
+  }
+}

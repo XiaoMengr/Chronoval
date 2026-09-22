@@ -887,7 +887,10 @@
         "publicLinkFallback": "尚未設定自訂連結，將使用預設路徑。",
         "publicLinkEmptyTip": "填寫上方自訂連結後，這裡會顯示公開網址。",
         "copied": "已複製",
-        "copyLink": "複製連結"
+        "copyLink": "複製連結",
+        "groupBgm": "背景音樂",
+        "bgmMusic": "背景音樂（BGM）",
+        "bgmMusicPlaceholder": "選擇一首背景音樂（可選）"
       },
       "table": {
         "columns": {
@@ -1150,7 +1153,37 @@
     "nav": {
       "documentation": "文件",
       "home": "返回首頁",
-      "albums": "相簿集"
+      "albums": "相簿集",
+      "music": "音樂盒"
+    },
+    "music": {
+      "title": "音樂盒",
+      "subtitle": "上傳並管理可作為相簿背景音樂（BGM）的音訊",
+      "uploadButton": "上傳音樂",
+      "dropHint": "點擊選擇音訊檔案",
+      "dropHintDesc": "支援 MP3 / WAV / M4A / OGG 等常見音訊格式",
+      "titleLabel": "音樂標題",
+      "titlePlaceholder": "留空則使用檔案名稱",
+      "colTitle": "標題",
+      "colDuration": "時長",
+      "colSize": "大小",
+      "colUploaded": "上傳時間",
+      "playFail": "播放失敗，請重試",
+      "loadFail": "載入音樂清單失敗",
+      "uploadSuccess": "音樂上傳成功",
+      "invalidFile": "僅支援上傳音訊檔案",
+      "uploadFail": "上傳失敗，請稍後重試",
+      "deleteSuccess": "音樂已刪除",
+      "deleteFail": "刪除失敗，請稍後重試",
+      "renameSuccess": "標題已更新",
+      "renameFail": "標題更新失敗",
+      "nowPlaying": "正在播放",
+      "stop": "停止",
+      "empty": "音樂盒還是空的",
+      "emptyCta": "上傳第一首音樂",
+      "deleteTitle": "刪除音樂",
+      "deleteConfirm": "確定刪除「{title}」嗎？刪除後所有關聯相簿將不再播放該背景音樂。",
+      "deleteAction": "確認刪除"
     }
   },
   "settings": {
@@ -1161,14 +1194,14 @@
           "description": "照片在回收站中保留多少天後會被自動徹底刪除",
           "help": "移入回收站的照片到期後會被自動徹底刪除；選擇「永不刪除」會一直保留，直到你手動清除。",
           "options": {
-            "never": "永不刪除",
             "7": "7 天",
             "14": "14 天",
             "30": "30 天",
             "60": "60 天",
             "90": "90 天",
             "180": "180 天",
-            "365": "1 年"
+            "365": "1 年",
+            "never": "永不刪除"
           }
         }
       },

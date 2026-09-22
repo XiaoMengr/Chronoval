@@ -1071,7 +1071,10 @@
         "passwordWarningTitle": "앨범 비밀번호는 비워둘 수 없습니다",
         "passwordWarningMessage": "이 앨범 접근 비밀번호를 켜려면 비밀번호를 입력하세요. 비밀번호는 비워둘 수 없습니다.",
         "passwordWarningGotIt": "확인",
-        "passwordSaveError": "저장에 실패했습니다. 설정한 앨범 접근 비밀번호는 비워둘 수 없습니다."
+        "passwordSaveError": "저장에 실패했습니다. 설정한 앨범 접근 비밀번호는 비워둘 수 없습니다.",
+        "groupBgm": "배경음악",
+        "bgmMusic": "배경음악 (BGM)",
+        "bgmMusicPlaceholder": "배경음악 선택 (선택)"
       },
       "table": {
         "columns": {
@@ -1341,7 +1344,37 @@
     "nav": {
       "home": "홈으로 돌아가기",
       "documentation": "문서",
-      "albums": "앨범"
+      "albums": "앨범",
+      "music": "뮤직박스"
+    },
+    "music": {
+      "title": "뮤직박스",
+      "subtitle": "앨범 배경음악(BGM)으로 사용할 오디오를 업로드하고 관리합니다",
+      "uploadButton": "음악 업로드",
+      "dropHint": "오디오 파일 선택",
+      "dropHintDesc": "MP3 / WAV / M4A / OGG 등 일반적인 형식 지원",
+      "titleLabel": "음악 제목",
+      "titlePlaceholder": "비워두면 파일명 사용",
+      "colTitle": "제목",
+      "colDuration": "길이",
+      "colSize": "크기",
+      "colUploaded": "업로드일",
+      "playFail": "재생에 실패했습니다",
+      "loadFail": "음악 목록을 불러오지 못했습니다",
+      "uploadSuccess": "음악이 업로드되었습니다",
+      "invalidFile": "오디오 파일만 지원합니다",
+      "uploadFail": "업로드에 실패했습니다",
+      "deleteSuccess": "음악이 삭제되었습니다",
+      "deleteFail": "삭제에 실패했습니다",
+      "renameSuccess": "제목이 업데이트되었습니다",
+      "renameFail": "제목 업데이트에 실패했습니다",
+      "nowPlaying": "재생 중",
+      "stop": "정지",
+      "empty": "뮤직박스가 비어 있습니다",
+      "emptyCta": "첫 곡 업로드",
+      "deleteTitle": "음악 삭제",
+      "deleteConfirm": "「{title}」을(를) 삭제하시겠습니까? 관련된 모든 앨범에서 이 BGM이 재생되지 않습니다.",
+      "deleteAction": "삭제"
     }
   },
   "settings": {
@@ -1352,14 +1385,14 @@
           "description": "사진이 영구 삭제되기 전에 휴지통에 보관되는 기간",
           "help": "휴지통으로 이동된 사진은 이 시간이 지나면 영구 삭제됩니다. \"삭제 안 함\"을 선택하면 수동으로 삭제할 때까지 보관됩니다.",
           "options": {
-            "never": "삭제 안 함",
             "7": "7일",
             "14": "14일",
             "30": "30일",
             "60": "60일",
             "90": "90일",
             "180": "180일",
-            "365": "1년"
+            "365": "1년",
+            "never": "삭제 안 함"
           }
         }
       },

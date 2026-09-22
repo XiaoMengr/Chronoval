@@ -33,6 +33,8 @@ export interface ScanAlbumMetaInput {
   randomQuotes?: string | null
   /** 「随机照片轮经典语录」标签来源：ancient=古诗语录 / modern=现代语录；undefined=保持不变 */
   randomQuotesTag?: 'ancient' | 'modern' | null
+  /** 相簿背景音乐（音乐盒）；null=不播放 BGM，undefined=保持不变 */
+  bgmMusicId?: number | null
 }
 
 const cleanRelPath = (p: string): string =>
@@ -107,6 +109,8 @@ export const upsertScanAlbumMeta = async (
       updateData.randomQuotes = input.randomQuotes || null
     if (input.randomQuotesTag !== undefined)
       updateData.randomQuotesTag = input.randomQuotesTag || null
+    if (input.bgmMusicId !== undefined)
+      updateData.bgmMusicId = input.bgmMusicId ?? null
 
     await db
       .update(tables.scanAlbumMeta)
@@ -140,6 +144,7 @@ export const upsertScanAlbumMeta = async (
       randomQuotesEnabled: input.randomQuotesEnabled ?? true,
       randomQuotes: input.randomQuotes || null,
       randomQuotesTag: input.randomQuotesTag ?? null,
+      bgmMusicId: input.bgmMusicId ?? null,
     })
     .returning()
     .get()
@@ -248,6 +253,7 @@ export const applyScanAlbumMeta = async (
     randomQuotesEnabled: meta.randomQuotesEnabled ?? true,
     randomQuotes: meta.randomQuotes || null,
     randomQuotesTag: meta.randomQuotesTag ?? null,
+    bgmMusicId: meta.bgmMusicId ?? null,
     // 公开链接优先级：自定义 slug > 相簿自身 urlKey > 库级默认
     // 注意：仅对顶层（无上级路径）相簿做链接替换；子相簿必须保留完整子路径链接，
     // 否则点击子相簿会退回到库根而“进不去”，因此子相簿始终用 node.link（含路径）。

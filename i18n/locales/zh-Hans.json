@@ -189,7 +189,13 @@
       "dateRange": "日期范围",
       "created": "创建"
     },
-    "createdTooltip": "创建于：{date}"
+    "createdTooltip": "创建于：{date}",
+    "bgm": {
+      "play": "播放背景音乐",
+      "pause": "暂停背景音乐",
+      "autoBlockedTip": "浏览器拦截了自动播放，点击即可开始播放背景音乐",
+      "loopOn": "循环播放"
+    }
   },
   "minimap": {
     "loading": "加载小地图..."
@@ -1111,7 +1117,10 @@
         "layoutImmersive": "沉浸式看图",
         "layoutImmersiveDesc": "单列全幅卡片，向下滚动逐张浏览",
         "layoutTimeline": "时光线",
-        "layoutTimelineDesc": "按拍摄日期分组、组头标注城市，随时间轴浏览"
+        "layoutTimelineDesc": "按拍摄日期分组、组头标注城市，随时间轴浏览",
+        "groupBgm": "背景音乐",
+        "bgmMusic": "背景音乐（BGM）",
+        "bgmMusicPlaceholder": "选择一首背景音乐（可选）"
       },
       "table": {
         "columns": {
@@ -1381,7 +1390,37 @@
     "nav": {
       "home": "返回首页",
       "documentation": "文档",
-      "albums": "相簿集"
+      "albums": "相簿集",
+      "music": "音乐盒"
+    },
+    "music": {
+      "title": "音乐盒",
+      "subtitle": "上传并管理可作为相簿背景音乐（BGM）的音频",
+      "uploadButton": "上传音乐",
+      "dropHint": "点击选择音频文件",
+      "dropHintDesc": "支持 MP3 / WAV / M4A / OGG 等常见音频格式",
+      "titleLabel": "音乐标题",
+      "titlePlaceholder": "留空则使用文件名",
+      "colTitle": "标题",
+      "colDuration": "时长",
+      "colSize": "大小",
+      "colUploaded": "上传时间",
+      "playFail": "播放失败，请重试",
+      "loadFail": "加载音乐列表失败",
+      "uploadSuccess": "音乐上传成功",
+      "invalidFile": "仅支持上传音频文件",
+      "uploadFail": "上传失败，请稍后重试",
+      "deleteSuccess": "音乐已删除",
+      "deleteFail": "删除失败，请稍后重试",
+      "renameSuccess": "标题已更新",
+      "renameFail": "标题更新失败",
+      "nowPlaying": "正在播放",
+      "stop": "停止",
+      "empty": "音乐盒还是空的",
+      "emptyCta": "上传第一首音乐",
+      "deleteTitle": "删除音乐",
+      "deleteConfirm": "确定删除「{title}」吗？删除后所有关联相簿将不再播放该背景音乐。",
+      "deleteAction": "确认删除"
     }
   },
   "settings": {

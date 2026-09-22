@@ -47,6 +47,8 @@ export default eventHandler(async (event) => {
       randomQuotes: z.string().max(5000).nullable().optional(),
       // 「随机照片轮经典语录」标签来源：ancient=古诗语录 / modern=现代语录；null=未选（使用自定义）
       randomQuotesTag: z.enum(['ancient', 'modern']).nullable().optional(),
+      // 相簿背景音乐（音乐盒）；null=不播放 BGM
+      bgmMusicId: z.number().int().nullable().optional(),
       // 传 true 时清除该相簿的元数据（还原为默认推导值）
       clear: z.boolean().optional(),
     }).parse,
@@ -87,6 +89,7 @@ export default eventHandler(async (event) => {
     randomQuotesEnabled: body.randomQuotesEnabled,
     randomQuotes: body.randomQuotes,
     randomQuotesTag: body.randomQuotesTag,
+    bgmMusicId: body.bgmMusicId,
   })
 
   return {

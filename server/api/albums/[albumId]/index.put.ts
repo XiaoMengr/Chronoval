@@ -40,6 +40,8 @@ export default eventHandler(async (event) => {
       randomQuotes: z.string().max(5000).nullable().optional(),
       // 「随机照片轮经典语录」标签来源：ancient=古诗语录 / modern=现代语录；null=未选（使用自定义）
       randomQuotesTag: z.enum(['ancient', 'modern']).nullable().optional(),
+      // 相簿背景音乐（音乐盒）；null=不播放 BGM
+      bgmMusicId: z.number().int().nullable().optional(),
       // 自定义公开URL别名：可选；未传则保持，null/空串则清除
       slug: z
         .string()
@@ -117,6 +119,10 @@ export default eventHandler(async (event) => {
 
     if (body.randomQuotesTag !== undefined) {
       updateData.randomQuotesTag = body.randomQuotesTag || null
+    }
+
+    if (body.bgmMusicId !== undefined) {
+      updateData.bgmMusicId = body.bgmMusicId ?? null
     }
 
     if (body.title !== undefined) {

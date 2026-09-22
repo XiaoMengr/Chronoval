@@ -887,7 +887,10 @@
         "publicLinkFallback": "カスタムリンク未設定。デフォルトのパスが使用されます。",
         "publicLinkEmptyTip": "上のカスタムリンクを入力するとここに公開URLが表示されます。",
         "copied": "コピーしました",
-        "copyLink": "リンクをコピー"
+        "copyLink": "リンクをコピー",
+        "groupBgm": "BGM",
+        "bgmMusic": "背景音楽 (BGM)",
+        "bgmMusicPlaceholder": "背景音楽を選択（任意）"
       },
       "table": {
         "columns": {
@@ -1149,7 +1152,37 @@
     "nav": {
       "documentation": "ドキュメント",
       "home": "ホームに戻る",
-      "albums": "アルバム"
+      "albums": "アルバム",
+      "music": "ミュージックボックス"
+    },
+    "music": {
+      "title": "ミュージックボックス",
+      "subtitle": "アルバムのBGMとして使用できるオーディオをアップロード・管理します",
+      "uploadButton": "音楽をアップロード",
+      "dropHint": "オーディオファイルを選択",
+      "dropHintDesc": "MP3 / WAV / M4A / OGG などの一般的な形式に対応",
+      "titleLabel": "音楽タイトル",
+      "titlePlaceholder": "空欄ならファイル名を使用",
+      "colTitle": "タイトル",
+      "colDuration": "再生時間",
+      "colSize": "サイズ",
+      "colUploaded": "アップロード日",
+      "playFail": "再生に失敗しました",
+      "loadFail": "音楽リストの読み込みに失敗しました",
+      "uploadSuccess": "音楽をアップロードしました",
+      "invalidFile": "オーディオファイルのみ対応しています",
+      "uploadFail": "アップロードに失敗しました",
+      "deleteSuccess": "音楽を削除しました",
+      "deleteFail": "削除に失敗しました",
+      "renameSuccess": "タイトルを更新しました",
+      "renameFail": "タイトルの更新に失敗しました",
+      "nowPlaying": "再生中",
+      "stop": "停止",
+      "empty": "ミュージックボックスは空です",
+      "emptyCta": "最初の曲をアップロード",
+      "deleteTitle": "音楽を削除",
+      "deleteConfirm": "「{title}」を削除しますか？関連するすべてのアルバムでこのBGMは再生されなくなります。",
+      "deleteAction": "削除"
     }
   },
   "settings": {
@@ -1160,14 +1193,14 @@
           "description": "ゴミ箱内の写真を自動的に完全削除するまでの日数",
           "help": "ゴミ箱に移動した写真はこの期間後に完全削除されます。「削除しない」を選ぶと手動で削除するまで保持されます。",
           "options": {
-            "never": "削除しない",
             "7": "7 日",
             "14": "14 日",
             "30": "30 日",
             "60": "60 日",
             "90": "90 日",
             "180": "180 日",
-            "365": "1 年"
+            "365": "1 年",
+            "never": "削除しない"
           }
         }
       },

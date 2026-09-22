@@ -7,6 +7,15 @@ import { getDisabledScanMountSet } from '~~/server/services/scan-library/manager
 import { resolveRandomQuotesPool } from '~~/server/services/settings/quoteLibraries'
 
 export default eventHandler(async (event) => {
+  const { listMusic, serializeMusic } = await import('~~/server/services/music')
+
+  // 预载音乐盒 BGM，供相簿背景音乐回显
+  const musicMap = new Map<number, ReturnType<typeof serializeMusic>>()
+  for (const m of await listMusic()) {
+    musicMap.set(m.id, serializeMusic(m))
+  }
+  const resolveBgm = (bgmMusicId?: number | null) =>
+    (bgmMusicId && musicMap.get(bgmMusicId)) || null
   // 支持两种公开访问标识：数字 id（兼容存量链接）与不透明 uid
   const { albumId } = await getValidatedRouterParams(
     event,
@@ -103,6 +112,7 @@ export default eventHandler(async (event) => {
     return {
       ...safeAlbum,
       randomQuotesPool,
+      bgm: resolveBgm((album as any).bgmMusicId),
       passwordProtected: true,
       authorized: false,
       photos: [],
@@ -150,6 +160,7 @@ export default eventHandler(async (event) => {
     return {
       ...safeAlbum,
       randomQuotesPool,
+      bgm: resolveBgm((album as any).bgmMusicId),
       passwordProtected,
       authorized,
       photos: [],
@@ -167,6 +178,7 @@ export default eventHandler(async (event) => {
   return {
     ...safeAlbum,
     randomQuotesPool,
+    bgm: resolveBgm((album as any).bgmMusicId),
     passwordProtected,
     authorized,
     photos: uniquePhotos,

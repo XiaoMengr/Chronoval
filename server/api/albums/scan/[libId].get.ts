@@ -19,6 +19,15 @@ export default eventHandler(async (event) => {
     z.object({ path: z.string().optional().default('') }).parse,
   )
 
+  // 预载音乐盒 BGM，用于相簿节点回显
+  const { serializeMusic, listMusic } = await import('~~/server/services/music')
+  const musicMap = new Map<number, ReturnType<typeof serializeMusic>>()
+  for (const m of await listMusic()) {
+    musicMap.set(m.id, serializeMusic(m))
+  }
+  const resolveBgm = (bgmMusicId?: number | null) =>
+    (bgmMusicId && musicMap.get(bgmMusicId)) || null
+
   // 解析目标相簿对（libIdNum, relPath）：
   // 1) 先尝试按相簿自身 urlKey 定位 —— 命中则返回该相簿（mount+relPath），忽略 path 参数；
   // 2) 否则按扫描库级 urlKey / 数字 id 定位，配合 path 定位到具体目录相簿。
@@ -81,9 +90,10 @@ export default eventHandler(async (event) => {
       node.randomQuotes,
     )
     const { password: _pw, children, ...rest } = stripPassword(node)
+    const withBgm = { ...rest, bgm: resolveBgm(rest.bgmMusicId) }
     return children?.length
-      ? { ...rest, children: await Promise.all(children.map(withRandomQuotePool)), randomQuotesPool: pool }
-      : { ...rest, randomQuotesPool: pool }
+      ? { ...withBgm, children: await Promise.all(children.map(withRandomQuotePool)), randomQuotesPool: pool }
+      : { ...withBgm, randomQuotesPool: pool }
   }
 
   // 无论解锁与否，公开返回的节点都不带明文密码（明文仅供管理端编辑面板回显）

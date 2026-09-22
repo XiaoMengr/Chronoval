@@ -7,6 +7,13 @@ export default eventHandler(async (event) => {
     '~~/server/services/scan-library/manager'
   )
   const { ensureAlbumUid } = await import('~~/server/utils/albumUid')
+  const { serializeMusic, listMusic } = await import('~~/server/services/music')
+
+  // 预载全部音乐盒 BGM，供相簿回显（避免循环内并发查询 better-sqlite3 预编译语句串扰）
+  const musicMap = new Map<number, ReturnType<typeof serializeMusic>>()
+  for (const m of await listMusic()) {
+    musicMap.set(m.id, serializeMusic(m))
+  }
 
   // 管理端（登录管理员）返回完整树状二级相簿并包含隐藏的外部库相簿；
   // 公开访问时过滤掉设置为“隐藏”的外部库相簿。
@@ -95,6 +102,8 @@ export default eventHandler(async (event) => {
       passwordProtected: Boolean(album.passwordHash),
       // 明文密码仅对管理员回显；公开访问一律不返回
       password: isAdmin ? album.password ?? undefined : undefined,
+      // 相簿背景音乐（音乐盒）：解析并返回 BGM 信息（null=未启用）
+      bgm: (album.bgmMusicId && musicMap.get(album.bgmMusicId)) || null,
       // 即使是空相册，也返回空数组而不是 undefined
       photoIds: photoIds.length > 0 ? photoIds.map((p) => p.photoId) : [],
       photoCount: photoIds.length,
@@ -125,6 +134,17 @@ export default eventHandler(async (event) => {
     }
     visibleScanRoots = visibleScanRoots.map(strip)
   }
+
+  // 为扫描库相簿节点回显 BGM（含子相簿）
+  const addScanBgm = (node: any): any => {
+    const { bgmMusicId, children, ...rest } = node
+    return {
+      ...rest,
+      bgm: (bgmMusicId && musicMap.get(bgmMusicId)) || null,
+      ...(children?.length ? { children: children.map(addScanBgm) } : {}),
+    }
+  }
+  visibleScanRoots = visibleScanRoots.map(addScanBgm)
 
   const combined: unknown[] = [
     ...albumsWithPhotoIds.sort(

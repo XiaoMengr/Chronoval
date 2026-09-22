@@ -28,6 +28,8 @@ export default eventHandler(async (event) => {
       randomQuotes: z.string().max(5000).nullable().optional(),
       // 「随机照片轮经典语录」标签来源：ancient=古诗语录 / modern=现代语录；null=未选（使用自定义）
       randomQuotesTag: z.enum(['ancient', 'modern']).nullable().optional(),
+      // 相簿背景音乐（音乐盒）；null=不播放 BGM
+      bgmMusicId: z.number().int().nullable().optional(),
       // 相簿访问密码（明文）：非空设置新密码
       password: z.string().max(128).optional(),
       // 自定义公开URL别名（可选）：全局唯一、URL 安全
@@ -75,6 +77,7 @@ export default eventHandler(async (event) => {
         randomQuotesEnabled: body.randomQuotesEnabled ?? true,
         randomQuotes: body.randomQuotes || null,
         randomQuotesTag: body.randomQuotesTag || null,
+        bgmMusicId: body.bgmMusicId ?? null,
         passwordHash,
         password: body.password?.trim() || null,
         // 创建即分配不透明 UID

@@ -47,6 +47,8 @@ interface AlbumFormState {
   randomQuotes: string
   // 「随机照片轮经典语录」标签来源：ancient=古诗语录 / modern=现代语录；null=未选（使用自定义）
   randomQuotesTag: 'ancient' | 'modern' | null
+  // 相簿背景音乐（音乐盒）；null=不播放 BGM
+  bgmMusicId: number | null
 }
 
 const albums = ref<AlbumItem[]>([])
@@ -110,6 +112,7 @@ const formData = reactive<AlbumFormState>({
   randomQuotesEnabled: true,
   randomQuotes: '',
   randomQuotesTag: null,
+  bgmMusicId: null,
 })
 
 // 归一化「随机照片盒动画」模式：优先取新的三态值，缺省则回退旧布尔（开启=wheel）
@@ -140,6 +143,17 @@ const loadQuoteTagCounts = async () => {
   }
 }
 onMounted(loadQuoteTagCounts)
+
+const bgmOptions = ref<{ id: number; title: string }[]>([])
+const loadBgmLibrary = async () => {
+  try {
+    const res: any = await $fetch('/api/music', { method: 'GET' })
+    bgmOptions.value = (res || []).map((m: any) => ({ id: m.id, title: m.title }))
+  } catch {
+    bgmOptions.value = []
+  }
+}
+onMounted(loadBgmLibrary)
 
 // 当前选中的「随机照片盒动画」模式下标（0/1/2），驱动胶囊滑动指示条 translateX
 const randomModeIndex = computed(() =>
@@ -308,6 +322,7 @@ const openEditSlideover = async (album: AlbumItem) => {
     formData.randomQuotesEnabled = (album as any).randomQuotesEnabled !== false
     formData.randomQuotes = (album as any)?.randomQuotes || ''
     formData.randomQuotesTag = (album as any)?.randomQuotesTag || null
+    formData.bgmMusicId = (album as any)?.bgmMusicId || null
     passwordToggle.value = !!(album as any).passwordProtected
     coverPhotoId.value = album.coverPhotoId || ''
     selectedPhotoIds.value = []
@@ -336,6 +351,7 @@ const openEditSlideover = async (album: AlbumItem) => {
     formData.randomQuotesEnabled = albumDetail.randomQuotesEnabled !== false
     formData.randomQuotes = albumDetail.randomQuotes || ''
     formData.randomQuotesTag = albumDetail.randomQuotesTag || null
+    formData.bgmMusicId = (albumDetail as any)?.bgmMusicId || null
     passwordToggle.value = !!albumDetail.passwordProtected
     formRef.value?.clear()
   } catch (error) {
@@ -501,6 +517,7 @@ const onFormSubmit = async (event: FormSubmitEvent<AlbumFormState>) => {
         randomQuotesEnabled: event.data.randomQuotesEnabled,
         randomQuotes: event.data.randomQuotes?.trim() || null,
         randomQuotesTag: event.data.randomQuotesTag || null,
+        bgmMusicId: formData.bgmMusicId || null,
         ...passwordPayload,
         slug: event.data.slug?.trim() || null,
       }
@@ -526,6 +543,7 @@ const onFormSubmit = async (event: FormSubmitEvent<AlbumFormState>) => {
           randomQuotesEnabled: event.data.randomQuotesEnabled,
           randomQuotes: event.data.randomQuotes?.trim() || null,
           randomQuotesTag: event.data.randomQuotesTag || null,
+          bgmMusicId: formData.bgmMusicId || null,
           ...passwordPayload,
           slug: event.data.slug?.trim() || null,
         },
@@ -552,6 +570,7 @@ const onFormSubmit = async (event: FormSubmitEvent<AlbumFormState>) => {
           randomQuotesEnabled: event.data.randomQuotesEnabled,
           randomQuotes: event.data.randomQuotes?.trim() || null,
           randomQuotesTag: event.data.randomQuotesTag || null,
+          bgmMusicId: formData.bgmMusicId || null,
           password: passwordToggle.value ? newPassword || undefined : undefined,
           slug: event.data.slug?.trim() || null,
         },
@@ -1440,6 +1459,27 @@ const openAlbum = (album: AlbumItem) => {
                     </div>
                     <USwitch v-model="formData.hideFromGallery" color="info" />
                   </div>
+                </section>
+
+                <!-- BGM 选择分区 -->
+                <section class="space-y-4">
+                  <header class="flex items-center gap-2 pt-1">
+                    <p class="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">
+                      {{ $t('dashboard.albums.form.groupBgm') }}
+                    </p>
+                    <span class="h-px flex-1 bg-neutral-100 dark:bg-neutral-800" />
+                  </header>
+
+                  <UFormField name="bgmMusicId" :label="$t('dashboard.albums.form.bgmMusic')">
+                    <USelect
+                      v-model="formData.bgmMusicId"
+                      :options="bgmOptions"
+                      option-attribute="title"
+                      value-attribute="id"
+                      :placeholder="$t('dashboard.albums.form.bgmMusicPlaceholder')"
+                      clearable
+                    />
+                  </UFormField>
                 </section>
 
                 <!-- 扩展功能（折叠收起、不突出）：随机照片轮经典语录 -->

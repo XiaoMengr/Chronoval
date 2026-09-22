@@ -32,6 +32,12 @@ const navItems = computed<NavigationMenuItem[][]>(() => [
       class: '[&_.iconify]:!text-violet-500',
     },
     {
+      label: $t('dashboard.nav.music'),
+      icon: 'tabler:music',
+      to: '/dashboard/music',
+      class: '[&_.iconify]:!text-pink-500',
+    },
+    {
       label: $t('title.queue'),
       icon: 'tabler:list-check',
       to: '/dashboard/queue',
