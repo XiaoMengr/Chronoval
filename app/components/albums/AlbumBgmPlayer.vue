@@ -1,7 +1,13 @@
 <script lang="ts" setup>
-// 相簿背景音乐（BGM）浮层播放器
-// 进入相簿自动尝试播放；浏览器拦截自动播放（无交互时）则降级为「待播放」态，
-// 点击图标开始。提供播放/暂停 + 进度条，最小化不打扰浏览。
+/**
+ * 相簿背景音乐（BGM）悬浮播放器。
+ *
+ * 进入相簿后，左侧栏中部出现一个透明的音乐图标（默认折叠隐藏态），
+ * 可按住拖动到屏幕任意位置；点击图标展开为迷你播放器
+ * （碟片旋转 + 标题 + 播放/暂停 + 进度条），再点击收起。
+ *
+ * 音源默认来自本地音乐盒（/api/music/{id}/stream，公开可访问）。
+ */
 interface BgmInfo {
   url: string
   title: string
@@ -11,19 +17,80 @@ const props = defineProps<{
   bgm: BgmInfo | null
 }>()
 
-const emit = defineEmits<{ (e: 'toggle', playing: boolean): void }>()
-
 const audioRef = ref<HTMLAudioElement | null>(null)
 const isPlaying = ref(false)
-const isPending = ref(false) // 尝试自动播放被拦截后，等待用户交互的状态
-const isVisible = computed(() => !!props.bgm)
+const isPending = ref(false) // 自动播放被拦截后等待用户点击
+const isOpen = ref(false) // 是否展开为迷你播放器
 const progress = ref(0)
 const duration = ref(0)
 
 let playAttempted = false
 
+const isVisible = computed(() => !!props.bgm)
 const currentTitle = computed(() => props.bgm?.title || '')
 
+// ---- 拖动定位（默认左侧垂直居中） ----
+const ICON_W = 44
+const POS_X = ref(16)
+const POS_Y = ref(0)
+
+let dragStartX = 0
+let dragStartY = 0
+let dragMoved = false
+const dragging = ref(false)
+// 指针按下的起点是否在播放/暂停按钮上：若是，松开时不切换展开/收起（避免点按钮误开面板）
+let suppressToggle = false
+// 刚完成一次拖动：紧随其后的 click 不当作播放切换（拖动结束也会派发 click）
+let justDragged = false
+
+const clampPos = (x: number, y: number) => {
+  const w = isOpen.value ? 300 : ICON_W
+  const h = isOpen.value ? 190 : ICON_W
+  const maxX = Math.max(0, window.innerWidth - w - 8)
+  const maxY = Math.max(0, window.innerHeight - h - 8)
+  return {
+    x: Math.min(Math.max(0, x), maxX),
+    y: Math.min(Math.max(0, y), maxY),
+  }
+}
+
+const syncInitialPos = () => {
+  const p = clampPos(POS_X.value, (window.innerHeight - ICON_W) / 2)
+  POS_X.value = p.x
+  POS_Y.value = p.y
+}
+
+const onIconPointerDown = (e: PointerEvent) => {
+  dragStartX = e.clientX - POS_X.value
+  dragStartY = e.clientY - POS_Y.value
+  dragMoved = false
+  dragging.value = true
+  ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+}
+const onIconPointerMove = (e: PointerEvent) => {
+  if (!dragging.value) return
+  const nx = e.clientX - dragStartX
+  const ny = e.clientY - dragStartY
+  if (Math.abs(nx - POS_X.value) + Math.abs(ny - POS_Y.value) > 2) {
+    dragMoved = true
+  }
+  const p = clampPos(nx, ny)
+  POS_X.value = p.x
+  POS_Y.value = p.y
+}
+
+const onIconPointerUp = () => {
+  dragging.value = false
+  const wasOnButton = suppressToggle
+  suppressToggle = false
+  justDragged = dragMoved
+  // 拖动距离很小视为点击：切换展开/收起（点在播放/暂停按钮上时不触发）
+  if (!dragMoved && !wasOnButton) {
+    isOpen.value = !isOpen.value
+  }
+}
+
+// ---- 音频控制 ----
 const tryToStart = () => {
   const el = audioRef.value
   if (!el) return
@@ -33,13 +100,11 @@ const tryToStart = () => {
     .then(() => {
       isPlaying.value = true
       isPending.value = false
-      emit('toggle', true)
     })
     .catch(() => {
-      // 被浏览器自动播放策略拦截（无有效交互）→ 等待用户点击
+      // 浏览器自动播放策略拦截 → 等待用户点击
       isPending.value = true
       isPlaying.value = false
-      emit('toggle', false)
     })
 }
 
@@ -61,31 +126,22 @@ const applyBgm = (bgm: BgmInfo | null) => {
   el.load()
   if (playAttempted) return
   playAttempted = true
-  // Gecko/Safari 中仍需事件循环以保证 src 就绪
   requestAnimationFrame(() => tryToStart())
 }
-
-// 组件挂载（此时 audioRef 已就绪）后再处理初始 BGM，避免 immediate watch 在模板 ref 挂载前提前返回
-onMounted(() => applyBgm(props.bgm))
-
-watch(
-  () => props.bgm,
-  (bgm) => {
-    // 若尚未挂载（ref 仍为空），交给 onMounted 处理；
-    // 已挂载则直接应用（含相簿切换 bgm 的场景）
-    if (!audioRef.value) return
-    applyBgm(bgm)
-  },
-)
 
 const togglePlayback = () => {
   const el = audioRef.value
   if (!props.bgm || !el) return
+  if (justDragged) {
+    // 拖动结束附带的 click，忽略
+    justDragged = false
+    return
+  }
+  justDragged = false
   playAttempted = true
   if (isPlaying.value) {
     el.pause()
     isPlaying.value = false
-    emit('toggle', false)
   } else {
     tryToStart()
   }
@@ -98,22 +154,17 @@ const onTimeUpdate = () => {
   progress.value = el.currentTime
 }
 
-const onPause = () => {
-  if (isPlaying.value) {
-    isPlaying.value = false
-    emit('toggle', false)
-  }
-}
-
 const onPlay = () => {
   isPlaying.value = true
   isPending.value = false
-  emit('toggle', true)
+}
+
+const onPause = () => {
+  if (isPlaying.value) isPlaying.value = false
 }
 
 const onEnded = () => {
   isPlaying.value = false
-  emit('toggle', false)
 }
 
 const formatTime = (s: number) => {
@@ -127,7 +178,14 @@ const pct = computed(() =>
   duration.value ? (progress.value / duration.value) * 100 : 0,
 )
 
+onMounted(() => {
+  syncInitialPos()
+  window.addEventListener('resize', syncInitialPos)
+  applyBgm(props.bgm)
+})
+
 onBeforeUnmount(() => {
+  window.removeEventListener('resize', syncInitialPos)
   const el = audioRef.value
   if (el) {
     el.pause()
@@ -135,67 +193,91 @@ onBeforeUnmount(() => {
     el.load()
   }
 })
+
+watch(
+  () => props.bgm,
+  (bgm) => {
+    if (!audioRef.value) return
+    applyBgm(bgm)
+  },
+)
 </script>
 
 <template>
-  <Transition
-    enter-active-class="transition duration-300 ease-out"
-    enter-from-class="opacity-0 -translate-y-2"
-    enter-to-class="opacity-100 translate-y-0"
-    leave-active-class="transition duration-200 ease-in"
-    leave-from-class="opacity-100 translate-y-0"
-    leave-to-class="opacity-0 -translate-y-2"
-  >
-    <div
-      v-if="isVisible"
-      class="fixed bottom-4 left-4 z-[60] flex items-center gap-3 rounded-full border border-neutral-200/80 bg-white/85 py-2 pl-2 pr-3 shadow-lg backdrop-blur-md dark:border-neutral-700/80 dark:bg-neutral-900/85"
+  <audio
+    ref="audioRef"
+    class="hidden"
+    :loop="true"
+    @timeupdate="onTimeUpdate"
+    @ended="onEnded"
+    @play="onPlay"
+    @pause="onPause"
+  />
+
+  <Teleport to="body">
+    <Transition
+      enter-active-class="transition duration-300 ease-out"
+      enter-from-class="opacity-0 translate-y-3"
+      enter-to-class="opacity-100 translate-y-0"
+      leave-active-class="transition duration-200 ease-in"
+      leave-from-class="opacity-100 translate-y-0"
+      leave-to-class="opacity-0 translate-y-3"
     >
-      <audio
-        ref="audioRef"
-        class="hidden"
-        :loop="true"
-        @timeupdate="onTimeUpdate"
-        @ended="onEnded"
-        @play="onPlay"
-        @pause="onPause"
-      />
+      <div
+        v-if="isVisible"
+        class="fixed z-[60] touch-none select-none"
+        :style="{ left: `${POS_X}px`, top: `${POS_Y}px` }"
+        :class="dragging ? 'cursor-grabbing' : 'cursor-grab'"
+      >
+        <!-- 拖动手柄：默认折叠态的透明音乐图标 -->
+        <div
+          class="flex items-center gap-3 rounded-full border border-white/25 bg-black/25 p-1.5 backdrop-blur-xl shadow-[0_6px_24px_rgba(0,0,0,0.35)] transition-colors hover:bg-black/40"
+          :class="isOpen ? 'bg-black/45 pr-3' : ''"
+          @pointerdown="onIconPointerDown"
+          @pointermove="onIconPointerMove"
+          @pointerup="onIconPointerUp"
+          @pointercancel="onIconPointerUp"
+        >
+          <!-- 图标按钮：按下时仅标记“起点在按钮上”，不阻断拖拽；点击只控制播放 -->
+          <span
+            class="grid size-9 shrink-0 place-items-center rounded-full bg-linear-to-br from-red-500 to-red-700 text-white shadow-md"
+            :class="isPlaying ? 'animate-pulse' : ''"
+            :title="isPlaying ? $t('album.bgm.pause') : $t('album.bgm.play')"
+            @pointerdown="suppressToggle = true"
+            @click.stop="togglePlayback"
+          >
+            <Icon
+              :name="isPlaying ? 'tabler:player-pause-filled' : 'tabler:player-play-filled'"
+              class="size-4"
+            />
+          </span>
 
-      <UButton
-        :icon="isPlaying ? 'tabler:player-pause' : (isPending ? 'tabler:player-play' : 'tabler:player-play')"
-        color="primary"
-        variant="solid"
-        size="md"
-        :class="isPlaying ? 'animate-pulse' : ''"
-        circle
-        :aria-label="isPlaying ? $t('album.bgm.pause') : $t('album.bgm.play')"
-        @click="togglePlayback"
-      />
-
-      <div class="min-w-0 max-w-[10rem] sm:max-w-[14rem]">
-        <p class="flex items-center gap-1.5 truncate text-xs font-medium text-neutral-800 dark:text-neutral-100">
-          <Icon v-if="isPlaying" name="tabler:disc" class="size-3.5 shrink-0 animate-spin text-primary-500" />
-          <Icon v-else name="tabler:music" class="size-3.5 shrink-0 text-neutral-400" />
-          <span class="truncate">{{ currentTitle }}</span>
-        </p>
-        <div class="group/bar relative mt-1 h-1 w-full overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-700">
-          <div
-            class="absolute inset-y-0 left-0 rounded-full bg-primary-500 transition-[width] duration-200"
-            :style="{ width: `${pct}%` }"
-          />
+          <!-- 展开态内容：标题 + 进度 -->
+          <div v-if="isOpen" class="min-w-0 w-52">
+            <p class="flex items-center gap-1.5 truncate text-xs font-medium text-white">
+              <Icon
+                v-if="isPlaying"
+                name="tabler:disc"
+                class="size-3.5 shrink-0 animate-spin text-red-400"
+              />
+              <Icon v-else name="tabler:music" class="size-3.5 shrink-0 text-white/60" />
+              <span class="truncate">{{ currentTitle }}</span>
+            </p>
+            <div class="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-white/20">
+              <div
+                class="absolute inset-y-0 left-0 rounded-full bg-red-500 transition-[width] duration-200"
+                :style="{ width: `${pct}%` }"
+              />
+            </div>
+            <p class="mt-1 text-[10px] tabular-nums text-white/60">
+              {{ formatTime(progress) }} / {{ formatTime(duration) }}
+              <span v-if="isPending" class="ml-1 text-amber-300/90">
+                {{ $t('album.bgm.autoBlockedTip') }}
+              </span>
+            </p>
+          </div>
         </div>
-        <p class="mt-0.5 text-[10px] tabular-nums text-neutral-400">
-          {{ formatTime(progress) }} / {{ formatTime(duration) }}
-        </p>
       </div>
-
-      <UTooltip :text="isPending ? $t('album.bgm.autoBlockedTip') : $t('album.bgm.loopOn')">
-        <UBadge
-          color="primary"
-          variant="subtle"
-          class="gap-1 px-1.5 py-0.5 text-[10px]"
-          :label="formatTime(duration)"
-        />
-      </UTooltip>
-    </div>
-  </Transition>
+    </Transition>
+  </Teleport>
 </template>

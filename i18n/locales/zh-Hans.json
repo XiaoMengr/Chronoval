@@ -554,6 +554,7 @@
   },
   "common": {
     "unknown": "未知",
+    "cancel": "取消",
     "unsavedChanges": "存在未保存的更改。",
     "months": {
       "jan": "一月",
@@ -1447,7 +1448,12 @@
       "coverInvalid": "仅支持图片文件",
       "waveMode": "切换波浪纹样式",
       "seekBack": "后退 10 秒",
-      "seekFwd": "前进 10 秒"
+      "seekFwd": "前进 10 秒",
+      "sourceLocal": "本地音源",
+      "sourceKugou": "酷狗音乐",
+      "sourceNetease": "网易云音乐",
+      "sourceQQ": "QQ音乐",
+      "sourceComingSoon": "即将接入，支持手机号登录"
     }
   },
   "settings": {

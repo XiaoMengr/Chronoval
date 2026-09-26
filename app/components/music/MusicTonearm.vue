@@ -1,9 +1,10 @@
 <script setup lang="ts">
 /**
- * 唱片机唱臂：覆盖在碟片右上角，播放时唱臂放下、针尖压到唱片上；
- * 暂停/停止时唱臂抬起搁置。
- * - playing：是否正在播放
- * - size：与碟片相同的直径尺寸
+ * 唱片机唱臂：模拟黑胶唱片机的读取机构。
+ * 播放时唱臂放下、针尖压到唱片上读取；暂停/停止时抬起搁置。
+ *
+ * - playing：是否播放中
+ * - size：与碟片相同的直径
  */
 const props = withDefaults(
   defineProps<{
@@ -26,16 +27,17 @@ const px = computed(() =>
     :style="{ width: px, height: px }"
     :class="{ 'tonearm-down': playing }"
   >
-    <!-- 枢轴底座（右上角，唱片盘外侧） -->
+    <!-- 枢轴底座（碟盘右上角外侧） -->
     <div
       class="absolute right-[8%] top-[5%] size-[9%] rounded-full bg-linear-to-br from-[#4a4a55] to-[#141419] shadow-[0_3px_10px_rgba(0,0,0,0.55)]"
     >
-      <div class="absolute left-1/2 top-1/2 size-[42%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#8f8f9c]" />
+      <div
+        class="absolute left-1/2 top-1/2 size-[42%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#8f8f9c]"
+      />
     </div>
 
-    <!-- 唱臂：右端为枢轴（origin 100% 0%），向左延伸跨过唱片 -->
+    <!-- 唱臂杆：右端为枢轴（origin 100% 0%），向左延伸跨过唱片 -->
     <div class="tonearm-arm absolute right-[8%] top-[5%] w-[70%] origin-[100%_0%]">
-      <!-- 臂杆 -->
       <div
         class="relative h-[5px] w-full rounded-full bg-linear-to-r from-[#e6e6ee] via-[#8a8a96] to-[#3f3f4a] shadow-[0_1px_4px_rgba(0,0,0,0.45)]"
       >
@@ -58,12 +60,12 @@ const px = computed(() =>
   will-change: transform;
 }
 
-/* 未播放：唱臂抬起搁置在碟盘上方 */
+/* 未播放：唱臂抬起搁置 */
 .tonearm:not(.tonearm-down) .tonearm-arm {
   transform: rotate(28deg);
 }
 
-/* 播放中：唱臂放下，针尖压到唱片上 */
+/* 播放中：唱臂放下，针尖压到唱片 */
 .tonearm-down .tonearm-arm {
   transform: rotate(-8deg);
 }

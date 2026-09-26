@@ -554,6 +554,7 @@
   },
   "common": {
     "unknown": "unknown",
+    "cancel": "Cancel",
     "unsavedChanges": "There are unsaved changes.",
     "months": {
       "jan": "Jan",
@@ -1453,7 +1454,12 @@
       "coverInvalid": "Only image files are supported",
       "waveMode": "Switch wave pattern",
       "seekBack": "Back 10 seconds",
-      "seekFwd": "Forward 10 seconds"
+      "seekFwd": "Forward 10 seconds",
+      "sourceLocal": "Local library",
+      "sourceKugou": "Kugou Music",
+      "sourceNetease": "NetEase Cloud Music",
+      "sourceQQ": "QQ Music",
+      "sourceComingSoon": "Coming soon — sign in with phone number"
     }
   },
   "settings": {

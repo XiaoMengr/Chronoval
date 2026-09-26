@@ -1,4 +1,14 @@
 <script setup lang="ts">
+/**
+ * 音乐盒（Music Box）—— 本地音乐库 + 黑胶播放器
+ *
+ * 功能：
+ * - 上传 / 删除 / 重命名 / 编辑歌词 / 设置封面
+ * - 黑胶碟片播放（播放时旋转、唱臂放下读取）+ 底部迷你播放条 + 全屏播放器
+ * - 点击碟片切换「一行行歌词」专注模式，再点中间返回碟盘
+ * - 音源切换框架：默认本地音源，酷狗/网易云/QQ 为待接入占位
+ * - 桌面端 / 移动端自适应
+ */
 definePageMeta({ layout: 'dashboard' })
 
 useHead({ title: () => $t('dashboard.music.title') })
@@ -26,29 +36,42 @@ const isLoading = ref(false)
 const isUploading = ref(false)
 const isUploadOpen = ref(false)
 
-// ---- 播放控制 ----
+// ---- 音源切换框架：默认本地音源，第三方待接入 ----
+interface MusicSource {
+  id: 'local' | 'kugou' | 'netease' | 'qq'
+  label: string
+  available: boolean
+}
+const sources: MusicSource[] = [
+  { id: 'local', label: $t('dashboard.music.sourceLocal'), available: true },
+  { id: 'kugou', label: $t('dashboard.music.sourceKugou'), available: false },
+  { id: 'netease', label: $t('dashboard.music.sourceNetease'), available: false },
+  { id: 'qq', label: $t('dashboard.music.sourceQQ'), available: false },
+]
+const activeSource = ref<'local' | 'kugou' | 'netease' | 'qq'>('local')
+const selectSource = (id: MusicSource['id']) => {
+  if (id === 'local') {
+    activeSource.value = 'local'
+    return
+  }
+  // 第三方音源：仅框架占位，待接入手机号登录后启用
+  toast.add({ title: $t('dashboard.music.sourceComingSoon'), color: 'info' })
+}
+
+// ---- 播放控制（音频状态一律由 audio 事件驱动，避免读取 DOM 属性不响应） ----
 const playingId = ref<number | null>(null)
 const audioRef = ref<HTMLAudioElement | null>(null)
 const progress = ref(0)
 const duration = ref(0)
-
-// 音频真实播放状态：由 audio 的 play/pause 事件驱动（el.paused 是 DOM 属性，非响应式，
-// 直接读取会导致计算属性在音频开始播放后不更新，碟片/唱臂无法响应）
 const audioPlaying = ref(false)
 
-const currentMusic = computed(() =>
-  musicList.value.find((m) => m.id === playingId.value) || null,
+const currentMusic = computed(
+  () => musicList.value.find((m) => m.id === playingId.value) || null,
 )
-const isPlaying = computed(() =>
-  audioPlaying.value && playingId.value !== null,
-)
-
+const isPlaying = computed(() => audioPlaying.value && playingId.value !== null)
 const playPct = computed(() =>
   duration.value ? (progress.value / duration.value) * 100 : 0,
 )
-
-// ---- 歌词专注模式（点击碟片切换，再点击中间返回）----
-const lyricsMode = ref(false)
 
 const togglePlay = (item: MusicItem) => {
   const el = audioRef.value
@@ -86,14 +109,8 @@ const onTimeUpdate = () => {
   progress.value = el.currentTime
 }
 
-const seekTo = (v: number) => {
-  const el = audioRef.value
-  if (!el) return
-  el.currentTime = v
-  progress.value = v
-}
-
 const onEnded = () => {
+  // 单曲循环：播完自动从头再播
   const el = audioRef.value
   if (!el) return
   el.currentTime = 0
@@ -101,11 +118,21 @@ const onEnded = () => {
   el.play().catch(() => {})
 }
 
-// ---- 网易云/Apple Music 式展开播放器 ----
+const seekTo = (v: number) => {
+  const el = audioRef.value
+  if (!el) return
+  el.currentTime = Math.max(0, Math.min(v, duration.value || 0))
+  progress.value = el.currentTime
+}
+
+// ---- 全屏播放器 / 歌词专注模式 ----
 const playerOpen = ref(false)
+const lyricsMode = ref(false)
+
 const expandPlayer = () => {
   playerOpen.value = true
 }
+
 const openPlayerFor = (item: MusicItem) => {
   if (playingId.value !== item.id) togglePlay(item)
   playerOpen.value = true
@@ -116,7 +143,13 @@ watch(playerOpen, (open) => {
   if (!open) lyricsMode.value = false
 })
 
-// 歌词解析
+const playAll = () => {
+  if (musicList.value.length === 0) return
+  togglePlay(musicList.value[0]!)
+  playerOpen.value = true
+}
+
+// ---- 歌词解析与滚动 ----
 const lyricsLines = computed(() => parseLrc(currentMusic.value?.lyrics))
 const activeLyricIndex = computed(() => {
   const lines = lyricsLines.value
@@ -130,7 +163,6 @@ const activeLyricIndex = computed(() => {
 })
 const hasLyrics = computed(() => lyricsLines.value.length > 0)
 
-// 歌词滚动容器
 const lyricsScrollRef = ref<HTMLElement | null>(null)
 watch(activeLyricIndex, (idx) => {
   if (idx < 0 || !hasLyrics.value) return
@@ -145,32 +177,7 @@ watch(activeLyricIndex, (idx) => {
   })
 })
 
-const formatTime = (s: number | null) => {
-  if (s === null || s === undefined || Number.isNaN(s)) return '--:--'
-  const m = Math.floor(s / 60)
-  const sec = Math.floor(s % 60)
-  return `${m}:${String(sec).padStart(2, '0')}`
-}
-
-const formatDuration = formatTime
-
-const formatSize = (b: number) => {
-  if (!b) return '0 B'
-  const units = ['B', 'KB', 'MB', 'GB']
-  let i = 0
-  let val = b
-  while (val >= 1024 && i < units.length - 1) {
-    val /= 1024
-    i++
-  }
-  return `${val.toFixed(val >= 10 || i === 0 ? 0 : 1)} ${units[i]}`
-}
-
-const fmtDate = (d: string) => {
-  if (!d) return ''
-  return new Date(d).toLocaleDateString()
-}
-
+// ---- 数据加载 ----
 const loadMusic = async () => {
   isLoading.value = true
   try {
@@ -182,10 +189,7 @@ const loadMusic = async () => {
   }
 }
 
-onMounted(() => {
-  loadMusic()
-})
-
+onMounted(loadMusic)
 onBeforeUnmount(() => {
   stopPlay()
 })
@@ -261,12 +265,14 @@ const startEditTitle = (item: MusicItem) => {
 const saveTitle = async () => {
   if (!editingId.value) return
   try {
+    const trimmed = editingTitle.value.trim()
+    if (!trimmed) return
     await $fetch(`/api/music/${editingId.value}`, {
       method: 'PUT',
-      body: { title: editingTitle.value.trim() },
+      body: { title: trimmed },
     })
     const target = musicList.value.find((m) => m.id === editingId.value)
-    if (target) target.title = editingTitle.value.trim()
+    if (target) target.title = trimmed
     toast.add({ title: $t('dashboard.music.renameSuccess'), color: 'success' })
   } catch {
     toast.add({ title: $t('dashboard.music.renameFail'), color: 'error' })
@@ -287,12 +293,13 @@ const openLyricsEditor = (item: MusicItem) => {
 const saveLyrics = async () => {
   if (!lyricsEditTarget.value) return
   try {
+    const trimmed = lyricsDraft.value.trim() || null
     await $fetch(`/api/music/${lyricsEditTarget.value.id}`, {
       method: 'PUT',
-      body: { lyrics: lyricsDraft.value.trim() || null },
+      body: { lyrics: trimmed },
     })
     const target = musicList.value.find((m) => m.id === lyricsEditTarget.value!.id)
-    if (target) target.lyrics = lyricsDraft.value.trim() || null
+    if (target) target.lyrics = trimmed
     toast.add({ title: $t('dashboard.music.lyricsSaved'), color: 'success' })
     lyricsEditModal.value = false
     lyricsEditTarget.value = null
@@ -301,18 +308,12 @@ const saveLyrics = async () => {
   }
 }
 
-const playAll = () => {
-  if (musicList.value.length === 0) return
-  togglePlay(musicList.value[0]!)
-  playerOpen.value = true
-}
-
 // ---- 自定义封面 ----
 const coverInput = ref<HTMLInputElement | null>(null)
 const coverTargetId = ref<number | null>(null)
 const coverUploading = ref(false)
 
-// 横幅展示的封面：优先当前播放曲目，否则取第一首
+// 横幅封面：优先当前播放曲目，否则取第一首
 const bannerMusic = computed<MusicItem | null>(
   () => currentMusic.value || musicList.value[0] || null,
 )
@@ -350,6 +351,32 @@ const onCoverChange = async (e: Event) => {
     coverTargetId.value = null
   }
 }
+
+// ---- 格式化 ----
+const formatTime = (s: number | null) => {
+  if (s === null || s === undefined || Number.isNaN(s)) return '--:--'
+  const m = Math.floor(s / 60)
+  const sec = Math.floor(s % 60)
+  return `${m}:${String(sec).padStart(2, '0')}`
+}
+const formatDuration = formatTime
+
+const formatSize = (b: number) => {
+  if (!b) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB']
+  let i = 0
+  let val = b
+  while (val >= 1024 && i < units.length - 1) {
+    val /= 1024
+    i++
+  }
+  return `${val.toFixed(val >= 10 || i === 0 ? 0 : 1)} ${units[i]}`
+}
+
+const fmtDate = (d: string) => {
+  if (!d) return ''
+  return new Date(d).toLocaleDateString()
+}
 </script>
 
 <template>
@@ -360,501 +387,641 @@ const onCoverChange = async (e: Event) => {
   -->
   <UDashboardPanel :ui="{ body: 'flex flex-col gap-0 p-0' }">
     <template #body>
-    <audio
-      ref="audioRef"
-      class="hidden"
-      @timeupdate="onTimeUpdate"
-      @ended="onEnded"
-      @play="audioPlaying = true"
-      @pause="audioPlaying = false"
-    />
-    <input
-      ref="coverInput"
-      type="file"
-      accept="image/*"
-      class="hidden"
-      @change="onCoverChange"
-    />
+      <audio
+        ref="audioRef"
+        class="hidden"
+        @timeupdate="onTimeUpdate"
+        @ended="onEnded"
+        @play="audioPlaying = true"
+        @pause="audioPlaying = false"
+      />
+      <input
+        ref="coverInput"
+        type="file"
+        accept="image/*"
+        class="hidden"
+        @change="onCoverChange"
+      />
 
-    <!-- ===== 顶部沉浸式横幅（Apple Music 专辑页风格 + 汽水音乐高斯模糊） ===== -->
-    <header class="relative shrink-0 overflow-hidden">
-      <!-- 移动端返回首页按钮（桌面端侧栏已有导航，无需重复） -->
-      <div class="absolute left-4 top-4 z-10 lg:hidden">
-        <UButton
-          icon="tabler:home"
-          variant="soft"
-          color="neutral"
-          aria-label="返回首页"
-          :title="$t('dashboard.nav.home')"
-          class="bg-white/15 text-white hover:bg-white/25"
-          @click="router.push('/')"
-        />
-      </div>
+      <!-- ===== 顶部沉浸式横幅（Apple Music 专辑页风格） ===== -->
+      <header class="relative shrink-0 overflow-hidden">
+        <!-- 移动端返回首页按钮（桌面端侧栏已有导航，无需重复） -->
+        <div class="absolute left-4 top-4 z-10 lg:hidden">
+          <UButton
+            icon="tabler:home"
+            variant="soft"
+            color="neutral"
+            aria-label="返回首页"
+            :title="$t('dashboard.nav.home')"
+            class="bg-white/15 text-white hover:bg-white/25"
+            @click="router.push('/')"
+          />
+        </div>
 
-      <!-- 封面高斯模糊背景 -->
-      <template v-if="bannerCover">
-        <img
-          :src="bannerCover"
-          alt=""
-          class="absolute inset-0 h-full w-full scale-125 object-cover blur-2xl"
-        />
-        <div class="absolute inset-0 bg-black/45" />
-        <div
-          class="absolute inset-0"
-          style="background: linear-gradient(to bottom, rgba(12,4,6,0.15) 0%, rgba(12,4,6,0.9) 100%)"
-        />
-      </template>
-      <!-- 无封面时的红黑渐变兜底 -->
-      <div v-else class="absolute inset-0 bg-linear-to-br from-[#b0222a] via-[#d62828] to-[#2a0608]" />
+        <!-- 封面高斯模糊背景 -->
+        <template v-if="bannerCover">
+          <img
+            :src="bannerCover"
+            alt=""
+            class="absolute inset-0 h-full w-full scale-125 object-cover blur-2xl"
+          />
+          <div class="absolute inset-0 bg-black/45" />
+          <div
+            class="absolute inset-0"
+            style="background: linear-gradient(to bottom, rgba(12,4,6,0.15) 0%, rgba(12,4,6,0.9) 100%)"
+          />
+        </template>
+        <!-- 无封面时的红黑渐变兜底 -->
+        <div v-else class="absolute inset-0 bg-linear-to-br from-[#b0222a] via-[#d62828] to-[#2a0608]" />
 
-      <div class="relative mx-auto w-full max-w-6xl px-5 pb-8 pt-10 sm:px-8 sm:pb-12 sm:pt-16">
-        <div class="flex flex-col items-center gap-7 sm:flex-row sm:items-end sm:justify-start sm:gap-10">
-          <!-- 左侧：旋转黑胶（点击可设置封面） -->
-          <div class="relative flex items-center justify-center sm:justify-start">
-            <button
-              type="button"
-              class="group relative block"
-              :title="$t('dashboard.music.setCover')"
-              @click="bannerMusic && pickCover(bannerMusic)"
-            >
-              <MusicVinyl
-                :spinning="isPlaying"
-                :size="'min(150px, 44vw)'"
-                :cover="bannerCover"
-                class="drop-shadow-[0_24px_50px_rgba(0,0,0,0.6)]"
-              />
-              <span
-                class="absolute inset-0 grid place-items-center rounded-full bg-black/40 opacity-0 transition group-hover:opacity-100"
+        <div class="relative mx-auto w-full max-w-6xl px-5 pb-8 pt-10 sm:px-8 sm:pb-12 sm:pt-16">
+          <div class="flex flex-col items-center gap-7 sm:flex-row sm:items-end sm:justify-start sm:gap-10">
+            <!-- 左侧：旋转黑胶（点击可设置封面） -->
+            <div class="relative flex items-center justify-center sm:justify-start">
+              <button
+                type="button"
+                class="group relative block"
+                :title="$t('dashboard.music.setCover')"
+                @click="bannerMusic && pickCover(bannerMusic)"
               >
-                <Icon name="tabler:camera" class="size-8 text-white" />
-              </span>
-            </button>
+                <MusicVinyl
+                  :spinning="isPlaying"
+                  :size="'min(150px, 44vw)'"
+                  :cover="bannerCover"
+                  class="drop-shadow-[0_24px_50px_rgba(0,0,0,0.6)]"
+                />
+                <span
+                  class="absolute inset-0 grid place-items-center rounded-full bg-black/40 opacity-0 transition group-hover:opacity-100"
+                >
+                  <Icon name="tabler:camera" class="size-8 text-white" />
+                </span>
+              </button>
+            </div>
+
+            <!-- 右侧：标题区 -->
+            <div class="min-w-0 text-center text-white sm:text-left">
+              <p class="text-xs font-semibold uppercase tracking-[0.25em] text-white/55">
+                {{ $t('dashboard.music.listCount') }}
+              </p>
+              <h1 class="mt-1.5 text-4xl font-bold tracking-tight sm:text-6xl">
+                {{ $t('dashboard.music.title') }}
+              </h1>
+              <p class="mt-2.5 max-w-md text-sm leading-relaxed text-white/70">
+                {{ $t('dashboard.music.subtitle') }}
+              </p>
+              <div class="mt-5 flex flex-wrap items-center justify-center gap-3 sm:justify-start">
+                <UButton
+                  color="white"
+                  icon="tabler:player-play-filled"
+                  class="font-semibold"
+                  @click="playAll"
+                >
+                  {{ $t('dashboard.music.playAll') }}
+                </UButton>
+                <UButton
+                  :color="null"
+                  variant="soft"
+                  class="bg-white/15 text-white hover:bg-white/25"
+                  icon="tabler:music-plus"
+                  @click="isUploadOpen = !isUploadOpen"
+                >
+                  {{ $t('dashboard.music.uploadButton') }}
+                </UButton>
+                <span class="text-sm text-white/70">
+                  {{ $t('dashboard.music.totalCount', { count: musicList.length }) }}
+                </span>
+              </div>
+
+              <!-- 音源切换框架：默认本地音源，酷狗/网易云/QQ 待接入 -->
+              <div class="mt-4 flex flex-wrap items-center justify-center gap-1 sm:justify-start">
+                <button
+                  v-for="src in sources"
+                  :key="src.id"
+                  type="button"
+                  class="rounded-full px-3.5 py-1.5 text-xs font-medium transition"
+                  :class="
+                    activeSource === src.id
+                      ? 'bg-white text-black shadow'
+                      : 'bg-white/15 text-white/80 hover:bg-white/25'
+                  "
+                  :title="src.available ? '' : $t('dashboard.music.sourceComingSoon')"
+                  @click="selectSource(src.id)"
+                >
+                  {{ src.label }}
+                </button>
+              </div>
+            </div>
           </div>
+        </div>
+      </header>
 
-          <!-- 右侧：标题区 -->
-          <div class="min-w-0 text-center text-white sm:text-left">
-            <p class="text-xs font-semibold uppercase tracking-[0.25em] text-white/55">
-              {{ $t('dashboard.music.listCount') }}
-            </p>
-            <h1 class="mt-1.5 text-4xl font-bold tracking-tight sm:text-6xl">
-              {{ $t('dashboard.music.title') }}
-            </h1>
-            <p class="mt-2.5 max-w-md text-sm leading-relaxed text-white/70">
-              {{ $t('dashboard.music.subtitle') }}
-            </p>
-            <div class="mt-5 flex flex-wrap items-center justify-center gap-3 sm:justify-start">
-              <UButton
-                color="white"
-                icon="tabler:player-play-filled"
-                class="font-semibold"
-                @click="playAll"
-              >
-                {{ $t('dashboard.music.playAll') }}
+      <!-- ===== 主体内容 ===== -->
+      <main class="mx-auto w-full max-w-6xl px-4 py-5 pb-36 sm:px-8 sm:py-8 sm:pb-36">
+        <!-- 上传面板 -->
+        <div v-if="isUploadOpen" class="rounded-2xl border border-(--ui-border) bg-(--ui-bg) p-4 shadow-sm">
+          <div class="flex flex-col gap-3">
+            <div
+              class="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-(--ui-border-accented) px-4 py-7 text-center transition hover:border-red-400 hover:bg-red-50/40 dark:hover:border-red-500 dark:hover:bg-red-500/5"
+              @click="triggerPick"
+            >
+              <Icon name="tabler:upload" class="size-8 text-(--ui-text-muted)" />
+              <p class="text-sm font-medium text-(--ui-text)">
+                {{ selectedFile ? selectedFile.name : $t('dashboard.music.dropHint') }}
+              </p>
+              <p class="text-xs text-(--ui-text-muted)">{{ $t('dashboard.music.dropHintDesc') }}</p>
+              <input
+                ref="fileInput"
+                type="file"
+                accept="audio/*"
+                class="hidden"
+                @change="onFileChange"
+              />
+            </div>
+
+            <UFormField :label="$t('dashboard.music.titleLabel')" class="w-full">
+              <UInput v-model="customTitle" :placeholder="$t('dashboard.music.titlePlaceholder')" />
+            </UFormField>
+            <UFormField :label="$t('dashboard.music.lyricsLabel')" class="w-full">
+              <UTextarea
+                v-model="customLyrics"
+                :placeholder="$t('dashboard.music.lyricsPlaceholder')"
+                :rows="4"
+              />
+            </UFormField>
+
+            <div class="flex justify-end gap-2">
+              <UButton variant="ghost" color="neutral" @click="isUploadOpen = false">
+                {{ $t('common.cancel') }}
               </UButton>
               <UButton
-                :color="null"
-                variant="soft"
-                class="bg-white/15 text-white hover:bg-white/25"
-                icon="tabler:music-plus"
-                @click="isUploadOpen = !isUploadOpen"
+                color="primary"
+                :loading="isUploading"
+                :disabled="!selectedFile"
+                icon="tabler:upload"
+                @click="uploadMusic"
               >
                 {{ $t('dashboard.music.uploadButton') }}
               </UButton>
-              <span class="text-sm text-white/70">
-                {{ $t('dashboard.music.totalCount', { count: musicList.length }) }}
-              </span>
             </div>
           </div>
         </div>
-      </div>
-    </header>
 
-    <!-- ===== 主体内容 ===== -->
-    <main class="mx-auto w-full max-w-6xl px-4 py-5 pb-36 sm:px-8 sm:py-8 sm:pb-36">
-      <!-- 上传面板 -->
-      <div v-if="isUploadOpen"
-        class="rounded-2xl border border-(--ui-border) bg-(--ui-bg) p-4 shadow-sm">
-        <div class="flex flex-col gap-3">
-          <div
-            class="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-(--ui-border-accented) px-4 py-7 text-center transition hover:border-red-400 hover:bg-red-50/40 dark:hover:border-red-500 dark:hover:bg-red-500/5"
-            @click="triggerPick"
-          >
-            <Icon name="tabler:upload" class="size-8 text-(--ui-text-muted)" />
-            <p class="text-sm font-medium text-(--ui-text)">
-              {{ selectedFile ? selectedFile.name : $t('dashboard.music.dropHint') }}
-            </p>
-            <p class="text-xs text-(--ui-text-muted)">{{ $t('dashboard.music.dropHintDesc') }}</p>
-            <input ref="fileInput" type="file" accept="audio/*" class="hidden" @change="onFileChange" />
-          </div>
-
-          <UFormField :label="$t('dashboard.music.titleLabel')" class="w-full">
-            <UInput v-model="customTitle" :placeholder="$t('dashboard.music.titlePlaceholder')" />
-          </UFormField>
-          <UFormField :label="$t('dashboard.music.lyricsLabel')" class="w-full">
-            <UTextarea
-              v-model="customLyrics"
-              :placeholder="$t('dashboard.music.lyricsPlaceholder')"
-              :rows="4"
-            />
-          </UFormField>
-
-          <div class="flex justify-end gap-2">
-            <UButton variant="ghost" color="neutral" @click="isUploadOpen = false">
-              {{ $t('common.cancel') }}
-            </UButton>
-            <UButton color="primary" :loading="isUploading" :disabled="!selectedFile" icon="tabler:upload" @click="uploadMusic">
-              {{ $t('dashboard.music.uploadButton') }}
-            </UButton>
-          </div>
+        <!-- 加载 / 空态 / 列表 -->
+        <div v-if="isLoading" class="flex justify-center py-20">
+          <UIcon name="svg-spinners:ring-resize" class="size-8 text-red-500" />
         </div>
-      </div>
 
-      <!-- 加载 / 空态 / 列表 -->
-      <div v-if="isLoading" class="flex justify-center py-20">
-        <UIcon name="svg-spinners:ring-resize" class="size-8 text-red-500" />
-      </div>
-
-      <div v-else-if="musicList.length === 0"
-        class="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-(--ui-border-accented) py-20 text-center">
-        <div class="relative">
-          <div class="size-20 rounded-full bg-linear-to-br from-neutral-200 to-neutral-300 dark:from-neutral-700 dark:to-neutral-800" />
-          <Icon name="tabler:music" class="absolute inset-0 m-auto size-8 text-(--ui-text-muted)" />
+        <div
+          v-else-if="musicList.length === 0"
+          class="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-(--ui-border-accented) py-20 text-center"
+        >
+          <div class="relative">
+            <div class="size-20 rounded-full bg-linear-to-br from-neutral-200 to-neutral-300 dark:from-neutral-700 dark:to-neutral-800" />
+            <Icon name="tabler:music" class="absolute inset-0 m-auto size-8 text-(--ui-text-muted)" />
+          </div>
+          <p class="text-sm text-(--ui-text-muted)">{{ $t('dashboard.music.empty') }}</p>
+          <UButton variant="outline" color="primary" icon="tabler:music-plus" @click="isUploadOpen = true">
+            {{ $t('dashboard.music.emptyCta') }}
+          </UButton>
         </div>
-        <p class="text-sm text-(--ui-text-muted)">{{ $t('dashboard.music.empty') }}</p>
-        <UButton variant="outline" color="primary" icon="tabler:music-plus" @click="isUploadOpen = true">
-          {{ $t('dashboard.music.emptyCta') }}
-        </UButton>
-      </div>
 
-      <div v-else class="overflow-hidden rounded-2xl border border-(--ui-border) bg-(--ui-bg) shadow-sm">
-        <div class="divide-y divide-(--ui-border)">
-          <div
-            v-for="item in musicList"
-            :key="item.id"
-            class="group flex items-center gap-3 px-3 py-2.5 transition hover:bg-red-50/50 dark:hover:bg-red-500/5"
-            :class="{ 'bg-red-50/70 dark:bg-red-500/10': playingId === item.id }"
-          >
-            <!-- 封面缩略（点击可设置封面） -->
-            <span class="relative w-10 shrink-0">
-              <button
-                type="button"
-                class="group/cov relative block rounded-full"
-                :title="$t('dashboard.music.setCover')"
-                @click="pickCover(item)"
-              >
-                <MusicVinyl
-                  :spinning="playingId === item.id && isPlaying"
-                  :size="38"
-                  :cover="item.coverUrl"
-                />
-                <span
-                  class="absolute inset-0 grid place-items-center rounded-full bg-black/40 opacity-0 transition group-hover/cov:opacity-100"
+        <div v-else class="overflow-hidden rounded-2xl border border-(--ui-border) bg-(--ui-bg) shadow-sm">
+          <div class="divide-y divide-(--ui-border)">
+            <div
+              v-for="item in musicList"
+              :key="item.id"
+              class="group flex items-center gap-3 px-3 py-2.5 transition hover:bg-red-50/50 dark:hover:bg-red-500/5"
+              :class="{ 'bg-red-50/70 dark:bg-red-500/10': playingId === item.id }"
+            >
+              <!-- 封面缩略（点击可设置封面） -->
+              <span class="relative w-10 shrink-0">
+                <button
+                  type="button"
+                  class="group/cov relative block rounded-full"
+                  :title="$t('dashboard.music.setCover')"
+                  @click="pickCover(item)"
                 >
-                  <Icon name="tabler:camera" class="size-3.5 text-white" />
-                </span>
-              </button>
-              <!-- 播放/暂停角标 -->
-              <button
-                v-if="playingId === item.id"
-                type="button"
-                class="absolute inset-0 grid place-items-center rounded-full bg-black/25"
-                @click="togglePlay(item)"
-              >
-                <Icon
-                  :name="isPlaying ? 'tabler:player-pause-filled' : 'tabler:player-play-filled'"
-                  class="size-4 text-white"
-                />
-              </button>
-              <button
-                v-else
-                type="button"
-                class="absolute inset-0 hidden place-items-center rounded-full bg-black/25 group-hover:grid"
-                @click="togglePlay(item)"
-              >
-                <Icon name="tabler:player-play-filled" class="size-4 text-white" />
-              </button>
-            </span>
+                  <MusicVinyl
+                    :spinning="playingId === item.id && isPlaying"
+                    :size="38"
+                    :cover="item.coverUrl"
+                  />
+                  <span
+                    class="absolute inset-0 grid place-items-center rounded-full bg-black/40 opacity-0 transition group-hover/cov:opacity-100"
+                  >
+                    <Icon name="tabler:camera" class="size-3.5 text-white" />
+                  </span>
+                </button>
+                <!-- 播放/暂停角标 -->
+                <button
+                  v-if="playingId === item.id"
+                  type="button"
+                  class="absolute inset-0 grid place-items-center rounded-full bg-black/25"
+                  @click="togglePlay(item)"
+                >
+                  <Icon
+                    :name="isPlaying ? 'tabler:player-pause-filled' : 'tabler:player-play-filled'"
+                    class="size-4 text-white"
+                  />
+                </button>
+                <button
+                  v-else
+                  type="button"
+                  class="absolute inset-0 hidden place-items-center rounded-full bg-black/25 group-hover:grid"
+                  @click="togglePlay(item)"
+                >
+                  <Icon name="tabler:player-play-filled" class="size-4 text-white" />
+                </button>
+              </span>
 
-            <!-- 标题区 -->
-            <div class="min-w-0 flex-1">
-              <div v-if="editingId === item.id" class="flex items-center gap-1.5">
-                <UInput v-model="editingTitle" size="sm" class="max-w-56" @keyup.enter="saveTitle" />
-                <UButton icon="tabler:check" size="sm" color="primary" variant="soft" @click="saveTitle" />
-              </div>
-              <template v-else>
-                <div class="flex items-center gap-2">
-                  <button type="button" class="min-w-0 truncate text-left text-sm font-semibold text-(--ui-text) hover:text-red-500"
-                    @click="openPlayerFor(item)">
-                    {{ item.title }}
-                  </button>
-                  <Icon v-if="item.lyrics" name="tabler:microphone-2" size="13" class="shrink-0 text-red-400" :title="$t('dashboard.music.editLyrics')" />
+              <!-- 标题区 -->
+              <div class="min-w-0 flex-1">
+                <div v-if="editingId === item.id" class="flex items-center gap-1.5">
+                  <UInput
+                    v-model="editingTitle"
+                    size="sm"
+                    class="max-w-56"
+                    @keyup.enter="saveTitle"
+                  />
+                  <UButton icon="tabler:check" size="sm" color="primary" variant="soft" @click="saveTitle" />
                 </div>
-                <p class="truncate text-xs text-(--ui-text-muted)">{{ item.filename }}</p>
-              </template>
-            </div>
-
-            <!-- 元数据（移动端隐藏，保持行紧凑） -->
-            <span class="hidden shrink-0 text-xs tabular-nums text-(--ui-text-muted) sm:block">{{ formatDuration(item.duration) }}</span>
-            <span class="hidden w-16 shrink-0 text-right text-xs tabular-nums text-(--ui-text-muted) sm:block">{{ formatSize(item.fileSize) }}</span>
-            <span class="hidden w-20 shrink-0 text-right text-xs tabular-nums text-(--ui-text-muted) lg:block">{{ fmtDate(item.createdAt) }}</span>
-
-            <!-- 操作 -->
-            <div class="flex shrink-0 items-center gap-1">
-              <UButton icon="tabler:microphone-2" size="sm" variant="ghost" color="neutral"
-                :title="$t('dashboard.music.editLyrics')" @click="openLyricsEditor(item)" />
-              <UButton icon="tabler:pencil" size="sm" variant="ghost" color="neutral"
-                @click="startEditTitle(item)" />
-              <UButton icon="tabler:trash" size="sm" variant="ghost" color="error"
-                @click="requestDelete(item)" />
-            </div>
-          </div>
-        </div>
-      </div>
-    </main>
-
-    <!-- ===== 迷你播放条（底部悬浮） ===== -->
-    <Transition name="mini-player">
-      <div v-if="currentMusic && !playerOpen"
-        class="fixed inset-x-0 bottom-0 z-40 border-t border-black/10 bg-[#1f1f26]/95 text-white shadow-[0_-8px_30px_rgba(0,0,0,0.35)] backdrop-blur-md"
-        style="padding-bottom: env(safe-area-inset-bottom)"
-      >
-        <div class="mx-auto flex h-16 max-w-6xl items-center gap-3 px-3 sm:gap-4 sm:px-6">
-          <button type="button" class="shrink-0 opacity-90 transition hover:opacity-100" :title="$t('dashboard.music.openPlayer')" @click="expandPlayer()">
-            <MusicVinyl :spinning="isPlaying" :size="44" :cover="currentMusic.coverUrl" />
-          </button>
-          <button type="button" class="min-w-0 text-left" @click="expandPlayer()">
-            <p class="truncate text-sm font-semibold">{{ currentMusic.title }}</p>
-            <p class="truncate text-xs text-white/50">{{ currentMusic.filename }}</p>
-          </button>
-
-          <div class="min-w-0 flex-1 hidden sm:block">
-            <div class="flex items-center gap-2 text-xs tabular-nums text-white/60">
-              <span>{{ formatTime(progress) }}</span>
-              <div class="group/bar relative h-1 flex-1 cursor-pointer overflow-hidden rounded-full bg-white/20"
-                @click="seekTo($event.offsetX / $event.currentTarget.clientWidth * duration)">
-                <div class="absolute inset-y-0 left-0 rounded-full bg-red-500" :style="{ width: `${playPct}%` }" />
+                <template v-else>
+                  <div class="flex items-center gap-2">
+                    <button
+                      type="button"
+                      class="min-w-0 truncate text-left text-sm font-semibold text-(--ui-text) hover:text-red-500"
+                      @click="openPlayerFor(item)"
+                    >
+                      {{ item.title }}
+                    </button>
+                    <Icon
+                      v-if="item.lyrics"
+                      name="tabler:microphone-2"
+                      size="13"
+                      class="shrink-0 text-red-400"
+                      :title="$t('dashboard.music.editLyrics')"
+                    />
+                  </div>
+                  <p class="truncate text-xs text-(--ui-text-muted)">{{ item.filename }}</p>
+                </template>
               </div>
-              <span>{{ formatTime(duration) }}</span>
+
+              <!-- 元数据（移动端隐藏，保持行紧凑） -->
+              <span class="hidden shrink-0 text-xs tabular-nums text-(--ui-text-muted) sm:block">
+                {{ formatDuration(item.duration) }}
+              </span>
+              <span class="hidden w-16 shrink-0 text-right text-xs tabular-nums text-(--ui-text-muted) sm:block">
+                {{ formatSize(item.fileSize) }}
+              </span>
+              <span class="hidden w-20 shrink-0 text-right text-xs tabular-nums text-(--ui-text-muted) lg:block">
+                {{ fmtDate(item.createdAt) }}
+              </span>
+
+              <!-- 操作 -->
+              <div class="flex shrink-0 items-center gap-1">
+                <UButton
+                  icon="tabler:microphone-2"
+                  size="sm"
+                  variant="ghost"
+                  color="neutral"
+                  :title="$t('dashboard.music.editLyrics')"
+                  @click="openLyricsEditor(item)"
+                />
+                <UButton icon="tabler:pencil" size="sm" variant="ghost" color="neutral" @click="startEditTitle(item)" />
+                <UButton icon="tabler:trash" size="sm" variant="ghost" color="error" @click="requestDelete(item)" />
+              </div>
             </div>
           </div>
-
-          <div class="flex shrink-0 items-center gap-2">
-            <button type="button" class="rounded-full p-2 text-white/80 transition hover:text-white" :title="isPlaying ? $t('dashboard.music.nowPlaying') : ''"
-              @click="togglePlay(currentMusic)">
-              <Icon :name="isPlaying ? 'tabler:player-pause-filled' : 'tabler:player-play-filled'" class="size-7" />
-            </button>
-            <button type="button" class="rounded-full p-2 text-white/70 transition hover:text-white" @click="stopPlay()">
-              <Icon name="tabler:player-stop" class="size-5" />
-            </button>
-            <button type="button" class="rounded-full p-2 text-white/70 transition hover:text-white"
-              :title="$t('dashboard.music.openPlayer')" @click="expandPlayer()">
-              <Icon name="tabler:chevron-up" class="size-5" />
-            </button>
-          </div>
         </div>
-      </div>
-    </Transition>
+      </main>
 
-    <!-- ===== 全屏展开播放器（Apple Music 风格浮层） ===== -->
-    <Teleport to="body">
-      <Transition name="player-overlay">
-        <div v-if="playerOpen && currentMusic"
-          class="fixed inset-0 z-[80] flex flex-col bg-[#12080a] text-white"
+      <!-- ===== 迷你播放条（底部悬浮） ===== -->
+      <Transition name="mini-player">
+        <div
+          v-if="currentMusic && !playerOpen"
+          class="fixed inset-x-0 bottom-0 z-40 border-t border-black/10 bg-[#1f1f26]/95 text-white shadow-[0_-8px_30px_rgba(0,0,0,0.35)] backdrop-blur-md"
           style="padding-bottom: env(safe-area-inset-bottom)"
         >
-          <!-- 高斯模糊封面氛围背景 -->
-          <img
-            v-if="currentMusic.coverUrl"
-            :src="currentMusic.coverUrl"
-            alt=""
-            class="pointer-events-none absolute inset-0 h-full w-full object-cover blur-3xl opacity-40"
-          />
-          <div class="pointer-events-none absolute inset-0 bg-[#0b0506]/70" />
-          <div class="pointer-events-none absolute inset-0 opacity-50"
-            style="background: radial-gradient(70% 60% at 20% 30%, rgba(214,40,40,0.25), transparent 60%), radial-gradient(60% 50% at 90% 80%, rgba(255,120,90,0.12), transparent 60%)" />
-
-          <!-- 顶部栏 -->
-          <div class="relative flex shrink-0 items-center justify-between px-4 py-3">
-            <button type="button" class="rounded-full p-2 text-white/70 transition hover:bg-white/10 hover:text-white"
-              @click="playerOpen = false">
-              <Icon name="tabler:chevron-down" class="size-6" />
+          <div class="mx-auto flex h-16 max-w-6xl items-center gap-3 px-3 sm:gap-4 sm:px-6">
+            <button
+              type="button"
+              class="shrink-0 opacity-90 transition hover:opacity-100"
+              :title="$t('dashboard.music.openPlayer')"
+              @click="expandPlayer()"
+            >
+              <MusicVinyl :spinning="isPlaying" :size="44" :cover="currentMusic.coverUrl" />
             </button>
-            <p class="truncate text-sm text-white/70">{{ currentMusic.title }}</p>
-            <button type="button" class="rounded-full p-2 text-white/70 transition hover:bg-white/10 hover:text-white" @click="stopPlay()">
-              <Icon name="tabler:x" class="size-5" />
+            <button type="button" class="min-w-0 text-left" @click="expandPlayer()">
+              <p class="truncate text-sm font-semibold">{{ currentMusic.title }}</p>
+              <p class="truncate text-xs text-white/50">{{ currentMusic.filename }}</p>
             </button>
-          </div>
 
-          <!-- 主体：默认（碟盘 + 歌词） / 歌词专注模式（一行行歌词） -->
-          <div class="music-player-body relative mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col items-center gap-6 overflow-y-auto px-4 py-3 lg:flex-row lg:items-center lg:gap-16 lg:py-4">
-            <template v-if="!lyricsMode">
-              <!-- 碟盘区：点击碟盘切换为一行行歌词模式 -->
-              <div class="relative flex shrink-0 flex-col items-center">
-                <div class="relative">
-                  <button
-                    type="button"
-                    class="group relative block cursor-pointer"
-                    @click="lyricsMode = true"
-                  >
-                    <div class="absolute -inset-8 rounded-full bg-red-600/20 blur-3xl" />
-                    <MusicVinyl :spinning="isPlaying" :size="'min(240px, 52vw)'" :cover="currentMusic.coverUrl" class="relative" />
-                    <!-- 唱针：播放时放下压住唱片 -->
-                    <MusicTonearm :playing="isPlaying" :size="'min(240px, 52vw)'" class="pointer-events-none" />
-                    <!-- 点击提示 -->
-                    <span class="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap text-[11px] tracking-wide text-white/40 transition group-hover:text-white/85">
-                      {{ $t('dashboard.music.lyricsModeHint') }}
-                    </span>
-                  </button>
-                  <!-- 设置封面：碟片右下角小按钮 -->
-                  <button
-                    type="button"
-                    class="absolute bottom-2 right-2 z-10 grid size-8 place-items-center rounded-full bg-black/45 text-white/80 shadow-lg backdrop-blur-sm transition hover:bg-black/70 hover:text-white"
-                    :title="$t('dashboard.music.setCover')"
-                    @click="pickCover(currentMusic)"
-                  >
-                    <Icon name="tabler:camera" class="size-4" />
-                  </button>
-                </div>
-
-                <p class="mt-8 max-w-[300px] text-center text-lg font-bold leading-snug">{{ currentMusic.title }}</p>
-                <p class="mt-1 text-sm text-white/50">{{ currentMusic.filename }}</p>
-              </div>
-
-              <!-- 歌词区（右侧/下方） -->
-              <div class="relative flex min-h-[220px] w-full max-w-lg flex-1 flex-col">
-                <div v-if="hasLyrics" ref="lyricsScrollRef"
-                  class="lyric-scroll relative flex-1 overflow-y-auto py-[35%] [scrollbar-width:none]" style="mask-image:linear-gradient(to bottom, transparent, black 18%, black 82%, transparent);-webkit-mask-image:linear-gradient(to bottom, transparent, black 18%, black 82%, transparent)">
-                  <div class="flex flex-col gap-5">
-                    <p
-                      v-for="(line, i) in lyricsLines"
-                      :key="i"
-                      class="lyric-line text-center text-[15px] leading-relaxed transition-all duration-300"
-                      :class="i === activeLyricIndex
-                        ? 'lyric-line-active scale-[1.06] font-bold text-white'
-                        : 'text-white/35'"
-                    >
-                      {{ line.text || '♪' }}
-                    </p>
-                  </div>
-                </div>
-                <div v-else class="flex flex-1 flex-col items-center justify-center gap-3 text-white/45">
-                  <Icon name="tabler:music-off" class="size-10" />
-                  <p class="text-sm">{{ $t('dashboard.music.pureMusic') }}</p>
-                  <p class="text-xs">{{ $t('dashboard.music.noLyrics') }}</p>
-                </div>
-              </div>
-            </template>
-
-            <!-- 歌词专注模式：一行行歌词居中展示，点击任意处返回碟盘 -->
-            <template v-else>
-              <button
-                type="button"
-                class="group relative mx-auto flex min-h-0 w-full flex-1 cursor-pointer flex-col items-center justify-center"
-                @click="lyricsMode = false"
-              >
+            <div class="hidden min-w-0 flex-1 sm:block">
+              <div class="flex items-center gap-2 text-xs tabular-nums text-white/60">
+                <span>{{ formatTime(progress) }}</span>
                 <div
-                  v-if="hasLyrics"
-                  ref="lyricsScrollRef"
-                  class="lyric-scroll relative max-h-full w-full flex-1 overflow-y-auto py-[38%] [scrollbar-width:none]"
-                  style="mask-image:linear-gradient(to bottom, transparent, black 22%, black 78%, transparent);-webkit-mask-image:linear-gradient(to bottom, transparent, black 22%, black 78%, transparent)"
+                  class="group/bar relative h-1 flex-1 cursor-pointer overflow-hidden rounded-full bg-white/20"
+                  @click="seekTo(($event.offsetX / $event.currentTarget.clientWidth) * duration)"
                 >
-                  <div class="flex flex-col gap-7">
-                    <p
-                      v-for="(line, i) in lyricsLines"
-                      :key="i"
-                      class="lyric-line text-center text-xl leading-relaxed transition-all duration-300 sm:text-2xl"
-                      :class="i === activeLyricIndex
-                        ? 'lyric-line-active scale-105 font-bold text-white'
-                        : 'text-white/30'"
-                    >
-                      {{ line.text || '♪' }}
-                    </p>
-                  </div>
+                  <div
+                    class="absolute inset-y-0 left-0 rounded-full bg-red-500"
+                    :style="{ width: `${playPct}%` }"
+                  />
                 </div>
-                <div v-else class="flex flex-col items-center justify-center gap-3 text-white/45">
-                  <Icon name="tabler:music-off" class="size-12" />
-                  <p class="text-base">{{ $t('dashboard.music.pureMusic') }}</p>
-                  <p class="text-sm">{{ $t('dashboard.music.noLyrics') }}</p>
-                </div>
-                <span class="mt-2 text-[11px] tracking-wide text-white/35">{{ $t('dashboard.music.lyricsModeBack') }}</span>
-              </button>
-            </template>
-          </div>
-
-          <!-- 底部控制区 -->
-          <div class="relative mx-auto w-full shrink-0 max-w-3xl px-4 pb-7 pt-2">
-            <!-- 进度条 -->
-            <div class="flex items-center gap-3 text-xs tabular-nums text-white/60">
-              <span>{{ formatTime(progress) }}</span>
-              <div class="group/bar relative h-1.5 flex-1 cursor-pointer overflow-hidden rounded-full bg-white/15"
-                @click="seekTo($event.offsetX / $event.currentTarget.clientWidth * duration)">
-                <div class="absolute inset-y-0 left-0 rounded-full bg-red-500" :style="{ width: `${playPct}%` }" />
-                <span class="absolute top-1/2 size-3 -translate-y-1/2 rounded-full bg-white shadow" :style="{ left: `calc(${playPct}% - 6px)` }" />
+                <span>{{ formatTime(duration) }}</span>
               </div>
-              <span>{{ formatTime(duration) }}</span>
             </div>
 
-            <!-- 控制按钮 -->
-            <div class="mt-3 flex items-center justify-center gap-5">
-              <button type="button" class="text-white/50 transition hover:text-white" :title="$t('dashboard.music.seekBack')" @click="seekTo(progress - 10)">
-                <Icon name="tabler:rotate-clockwise-2" class="size-6 -scale-x-100" />
+            <div class="flex shrink-0 items-center gap-2">
+              <button
+                type="button"
+                class="rounded-full p-2 text-white/80 transition hover:text-white"
+                :title="isPlaying ? $t('dashboard.music.nowPlaying') : ''"
+                @click="togglePlay(currentMusic)"
+              >
+                <Icon :name="isPlaying ? 'tabler:player-pause-filled' : 'tabler:player-play-filled'" class="size-7" />
               </button>
-              <button type="button"
-                class="flex size-16 items-center justify-center rounded-full bg-red-500 shadow-lg shadow-red-900/40 transition hover:bg-red-400"
-                @click="togglePlay(currentMusic)">
-                <Icon :name="isPlaying ? 'tabler:player-pause-filled' : 'tabler:player-play-filled'" class="size-8" />
+              <button
+                type="button"
+                class="rounded-full p-2 text-white/70 transition hover:text-white"
+                @click="stopPlay()"
+              >
+                <Icon name="tabler:player-stop" class="size-5" />
               </button>
-              <button type="button" class="text-white/50 transition hover:text-white" :title="$t('dashboard.music.seekFwd')" @click="seekTo(progress + 10)">
-                <Icon name="tabler:rotate-clockwise-2" class="size-6" />
-              </button>
-              <button type="button" class="text-white/50 transition hover:text-white" @click="stopPlay()">
-                <Icon name="tabler:player-stop" class="size-6" />
+              <button
+                type="button"
+                class="rounded-full p-2 text-white/70 transition hover:text-white"
+                :title="$t('dashboard.music.openPlayer')"
+                @click="expandPlayer()"
+              >
+                <Icon name="tabler:chevron-up" class="size-5" />
               </button>
             </div>
           </div>
         </div>
       </Transition>
-    </Teleport>
 
-    <!-- 歌词编辑弹窗 -->
-    <UModal v-model:open="lyricsEditModal">
-      <UCard :ui="{ body: { base: 'space-y-4' } }">
-        <template #header>
-          <div class="flex items-center gap-2">
-            <Icon name="tabler:microphone-2" class="size-5 text-red-500" />
-            <h3 class="font-semibold">{{ $t('dashboard.music.editLyrics') }} · {{ lyricsEditTarget?.title }}</h3>
-          </div>
-        </template>
-        <UTextarea v-model="lyricsDraft" :placeholder="$t('dashboard.music.lyricsPlaceholder')" :rows="10" />
-        <template #footer>
-          <div class="flex justify-end gap-2">
-            <UButton variant="ghost" color="neutral" @click="lyricsEditModal = false">{{ $t('common.cancel') }}</UButton>
-            <UButton color="primary" icon="tabler:check" @click="saveLyrics">{{ $t('dashboard.music.lyricsSaved') }}</UButton>
-          </div>
-        </template>
-      </UCard>
-    </UModal>
+      <!-- ===== 全屏展开播放器（Apple Music 风格浮层） ===== -->
+      <Teleport to="body">
+        <Transition name="player-overlay">
+          <div
+            v-if="playerOpen && currentMusic"
+            class="fixed inset-0 z-[80] flex flex-col bg-[#12080a] text-white"
+            style="padding-bottom: env(safe-area-inset-bottom)"
+          >
+            <!-- 高斯模糊封面氛围背景 -->
+            <img
+              v-if="currentMusic.coverUrl"
+              :src="currentMusic.coverUrl"
+              alt=""
+              class="pointer-events-none absolute inset-0 h-full w-full object-cover blur-3xl opacity-40"
+            />
+            <div class="pointer-events-none absolute inset-0 bg-[#0b0506]/70" />
+            <div
+              class="pointer-events-none absolute inset-0 opacity-50"
+              style="background: radial-gradient(70% 60% at 20% 30%, rgba(214,40,40,0.25), transparent 60%), radial-gradient(60% 50% at 90% 80%, rgba(255,120,90,0.12), transparent 60%)"
+            />
 
-    <!-- 删除确认 -->
-    <UModal v-model:open="confirmDelete">
-      <UCard :ui="{ body: { base: 'space-y-4' } }">
-        <template #header>
-          <div class="flex items-center gap-2">
-            <Icon name="tabler:trash" class="size-5 text-(--ui-error)" />
-            <h3 class="font-semibold">{{ $t('dashboard.music.deleteTitle') }}</h3>
+            <!-- 顶部栏 -->
+            <div class="relative flex shrink-0 items-center justify-between px-4 py-3">
+              <button
+                type="button"
+                class="rounded-full p-2 text-white/70 transition hover:bg-white/10 hover:text-white"
+                @click="playerOpen = false"
+              >
+                <Icon name="tabler:chevron-down" class="size-6" />
+              </button>
+              <p class="truncate text-sm text-white/70">{{ currentMusic.title }}</p>
+              <button
+                type="button"
+                class="rounded-full p-2 text-white/70 transition hover:bg-white/10 hover:text-white"
+                @click="stopPlay()"
+              >
+                <Icon name="tabler:x" class="size-5" />
+              </button>
+            </div>
+
+            <!-- 主体：默认（碟盘 + 歌词） / 歌词专注模式（一行行歌词） -->
+            <div
+              class="music-player-body relative mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col items-center gap-6 overflow-y-auto px-4 py-3 lg:flex-row lg:items-center lg:gap-16 lg:py-4"
+            >
+              <template v-if="!lyricsMode">
+                <!-- 碟盘区：点击碟盘切换为一行行歌词模式 -->
+                <div class="relative flex shrink-0 flex-col items-center">
+                  <div class="relative">
+                    <button
+                      type="button"
+                      class="group relative block cursor-pointer"
+                      @click="lyricsMode = true"
+                    >
+                      <div class="absolute -inset-8 rounded-full bg-red-600/20 blur-3xl" />
+                      <MusicVinyl
+                        :spinning="isPlaying"
+                        :size="'min(240px, 52vw)'"
+                        :cover="currentMusic.coverUrl"
+                        class="relative"
+                      />
+                      <!-- 唱针：播放时放下压住唱片 -->
+                      <MusicTonearm
+                        :playing="isPlaying"
+                        :size="'min(240px, 52vw)'"
+                        class="pointer-events-none"
+                      />
+                      <!-- 点击提示 -->
+                      <span
+                        class="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap text-[11px] tracking-wide text-white/40 transition group-hover:text-white/85"
+                      >
+                        {{ $t('dashboard.music.lyricsModeHint') }}
+                      </span>
+                    </button>
+                    <!-- 设置封面：碟片右下角小按钮 -->
+                    <button
+                      type="button"
+                      class="absolute bottom-2 right-2 z-10 grid size-8 place-items-center rounded-full bg-black/45 text-white/80 shadow-lg backdrop-blur-sm transition hover:bg-black/70 hover:text-white"
+                      :title="$t('dashboard.music.setCover')"
+                      @click="pickCover(currentMusic)"
+                    >
+                      <Icon name="tabler:camera" class="size-4" />
+                    </button>
+                  </div>
+
+                  <p class="mt-8 max-w-[300px] text-center text-lg font-bold leading-snug">
+                    {{ currentMusic.title }}
+                  </p>
+                  <p class="mt-1 text-sm text-white/50">{{ currentMusic.filename }}</p>
+                </div>
+
+                <!-- 歌词区（右侧/下方） -->
+                <div class="relative flex min-h-[220px] w-full max-w-lg flex-1 flex-col">
+                  <div
+                    v-if="hasLyrics"
+                    ref="lyricsScrollRef"
+                    class="lyric-scroll relative flex-1 overflow-y-auto py-[35%] [scrollbar-width:none]"
+                    style="mask-image:linear-gradient(to bottom, transparent, black 18%, black 82%, transparent);-webkit-mask-image:linear-gradient(to bottom, transparent, black 18%, black 82%, transparent)"
+                  >
+                    <div class="flex flex-col gap-5">
+                      <p
+                        v-for="(line, i) in lyricsLines"
+                        :key="i"
+                        class="lyric-line text-center text-[15px] leading-relaxed transition-all duration-300"
+                        :class="i === activeLyricIndex ? 'lyric-line-active scale-[1.06] font-bold text-white' : 'text-white/35'"
+                      >
+                        {{ line.text || '♪' }}
+                      </p>
+                    </div>
+                  </div>
+                  <div v-else class="flex flex-1 flex-col items-center justify-center gap-3 text-white/45">
+                    <Icon name="tabler:music-off" class="size-10" />
+                    <p class="text-sm">{{ $t('dashboard.music.pureMusic') }}</p>
+                    <p class="text-xs">{{ $t('dashboard.music.noLyrics') }}</p>
+                  </div>
+                </div>
+              </template>
+
+              <!-- 歌词专注模式：一行行歌词居中展示，点击任意处返回碟盘 -->
+              <template v-else>
+                <button
+                  type="button"
+                  class="group relative mx-auto flex min-h-0 w-full flex-1 cursor-pointer flex-col items-center justify-center"
+                  @click="lyricsMode = false"
+                >
+                  <div
+                    v-if="hasLyrics"
+                    ref="lyricsScrollRef"
+                    class="lyric-scroll relative max-h-full w-full flex-1 overflow-y-auto py-[38%] [scrollbar-width:none]"
+                    style="mask-image:linear-gradient(to bottom, transparent, black 22%, black 78%, transparent);-webkit-mask-image:linear-gradient(to bottom, transparent, black 22%, black 78%, transparent)"
+                  >
+                    <div class="flex flex-col gap-7">
+                      <p
+                        v-for="(line, i) in lyricsLines"
+                        :key="i"
+                        class="lyric-line text-center text-xl leading-relaxed transition-all duration-300 sm:text-2xl"
+                        :class="i === activeLyricIndex ? 'lyric-line-active scale-105 font-bold text-white' : 'text-white/30'"
+                      >
+                        {{ line.text || '♪' }}
+                      </p>
+                    </div>
+                  </div>
+                  <div v-else class="flex flex-col items-center justify-center gap-3 text-white/45">
+                    <Icon name="tabler:music-off" class="size-12" />
+                    <p class="text-base">{{ $t('dashboard.music.pureMusic') }}</p>
+                    <p class="text-sm">{{ $t('dashboard.music.noLyrics') }}</p>
+                  </div>
+                  <span class="mt-2 text-[11px] tracking-wide text-white/35">
+                    {{ $t('dashboard.music.lyricsModeBack') }}
+                  </span>
+                </button>
+              </template>
+            </div>
+
+            <!-- 底部控制区 -->
+            <div class="relative mx-auto w-full shrink-0 max-w-3xl px-4 pb-7 pt-2">
+              <!-- 进度条 -->
+              <div class="flex items-center gap-3 text-xs tabular-nums text-white/60">
+                <span>{{ formatTime(progress) }}</span>
+                <div
+                  class="group/bar relative h-1.5 flex-1 cursor-pointer overflow-hidden rounded-full bg-white/15"
+                  @click="seekTo(($event.offsetX / $event.currentTarget.clientWidth) * duration)"
+                >
+                  <div
+                    class="absolute inset-y-0 left-0 rounded-full bg-red-500"
+                    :style="{ width: `${playPct}%` }"
+                  />
+                  <span
+                    class="absolute top-1/2 size-3 -translate-y-1/2 rounded-full bg-white shadow"
+                    :style="{ left: `calc(${playPct}% - 6px)` }"
+                  />
+                </div>
+                <span>{{ formatTime(duration) }}</span>
+              </div>
+
+              <!-- 控制按钮 -->
+              <div class="mt-3 flex items-center justify-center gap-5">
+                <button
+                  type="button"
+                  class="text-white/50 transition hover:text-white"
+                  :title="$t('dashboard.music.seekBack')"
+                  @click="seekTo(progress - 10)"
+                >
+                  <Icon name="tabler:rotate-clockwise-2" class="size-6 -scale-x-100" />
+                </button>
+                <button
+                  type="button"
+                  class="flex size-16 items-center justify-center rounded-full bg-red-500 shadow-lg shadow-red-900/40 transition hover:bg-red-400"
+                  @click="togglePlay(currentMusic)"
+                >
+                  <Icon :name="isPlaying ? 'tabler:player-pause-filled' : 'tabler:player-play-filled'" class="size-8" />
+                </button>
+                <button
+                  type="button"
+                  class="text-white/50 transition hover:text-white"
+                  :title="$t('dashboard.music.seekFwd')"
+                  @click="seekTo(progress + 10)"
+                >
+                  <Icon name="tabler:rotate-clockwise-2" class="size-6" />
+                </button>
+                <button
+                  type="button"
+                  class="text-white/50 transition hover:text-white"
+                  @click="stopPlay()"
+                >
+                  <Icon name="tabler:player-stop" class="size-6" />
+                </button>
+              </div>
+            </div>
           </div>
-        </template>
-        <p class="text-sm text-(--ui-text-muted)">
-          {{ $t('dashboard.music.deleteConfirm', { title: targetDelete?.title }) }}
-        </p>
-        <template #footer>
-          <div class="flex justify-end gap-2">
-            <UButton variant="ghost" color="neutral" @click="confirmDelete = false">{{ $t('common.cancel') }}</UButton>
-            <UButton color="error" icon="tabler:trash" @click="doDelete">{{ $t('dashboard.music.deleteAction') }}</UButton>
-          </div>
-        </template>
-      </UCard>
-    </UModal>
+        </Transition>
+      </Teleport>
+
+      <!-- 歌词编辑弹窗 -->
+      <UModal v-model:open="lyricsEditModal">
+        <UCard :ui="{ body: { base: 'space-y-4' } }">
+          <template #header>
+            <div class="flex items-center gap-2">
+              <Icon name="tabler:microphone-2" class="size-5 text-red-500" />
+              <h3 class="font-semibold">
+                {{ $t('dashboard.music.editLyrics') }} · {{ lyricsEditTarget?.title }}
+              </h3>
+            </div>
+          </template>
+          <UTextarea v-model="lyricsDraft" :placeholder="$t('dashboard.music.lyricsPlaceholder')" :rows="10" />
+          <template #footer>
+            <div class="flex justify-end gap-2">
+              <UButton variant="ghost" color="neutral" @click="lyricsEditModal = false">
+                {{ $t('common.cancel') }}
+              </UButton>
+              <UButton color="primary" icon="tabler:check" @click="saveLyrics">
+                {{ $t('dashboard.music.lyricsSaved') }}
+              </UButton>
+            </div>
+          </template>
+        </UCard>
+      </UModal>
+
+      <!-- 删除确认 -->
+      <UModal v-model:open="confirmDelete">
+        <UCard :ui="{ body: { base: 'space-y-4' } }">
+          <template #header>
+            <div class="flex items-center gap-2">
+              <Icon name="tabler:trash" class="size-5 text-(--ui-error)" />
+              <h3 class="font-semibold">{{ $t('dashboard.music.deleteTitle') }}</h3>
+            </div>
+          </template>
+          <p class="text-sm text-(--ui-text-muted)">
+            {{ $t('dashboard.music.deleteConfirm', { title: targetDelete?.title }) }}
+          </p>
+          <template #footer>
+            <div class="flex justify-end gap-2">
+              <UButton variant="ghost" color="neutral" @click="confirmDelete = false">
+                {{ $t('common.cancel') }}
+              </UButton>
+              <UButton color="error" icon="tabler:trash" @click="doDelete">
+                {{ $t('dashboard.music.deleteAction') }}
+              </UButton>
+            </div>
+          </template>
+        </UCard>
+      </UModal>
     </template>
   </UDashboardPanel>
 </template>
