@@ -1203,7 +1203,11 @@
       "emptyCta": "上傳第一首音樂",
       "deleteTitle": "刪除音樂",
       "deleteConfirm": "確定刪除「{title}」嗎？刪除後所有關聯相簿將不再播放該背景音樂。",
-      "deleteAction": "確認刪除"
+      "deleteAction": "確認刪除",
+      "setCover": "設為封面",
+      "coverSuccess": "封面已更新",
+      "coverFail": "封面更新失敗，請重試",
+      "coverInvalid": "僅支援圖片檔案"
     }
   },
   "settings": {

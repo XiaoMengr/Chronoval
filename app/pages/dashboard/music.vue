@@ -6,6 +6,7 @@ useHead({ title: () => $t('dashboard.music.title') })
 import { parseLrc } from '~/utils/lrc'
 
 const toast = useToast()
+const router = useRouter()
 
 interface MusicItem {
   id: number
@@ -15,6 +16,7 @@ interface MusicItem {
   duration: number | null
   fileSize: number
   lyrics: string | null
+  coverUrl: string | null
   url: string
   createdAt: string
 }
@@ -30,17 +32,23 @@ const audioRef = ref<HTMLAudioElement | null>(null)
 const progress = ref(0)
 const duration = ref(0)
 
+// 音频真实播放状态：由 audio 的 play/pause 事件驱动（el.paused 是 DOM 属性，非响应式，
+// 直接读取会导致计算属性在音频开始播放后不更新，碟片/唱臂无法响应）
+const audioPlaying = ref(false)
+
 const currentMusic = computed(() =>
   musicList.value.find((m) => m.id === playingId.value) || null,
 )
-const isPlaying = computed(() => {
-  const el = audioRef.value
-  return !!el && !el.paused && playingId.value !== null
-})
+const isPlaying = computed(() =>
+  audioPlaying.value && playingId.value !== null,
+)
 
 const playPct = computed(() =>
   duration.value ? (progress.value / duration.value) * 100 : 0,
 )
+
+// ---- 歌词专注模式（点击碟片切换，再点击中间返回）----
+const lyricsMode = ref(false)
 
 const togglePlay = (item: MusicItem) => {
   const el = audioRef.value
@@ -93,16 +101,20 @@ const onEnded = () => {
   el.play().catch(() => {})
 }
 
-// ---- 网易云式展开播放器 ----
+// ---- 网易云/Apple Music 式展开播放器 ----
 const playerOpen = ref(false)
-const expandPlayer = (item?: MusicItem) => {
-  if (item) playerOpen.value = true
-  else playerOpen.value = true
+const expandPlayer = () => {
+  playerOpen.value = true
 }
 const openPlayerFor = (item: MusicItem) => {
   if (playingId.value !== item.id) togglePlay(item)
   playerOpen.value = true
 }
+
+// 收起播放器时复位歌词专注模式
+watch(playerOpen, (open) => {
+  if (!open) lyricsMode.value = false
+})
 
 // 歌词解析
 const lyricsLines = computed(() => parseLrc(currentMusic.value?.lyrics))
@@ -134,7 +146,7 @@ watch(activeLyricIndex, (idx) => {
 })
 
 const formatTime = (s: number | null) => {
-  if (!s || Number.isNaN(s)) return '--:--'
+  if (s === null || s === undefined || Number.isNaN(s)) return '--:--'
   const m = Math.floor(s / 60)
   const sec = Math.floor(s % 60)
   return `${m}:${String(sec).padStart(2, '0')}`
@@ -170,8 +182,13 @@ const loadMusic = async () => {
   }
 }
 
-onMounted(loadMusic)
-onBeforeUnmount(stopPlay)
+onMounted(() => {
+  loadMusic()
+})
+
+onBeforeUnmount(() => {
+  stopPlay()
+})
 
 // ---- 上传 ----
 const fileInput = ref<HTMLInputElement | null>(null)
@@ -290,50 +307,142 @@ const playAll = () => {
   playerOpen.value = true
 }
 
-// 用于迷你条的封面：取当前相簿封面不可得，统一用黑胶
+// ---- 自定义封面 ----
+const coverInput = ref<HTMLInputElement | null>(null)
+const coverTargetId = ref<number | null>(null)
+const coverUploading = ref(false)
+
+// 横幅展示的封面：优先当前播放曲目，否则取第一首
+const bannerMusic = computed<MusicItem | null>(
+  () => currentMusic.value || musicList.value[0] || null,
+)
+const bannerCover = computed(() => bannerMusic.value?.coverUrl || null)
+
+const pickCover = (item: MusicItem) => {
+  coverTargetId.value = item.id
+  coverInput.value?.click()
+}
+
+const onCoverChange = async (e: Event) => {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file || coverTargetId.value === null) return
+  if (!file.type.startsWith('image/')) {
+    toast.add({ title: $t('dashboard.music.coverInvalid'), color: 'error' })
+    return
+  }
+  coverUploading.value = true
+  try {
+    const form = new FormData()
+    form.append('cover', file)
+    const updated = (await $fetch(`/api/music/${coverTargetId.value}/cover`, {
+      method: 'PUT',
+      body: form,
+    })) as MusicItem
+    const idx = musicList.value.findIndex((m) => m.id === updated.id)
+    if (idx !== -1) musicList.value[idx] = updated
+    toast.add({ title: $t('dashboard.music.coverSuccess'), color: 'success' })
+  } catch {
+    toast.add({ title: $t('dashboard.music.coverFail'), color: 'error' })
+  } finally {
+    coverUploading.value = false
+    coverTargetId.value = null
+  }
+}
 </script>
 
 <template>
-  <div class="flex min-h-full flex-col bg-(--ui-bg)">
+  <!--
+    必须使用 UDashboardPanel 的 #body 命名插槽：面板内部的滚动容器（flex-1 overflow-y-auto）
+    只在渲染 #body 插槽时才会生成。若把内容放进默认插槽，滚动容器不会渲染，
+    内容会被 dashboard 布局的 overflow-hidden 裁掉，导致移动端无法滚动/只显示一半。
+  -->
+  <UDashboardPanel :ui="{ body: 'flex flex-col gap-0 p-0' }">
+    <template #body>
     <audio
       ref="audioRef"
       class="hidden"
       @timeupdate="onTimeUpdate"
       @ended="onEnded"
+      @play="audioPlaying = true"
+      @pause="audioPlaying = false"
+    />
+    <input
+      ref="coverInput"
+      type="file"
+      accept="image/*"
+      class="hidden"
+      @change="onCoverChange"
     />
 
-    <!-- ===== 网易云风格头部横幅 ===== -->
-    <div class="relative overflow-hidden">
-      <!-- 背景红黑渐变 -->
-      <div class="absolute inset-0 bg-linear-to-br from-[#b0222a] via-[#d62828] to-[#2a0608]" />
-      <div class="absolute inset-0 opacity-60"
-        style="background: radial-gradient(120% 120% at 80% -10%, rgba(255,120,90,0.35), transparent 60%), radial-gradient(120% 140% at 0% 120%, rgba(0,0,0,0.45), transparent 55%)" />
-      <div class="relative px-5 py-8 sm:px-6 sm:py-10">
-        <div class="flex flex-col gap-6 sm:flex-row sm:items-center sm:gap-8">
-          <!-- 左侧：旋转黑胶 -->
+    <!-- ===== 顶部沉浸式横幅（Apple Music 专辑页风格 + 汽水音乐高斯模糊） ===== -->
+    <header class="relative shrink-0 overflow-hidden">
+      <!-- 移动端返回首页按钮（桌面端侧栏已有导航，无需重复） -->
+      <div class="absolute left-4 top-4 z-10 lg:hidden">
+        <UButton
+          icon="tabler:home"
+          variant="soft"
+          color="neutral"
+          aria-label="返回首页"
+          :title="$t('dashboard.nav.home')"
+          class="bg-white/15 text-white hover:bg-white/25"
+          @click="router.push('/')"
+        />
+      </div>
+
+      <!-- 封面高斯模糊背景 -->
+      <template v-if="bannerCover">
+        <img
+          :src="bannerCover"
+          alt=""
+          class="absolute inset-0 h-full w-full scale-125 object-cover blur-2xl"
+        />
+        <div class="absolute inset-0 bg-black/45" />
+        <div
+          class="absolute inset-0"
+          style="background: linear-gradient(to bottom, rgba(12,4,6,0.15) 0%, rgba(12,4,6,0.9) 100%)"
+        />
+      </template>
+      <!-- 无封面时的红黑渐变兜底 -->
+      <div v-else class="absolute inset-0 bg-linear-to-br from-[#b0222a] via-[#d62828] to-[#2a0608]" />
+
+      <div class="relative mx-auto w-full max-w-6xl px-5 pb-8 pt-10 sm:px-8 sm:pb-12 sm:pt-16">
+        <div class="flex flex-col items-center gap-7 sm:flex-row sm:items-end sm:justify-start sm:gap-10">
+          <!-- 左侧：旋转黑胶（点击可设置封面） -->
           <div class="relative flex items-center justify-center sm:justify-start">
-            <MusicVinyl
-              :spinning="isPlaying"
-              :size="150"
-              class="drop-shadow-[0_18px_40px_rgba(0,0,0,0.55)]"
-            />
-            <div class="absolute -right-2 bottom-1 hidden flex-col items-center sm:flex">
-              <span class="h-6 w-3 rounded-r-full bg-neutral-900/70 backdrop-blur-sm" />
-            </div>
+            <button
+              type="button"
+              class="group relative block"
+              :title="$t('dashboard.music.setCover')"
+              @click="bannerMusic && pickCover(bannerMusic)"
+            >
+              <MusicVinyl
+                :spinning="isPlaying"
+                :size="'min(150px, 44vw)'"
+                :cover="bannerCover"
+                class="drop-shadow-[0_24px_50px_rgba(0,0,0,0.6)]"
+              />
+              <span
+                class="absolute inset-0 grid place-items-center rounded-full bg-black/40 opacity-0 transition group-hover:opacity-100"
+              >
+                <Icon name="tabler:camera" class="size-8 text-white" />
+              </span>
+            </button>
           </div>
 
           <!-- 右侧：标题区 -->
-          <div class="min-w-0 text-white">
-            <p class="text-xs font-medium uppercase tracking-[0.2em] text-white/60">
+          <div class="min-w-0 text-center text-white sm:text-left">
+            <p class="text-xs font-semibold uppercase tracking-[0.25em] text-white/55">
               {{ $t('dashboard.music.listCount') }}
             </p>
-            <h1 class="mt-1 font-black text-3xl tracking-tight sm:text-4xl">
+            <h1 class="mt-1.5 text-4xl font-bold tracking-tight sm:text-6xl">
               {{ $t('dashboard.music.title') }}
             </h1>
-            <p class="mt-2 max-w-md text-sm text-white/75">
+            <p class="mt-2.5 max-w-md text-sm leading-relaxed text-white/70">
               {{ $t('dashboard.music.subtitle') }}
             </p>
-            <div class="mt-4 flex flex-wrap items-center gap-3">
+            <div class="mt-5 flex flex-wrap items-center justify-center gap-3 sm:justify-start">
               <UButton
                 color="white"
                 icon="tabler:player-play-filled"
@@ -358,10 +467,10 @@ const playAll = () => {
           </div>
         </div>
       </div>
-    </div>
+    </header>
 
     <!-- ===== 主体内容 ===== -->
-    <div class="flex flex-col gap-4 p-4 pb-32 sm:p-6 sm:pb-32">
+    <main class="mx-auto w-full max-w-6xl px-4 py-5 pb-36 sm:px-8 sm:py-8 sm:pb-36">
       <!-- 上传面板 -->
       <div v-if="isUploadOpen"
         class="rounded-2xl border border-(--ui-border) bg-(--ui-bg) p-4 shadow-sm">
@@ -382,12 +491,12 @@ const playAll = () => {
             <UInput v-model="customTitle" :placeholder="$t('dashboard.music.titlePlaceholder')" />
           </UFormField>
           <UFormField :label="$t('dashboard.music.lyricsLabel')" class="w-full">
-                    <UTextarea
-                      v-model="customLyrics"
-                      :placeholder="$t('dashboard.music.lyricsPlaceholder')"
-                      :rows="4"
-                    />
-                  </UFormField>
+            <UTextarea
+              v-model="customLyrics"
+              :placeholder="$t('dashboard.music.lyricsPlaceholder')"
+              :rows="4"
+            />
+          </UFormField>
 
           <div class="flex justify-end gap-2">
             <UButton variant="ghost" color="neutral" @click="isUploadOpen = false">
@@ -420,19 +529,49 @@ const playAll = () => {
       <div v-else class="overflow-hidden rounded-2xl border border-(--ui-border) bg-(--ui-bg) shadow-sm">
         <div class="divide-y divide-(--ui-border)">
           <div
-            v-for="(item, idx) in musicList"
+            v-for="item in musicList"
             :key="item.id"
             class="group flex items-center gap-3 px-3 py-2.5 transition hover:bg-red-50/50 dark:hover:bg-red-500/5"
             :class="{ 'bg-red-50/70 dark:bg-red-500/10': playingId === item.id }"
           >
-            <!-- 序号/播放 -->
-            <span class="w-6 shrink-0 text-center text-sm tabular-nums text-(--ui-text-muted)">
-              <template v-if="playingId === item.id">
-                <Icon v-if="isPlaying" name="tabler:music" class="mx-auto size-4 text-red-500" />
-                <Icon v-else name="tabler:player-pause" class="mx-auto size-4 text-red-500" />
-              </template>
-              <button v-else type="button" class="hover:text-red-500" @click="togglePlay(item)">
-                {{ idx + 1 }}
+            <!-- 封面缩略（点击可设置封面） -->
+            <span class="relative w-10 shrink-0">
+              <button
+                type="button"
+                class="group/cov relative block rounded-full"
+                :title="$t('dashboard.music.setCover')"
+                @click="pickCover(item)"
+              >
+                <MusicVinyl
+                  :spinning="playingId === item.id && isPlaying"
+                  :size="38"
+                  :cover="item.coverUrl"
+                />
+                <span
+                  class="absolute inset-0 grid place-items-center rounded-full bg-black/40 opacity-0 transition group-hover/cov:opacity-100"
+                >
+                  <Icon name="tabler:camera" class="size-3.5 text-white" />
+                </span>
+              </button>
+              <!-- 播放/暂停角标 -->
+              <button
+                v-if="playingId === item.id"
+                type="button"
+                class="absolute inset-0 grid place-items-center rounded-full bg-black/25"
+                @click="togglePlay(item)"
+              >
+                <Icon
+                  :name="isPlaying ? 'tabler:player-pause-filled' : 'tabler:player-play-filled'"
+                  class="size-4 text-white"
+                />
+              </button>
+              <button
+                v-else
+                type="button"
+                class="absolute inset-0 hidden place-items-center rounded-full bg-black/25 group-hover:grid"
+                @click="togglePlay(item)"
+              >
+                <Icon name="tabler:player-play-filled" class="size-4 text-white" />
               </button>
             </span>
 
@@ -454,7 +593,7 @@ const playAll = () => {
               </template>
             </div>
 
-            <!-- 元数据 -->
+            <!-- 元数据（移动端隐藏，保持行紧凑） -->
             <span class="hidden shrink-0 text-xs tabular-nums text-(--ui-text-muted) sm:block">{{ formatDuration(item.duration) }}</span>
             <span class="hidden w-16 shrink-0 text-right text-xs tabular-nums text-(--ui-text-muted) sm:block">{{ formatSize(item.fileSize) }}</span>
             <span class="hidden w-20 shrink-0 text-right text-xs tabular-nums text-(--ui-text-muted) lg:block">{{ fmtDate(item.createdAt) }}</span>
@@ -471,15 +610,17 @@ const playAll = () => {
           </div>
         </div>
       </div>
-    </div>
+    </main>
 
-    <!-- ===== 迷你播放条（底部悬浮，网易云风格） ===== -->
+    <!-- ===== 迷你播放条（底部悬浮） ===== -->
     <Transition name="mini-player">
       <div v-if="currentMusic && !playerOpen"
-        class="fixed inset-x-0 bottom-0 z-40 border-t border-black/10 bg-[#1f1f26]/95 text-white shadow-[0_-8px_30px_rgba(0,0,0,0.35)] backdrop-blur-md">
+        class="fixed inset-x-0 bottom-0 z-40 border-t border-black/10 bg-[#1f1f26]/95 text-white shadow-[0_-8px_30px_rgba(0,0,0,0.35)] backdrop-blur-md"
+        style="padding-bottom: env(safe-area-inset-bottom)"
+      >
         <div class="mx-auto flex h-16 max-w-6xl items-center gap-3 px-3 sm:gap-4 sm:px-6">
           <button type="button" class="shrink-0 opacity-90 transition hover:opacity-100" :title="$t('dashboard.music.openPlayer')" @click="expandPlayer()">
-            <MusicVinyl :spinning="isPlaying" :size="44" />
+            <MusicVinyl :spinning="isPlaying" :size="44" :cover="currentMusic.coverUrl" />
           </button>
           <button type="button" class="min-w-0 text-left" @click="expandPlayer()">
             <p class="truncate text-sm font-semibold">{{ currentMusic.title }}</p>
@@ -514,17 +655,26 @@ const playAll = () => {
       </div>
     </Transition>
 
-    <!-- ===== 网易云式展开播放器（全屏浮层） ===== -->
+    <!-- ===== 全屏展开播放器（Apple Music 风格浮层） ===== -->
     <Teleport to="body">
       <Transition name="player-overlay">
         <div v-if="playerOpen && currentMusic"
-          class="fixed inset-0 z-[80] flex flex-col bg-[#12080a] text-white">
-          <!-- 氛围背景 -->
+          class="fixed inset-0 z-[80] flex flex-col bg-[#12080a] text-white"
+          style="padding-bottom: env(safe-area-inset-bottom)"
+        >
+          <!-- 高斯模糊封面氛围背景 -->
+          <img
+            v-if="currentMusic.coverUrl"
+            :src="currentMusic.coverUrl"
+            alt=""
+            class="pointer-events-none absolute inset-0 h-full w-full object-cover blur-3xl opacity-40"
+          />
+          <div class="pointer-events-none absolute inset-0 bg-[#0b0506]/70" />
           <div class="pointer-events-none absolute inset-0 opacity-50"
             style="background: radial-gradient(70% 60% at 20% 30%, rgba(214,40,40,0.25), transparent 60%), radial-gradient(60% 50% at 90% 80%, rgba(255,120,90,0.12), transparent 60%)" />
 
           <!-- 顶部栏 -->
-          <div class="relative flex items-center justify-between px-4 py-3">
+          <div class="relative flex shrink-0 items-center justify-between px-4 py-3">
             <button type="button" class="rounded-full p-2 text-white/70 transition hover:bg-white/10 hover:text-white"
               @click="playerOpen = false">
               <Icon name="tabler:chevron-down" class="size-6" />
@@ -535,45 +685,104 @@ const playAll = () => {
             </button>
           </div>
 
-          <!-- 主体：左碟盘 + 右歌词 -->
-          <div class="relative mx-auto flex w-full max-w-6xl flex-1 flex-col items-center gap-8 overflow-hidden px-4 py-4 lg:flex-row lg:items-center lg:gap-16">
-            <!-- 碟盘区 -->
-            <div class="relative flex shrink-0 flex-col items-center">
-              <div class="relative">
-                <div class="absolute -inset-8 rounded-full bg-red-600/20 blur-3xl" />
-                <MusicVinyl :spinning="isPlaying" :size="280" class="relative" />
-              </div>
-              <p class="mt-6 max-w-[300px] text-center text-lg font-bold leading-snug">{{ currentMusic.title }}</p>
-              <p class="mt-1 text-sm text-white/50">{{ currentMusic.filename }}</p>
-            </div>
-
-            <!-- 歌词区 -->
-            <div class="relative flex min-h-[260px] w-full max-w-lg flex-1 flex-col">
-              <div v-if="hasLyrics" ref="lyricsScrollRef"
-                class="lyric-scroll relative flex-1 overflow-y-auto py-[35%] [scrollbar-width:none]" style="mask-image:linear-gradient(to bottom, transparent, black 18%, black 82%, transparent);-webkit-mask-image:linear-gradient(to bottom, transparent, black 18%, black 82%, transparent)">
-                <div class="flex flex-col gap-5">
-                  <p
-                    v-for="(line, i) in lyricsLines"
-                    :key="i"
-                    class="lyric-line text-center text-[15px] leading-relaxed transition-all duration-300"
-                    :class="i === activeLyricIndex
-                      ? 'lyric-line-active scale-[1.06] font-bold text-white'
-                      : 'text-white/35'"
+          <!-- 主体：默认（碟盘 + 歌词） / 歌词专注模式（一行行歌词） -->
+          <div class="music-player-body relative mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col items-center gap-6 overflow-y-auto px-4 py-3 lg:flex-row lg:items-center lg:gap-16 lg:py-4">
+            <template v-if="!lyricsMode">
+              <!-- 碟盘区：点击碟盘切换为一行行歌词模式 -->
+              <div class="relative flex shrink-0 flex-col items-center">
+                <div class="relative">
+                  <button
+                    type="button"
+                    class="group relative block cursor-pointer"
+                    @click="lyricsMode = true"
                   >
-                    {{ line.text || '♪' }}
-                  </p>
+                    <div class="absolute -inset-8 rounded-full bg-red-600/20 blur-3xl" />
+                    <MusicVinyl :spinning="isPlaying" :size="'min(240px, 52vw)'" :cover="currentMusic.coverUrl" class="relative" />
+                    <!-- 唱针：播放时放下压住唱片 -->
+                    <MusicTonearm :playing="isPlaying" :size="'min(240px, 52vw)'" class="pointer-events-none" />
+                    <!-- 点击提示 -->
+                    <span class="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap text-[11px] tracking-wide text-white/40 transition group-hover:text-white/85">
+                      {{ $t('dashboard.music.lyricsModeHint') }}
+                    </span>
+                  </button>
+                  <!-- 设置封面：碟片右下角小按钮 -->
+                  <button
+                    type="button"
+                    class="absolute bottom-2 right-2 z-10 grid size-8 place-items-center rounded-full bg-black/45 text-white/80 shadow-lg backdrop-blur-sm transition hover:bg-black/70 hover:text-white"
+                    :title="$t('dashboard.music.setCover')"
+                    @click="pickCover(currentMusic)"
+                  >
+                    <Icon name="tabler:camera" class="size-4" />
+                  </button>
+                </div>
+
+                <p class="mt-8 max-w-[300px] text-center text-lg font-bold leading-snug">{{ currentMusic.title }}</p>
+                <p class="mt-1 text-sm text-white/50">{{ currentMusic.filename }}</p>
+              </div>
+
+              <!-- 歌词区（右侧/下方） -->
+              <div class="relative flex min-h-[220px] w-full max-w-lg flex-1 flex-col">
+                <div v-if="hasLyrics" ref="lyricsScrollRef"
+                  class="lyric-scroll relative flex-1 overflow-y-auto py-[35%] [scrollbar-width:none]" style="mask-image:linear-gradient(to bottom, transparent, black 18%, black 82%, transparent);-webkit-mask-image:linear-gradient(to bottom, transparent, black 18%, black 82%, transparent)">
+                  <div class="flex flex-col gap-5">
+                    <p
+                      v-for="(line, i) in lyricsLines"
+                      :key="i"
+                      class="lyric-line text-center text-[15px] leading-relaxed transition-all duration-300"
+                      :class="i === activeLyricIndex
+                        ? 'lyric-line-active scale-[1.06] font-bold text-white'
+                        : 'text-white/35'"
+                    >
+                      {{ line.text || '♪' }}
+                    </p>
+                  </div>
+                </div>
+                <div v-else class="flex flex-1 flex-col items-center justify-center gap-3 text-white/45">
+                  <Icon name="tabler:music-off" class="size-10" />
+                  <p class="text-sm">{{ $t('dashboard.music.pureMusic') }}</p>
+                  <p class="text-xs">{{ $t('dashboard.music.noLyrics') }}</p>
                 </div>
               </div>
-              <div v-else class="flex flex-1 flex-col items-center justify-center gap-3 text-white/45">
-                <Icon name="tabler:music-off" class="size-10" />
-                <p class="text-sm">{{ $t('dashboard.music.pureMusic') }}</p>
-                <p class="text-xs">{{ $t('dashboard.music.noLyrics') }}</p>
-              </div>
-            </div>
+            </template>
+
+            <!-- 歌词专注模式：一行行歌词居中展示，点击任意处返回碟盘 -->
+            <template v-else>
+              <button
+                type="button"
+                class="group relative mx-auto flex min-h-0 w-full flex-1 cursor-pointer flex-col items-center justify-center"
+                @click="lyricsMode = false"
+              >
+                <div
+                  v-if="hasLyrics"
+                  ref="lyricsScrollRef"
+                  class="lyric-scroll relative max-h-full w-full flex-1 overflow-y-auto py-[38%] [scrollbar-width:none]"
+                  style="mask-image:linear-gradient(to bottom, transparent, black 22%, black 78%, transparent);-webkit-mask-image:linear-gradient(to bottom, transparent, black 22%, black 78%, transparent)"
+                >
+                  <div class="flex flex-col gap-7">
+                    <p
+                      v-for="(line, i) in lyricsLines"
+                      :key="i"
+                      class="lyric-line text-center text-xl leading-relaxed transition-all duration-300 sm:text-2xl"
+                      :class="i === activeLyricIndex
+                        ? 'lyric-line-active scale-105 font-bold text-white'
+                        : 'text-white/30'"
+                    >
+                      {{ line.text || '♪' }}
+                    </p>
+                  </div>
+                </div>
+                <div v-else class="flex flex-col items-center justify-center gap-3 text-white/45">
+                  <Icon name="tabler:music-off" class="size-12" />
+                  <p class="text-base">{{ $t('dashboard.music.pureMusic') }}</p>
+                  <p class="text-sm">{{ $t('dashboard.music.noLyrics') }}</p>
+                </div>
+                <span class="mt-2 text-[11px] tracking-wide text-white/35">{{ $t('dashboard.music.lyricsModeBack') }}</span>
+              </button>
+            </template>
           </div>
 
           <!-- 底部控制区 -->
-          <div class="relative mx-auto w-full max-w-3xl px-4 pb-8 pt-2">
+          <div class="relative mx-auto w-full shrink-0 max-w-3xl px-4 pb-7 pt-2">
             <!-- 进度条 -->
             <div class="flex items-center gap-3 text-xs tabular-nums text-white/60">
               <span>{{ formatTime(progress) }}</span>
@@ -586,11 +795,8 @@ const playAll = () => {
             </div>
 
             <!-- 控制按钮 -->
-            <div class="mt-4 flex items-center justify-center gap-6">
-              <button type="button" class="text-white/50 transition hover:text-white" title="循环">
-                <Icon name="tabler:repeat" class="size-6" />
-              </button>
-              <button type="button" class="text-white/50 transition hover:text-white" @click="seekTo(progress - 10)">
+            <div class="mt-3 flex items-center justify-center gap-5">
+              <button type="button" class="text-white/50 transition hover:text-white" :title="$t('dashboard.music.seekBack')" @click="seekTo(progress - 10)">
                 <Icon name="tabler:rotate-clockwise-2" class="size-6 -scale-x-100" />
               </button>
               <button type="button"
@@ -598,7 +804,7 @@ const playAll = () => {
                 @click="togglePlay(currentMusic)">
                 <Icon :name="isPlaying ? 'tabler:player-pause-filled' : 'tabler:player-play-filled'" class="size-8" />
               </button>
-              <button type="button" class="text-white/50 transition hover:text-white" @click="seekTo(progress + 10)">
+              <button type="button" class="text-white/50 transition hover:text-white" :title="$t('dashboard.music.seekFwd')" @click="seekTo(progress + 10)">
                 <Icon name="tabler:rotate-clockwise-2" class="size-6" />
               </button>
               <button type="button" class="text-white/50 transition hover:text-white" @click="stopPlay()">
@@ -649,7 +855,8 @@ const playAll = () => {
         </template>
       </UCard>
     </UModal>
-  </div>
+    </template>
+  </UDashboardPanel>
 </template>
 
 <style scoped>
@@ -678,5 +885,12 @@ const playAll = () => {
 
 .lyric-scroll::-webkit-scrollbar {
   display: none;
+}
+
+/* 桌面端（左右并排）播放器主体：垂直居中；内容超高时回退为顶端对齐以便滚动，避免被裁切 */
+@media (min-width: 1024px) {
+  .music-player-body {
+    align-items: safe center;
+  }
 }
 </style>

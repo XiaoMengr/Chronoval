@@ -1374,7 +1374,11 @@
       "emptyCta": "첫 곡 업로드",
       "deleteTitle": "음악 삭제",
       "deleteConfirm": "「{title}」을(를) 삭제하시겠습니까? 관련된 모든 앨범에서 이 BGM이 재생되지 않습니다.",
-      "deleteAction": "삭제"
+      "deleteAction": "삭제",
+      "setCover": "커버로 설정",
+      "coverSuccess": "커버가 업데이트되었습니다",
+      "coverFail": "커버 업데이트 실패, 다시 시도해 주세요",
+      "coverInvalid": "이미지 파일만 지원합니다"
     }
   },
   "settings": {

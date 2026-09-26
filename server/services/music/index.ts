@@ -4,7 +4,7 @@ export type MusicRow = typeof tables.music.$inferSelect
 
 export const STREAM_BASE = '/api/music'
 
-/** 序列化音乐记录为客户端可用对象（含可播放的流式 URL） */
+/** 序列化音乐记录为客户端可用对象（含可播放的流式 URL 与封面 URL） */
 export const serializeMusic = (
   m: MusicRow,
 ): {
@@ -15,6 +15,7 @@ export const serializeMusic = (
   duration: number | null
   fileSize: number
   lyrics: string | null
+  coverUrl: string | null
   url: string
   createdAt: Date
 } => ({
@@ -25,6 +26,7 @@ export const serializeMusic = (
   duration: m.duration,
   fileSize: m.fileSize,
   lyrics: m.lyrics ?? null,
+  coverUrl: m.coverUrl ?? null,
   url: `${STREAM_BASE}/${m.id}/stream`,
   createdAt: m.createdAt,
 })

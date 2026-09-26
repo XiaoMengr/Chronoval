@@ -26,6 +26,7 @@ export default eventHandler(async (event) => {
   const filePart = form.find((f) => f.name === 'file')
   const titlePart = form.find((f) => f.name === 'title')
   const lyricsPart = form.find((f) => f.name === 'lyrics')
+  const coverPart = form.find((f) => f.name === 'cover')
 
   if (!filePart || !filePart.data || filePart.data.byteLength === 0) {
     throw createError({ statusCode: 400, statusMessage: 'Missing audio file' })
@@ -38,6 +39,17 @@ export default eventHandler(async (event) => {
       statusCode: 415,
       statusMessage: 'Only audio files are supported',
     })
+  }
+
+  // 可选封面：仅收图片类型
+  if (coverPart && coverPart.data && coverPart.data.byteLength > 0) {
+    const coverMime = coverPart.type || 'image/png'
+    if (!coverMime.startsWith('image/')) {
+      throw createError({
+        statusCode: 415,
+        statusMessage: 'Only image files are supported for cover',
+      })
+    }
   }
 
   const filename = filePart.filename || 'bgm.mp3'
@@ -59,6 +71,23 @@ export default eventHandler(async (event) => {
   } catch (error) {
     logger.chrono.error('Music upload: storage create failed', error)
     throw createError({ statusCode: 500, statusMessage: 'Upload failed' })
+  }
+
+  // 1.5) 可选：写入封面到存储后端
+  let coverKey: string | null = null
+  let coverUrl: string | null = null
+  if (coverPart && coverPart.data && coverPart.data.byteLength > 0) {
+    const coverExt = path.extname(coverPart.filename || '').toLowerCase() || '.png'
+    const coverStamp = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    coverKey = `music/covers/${coverStamp}${coverExt}`
+    try {
+      await storageProvider.create(coverKey, Buffer.from(coverPart.data), coverPart.type || 'image/png')
+      coverUrl = storageProvider.getPublicUrl(coverKey)
+    } catch (error) {
+      logger.chrono.error('Music upload: cover storage create failed', error)
+      coverKey = null
+      coverUrl = null
+    }
   }
 
   // 2) 探测音频时长（写临时文件用 ffprobe 解析；失败则置 null 不阻塞上传）
@@ -89,6 +118,8 @@ export default eventHandler(async (event) => {
       lyrics: lyricsPart
         ? Buffer.from(lyricsPart.data).toString('utf-8').trim() || null
         : null,
+      coverKey,
+      coverUrl,
     })
     .returning()
     .get()

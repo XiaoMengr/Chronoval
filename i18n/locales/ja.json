@@ -1182,7 +1182,11 @@
       "emptyCta": "最初の曲をアップロード",
       "deleteTitle": "音楽を削除",
       "deleteConfirm": "「{title}」を削除しますか？関連するすべてのアルバムでこのBGMは再生されなくなります。",
-      "deleteAction": "削除"
+      "deleteAction": "削除",
+      "setCover": "カバーに設定",
+      "coverSuccess": "カバーを更新しました",
+      "coverFail": "カバーの更新に失敗しました。もう一度お試しください",
+      "coverInvalid": "画像ファイルのみ対応しています"
     }
   },
   "settings": {

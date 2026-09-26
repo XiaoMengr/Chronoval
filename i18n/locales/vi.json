@@ -1374,7 +1374,11 @@
       "emptyCta": "Tải lên bài đầu tiên",
       "deleteTitle": "Xóa nhạc",
       "deleteConfirm": "Xóa «{title}»? Mọi album liên quan sẽ không còn phát BGM này.",
-      "deleteAction": "Xóa"
+      "deleteAction": "Xóa",
+      "setCover": "Đặt làm ảnh bìa",
+      "coverSuccess": "Đã cập nhật ảnh bìa",
+      "coverFail": "Không thể cập nhật ảnh bìa, vui lòng thử lại",
+      "coverInvalid": "Chỉ hỗ trợ tệp hình ảnh"
     }
   },
   "settings": {

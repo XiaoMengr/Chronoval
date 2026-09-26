@@ -1437,8 +1437,17 @@
       "pureMusic": "纯音乐，请欣赏",
       "openPlayer": "展开播放器",
       "collapsePlayer": "收起播放器",
+      "lyricsModeHint": "点击碟片查看歌词",
+      "lyricsModeBack": "点击任意处返回碟盘",
       "listCount": "全部音乐",
-      "playsCount": "首"
+      "playsCount": "首",
+      "setCover": "设置封面",
+      "coverSuccess": "封面已更新",
+      "coverFail": "封面更新失败，请重试",
+      "coverInvalid": "仅支持图片文件",
+      "waveMode": "切换波浪纹样式",
+      "seekBack": "后退 10 秒",
+      "seekFwd": "前进 10 秒"
     }
   },
   "settings": {

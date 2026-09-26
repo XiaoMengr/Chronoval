@@ -211,6 +211,9 @@ export const music = sqliteTable('music', {
   fileSize: integer('file_size').notNull().default(0),
   // 歌词（LRC 格式文本；为空表示无歌词）
   lyrics: text('lyrics'),
+  // 自定义封面：存储后端对象键 + 公开访问 URL（为空表示未设置）
+  coverKey: text('cover_key'),
+  coverUrl: text('cover_url'),
   createdAt: integer('created_at', { mode: 'timestamp' })
     .notNull()
     .default(sql`(unixepoch())`),

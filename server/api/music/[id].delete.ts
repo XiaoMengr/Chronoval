@@ -43,6 +43,9 @@ export default eventHandler(async (event) => {
   try {
     const { storageProvider } = useStorageProvider(event)
     await storageProvider.delete(musicRow.storageKey)
+    if (musicRow.coverKey) {
+      await storageProvider.delete(musicRow.coverKey)
+    }
   } catch (error) {
     logger.chrono.warn('Music delete: storage cleanup failed', error)
   }

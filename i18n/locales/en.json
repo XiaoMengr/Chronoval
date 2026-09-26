@@ -1443,8 +1443,17 @@
       "pureMusic": "Instrumental, enjoy",
       "openPlayer": "Expand player",
       "collapsePlayer": "Collapse player",
+      "lyricsModeHint": "Tap the disc for lyrics",
+      "lyricsModeBack": "Click anywhere to go back",
       "listCount": "All tracks",
-      "playsCount": "tracks"
+      "playsCount": "tracks",
+      "setCover": "Set cover",
+      "coverSuccess": "Cover updated",
+      "coverFail": "Failed to update cover, please retry",
+      "coverInvalid": "Only image files are supported",
+      "waveMode": "Switch wave pattern",
+      "seekBack": "Back 10 seconds",
+      "seekFwd": "Forward 10 seconds"
     }
   },
   "settings": {
