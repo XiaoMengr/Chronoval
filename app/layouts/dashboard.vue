@@ -153,12 +153,8 @@ onBeforeUnmount(() => {
   document.body.classList.remove('dashboard-active')
 })
 
-const handleLogin = () => {
-  router.push({
-    path: '/login',
-    query: { redirect: route.fullPath },
-  })
-}
+// 登录入口用 NuxtLink 原生 <a>（UButton 的 to 属性）：未水合时点击也能立即整页跳转，
+// 避免"请先登录"页在 JS 水合完成前按钮点不动的问题。
 
 // 退出登录：从管理后台跳回首页（登出后 loggedIn 为 false，管理端自动拒绝访问）
 const handleLogout = async () => {
@@ -187,7 +183,9 @@ const handleLogout = async () => {
           : $t('dashboard.access.noAccess')
       }}
     </p>
-    <UButton @click="handleLogin">{{ $t('auth.form.signin.title') }}</UButton>
+    <UButton
+      :to="{ path: '/login', query: { redirect: route.fullPath } }"
+    >{{ $t('auth.form.signin.title') }}</UButton>
   </div>
   <UDashboardGroup v-else class="dashboard-root">
     <UDashboardSidebar

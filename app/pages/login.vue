@@ -32,7 +32,8 @@ const router = useRouter()
 const isLoading = ref(false)
 
 // 登录步骤：login=邮箱密码；verify=两步验证码（TOTP）
-const step = ref<'login' | 'verify'>('login')
+// 支持 ?step=verify 直达验证码步骤（水合前兜底脚本完成密码校验后以整页跳转交接）
+const step = ref<'login' | 'verify'>(route.query.step === 'verify' ? 'verify' : 'login')
 
 // AuthForm 实例引用：登录接口失败时复用它的顶部浮动通知卡片（不在卡片内插错误条）
 const authFormRef = ref<{ showNotice: (text: string) => void } | null>(null)
@@ -138,7 +139,8 @@ const handleAuthError = (error: any) => {
         alt=""
         decoding="async"
         fetchpriority="high"
-        class="h-full w-full object-cover"
+        draggable="false"
+        class="pointer-events-none select-none h-full w-full object-cover"
       />
       <!-- 桌面：左侧重压暗留白字区，右侧轻压暗留卡片区 -->
       <div class="absolute inset-0 hidden lg:block">
@@ -225,6 +227,17 @@ const handleAuthError = (error: any) => {
   animation: loginPageIn 0.7s cubic-bezier(0.33, 0, 0.4, 1) both;
   transform: translateZ(0);
   will-change: transform, opacity;
+  /* 移动端长按体验修复：去掉点按高亮闪块与文本选中时的白条闪烁，禁用 iOS 长按放大镜/存储卡弹层 */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+/* 输入框仍保留正常的文本选择与长按菜单能力 */
+.login-enter :deep(input),
+.login-enter :deep(textarea) {
+  -webkit-user-select: text;
+  user-select: text;
 }
 @keyframes loginPageIn {
   from { opacity: 0; }

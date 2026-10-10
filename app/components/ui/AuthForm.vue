@@ -46,6 +46,63 @@ const showNotice = (text: string) => {
   }, 3400)
 }
 
+// 水合前兜底提交：登录页由 SSR 渲染后立即可见，但 Vue 水合完成前点击/回车没有任何响应
+// （dev 模式经反代/弱网时可达数秒）。注入一段内联脚本在捕获阶段接管表单 submit：
+// 直接 fetch 登录接口并跳转/提示；水合完成后（onMounted 置 ready 标记）交还 Vue 正常处理。
+useHead({
+  script: [
+    {
+      innerHTML: `(function(){
+if(window.__chronovalLoginGuard)return
+window.__chronovalLoginGuard=true
+var ready=function(){return window.__chronovalAuthReady===true}
+var redirectTarget=function(){
+try{var q=new URLSearchParams(window.location.search).get('redirect')
+return q&&q.charAt(0)==='/'?q:'/dashboard'}catch(e){return '/dashboard'}
+}
+var setBusy=function(form,busy){
+var btn=form.querySelector('button[type="submit"]')
+if(!btn)return
+if(busy){btn.setAttribute('data-auth-label',btn.textContent||'');btn.textContent='···';btn.disabled=true}
+else{btn.disabled=false;var l=btn.getAttribute('data-auth-label');if(l)btn.textContent=l}
+}
+var post=function(url,body,form){
+setBusy(form,true)
+fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify(body)})
+.then(function(res){
+if(res.ok){window.location.replace(redirectTarget());return}
+if(res.status===202){var sp=new URLSearchParams(window.location.search);sp.set('step','verify');window.location.replace(window.location.pathname+'?'+sp.toString());return}
+setBusy(form,false)
+var btn=form.querySelector('button[type="submit"]')
+if(btn&&${JSON.stringify($t('auth.messages.loginInvalid'))}){btn.textContent=${JSON.stringify($t('auth.messages.loginInvalid'))};setTimeout(function(){setBusy(form,false)},1800)}
+})
+.catch(function(){setBusy(form,false)})
+}
+document.addEventListener('submit',function(e){
+if(ready())return
+var form=e.target
+if(!form||form.getAttribute('data-login-form')===null)return
+e.preventDefault()
+if(e.stopImmediatePropagation)e.stopImmediatePropagation()
+var codeInput=form.querySelector('input[name="code"]')
+if(codeInput){var c=(codeInput.value||'').trim();if(c)post('/api/login/2fa',{code:c},form);return}
+var emailEl=form.querySelector('input[name="email"]')
+var passEl=form.querySelector('input[name="password"]')
+var email=emailEl?(emailEl.value||'').trim():''
+var password=passEl?(passEl.value||''):''
+if(!email||!password)return
+post('/api/login',{email:email,password:password},form)
+},true)
+})()`,
+    },
+  ],
+})
+
+// 水合完成标记：此后内联兜底脚本不再拦截，交回 Vue 的 @submit 处理
+onMounted(() => {
+  ;(window as any).__chronovalAuthReady = true
+})
+
 // 细分校验提示：区分“没输入”与“格式错误”，让提示更贴近实际情况。
 const sEmail = z.email()
 const onSubmit = () => {
@@ -170,6 +227,7 @@ const inputUi = {
     <!-- 登录表单 -->
     <form
       class="mt-5 lg:mt-7 space-y-3.5 lg:space-y-4"
+      data-login-form
       @submit.prevent="onSubmit"
     >
       <template v-if="!$props.verify">
@@ -181,6 +239,7 @@ const inputUi = {
         <UInput
           v-model="state.email"
           :autofocus="false"
+          name="email"
           class="w-full"
           :ui="inputUi"
         />
@@ -194,6 +253,7 @@ const inputUi = {
         <UInput
           v-model="state.password"
           :autofocus="false"
+          name="password"
           type="password"
           placeholder="••••••••"
           class="w-full"
@@ -213,24 +273,25 @@ const inputUi = {
           v-model="verifyCode"
           inputmode="numeric"
           autofocus
+          name="code"
           maxlength="8"
           placeholder="••••••"
           class="w-full text-center [&>input]:!text-center [&>input]:!tracking-[0.5em] [&>input]:!text-[1.1rem] [&>input]:lg:!text-[1.2rem]"
           :ui="inputUi"
-          @keyup.enter="onSubmit"
         />
       </UFormField>
     </template>
 
+      <!-- type="submit"：由 form 的 @submit.prevent 统一提交，回车键亦可触发；
+           水合前由内联兜底脚本接管（见 script 顶部 useHead）。 -->
       <UButton
-        type="button"
+        type="submit"
         variant="solid"
         color="neutral"
         block
         size="lg"
         :loading="loading"
         class="group relative mt-1 !h-12 overflow-hidden !rounded-[0.9rem] !bg-gradient-to-b !from-neutral-800 !to-neutral-950 !font-semibold !text-white !text-[0.95rem] !tracking-wide lg:!h-13 lg:!text-[1rem] !shadow-[0_18px_40px_-14px_rgba(20,20,24,0.7),inset_0_1px_0_rgba(255,255,255,0.18)] transition-all duration-300 hover:!-translate-y-[1px] hover:!shadow-[0_24px_50px_-16px_rgba(20,20,24,0.85),inset_0_1px_0_rgba(255,255,255,0.24)] hover:!brightness-110 active:!translate-y-0 active:!scale-[0.99] active:!brightness-100"
-        @click="onSubmit"
       >
         {{ $props.verify ? $t('auth.form.action.verify') : $t('auth.form.action.continue') }}
       </UButton>
