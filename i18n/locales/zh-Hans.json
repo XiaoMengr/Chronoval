@@ -1943,7 +1943,8 @@
           "saveError": "保存扫描库失败",
           "deleteError": "删除扫描库失败",
           "scanned": "扫描完成：",
-          "scanError": "触发扫描失败"
+          "scanError": "触发扫描失败",
+          "scanQueued": "已保存，正在后台重新扫描，扫描结果稍后回显"
         },
         "form": {
           "nameLabel": "扫描库名称",

@@ -562,20 +562,72 @@ const dirOfScanPath = (rel: string): string => {
   return idx === -1 ? '' : rel.slice(0, idx)
 }
 
-/** 计算 relPath 目录的直接子目录名 */
-const childSegmentsOf = (
+/**
+ * 扫描相簿树构建所需的最小照片列集合。
+ * 关键优化：绝不能用 SELECT * —— photos 表带 exif/tags 两个 JSON 大字段，
+ * 数万行全量反序列化会让相簿列表接口（每次保存/进页面都会调用）卡顿数秒以上。
+ */
+const scanPhotoColumns = {
+  id: tables.photos.id,
+  title: tables.photos.title,
+  libraryMount: tables.photos.libraryMount,
+  libraryPath: tables.photos.libraryPath,
+  type: tables.photos.type,
+  dateTaken: tables.photos.dateTaken,
+  thumbnailUrl: tables.photos.thumbnailUrl,
+  thumbnailHash: tables.photos.thumbnailHash,
+  aspectRatio: tables.photos.aspectRatio,
+  originalUrl: tables.photos.originalUrl,
+  isLivePhoto: tables.photos.isLivePhoto,
+  livePhotoVideoUrl: tables.photos.livePhotoVideoUrl,
+}
+
+type ScanPhotoRow = {
+  id: string
+  title: string | null
+  libraryMount: string | null
+  libraryPath: string | null
+  type: 'image' | 'video' | null
+  dateTaken: string | null
+  thumbnailUrl: string | null
+  thumbnailHash: string | null
+  aspectRatio: number | null
+  originalUrl: string | null
+  isLivePhoto: number
+  livePhotoVideoUrl: string | null
+}
+
+/** 一次构建、整棵树复用的照片索引：把各节点的 O(照片数) 过滤降为 O(1)/O(目录数) */
+interface ScanPhotoIndex {
+  byDir: Map<string, ScanPhotoRow[]>
+  byId: Map<string, ScanPhotoRow>
+}
+
+const buildScanPhotoIndex = (
   mount: string,
-  relPath: string,
-  photos: Array<typeof tables.photos.$inferSelect>,
-): string[] => {
+  rows: ScanPhotoRow[],
+): ScanPhotoIndex => {
+  const byDir = new Map<string, ScanPhotoRow[]>()
+  const byId = new Map<string, ScanPhotoRow>()
+  for (const p of rows) {
+    if (p.libraryMount !== mount) continue
+    byId.set(p.id, p)
+    const dir = dirOfScanPath(p.libraryPath || '')
+    const arr = byDir.get(dir)
+    if (arr) arr.push(p)
+    else byDir.set(dir, [p])
+  }
+  return { byDir, byId }
+}
+
+/** 计算 relPath 目录的直接子目录名 */
+const childSegmentsOf = (index: ScanPhotoIndex, relPath: string): string[] => {
   const segs = new Set<string>()
   const prefix = relPath ? `${relPath}/` : ''
-  for (const p of photos) {
-    if (p.libraryMount !== mount) continue
-    const dir = dirOfScanPath(p.libraryPath || '')
+  // 目录已按 dir 分组：只需遍历目录键（远少于照片数）
+  for (const dir of index.byDir.keys()) {
     if (dir === relPath || !dir.startsWith(prefix)) continue
-    const rest = dir.slice(prefix.length)
-    const seg = rest.split('/')[0]
+    const seg = dir.slice(prefix.length).split('/')[0]
     if (seg) segs.add(seg)
   }
   return Array.from(segs)
@@ -598,12 +650,10 @@ const buildScanAlbumNode = (
     createdAt?: Date | null
   },
   relPath: string,
-  photos: Array<typeof tables.photos.$inferSelect>,
+  index: ScanPhotoIndex,
 ): ScanAlbumNode => {
   const mount = scanMountName(lib.id)
-  const dirPhotos = photos.filter(
-    (p) => p.libraryMount === mount && dirOfScanPath(p.libraryPath || '') === relPath,
-  )
+  const dirPhotos = [...(index.byDir.get(relPath) ?? [])]
   dirPhotos.sort((a, b) =>
     (a.dateTaken || '').localeCompare(b.dateTaken || ''),
   )
@@ -619,19 +669,19 @@ const buildScanAlbumNode = (
     }))
   // 本层无直接图片（如只有子相簿）时：默认从后代子相簿照片中随机挑选一张作封面。
   // 仅作默认兜底，自定义封面会由 applyScanAlbumMeta 覆盖；同相簿稳定挑同一张避免刷新闪烁。
+  // 目录分组后只需扫描目录键，每个后代目录取其首张非视频照片作为候选。
   const fallbackCovers: ScanAlbumCover[] = []
   if (covers.length === 0) {
     const prefix = relPath ? `${relPath}/` : ''
-    const descendantPhotos = photos.filter(
-      (p) =>
-        p.libraryMount === mount &&
-        (p.libraryPath || '').startsWith(prefix) &&
-        dirOfScanPath(p.libraryPath || '') !== relPath &&
-        p.type !== 'video',
-    )
-    if (descendantPhotos.length > 0) {
+    const candidates: ScanPhotoRow[] = []
+    for (const [dir, arr] of index.byDir) {
+      if (dir === relPath || !dir.startsWith(prefix)) continue
+      const rep = arr.find((p) => p.type !== 'video')
+      if (rep) candidates.push(rep)
+    }
+    if (candidates.length > 0) {
       const pick =
-        descendantPhotos[stableSeedOf(`${mount}:${relPath}`) % descendantPhotos.length]!
+        candidates[stableSeedOf(`${mount}:${relPath}`) % candidates.length]!
       fallbackCovers.push({
         id: pick.id,
         thumbnailUrl: pick.thumbnailUrl,
@@ -673,7 +723,7 @@ const buildScanAlbumNode = (
     covers: effectiveCovers,
     // 相簿级密码由 applyScanAlbumMeta 依据 scan_album_meta.password_hash 覆盖
     passwordProtected: false,
-    hasChildren: childSegmentsOf(mount, relPath, photos).length > 0,
+    hasChildren: childSegmentsOf(index, relPath).length > 0,
     external: true,
   }
 }
@@ -698,8 +748,9 @@ export const listScanAlbumRoots = async (
   const out: ScanAlbumNode[] = []
   for (const row of rows) {
     const mount = scanMountName(row.id)
+    // 只取树构建所需的最小列集，并按目录分组建索引一次复用
     const photos = db
-      .select()
+      .select(scanPhotoColumns)
       .from(tables.photos)
       .where(
         and(
@@ -707,16 +758,17 @@ export const listScanAlbumRoots = async (
           isNull(tables.photos.deletedAt),
         ),
       )
-      .all()
+      .all() as ScanPhotoRow[]
+    const index = buildScanPhotoIndex(mount, photos)
     const node = await applyScanAlbumMeta(
-      buildScanAlbumNode(row, '', photos),
-      photos,
+      buildScanAlbumNode(row, '', index),
+      index.byId,
     )
     if (includeChildren) {
       node.children = await buildScanAlbumTree(
         row,
         '',
-        photos,
+        index,
         node.isHidden,
         node.passwordProtected,
       )
@@ -741,17 +793,17 @@ const buildScanAlbumTree = async (
     createdAt?: Date | null
   },
   relPath: string,
-  photos: Array<typeof tables.photos.$inferSelect>,
+  index: ScanPhotoIndex,
   parentHidden?: boolean,
   parentPasswordProtected = false,
 ): Promise<ScanAlbumNode[]> => {
-  const segs = childSegmentsOf(scanMountName(lib.id), relPath, photos).sort()
+  const segs = childSegmentsOf(index, relPath).sort()
   const nodes: ScanAlbumNode[] = []
   for (const seg of segs) {
     const childRel = relPath ? `${relPath}/${seg}` : seg
     const childNode = await applyScanAlbumMeta(
-      buildScanAlbumNode(lib, childRel, photos),
-      photos,
+      buildScanAlbumNode(lib, childRel, index),
+      index.byId,
     )
     // 未单独自定义隐藏的子相簿继承主相簿隐藏状态
     if (parentHidden && childNode.hasCustom !== true) {
@@ -765,7 +817,7 @@ const buildScanAlbumTree = async (
     childNode.children = await buildScanAlbumTree(
       lib,
       childRel,
-      photos,
+      index,
       effectiveHidden,
       childNode.passwordProtected,
     )
@@ -804,8 +856,9 @@ export const getScanAlbumDetail = async (
       .join('/') || ''
   const db = useDB()
   const mount = scanMountName(libId)
+  // 只取最小列集 + 目录索引，避免大库全量反序列化 exif/tags 与逐节点 O(n) 过滤
   const photos = db
-    .select()
+    .select(scanPhotoColumns)
     .from(tables.photos)
     .where(
       and(
@@ -813,16 +866,14 @@ export const getScanAlbumDetail = async (
         isNull(tables.photos.deletedAt),
       ),
     )
-    .all()
+    .all() as ScanPhotoRow[]
+  const index = buildScanPhotoIndex(mount, photos)
 
   const node = await applyScanAlbumMeta(
-    buildScanAlbumNode(lib, normalized, photos),
-    photos,
+    buildScanAlbumNode(lib, normalized, index),
+    index.byId,
   )
-  const dirPhotos = photos
-    .filter(
-      (p) => dirOfScanPath(p.libraryPath || '') === normalized,
-    )
+  const dirPhotos = [...(index.byDir.get(normalized) ?? [])]
     .sort((a, b) => {
       // 优先按拍摄时间升序；无拍摄时间（扫描照片常缺 EXIF 日期）时回退按文件名升序，
       // 避免落到数据库的任意顺序而显得"排序乱掉了"。
@@ -848,18 +899,18 @@ export const getScanAlbumDetail = async (
     }))
 
   const children: ScanAlbumNode[] = await Promise.all(
-    childSegmentsOf(mount, normalized, photos)
+    childSegmentsOf(index, normalized)
       .sort((a, b) => a.localeCompare(b))
       .map(async (seg) => {
         const childRel = normalized ? `${normalized}/${seg}` : seg
         const childNode = await applyScanAlbumMeta(
-          buildScanAlbumNode(lib, childRel, photos),
-          photos,
+          buildScanAlbumNode(lib, childRel, index),
+          index.byId,
         )
         childNode.children = await buildScanAlbumTree(
           lib,
           childRel,
-          photos,
+          index,
           node.isHidden ?? childNode.isHidden,
           childNode.passwordProtected,
         )

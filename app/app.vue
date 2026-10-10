@@ -122,18 +122,35 @@ const apiEndpoint = computed(() => {
   // 登录走 /api/photos?gallery=1，均已排除相簿扫描库）。
   return loggedIn.value ? '/api/photos?gallery=1' : '/api/photos/visible'
 })
-// 全局照片池的客户端 TTL 缓存：
-// 后台管理 / 画廊切换时 apiEndpoint 会变，`/api/photos`（或 /visible）首次进入要全量拉取含完整 EXIF 的大 JSON，
-// 这是"每次进入 dashboard/photos 都很慢"的主要来源之一。这里在客户端按端点缓存一份，TTL 内导航复用，避免重复请求。
-// 语义：
-// - 命中未过期缓存 → 直接返回（不触发网络），watch 见同一引用 → 不续期，TTL 稳定。
-// - 无缓存首访 → 回落到 SSR payload（默认行为），避免水合时重复请求；该次不写缓存。
-// - 缓存过期 → 返回 undefined 强制走一次网络刷新，并把新数据写回。
-// 仅客户端启用；SSR 每次仍按需拉取，保证首屏新鲜。上传 / 编辑等操作后已有 refresh() 会强制刷新并写回缓存。
+
+// ===== 大库渐进加载（数万张照片首页秒开） =====
+// 一次性返回全量照片时（含 EXIF 的大 JSON），响应体可达数十 MB：SSR 会整包塞进
+// HTML payload、经隧道传输慢、客户端 JSON.parse + 响应式化会长时间阻塞主线程。
+// 这里改为「首批 600 张快速出图 + 客户端后台分片补齐」：
+// 瀑布流本身是增量挂载（首屏只渲染可见卡片），剩余数据在后台陆续到位即可。
+const PHOTO_FIRST_CHUNK = 600
+const PHOTO_CHUNK_SIZE = 3000
+
+const pagedUrl = (base: string, limit: number, offset: number) =>
+  `${base}${base.includes('?') ? '&' : '?'}limit=${limit}&offset=${offset}`
+const firstChunkUrl = computed(() =>
+  pagedUrl(apiEndpoint.value, PHOTO_FIRST_CHUNK, 0),
+)
+
+// 全局照片池的客户端 TTL 缓存（key 为带 limit 参数的首批 URL）：
+// - complete=true → TTL 内直接复用，不发任何请求
+// - complete=false → 复用已有数据先渲染，watch 中会触发后台继续补齐
+// 仅客户端启用；SSR 每次仍按需拉首批，保证首屏新鲜。
 const PHOTO_CACHE_TTL = 60_000
-const photoEndpointCache = new Map<string, { data: Photo[]; at: number }>()
+const photoEndpointCache = new Map<
+  string,
+  { data: Photo[]; at: number; complete: boolean }
+>()
 let lastServedPayloadKey: string | null = null
-const getCachedPhotoData = (key: string, nuxtApp: NuxtApp): Photo[] | undefined => {
+const getCachedPhotoData = (
+  key: string,
+  nuxtApp: NuxtApp,
+): Photo[] | undefined => {
   if (!import.meta.client) return undefined
   const hit = photoEndpointCache.get(key)
   if (hit) {
@@ -147,26 +164,95 @@ const getCachedPhotoData = (key: string, nuxtApp: NuxtApp): Photo[] | undefined 
   return nuxtApp.payload.data?.[key] as Photo[] | undefined
 }
 
-const { data, refresh, status } = await useFetch<Photo[]>(() => apiEndpoint.value, {
-  watch: [apiEndpoint],
-  getCachedData: getCachedPhotoData,
-})
-// 仅把"真正来自网络"的新数据写回缓存：
-// - 命中缓存（同引用）→ 跳过、不续期；
-// - 回落 payload 首次渲染 → 跳过（lastServedPayloadKey 标记），保证 TTL 语义。
-watch(data, (val) => {
-  if (!import.meta.client || !val) return
-  const key = apiEndpoint.value
-  if (lastServedPayloadKey === key) {
-    lastServedPayloadKey = null
-    return
-  }
-  const existing = photoEndpointCache.get(key)
-  if (existing && existing.data === val) return
-  photoEndpointCache.set(key, { data: val, at: Date.now() })
-})
+const { data: firstChunk, refresh: refreshFirstChunk, status } =
+  await useFetch<Photo[]>(firstChunkUrl, {
+    watch: [firstChunkUrl],
+    getCachedData: getCachedPhotoData,
+  })
 
-const photos = computed(() => (data.value as Photo[]) || [])
+// 完整照片池：首批 + 后台补齐的部分。首批变化（切端点 / refresh / 缓存命中）时重置。
+const photos = ref<Photo[]>([...(firstChunk.value ?? [])])
+
+// —— 分片补齐循环 ——
+// 幂等：新循环会使旧循环在下一轮检查时自退；服务端排序稳定（拍摄时间 desc, id asc），
+// 分片间隙偶有上传导致错位时按 id 去重兜底，不会产生重复卡片。
+let hydrationSeq = 0
+const markCacheComplete = (key: string, list: Photo[]) => {
+  const entry = photoEndpointCache.get(key)
+  if (entry) {
+    entry.data = list
+    entry.at = Date.now()
+    entry.complete = true
+  } else {
+    photoEndpointCache.set(key, { data: list, at: Date.now(), complete: true })
+  }
+}
+const hydrateRemaining = (key: string) => {
+  if (!import.meta.client) return
+  const seq = ++hydrationSeq
+  void (async () => {
+    for (;;) {
+      if (seq !== hydrationSeq || firstChunkUrl.value !== key) return
+      const offset = photos.value.length
+      let rows: Photo[]
+      try {
+        rows = await $fetch<Photo[]>(
+          pagedUrl(apiEndpoint.value, PHOTO_CHUNK_SIZE, offset),
+        )
+      } catch {
+        // 网络抖动：下次 TTL 到期或 refresh 时会重新补齐
+        return
+      }
+      if (seq !== hydrationSeq || firstChunkUrl.value !== key) return
+      if (!rows || rows.length === 0) {
+        markCacheComplete(key, photos.value)
+        return
+      }
+      const existing = new Set(photos.value.map((p) => p.id))
+      const fresh = rows.filter((r) => !existing.has(r.id))
+      if (fresh.length > 0) photos.value = [...photos.value, ...fresh]
+      if (rows.length < PHOTO_CHUNK_SIZE) {
+        markCacheComplete(key, photos.value)
+        return
+      }
+    }
+  })()
+}
+
+// 首批数据变化 → 重置照片池，并后台补齐剩余部分
+watch(
+  firstChunk,
+  (val) => {
+    if (!val) return
+    const key = firstChunkUrl.value
+    photos.value = [...val]
+    if (!import.meta.client) return
+    // SSR payload 复用路径：只带了首批（600 张），客户端仍需后台补齐其余部分
+    if (lastServedPayloadKey === key) {
+      lastServedPayloadKey = null
+      hydrateRemaining(key)
+      return
+    }
+    // 走网络拉取的首批（或缓存命中）：写缓存占位。
+    // complete 判定：库不足一批（已全量）或命中缓存里本就完整的同一份数据。
+    const cached = photoEndpointCache.get(key)
+    const complete =
+      val.length < PHOTO_FIRST_CHUNK || (cached?.data === val && cached.complete)
+    photoEndpointCache.set(key, {
+      data: photos.value,
+      at: Date.now(),
+      complete,
+    })
+    if (!complete) hydrateRemaining(key)
+  },
+  { immediate: true },
+)
+
+// 对外暴露的 refresh：重拉首批；watch 会随之重置照片池并重新后台补齐，
+// 上传 / 删除后的画廊更新语义与旧版（全量刷新）保持一致。
+const refresh = async () => {
+  await refreshFirstChunk()
+}
 
 // ===== 后台上传 → 画廊无刷新实时更新 =====
 // 后台（可能在同一浏览器的另一个标签页）上传/删除照片时，当前已打开的画廊不会自动知道。

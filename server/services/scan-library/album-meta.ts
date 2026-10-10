@@ -198,11 +198,15 @@ export const getScanAlbumMetaByUrlKey = async (
  * - 标题 / 介绍 / 隐藏 / 自定义封面
  * - 自定义URL别名（有 slug 时公开链接改为 /albums/s/{slug}）
  * @param node 已构建的默认节点
- * @param photos 该挂载下的全部照片（用于解析自定义封面的缩略图）
+ * @param photoById 挂载下照片索引（id → 封面字段），由调用方构建一次复用，
+ *                  避免每个相簿节点对数万张照片做 O(n) find
  */
 export const applyScanAlbumMeta = async (
   node: ScanAlbumNode,
-  photos: Array<{ id: string; thumbnailUrl: string | null; thumbnailHash: string | null; aspectRatio: number | null }>,
+  photoById: Map<
+    string,
+    { id: string; thumbnailUrl: string | null; thumbnailHash: string | null; aspectRatio: number | null }
+  >,
 ): Promise<ScanAlbumNode> => {
   const meta = await getScanAlbumMeta(node.mount, node.relPath)
   if (!meta) {
@@ -213,7 +217,7 @@ export const applyScanAlbumMeta = async (
   let coverPhotoId = node.coverPhotoId
 
   if (meta.coverPhotoId) {
-    const photo = photos.find((p) => p.id === meta.coverPhotoId)
+    const photo = photoById.get(meta.coverPhotoId)
     if (photo) {
       // 自定义封面通常来自本相簿的默认封面（node.covers），
       // unshift 前先去重，避免同一张封面在 covers 中出现两次。

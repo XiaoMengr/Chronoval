@@ -49,6 +49,8 @@ interface ScanResult {
   updated: number
   failed: number
   errors: string[]
+  /** true=该挂载已有扫描在进行中，本次请求被跳过（防止并发重复扫描） */
+  skipped?: boolean
 }
 
 /**
@@ -62,6 +64,8 @@ interface ScanResult {
 export class LibraryScanner {
   private cfg: LibraryConfig
   private mounts: LibraryMount[]
+  /** 正在扫描中的挂载名集合：同一挂载不并发扫描（保存触发的后台扫描与定时/手动扫描可能撞车） */
+  private inFlight = new Set<string>()
 
   constructor() {
     this.cfg = getLibraryConfig()
@@ -78,9 +82,21 @@ export class LibraryScanner {
   }
 
   /**
-   * 扫描单个挂载目录
+   * 扫描单个挂载目录（带并发防护：同一挂载已有扫描进行中时跳过）
    */
   async scanMount(mount: LibraryMount): Promise<ScanResult> {
+    if (this.inFlight.has(mount.name)) {
+      return { indexed: 0, updated: 0, failed: 0, errors: [], skipped: true }
+    }
+    this.inFlight.add(mount.name)
+    try {
+      return await this.scanMountInner(mount)
+    } finally {
+      this.inFlight.delete(mount.name)
+    }
+  }
+
+  private async scanMountInner(mount: LibraryMount): Promise<ScanResult> {
     const result: ScanResult = { indexed: 0, updated: 0, failed: 0, errors: [] }
     const storageProvider = getStorageManager()?.getProvider()
     if (!storageProvider) {

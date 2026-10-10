@@ -480,16 +480,29 @@ const onScanLibrarySubmit = async (close?: () => void) => {
         method: 'PUT',
         body: scanLibraryPayload(),
       })
-      toast.add({ title: $t(`${key}updated`), color: 'success' })
+      // 保存立即返回（重扫描在后台执行，大库不再卡顿等待），toast 附带后台扫描说明
+      toast.add({
+        title: $t(`${key}updated`),
+        description: $t(`${key}scanQueued`),
+        color: 'success',
+      })
     } else {
       await $fetch('/api/scan-library', {
         method: 'POST',
         body: scanLibraryPayload(),
       })
-      toast.add({ title: $t(`${key}created`), color: 'success' })
+      toast.add({
+        title: $t(`${key}created`),
+        description: $t(`${key}scanQueued`),
+        color: 'success',
+      })
     }
     await refreshScanLibs()
     close?.()
+    // 延迟回拉一次，让后台扫描完成后的「最近扫描结果/状态球」回显
+    setTimeout(() => {
+      void refreshScanLibs()
+    }, 8000)
   } catch (error) {
     toast.add({
       title: $t(`${key}saveError`),

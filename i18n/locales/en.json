@@ -1949,7 +1949,8 @@
           "saveError": "Error saving scan library",
           "deleteError": "Failed to delete scan library",
           "scanned": "Scan triggered:",
-          "scanError": "Failed to trigger scan"
+          "scanError": "Failed to trigger scan",
+          "scanQueued": "Saved. Rescanning in the background — results will appear shortly"
         },
         "form": {
           "nameLabel": "Library Name",
