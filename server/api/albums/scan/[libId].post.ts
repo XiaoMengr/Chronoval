@@ -2,12 +2,14 @@ import { z } from 'zod'
 import {
   getScanLibraryByKey,
   getScanAlbumEffectivePasswordHash,
+  getScanAlbumEffectiveAuth,
 } from '~~/server/services/scan-library/manager'
 import { getScanAlbumMetaByUrlKey } from '~~/server/services/scan-library/album-meta'
 import {
   authorizeScanAlbum,
   authorizeScanLibrary,
 } from '~~/server/utils/scanAlbumAuth'
+import { isPasswordExemptForUser } from '~~/server/utils/albumPasswordExempt'
 import { verifyAlbumPassword } from '~~/server/utils/scanAlbumPassword'
 import { settingsManager } from '~~/server/services/settings/settingsManager'
 
@@ -58,10 +60,8 @@ export default eventHandler(async (event) => {
     relPath = query.path
   }
 
-  const passwordHash = await getScanAlbumEffectivePasswordHash(
-    libIdNum,
-    relPath,
-  )
+  const effAuth = await getScanAlbumEffectiveAuth(libIdNum, relPath)
+  const passwordHash = effAuth.passwordHash
 
   // 管理员的「免密访问」只有在显式开启对应系统设置时才放行；
   // 默认关闭：即使登录管理员，也必须输入正确相簿密码。
@@ -77,6 +77,22 @@ export default eventHandler(async (event) => {
       relPath,
       passwordHash,
     })
+    await authorizeScanLibraryUnlock(event, libIdNum)
+    return { authorized: true }
+  }
+
+  // 登录用户在相簿配置的免密范围内（所有登录用户/指定用户）：无需密码直接签发解锁 Cookie
+  if (
+    isPasswordExemptForUser(
+      {
+        passwordHash,
+        passwordExemptMode: effAuth.exemptMode,
+        passwordExemptUsers: effAuth.exemptUsers,
+      },
+      (session as any)?.user,
+    )
+  ) {
+    authorizeScanAlbum(event, { libId: libIdNum, relPath, passwordHash })
     await authorizeScanLibraryUnlock(event, libIdNum)
     return { authorized: true }
   }

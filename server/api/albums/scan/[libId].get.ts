@@ -2,6 +2,7 @@ import { z } from 'zod'
 import {
   getScanLibraryByKey,
   getScanAlbumDetail,
+  getScanAlbumEffectiveAuth,
   getScanAlbumEffectivePasswordHash,
 } from '~~/server/services/scan-library/manager'
 import { getScanAlbumMetaByUrlKey } from '~~/server/services/scan-library/album-meta'
@@ -9,6 +10,7 @@ import {
   hasScanAlbumAccess,
   hasScanLibraryAccess,
 } from '~~/server/utils/scanAlbumAuth'
+import { isPasswordExemptForUser } from '~~/server/utils/albumPasswordExempt'
 import { settingsManager } from '~~/server/services/settings/settingsManager'
 import { resolveRandomQuotesPool } from '~~/server/services/settings/quoteLibraries'
 
@@ -66,25 +68,39 @@ export default eventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'Not Found' })
   }
 
-  // 相簿级生效密码：自身 meta 优先，未设置则向上继承/回退到扫描库旧密码
-  const passwordHash = await getScanAlbumEffectivePasswordHash(
-    libIdNum,
-    relPath,
-  )
-  // 访问权只认「解锁 cookie」或显式开启的「管理员免密」开关；
+  // 相簿级生效密码：自身 meta 优先，未设置则向上继承/回退到扫描库旧密码；
+  // 免密范围取生效密码同级 meta 的配置
+  const effAuth = await getScanAlbumEffectiveAuth(libIdNum, relPath)
+  const passwordHash = effAuth.passwordHash
+  // 访问权只认「解锁 cookie」「免密范围」或显式开启的「管理员免密」开关；
   // 默认不因管理员身份放行，避免「任意密码都可进入」。
   const session = await getUserSession(event)
-  const isAdmin = Boolean((session as any)?.user?.isAdmin)
+  const sessionUser = (session as any)?.user
+  const isAdmin = Boolean(sessionUser?.isAdmin)
   const adminBypass =
     isAdmin &&
     (await settingsManager.get<boolean>('system', 'scanAlbum.adminBypass', false))
   // 库级会话解锁：任一次正确解锁后整库免密（顶层生效密码哈希，顶层开放时为 null）
   const libPasswordHash = await getScanAlbumEffectivePasswordHash(libIdNum, '')
+  // 登录用户在相簿配置的免密范围内（所有登录用户/指定用户）则免密
+  const passwordExempt = isPasswordExemptForUser(
+    {
+      passwordHash,
+      passwordExemptMode: effAuth.exemptMode,
+      passwordExemptUsers: effAuth.exemptUsers,
+    },
+    sessionUser,
+  )
   const authorized =
     hasScanLibraryAccess(event, libIdNum, libPasswordHash) ||
     hasScanAlbumAccess(
       event,
-      { libId: libIdNum, relPath, passwordHash },
+      {
+        libId: libIdNum,
+        relPath,
+        passwordHash,
+        sessionExempt: passwordExempt,
+      },
       Boolean(adminBypass),
     )
 
@@ -103,9 +119,15 @@ export default eventHandler(async (event) => {
       : { ...withBgm, randomQuotesPool: pool }
   }
 
-  // 无论解锁与否，公开返回的节点都不带明文密码（明文仅供管理端编辑面板回显）
+  // 无论解锁与否，公开返回的节点都不带明文密码与免密用户列表（明文仅供管理端编辑面板回显）
   const stripPassword = (node: any): any => {
-    const { password: _pw, children, ...rest } = node
+    const {
+      password: _pw,
+      passwordExemptMode: _pem,
+      passwordExemptUsers: _peu,
+      children,
+      ...rest
+    } = node
     return children?.length
       ? { ...rest, children: children.map(stripPassword) }
       : rest

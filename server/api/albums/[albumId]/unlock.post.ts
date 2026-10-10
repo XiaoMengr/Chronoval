@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { authorizeAlbum } from '~~/server/utils/manualAlbumAuth'
+import { isPasswordExemptForUser } from '~~/server/utils/albumPasswordExempt'
 import { verifyAlbumPassword } from '~~/server/utils/scanAlbumPassword'
 import { settingsManager } from '~~/server/services/settings/settingsManager'
 
@@ -46,6 +47,12 @@ export default eventHandler(async (event) => {
     (await settingsManager.get<boolean>('system', 'scanAlbum.adminBypass', false))
 
   if (adminBypass) {
+    authorizeAlbum(event, { albumId: albumPk, passwordHash: album.passwordHash })
+    return { authorized: true }
+  }
+
+  // 登录用户在相簿配置的免密范围内（所有登录用户/指定用户）：无需密码直接签发解锁 Cookie
+  if (isPasswordExemptForUser(album, (session as any)?.user)) {
     authorizeAlbum(event, { albumId: albumPk, passwordHash: album.passwordHash })
     return { authorized: true }
   }

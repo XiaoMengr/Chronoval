@@ -46,6 +46,10 @@ interface AlbumItem {
   children?: AlbumItem[]
   external?: boolean
   passwordProtected?: boolean
+  /** 密码免密范围（管理端回显）：null=需密码；'logged_in'=登录用户免密；'selected'=指定用户免密 */
+  passwordExemptMode?: 'logged_in' | 'selected' | null
+  /** 免密用户邮箱列表（管理端回显） */
+  passwordExemptUsers?: string[] | null
   photoCount?: number
   photoIds?: string[]
   coverPhoto?: { thumbnailUrl?: string | null } | null
@@ -164,6 +168,48 @@ const hasStoredPassword = computed(() => {
 })
 // 眼睛开关：明文/密文显示密码输入框内容
 const passwordReveal = ref(false)
+
+// —— 密码免密范围（仅设置了密码时生效）——
+// ''=所有访问者都需密码；'logged_in'=任意登录用户免密；'selected'=仅所选用户免密
+type ExemptMode = '' | 'logged_in' | 'selected'
+const passwordExemptMode = ref<ExemptMode>('')
+const passwordExemptUsers = ref<string[]>([])
+interface UserLite {
+  id: number
+  username: string
+  email: string
+}
+const allUsers = ref<UserLite[]>([])
+
+// 免密范围选项（URadioGroup）
+const exemptModeOptions = computed(() => [
+  { value: '', label: $t('dashboard.albums.form.passwordExemptOff') },
+  {
+    value: 'logged_in',
+    label: $t('dashboard.albums.form.passwordExemptLoggedIn'),
+  },
+  {
+    value: 'selected',
+    label: $t('dashboard.albums.form.passwordExemptSelected'),
+  },
+])
+
+// 拉取用户列表（指定用户免密的标签选择数据源）
+const loadUsers = async () => {
+  try {
+    allUsers.value = await $fetch<UserLite[]>('/api/users')
+  } catch {
+    allUsers.value = []
+  }
+}
+
+// 滑窗每次打开时刷新用户列表（轻量表，直接重拉保证新注册用户可见）
+watch(
+  () => props.open,
+  (open) => {
+    if (open) void loadUsers()
+  },
+)
 
 const showPasswordWarningToast = () => {
   useToast().add({
@@ -355,6 +401,8 @@ const populateForm = (album: AlbumItem | null) => {
     formData.randomQuotesTag = null
     formData.bgmMusicId = null
     passwordToggle.value = false
+    passwordExemptMode.value = ''
+    passwordExemptUsers.value = []
     coverPhotoId.value = ''
     selectedPhotoIds.value = []
     formRef.value?.clear()
@@ -379,6 +427,16 @@ const populateForm = (album: AlbumItem | null) => {
   formData.randomQuotesTag = (album as any)?.randomQuotesTag || null
   formData.bgmMusicId = (album as any)?.bgmMusicId || null
   passwordToggle.value = !!(album as any).passwordProtected
+  // 免密范围回显：未设密码时重置为「所有访问者都需密码」
+  const exemptModeRaw = (album as any).passwordExemptMode
+  passwordExemptMode.value =
+    exemptModeRaw === 'logged_in' || exemptModeRaw === 'selected'
+      ? exemptModeRaw
+      : ''
+  const exemptUsersRaw = (album as any).passwordExemptUsers
+  passwordExemptUsers.value = Array.isArray(exemptUsersRaw)
+    ? exemptUsersRaw
+    : []
   coverPhotoId.value = album.coverPhotoId || ''
   // 手动相簿支持选照片；扫描相簿无照片集合，留空即可
   selectedPhotoIds.value = isScanAlbum(album)
@@ -411,6 +469,24 @@ const onFormSubmit = async (event: FormSubmitEvent<AlbumFormState>) => {
       ? { password: newPassword, clearPassword: false }
       : { password: undefined, clearPassword: false }
     : { password: undefined, clearPassword: true }
+  // 免密范围载荷：仅在设置了密码时有意义；关闭密码时一并清除免密配置
+  if (passwordToggle.value && passwordExemptMode.value === 'selected' && passwordExemptUsers.value.length === 0) {
+    isSubmittingForm.value = false
+    useToast().add({
+      title: $t('dashboard.albums.form.passwordExemptUsersRequired'),
+      color: 'warning',
+    })
+    return
+  }
+  const exemptPayload = passwordToggle.value
+    ? {
+        passwordExemptMode: passwordExemptMode.value || null,
+        passwordExemptUsers:
+          passwordExemptMode.value === 'selected'
+            ? [...passwordExemptUsers.value]
+            : null,
+      }
+    : { passwordExemptMode: null, passwordExemptUsers: null }
   try {
     if (currentAlbum.value && isScanAlbum(currentAlbum.value)) {
       // 外部库相簿（含任意层级子相簿）：保存到扫描相簿元数据
@@ -429,6 +505,7 @@ const onFormSubmit = async (event: FormSubmitEvent<AlbumFormState>) => {
         randomQuotesTag: event.data.randomQuotesTag || null,
         bgmMusicId: formData.bgmMusicId || null,
         ...passwordPayload,
+        ...exemptPayload,
         slug: event.data.slug?.trim() || null,
       }
       await $fetch('/api/albums/scan-meta', { method: 'PUT', body })
@@ -455,6 +532,7 @@ const onFormSubmit = async (event: FormSubmitEvent<AlbumFormState>) => {
           randomQuotesTag: event.data.randomQuotesTag || null,
           bgmMusicId: formData.bgmMusicId || null,
           ...passwordPayload,
+          ...exemptPayload,
           slug: event.data.slug?.trim() || null,
         },
       })
@@ -482,6 +560,7 @@ const onFormSubmit = async (event: FormSubmitEvent<AlbumFormState>) => {
           randomQuotesTag: event.data.randomQuotesTag || null,
           bgmMusicId: formData.bgmMusicId || null,
           password: passwordToggle.value ? newPassword || undefined : undefined,
+          ...exemptPayload,
           slug: event.data.slug?.trim() || null,
         },
       })
@@ -1011,6 +1090,48 @@ const submitButtonLabel = computed(() => {
                       />
                     </template>
                   </UInput>
+
+                  <!-- 密码免密范围：谁可以不输密码直接访问 -->
+                  <div class="mt-3">
+                    <p class="text-xs font-medium text-neutral-700 dark:text-neutral-300">
+                      {{ $t('dashboard.albums.form.passwordExempt') }}
+                    </p>
+                    <p class="mt-0.5 text-[11px] text-neutral-400 dark:text-neutral-500">
+                      {{ $t('dashboard.albums.form.passwordExemptHint') }}
+                    </p>
+                    <URadioGroup
+                      v-model="passwordExemptMode"
+                      :items="exemptModeOptions"
+                      value-key="value"
+                      :ui="{ fieldset: 'mt-2 gap-1.5' }"
+                      size="xs"
+                      class="mt-1"
+                    />
+                    <!-- 指定用户：标签多选 -->
+                    <div v-if="passwordExemptMode === 'selected'" class="mt-2.5">
+                      <USelectMenu
+                        v-model="passwordExemptUsers"
+                        :items="allUsers.map((u) => u.email)"
+                        multiple
+                        size="sm"
+                        searchable
+                        :placeholder="$t('dashboard.albums.form.passwordExemptUsersPlaceholder')"
+                        :search-input-placeholder="$t('dashboard.albums.form.passwordExemptUsersSearch')"
+                        class="w-full"
+                      >
+                        <template #leading="{ modelValue }">
+                          <Icon
+                            v-if="(modelValue as string[] | undefined)?.length"
+                            name="tabler:users-group"
+                            class="size-4 shrink-0 text-neutral-400"
+                          />
+                        </template>
+                      </USelectMenu>
+                      <p v-if="allUsers.length === 0" class="mt-1.5 text-[11px] text-amber-600 dark:text-amber-400">
+                        {{ $t('dashboard.albums.form.passwordExemptNoUsers') }}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </UFormField>

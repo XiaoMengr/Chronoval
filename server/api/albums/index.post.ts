@@ -32,6 +32,10 @@ export default eventHandler(async (event) => {
       bgmMusicId: z.number().int().nullable().optional(),
       // 相簿访问密码（明文）：非空设置新密码
       password: z.string().max(128).optional(),
+      // 密码免密范围：null=所有访问者都需密码
+      passwordExemptMode: z.enum(['logged_in', 'selected']).nullable().optional(),
+      // 免密用户邮箱列表（仅 selected 模式生效）
+      passwordExemptUsers: z.array(z.string().max(255)).nullable().optional(),
       // 自定义公开URL别名（可选）：全局唯一、URL 安全
       slug: z
         .string()
@@ -80,6 +84,14 @@ export default eventHandler(async (event) => {
         bgmMusicId: body.bgmMusicId ?? null,
         passwordHash,
         password: body.password?.trim() || null,
+        passwordExemptMode:
+          body.passwordExemptMode === 'selected' &&
+          (body.passwordExemptUsers?.length ?? 0) === 0
+            ? null
+            : body.passwordExemptMode ?? null,
+        passwordExemptUsers: body.passwordExemptUsers?.length
+          ? JSON.stringify(body.passwordExemptUsers)
+          : null,
         // 创建即分配不透明 UID
         uid: generateAlbumUid(),
         slug,

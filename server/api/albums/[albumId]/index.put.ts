@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { hashAlbumPassword } from '~~/server/utils/scanAlbumPassword'
 import { ensureAlbumUid } from '~~/server/utils/albumUid'
+import { parseExemptUsers } from '~~/server/utils/albumPasswordExempt'
 
 export default eventHandler(async (event) => {
   await requireUserSession(event)
@@ -28,6 +29,10 @@ export default eventHandler(async (event) => {
       // 相簿访问密码（明文）：配合 clearPassword 完成 设置/清除/保持
       password: z.string().max(128).optional(),
       clearPassword: z.boolean().optional(),
+      // 密码免密范围：null=清除（所有访问者都需密码）
+      passwordExemptMode: z.enum(['logged_in', 'selected']).nullable().optional(),
+      // 免密用户邮箱列表（仅 selected 模式生效）；null=清除
+      passwordExemptUsers: z.array(z.string().max(255)).nullable().optional(),
       // 照片展示布局：瀑布流 / 统一网格
       layout: z.enum(['waterfall', 'grid', 'immersive', 'timeline']).optional(),
       // 「随机一张照片」动画模式：default=直接打开 / wheel=3D轮盘 / compat=兼容动画
@@ -152,6 +157,20 @@ export default eventHandler(async (event) => {
       const plain = body.password.trim()
       updateData.passwordHash = hashAlbumPassword(plain)
       updateData.password = plain
+    }
+
+    // 密码免密范围：null=清除（所有访问者都需密码）；selected 时落库为邮箱 JSON 数组
+    if (body.passwordExemptMode !== undefined) {
+      updateData.passwordExemptMode =
+        body.passwordExemptMode === 'selected' &&
+        (body.passwordExemptUsers?.length ?? 0) === 0
+          ? null // selected 但未选用户视为无效配置，回落为需密码
+          : body.passwordExemptMode
+    }
+    if (body.passwordExemptUsers !== undefined) {
+      updateData.passwordExemptUsers = body.passwordExemptUsers?.length
+        ? JSON.stringify(parseExemptUsers(JSON.stringify(body.passwordExemptUsers)))
+        : null
     }
 
     // 修改密码后之前的解锁 Cookie 立即失效

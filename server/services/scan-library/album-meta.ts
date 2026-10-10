@@ -1,5 +1,6 @@
 import { and, eq } from 'drizzle-orm'
 import { useDB, tables } from '../../utils/db'
+import { parseExemptUsers } from '../../utils/albumPasswordExempt'
 import type { ScanAlbumNode } from './manager'
 
 export type ScanAlbumMetaRow = typeof tables.scanAlbumMeta.$inferSelect
@@ -18,6 +19,10 @@ export interface ScanAlbumMetaInput {
   passwordHash?: string | null
   /** 相簿访问密码明文（仅管理端回显）；null=清除，undefined=保持不变 */
   password?: string | null
+  /** 密码免密范围：null=清除（所有访问者都需密码），undefined=保持不变 */
+  passwordExemptMode?: 'logged_in' | 'selected' | null
+  /** 免密用户邮箱列表（仅 selected 模式生效）；null=清除，undefined=保持不变 */
+  passwordExemptUsers?: string[] | null
   slug?: string | null
   /** 相簿自身公开 URL 标识（随机）；null=清除改用默认，undefined=保持不变 */
   urlKey?: string | null
@@ -95,6 +100,17 @@ export const upsertScanAlbumMeta = async (
       updateData.passwordHash = input.passwordHash || null
     if (input.password !== undefined)
       updateData.password = input.password || null
+    if (input.passwordExemptMode !== undefined)
+      // selected 但未提供用户列表视为无效配置，回落为需密码
+      updateData.passwordExemptMode =
+        input.passwordExemptMode === 'selected' &&
+        (input.passwordExemptUsers?.length ?? 0) === 0
+          ? null
+          : input.passwordExemptMode
+    if (input.passwordExemptUsers !== undefined)
+      updateData.passwordExemptUsers = input.passwordExemptUsers?.length
+        ? JSON.stringify(input.passwordExemptUsers)
+        : null
     if (input.slug !== undefined) updateData.slug = input.slug || null
     if (input.urlKey !== undefined)
       updateData.urlKey = (input.urlKey && input.urlKey.trim()) || null
@@ -136,6 +152,14 @@ export const upsertScanAlbumMeta = async (
       isHidden: input.isHidden ? true : false,
       passwordHash: input.passwordHash ?? null,
       password: input.password ?? null,
+      passwordExemptMode:
+        input.passwordExemptMode === 'selected' &&
+        (input.passwordExemptUsers?.length ?? 0) === 0
+          ? null
+          : input.passwordExemptMode ?? null,
+      passwordExemptUsers: input.passwordExemptUsers?.length
+        ? JSON.stringify(input.passwordExemptUsers)
+        : null,
       slug: input.slug || null,
       urlKey: (input.urlKey && input.urlKey.trim()) || null,
       layout: input.layout ?? 'waterfall',
@@ -244,6 +268,9 @@ export const applyScanAlbumMeta = async (
     isHidden: meta.isHidden,
     passwordProtected: meta.passwordHash ? true : node.passwordProtected,
     password: meta.password || undefined,
+    // 免密配置（管理端编辑面板回显；公开接口由调用方负责脱敏）
+    passwordExemptMode: meta.passwordExemptMode ?? null,
+    passwordExemptUsers: parseExemptUsers(meta.passwordExemptUsers),
     coverPhotoId,
     covers,
     urlKey: meta.urlKey || node.urlKey,

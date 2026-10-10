@@ -7,6 +7,7 @@ import {
   getGlobalStorageManager,
 } from '~~/server/services/storage/events'
 import { applyScanAlbumMeta, getScanAlbumMeta } from './album-meta'
+import { parseExemptUsers } from '~~/server/utils/albumPasswordExempt'
 import { scanLibraries } from '~~/server/database/schema'
 import {
   type LibraryMount,
@@ -442,6 +443,44 @@ export const getScanAlbumEffectivePasswordHash = async (
   return null
 }
 
+/**
+ * 计算某相簿生效的密码鉴权配置（含免密范围）。
+ * 与 getScanAlbumEffectivePasswordHash 相同的继承链：生效密码来自哪一级 meta，
+ * 免密范围就取同级的配置（避免「父级设密码、子级设免密」出现范围错位）。
+ */
+export const getScanAlbumEffectiveAuth = async (
+  libId: number,
+  relPath: string,
+): Promise<{
+  passwordHash: string | null
+  exemptMode: 'logged_in' | 'selected' | null
+  exemptUsers: string[]
+}> => {
+  const lib = getScanLibraryRow(libId)
+  if (!lib) return { passwordHash: null, exemptMode: null, exemptUsers: [] }
+  const mount = scanMountName(libId)
+  const segs = relPath.split('/').filter(Boolean)
+  const deepToRoot: string[] = []
+  let acc = ''
+  segs.forEach((s) => {
+    acc = acc ? `${acc}/${s}` : s
+    deepToRoot.push(acc)
+  })
+  deepToRoot.reverse()
+  deepToRoot.push('')
+  for (const p of deepToRoot) {
+    const meta = await getScanAlbumMeta(mount, p)
+    if (meta?.passwordHash) {
+      return {
+        passwordHash: meta.passwordHash,
+        exemptMode: meta.passwordExemptMode ?? null,
+        exemptUsers: parseExemptUsers(meta.passwordExemptUsers),
+      }
+    }
+  }
+  return { passwordHash: null, exemptMode: null, exemptUsers: [] }
+}
+
 /** 以「相簿」展示（album/both）且启用的扫描库挂载名集合（如 scan_1） */
 export const getAlbumScanMountSet = (): Set<string> => {
   const db = useDB()
@@ -535,6 +574,10 @@ export interface ScanAlbumNode {
   randomQuotesTag: 'ancient' | 'modern' | null
   /** 相簿背景音乐（音乐盒）；null=不播放 BGM */
   bgmMusicId?: number | null
+  /** 密码免密范围：null=所有访问者都需密码；'logged_in'=任意登录用户免密；'selected'=仅 passwordExemptUsers 内用户免密 */
+  passwordExemptMode?: 'logged_in' | 'selected' | null
+  /** 免密用户邮箱列表（仅 selected 模式生效；管理端回显用，公开接口须脱敏） */
+  passwordExemptUsers?: string[]
   /** 该层目录直接包含的图片数（不含更深的子目录；视频另计） */
   photoCount: number
   /** 该层目录直接包含的视频数（不含更深的子目录）；无视频时省略或为 0 */

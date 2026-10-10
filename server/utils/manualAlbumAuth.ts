@@ -37,13 +37,16 @@ const safeEqual = (a: string, b: string): boolean => {
  * 是否已获得相簿访问权限。
  * @param allowAdmin 是否放行管理员（由系统开关决定）
  * @param passwordHash 该相簿生效的密码哈希；null 表示未设置密码（开放）
+ * @param sessionExempt 当前登录用户是否在相簿配置的免密范围内（由调用方依据会话判定）
  */
 export const hasAlbumAccess = (
   event: any,
-  opts: { albumId: number; passwordHash: string | null },
+  opts: { albumId: number; passwordHash: string | null; sessionExempt?: boolean },
   allowAdmin: boolean,
 ): boolean => {
   if (allowAdmin) return true
+  // 登录用户在免密范围内（logged_in / 指定用户）
+  if (opts.sessionExempt) return true
   // 未设置密码 → 开放，直接放行
   if (!opts.passwordHash) return true
 

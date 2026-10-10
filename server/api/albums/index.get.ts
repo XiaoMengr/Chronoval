@@ -1,4 +1,5 @@
 import { eq, tables, useDB } from '~~/server/utils/db'
+import { parseExemptUsers } from '~~/server/utils/albumPasswordExempt'
 
 export default eventHandler(async (event) => {
   const db = useDB()
@@ -57,8 +58,21 @@ export default eventHandler(async (event) => {
         : photoRows
     const photoIds = rows.map((r) => r.photoId)
 
-    const { passwordHash: _passwordHash, password: _password, ...restAlbum } =
-      album
+    const {
+      passwordHash: _passwordHash,
+      password: _password,
+      passwordExemptMode: _pem,
+      passwordExemptUsers: _peu,
+      ...restAlbum
+    } = album
+
+    // 免密配置仅对管理员回显（编辑面板需要）；公开访问不返回（含用户邮箱隐私）
+    const exemptAdminOnly = isAdmin
+      ? {
+          passwordExemptMode: album.passwordExemptMode ?? undefined,
+          passwordExemptUsers: parseExemptUsers(album.passwordExemptUsers),
+        }
+      : {}
 
     // 惰性补全公开 UID（存量相簿首次返回时自动落库）。
     // 同时保证公开链接使用不透明 uid，而非暴露自增 id。
@@ -102,6 +116,7 @@ export default eventHandler(async (event) => {
       passwordProtected: Boolean(album.passwordHash),
       // 明文密码仅对管理员回显；公开访问一律不返回
       password: isAdmin ? album.password ?? undefined : undefined,
+      ...exemptAdminOnly,
       // 相簿背景音乐（音乐盒）：解析并返回 BGM 信息（null=未启用）
       bgm: (album.bgmMusicId && musicMap.get(album.bgmMusicId)) || null,
       // 即使是空相册，也返回空数组而不是 undefined
@@ -125,10 +140,16 @@ export default eventHandler(async (event) => {
     console.error('[albums] 扫描库相簿加载失败，已忽略：', error)
   }
 
-  // 公开访问时彻底剥离扫描相簿节点上的明文密码（含二级子相簿）
+  // 公开访问时彻底剥离扫描相簿节点上的明文密码与免密用户列表（含二级子相簿）
   if (!isAdmin) {
     const strip = (node: any): any => {
-      const { password: _pw, children, ...rest } = node
+      const {
+        password: _pw,
+        passwordExemptMode: _pem,
+        passwordExemptUsers: _peu,
+        children,
+        ...rest
+      } = node
       return children?.length
         ? { ...rest, children: children.map(strip) }
         : rest

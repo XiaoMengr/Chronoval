@@ -1,6 +1,7 @@
 import { and, asc, eq, getTableColumns, isNull } from 'drizzle-orm'
 import z from 'zod'
 import { hasAlbumAccess } from '~~/server/utils/manualAlbumAuth'
+import { isPasswordExemptForUser, parseExemptUsers } from '~~/server/utils/albumPasswordExempt'
 import { settingsManager } from '~~/server/services/settings/settingsManager'
 import { ensureAlbumUid } from '~~/server/utils/albumUid'
 import { getDisabledScanMountSet } from '~~/server/services/scan-library/manager'
@@ -73,14 +74,17 @@ export default eventHandler(async (event) => {
   // 否则管理员也必须输入密码；公开访问必须持有解锁 Cookie。
   // 管理端编辑场景（manage=1 + 管理员）例外：管理相簿照片需要返回完整数据。
   const session = await getUserSession(event)
-  const isAdmin = Boolean((session as any)?.user?.isAdmin)
+  const sessionUser = (session as any)?.user
+  const isAdmin = Boolean(sessionUser?.isAdmin)
   const manageMode = query.manage === '1' && isAdmin
   const adminBypass =
     isAdmin &&
     (await settingsManager.get<boolean>('system', 'scanAlbum.adminBypass', false))
-  const authorized = manageMode || hasAlbumAccess(
+  // 密码免密范围：登录用户在相簿配置的免密范围内（所有登录用户/指定用户）则免密
+  const passwordExempt = isPasswordExemptForUser(album, sessionUser)
+  const authorized = manageMode || passwordExempt || hasAlbumAccess(
     event,
-    { albumId: albumPk, passwordHash: album.passwordHash },
+    { albumId: albumPk, passwordHash: album.passwordHash, sessionExempt: passwordExempt },
     Boolean(adminBypass),
   )
 
@@ -89,16 +93,23 @@ export default eventHandler(async (event) => {
   // 惰性补全并返回公开 UID
   const uid = await ensureAlbumUid(db, album)
 
-  // 公共字段（不暴露哈希，也不暴露明文）
+  // 公共字段（不暴露哈希、明文，也不暴露免密用户邮箱列表）
   const {
     passwordHash: _passwordHash,
     password: _password,
+    passwordExemptMode: _pem,
+    passwordExemptUsers: _peu,
     ...publicAlbum
   } = album
   const baseAlbum = { ...publicAlbum, uid }
-  // 明文密码仅在管理端编辑面板（manage=1 + 管理员）回显；公开访问一律不返回
+  // 明文密码与免密配置仅在管理端编辑面板（manage=1 + 管理员）回显；公开访问一律不返回
   const safeAlbum = manageMode
-    ? { ...baseAlbum, password: album.password ?? undefined }
+    ? {
+        ...baseAlbum,
+        password: album.password ?? undefined,
+        passwordExemptMode: album.passwordExemptMode ?? undefined,
+        passwordExemptUsers: parseExemptUsers(album.passwordExemptUsers),
+      }
     : baseAlbum
 
   // 「随机照片轮经典语录」最终生效语录池：标签优先（内置古诗/现代库），否则自定义，两者皆无则空（旋转时不显示）

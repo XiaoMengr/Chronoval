@@ -241,6 +241,12 @@ export const albums = sqliteTable('albums', {
   passwordHash: text('password_hash'),
   // 相簿访问密码明文（仅管理端编辑回显；访问验证仍以 password_hash 为准）
   password: text('password'),
+  // 密码免密范围：null=所有访问者都需密码；'logged_in'=任意登录用户免密；'selected'=仅 password_exempt_users 内用户免密
+  passwordExemptMode: text('password_exempt_mode', {
+    enum: ['logged_in', 'selected'],
+  }),
+  // 免密用户邮箱列表（仅 selected 模式生效；JSON 数组字符串）
+  passwordExemptUsers: text('password_exempt_users'),
   // 相簿公开标识（不透明 UID，替代自增 id 暴露在公网链接中）；
   // 惰性生成：存量相簿首次返回时自动补全并落库。
   uid: text('uid'),
@@ -326,6 +332,12 @@ export const scanAlbumMeta = sqliteTable(
     passwordHash: text('password_hash'),
     // 相簿访问密码明文（仅管理端编辑回显；访问验证仍以 password_hash 为准）
     password: text('password'),
+    // 密码免密范围：null=所有访问者都需密码；'logged_in'=任意登录用户免密；'selected'=仅 password_exempt_users 内用户免密
+    passwordExemptMode: text('password_exempt_mode', {
+      enum: ['logged_in', 'selected'],
+    }),
+    // 免密用户邮箱列表（仅 selected 模式生效；JSON 数组字符串）
+    passwordExemptUsers: text('password_exempt_users'),
     // 自定义公开URL别名（全局唯一）；设置后公开链接使用 /albums/s/{slug}
     slug: text('slug'),
     // 相簿自身的公开 URL 标识（随机生成、全局唯一）：设置后该相簿（含子目录）使用

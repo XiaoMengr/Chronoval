@@ -5,6 +5,7 @@ import {
   clearScanAlbumMeta,
 } from '~~/server/services/scan-library/album-meta'
 import { hashAlbumPassword } from '~~/server/utils/scanAlbumPassword'
+import { parseExemptUsers } from '~~/server/utils/albumPasswordExempt'
 
 /**
  * 新增/更新/清除某扫描库相簿（或其二级子相簿）的元数据。
@@ -29,6 +30,10 @@ export default eventHandler(async (event) => {
       // 相簿访问密码：非空明文 → 设置新密码；配合 clearPassword=true → 清除密码；否则保持不变
       password: z.string().max(128).optional(),
       clearPassword: z.boolean().optional(),
+      // 密码免密范围：null=清除（所有访问者都需密码）；未传=保持不变
+      passwordExemptMode: z.enum(['logged_in', 'selected']).nullable().optional(),
+      // 免密用户邮箱列表（仅 selected 模式生效）；null=清除；未传=保持不变
+      passwordExemptUsers: z.array(z.string().max(255)).nullable().optional(),
       slug: z
         .string()
         .max(120)
@@ -82,6 +87,8 @@ export default eventHandler(async (event) => {
     isHidden: body.isHidden,
     passwordHash,
     password,
+    passwordExemptMode: body.passwordExemptMode,
+    passwordExemptUsers: body.passwordExemptUsers,
     slug: body.slug,
     layout: body.layout,
     randomWheelAnimation: body.randomWheelAnimation,
@@ -102,6 +109,8 @@ export default eventHandler(async (event) => {
       coverPhotoId: meta.coverPhotoId,
       isHidden: meta.isHidden,
       passwordProtected: Boolean(meta.passwordHash),
+      passwordExemptMode: meta.passwordExemptMode ?? null,
+      passwordExemptUsers: parseExemptUsers(meta.passwordExemptUsers),
       slug: meta.slug,
       layout: meta.layout,
       randomWheelAnimation: meta.randomWheelAnimation,
