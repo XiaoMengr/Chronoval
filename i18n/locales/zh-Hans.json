@@ -543,7 +543,7 @@
       },
       "signin": {
         "title": "登录",
-        "subtitle": "登录到 {0}",
+        "subtitle": "登入管理后台",
         "twoFactorTitle": "双重验证",
         "twoFactorSubtitle": "请输入验证器应用中的 6 位动态验证码"
       },

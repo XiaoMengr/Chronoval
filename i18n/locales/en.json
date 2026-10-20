@@ -536,7 +536,7 @@
       },
       "signin": {
         "title": "Sign In",
-        "subtitle": "Log in to {0}",
+        "subtitle": "Sign in to the admin dashboard",
         "twoFactorTitle": "Two-Step Verification",
         "twoFactorSubtitle": "Enter the 6-digit code from your authenticator app"
       },

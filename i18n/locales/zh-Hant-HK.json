@@ -421,7 +421,7 @@
     "form": {
       "signin": {
         "title": "登入",
-        "subtitle": "登錄到 {0}"
+        "subtitle": "登入管理後台"
       },
       "action": {
         "or": "或",
