@@ -30,6 +30,18 @@ type PipelineQueuePayload =
       type: 'photo-erase-location'
       photoId: string
     }
+  | {
+      /** 外部扫描库单文件重处理（扫描失败的文件入队重试，可在 /queue 队列管理查看） */
+      type: 'library-file'
+      /** 扫描库挂载名 */
+      mount: string
+      /** 库内相对路径 */
+      libraryPath: string
+      /** 文件 mtime（同一文件版本失败去重用） */
+      lastModified?: string
+      /** 扫描时的失败原因（供排查参考；重试以实际错误为准） */
+      reason?: string
+    }
 
 export const users = sqliteTable('users', {
   id: integer('id').primaryKey({ autoIncrement: true }),

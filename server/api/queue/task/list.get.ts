@@ -20,6 +20,7 @@ export default defineEventHandler(async (event) => {
             'live-photo-video',
             'photo-reverse-geocoding',
             'photo-erase-location',
+            'library-file',
           ])
           .optional(),
       })

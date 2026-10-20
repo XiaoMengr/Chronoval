@@ -2,7 +2,7 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import crypto from 'crypto'
 import sharp from 'sharp'
-import { eq } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import type {
   LibraryMount,
   LibraryConfig,
@@ -160,6 +160,13 @@ export class LibraryScanner {
         const entry = await this.processFile(mount, rel, absFile, stat, storageProvider)
         if (!entry) {
           result.failed++
+          // 失败文件入队（/queue 可见，可自动重试 / 手动重试）
+          await this.enqueueFailedFile(
+            mount.name,
+            rel,
+            stat.mtime.toISOString(),
+            '文件处理返回空（可能是不支持的格式或文件已损坏）',
+          )
           continue
         }
 
@@ -174,6 +181,15 @@ export class LibraryScanner {
         const msg = err instanceof Error ? err.message : String(err)
         result.errors.push(`${path.basename(absFile)}: ${msg}`)
         result.failed++
+        // 失败文件入队（best-effort：stat 失败时省略 mtime）
+        const rel = sanitizeRelPath(path.relative(mount.root, absFile))
+        let mtime: string | undefined
+        try {
+          mtime = (await fs.stat(absFile)).mtime.toISOString()
+        } catch {
+          /* ignore */
+        }
+        await this.enqueueFailedFile(mount.name, rel, mtime, msg)
       }
     }
 
@@ -238,6 +254,115 @@ export class LibraryScanner {
     this.mounts = getAllScalableMounts()
     const mount = this.mounts.find((m) => m.name === name)
     return mount ? await this.scanMount(mount) : null
+  }
+
+  /**
+   * 扫描失败的文件入队为 library-file 任务：
+   * - 队列管理页（/dashboard/queue）可见失败原因，可手动重试
+   * - 工作器自动重试，瞬时故障（网络挂载抖动等）可自愈
+   * - 去重：同挂载+同路径已有进行中任务、或同文件版本（mtime）已失败任务时跳过
+   */
+  private async enqueueFailedFile(
+    mountName: string,
+    relPath: string,
+    lastModified?: string,
+    reason?: string,
+  ): Promise<void> {
+    try {
+      const db = useDB()
+      const sameKeyTasks = db
+        .select({
+          id: tables.pipelineQueue.id,
+          status: tables.pipelineQueue.status,
+          payload: tables.pipelineQueue.payload,
+        })
+        .from(tables.pipelineQueue)
+        .where(
+          and(
+            sql`json_extract(${tables.pipelineQueue.payload}, '$.type') = 'library-file'`,
+            sql`json_extract(${tables.pipelineQueue.payload}, '$.mount') = ${mountName}`,
+            sql`json_extract(${tables.pipelineQueue.payload}, '$.libraryPath') = ${relPath}`,
+          ),
+        )
+        .all()
+
+      const hasActive = sameKeyTasks.some(
+        (t) => t.status === 'pending' || t.status === 'in-stages',
+      )
+      const hasSameVersionFailed = sameKeyTasks.some(
+        (t) =>
+          t.status === 'failed' &&
+          (t.payload as any)?.lastModified &&
+          (t.payload as any).lastModified === lastModified,
+      )
+      if (hasActive || hasSameVersionFailed) return
+
+      const pool = globalThis.__workerPool
+      if (!pool) {
+        log().warn('Worker pool not ready, skip enqueue failed library file')
+        return
+      }
+      await pool.addTask(
+        {
+          type: 'library-file',
+          mount: mountName,
+          libraryPath: relPath,
+          ...(lastModified ? { lastModified } : {}),
+          ...(reason ? { reason } : {}),
+        },
+        { maxAttempts: 3 },
+      )
+      log().info(
+        `Enqueued failed library file for retry: ${mountName}/${relPath}`,
+      )
+    } catch (err) {
+      // 入队失败不影响扫描主流程
+      log().warn(
+        `Failed to enqueue failed library file ${mountName}/${relPath}:`,
+        err,
+      )
+    }
+  }
+
+  /**
+   * 重新处理单个外部库文件（library-file 队列任务调用）。
+   * 成功则入库/更新 photos 表并返回结果；失败抛错，由队列按次数重试后标记失败。
+   */
+  async processSingleFile(
+    mountName: string,
+    relPath: string,
+  ): Promise<'indexed' | 'updated'> {
+    const mount = getAllScalableMounts().find((m) => m.name === mountName)
+    if (!mount) {
+      throw new Error(`Library mount not found: ${mountName}`)
+    }
+    const rel = sanitizeRelPath(relPath)
+    const absFile = path.join(mount.root, rel)
+    const stat = await fs.stat(absFile) // 文件不存在时抛错（任务失败）
+    const storageProvider = getStorageManager()?.getProvider()
+    if (!storageProvider) {
+      throw new Error('Storage manager not initialized')
+    }
+
+    const db = useDB()
+    const photoId = buildLibraryPhotoId(mountName, rel)
+    const existing = db
+      .select()
+      .from(tables.photos)
+      .where(eq(tables.photos.id, photoId))
+      .get()
+
+    const entry = await this.processFile(mount, rel, absFile, stat, storageProvider)
+    if (!entry) {
+      throw new Error(`Failed to process library file: ${rel}`)
+    }
+
+    if (existing) {
+      await db.update(tables.photos).set(entry).where(eq(tables.photos.id, photoId)).run()
+      return 'updated'
+    }
+    await db.insert(tables.photos).values({ id: photoId, ...entry }).run()
+    return 'indexed'
   }
 
   /**

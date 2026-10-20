@@ -23,6 +23,7 @@ import {
 import { settingsManager } from '../settings/settingsManager'
 import { findLivePhotoVideoForImage } from '../video/livephoto'
 import { processMotionPhotoFromXmp } from '../video/motion-photo'
+import { libraryScanner } from '../library/scanner'
 import { getStorageManager } from '~~/server/plugins/3.storage'
 
 const EXIF_LOCATION_KEYS = [
@@ -797,6 +798,24 @@ export class QueueManager {
           throw error
         }
       },
+      libraryFile: async (task: PipelineQueueItem) => {
+        const { id: taskId, payload } = task
+        if (payload.type !== 'library-file') {
+          throw new Error(
+            `Invalid payload type for library task: ${payload.type}`,
+          )
+        }
+        this.logger.info(
+          `[${taskId}:library-file] reprocessing external library file ${payload.mount}/${payload.libraryPath}`,
+        )
+        const outcome = await libraryScanner.processSingleFile(
+          payload.mount,
+          payload.libraryPath,
+        )
+        this.logger.success(
+          `[${taskId}:library-file] ${outcome}: ${payload.mount}/${payload.libraryPath}`,
+        )
+      },
     }
   })()
 
@@ -833,6 +852,9 @@ export class QueueManager {
             break
           case 'photo-erase-location':
             await this.processors.eraseLocation(task)
+            break
+          case 'library-file':
+            await this.processors.libraryFile(task)
             break
           default:
             throw new Error(`Unknown task type: ${type}`)

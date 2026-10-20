@@ -1,4 +1,13 @@
 {
+  "gallery": {
+    "browse": {
+      "simple": "简洁看图",
+      "masonry": "瀑布流",
+      "prev": "上一张",
+      "next": "下一张",
+      "backToMasonry": "返回瀑布流"
+    }
+  },
   "map": {
     "cluster": {
       "details": "点击图片查看详情",
@@ -508,6 +517,8 @@
       "grid": "网格",
       "immersive": "沉浸式看图",
       "timeline": "时光线",
+      "simple": "简洁看图",
+      "simpleExit": "退出简洁看图",
       "unknownDate": "未知日期",
       "photoCount": "张"
     }
@@ -1344,6 +1355,7 @@
         "expandAria": "展开",
         "detail": {
           "photoId": "照片 ID",
+          "libraryPath": "外部库文件",
           "payload": "负载"
         }
       },
@@ -1357,7 +1369,8 @@
         "photo": "照片处理",
         "live-photo-video": "LivePhoto视频",
         "photo-reverse-geocoding": "照片逆地理编码",
-        "photo-erase-location": "照片位置信息抹除"
+        "photo-erase-location": "照片位置信息抹除",
+        "library-file": "外部扫描库"
       },
       "stages": {
         "preprocessing": "预处理",

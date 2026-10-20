@@ -1,4 +1,13 @@
 {
+  "gallery": {
+    "browse": {
+      "simple": "Simple view",
+      "masonry": "Masonry",
+      "prev": "Prev",
+      "next": "Next",
+      "backToMasonry": "Back to masonry"
+    }
+  },
   "plural": {
     "photo": "no photos | one photo | {count} photos"
   },
@@ -508,6 +517,8 @@
       "grid": "Grid",
       "immersive": "Immersive",
       "timeline": "Timeline",
+      "simple": "Simple view",
+      "simpleExit": "Exit simple view",
       "unknownDate": "Unknown date",
       "photoCount": "photos"
     }
@@ -1350,6 +1361,7 @@
         "expandAria": "Expand",
         "detail": {
           "photoId": "Photo ID",
+          "libraryPath": "Library file",
           "payload": "Payload"
         }
       },
@@ -1363,7 +1375,8 @@
         "photo": "Photo Processing",
         "live-photo-video": "LivePhoto Video",
         "photo-reverse-geocoding": "Photo Reverse Geocoding",
-        "photo-erase-location": "Photo Location Erasure"
+        "photo-erase-location": "Photo Location Erasure",
+        "library-file": "External Library"
       },
       "stages": {
         "preprocessing": "Preprocessing",
